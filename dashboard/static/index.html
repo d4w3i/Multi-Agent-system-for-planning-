@@ -1092,9 +1092,9 @@ select { padding-right: 26px; }
     </div>
 
     <div class="mref-card" onclick="this.classList.toggle('open')">
-      <div class="mref-header"><span class="mref-name">Step Δ (Diff)</span><span class="mref-chevron">▾</span></div>
+      <div class="mref-header"><span class="mref-name">Step |Δ| (Abs Diff)</span><span class="mref-chevron">▾</span></div>
       <div class="mref-details">
-        <div class="mref-formula">predicted_steps − actual_steps</div>
+        <div class="mref-formula">|predicted_steps − actual_steps|</div>
         <div class="mref-body">Signed difference in step count. <em>actual_steps</em> is derived from GT structure: for each modified file, count its functions (or 1 if no functions listed). Positive = over-decomposition. Negative = under-prediction. σ measures variability across PRs, not run-to-run.</div>
       </div>
     </div>
@@ -1171,7 +1171,7 @@ select { padding-right: 26px; }
     <div class="chart-card glass glass-border">
       <div class="chart-header"><div>
         <div class="chart-title">Step Δ Distribution</div>
-        <div class="chart-desc">predicted − actual (positive = over-prediction)</div>
+        <div class="chart-desc">predicted − actual (red = under, blue = over)</div>
       </div></div>
       <div class="chart-wrap"><canvas id="chart-step-diff-dist"></canvas></div>
     </div>
@@ -1422,13 +1422,12 @@ function renderSummary(s) {
   const stepAct  = s.avg_steps_actual;
   const stepPred = s.avg_steps_predicted;
   const stepCov  = s.avg_target_coverage;
-  // Step diff uses |Δ| for color: green≈0 (good), yellow=moderate, red=large
+  // Step diff is |Δ|: green≈0 (good), yellow=moderate, red=large
   { const el = document.getElementById('mp-step-diff');
     if (el) {
       el.className = 'mp-big';
-      const abs = stepDiff != null ? Math.abs(stepDiff) : null;
-      el.classList.add(abs == null ? 'score-none' : abs < 0.5 ? 'score-high' : abs < 2 ? 'score-medium' : 'score-low');
-      el.textContent = stepDiff != null ? (stepDiff >= 0 ? '+' : '') + fmt(stepDiff, 1) : '—';
+      el.classList.add(stepDiff == null ? 'score-none' : stepDiff < 0.5 ? 'score-high' : stepDiff < 2 ? 'score-medium' : 'score-low');
+      el.textContent = stepDiff != null ? fmt(stepDiff, 1) : '—';
     }
   }
   tx('mp-steps-actual', stepAct  != null ? fmt(stepAct,  1) : '—');
@@ -1438,8 +1437,8 @@ function renderSummary(s) {
   bar('mp-target-cov-bar', stepCov);
   let stepsInsight = '—';
   if (stepDiff != null) {
-    const bias = Math.abs(stepDiff) < 0.5 ? 'nearly unbiased' : stepDiff > 0 ? `over-predicts by ${fmt(stepDiff, 1)} steps on average` : `under-predicts by ${fmt(Math.abs(stepDiff), 1)} steps on average`;
-    const consistency = stepStd != null ? ` Δ σ=${fmt(stepStd, 2)} — ${stepStd > 3 ? 'highly inconsistent' : stepStd > 1.5 ? 'moderately variable' : 'consistent'} planning.` : '';
+    const bias = stepDiff < 0.5 ? 'nearly unbiased' : `differs by ${fmt(stepDiff, 1)} steps on average`;
+    const consistency = stepStd != null ? ` |Δ| σ=${fmt(stepStd, 2)} — ${stepStd > 3 ? 'highly inconsistent' : stepStd > 1.5 ? 'moderately variable' : 'consistent'} planning.` : '';
     const cov = stepCov != null ? ` Coverage=${fmt(stepCov, 2)}: ${stepCov >= 0.7 ? 'most actual steps are predicted' : stepCov >= 0.4 ? 'partial step coverage' : 'low step coverage'}.` : '';
     stepsInsight = `Model ${bias}.${consistency}${cov}`;
   }
@@ -1749,7 +1748,7 @@ function renderAllCharts(summary) {
       plugins: { legend: { display: false }, tooltip: tooltipBase(ctx => {
         if (ctx.dataset.type === 'line') return null;
         const d = ctx.raw;
-        return [`Actual: ${d.x}`, `Predicted: ${d.y}`, `Δ: ${d.y - d.x}`];
+        return [`Actual: ${d.x}`, `Predicted: ${d.y}`, `|Δ|: ${Math.abs(d.y - d.x)}`];
       }) },
       scales: {
         x: { min: 0, grid: { color: 'rgba(0,0,0,0.08)' }, ticks: { color: '#666666', font: { family: 'Courier New', size: 10 } }, border: { color: '#000000' }, title: { display: true, text: 'Actual Steps', color: '#666666', font: { family: 'Courier New', size: 10 } } },

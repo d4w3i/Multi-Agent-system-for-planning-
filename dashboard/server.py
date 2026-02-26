@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 PR4Code Dashboard Server
 ────────────────────────
@@ -6,7 +5,7 @@ Run:
     pip install flask
     python dashboard/server.py
 
-Visit: http://localhost:5000
+Visit: http://localhost:2002
 """
 
 import json
