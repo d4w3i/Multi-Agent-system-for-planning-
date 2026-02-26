@@ -1,0 +1,57 @@
+# =============================================================================
+# GenAI Agent Model Configuration
+# =============================================================================
+#
+# Controls which OpenAI model each agent in the pipeline uses.
+#
+# CLI OVERRIDE
+#   Passing --model <name> to batch_predict or pr_step_planner overrides
+#   ALL agents for that run (useful for quick experiments or cost control).
+#   When no --model flag is given, the values in this file are used.
+#
+# AGENT ROLES
+#   analysis        Reads PR title/body, navigates base_project/, identifies
+#                   files and functions that need to be modified.
+#
+#   context_planner Reads pre-generated context files and the call graph,
+#                   resolves dependencies, and generates the step-by-step plan.
+#
+#   file_summarizer Called inside read_base_project_file before returning
+#                   content to the analysis agent. Compresses raw file content
+#                   into a structured summary that preserves function names and
+#                   explains architecture. A cheaper/faster model works well here.
+#
+# =============================================================================
+
+[defaults]
+# Fallback used for session-level metadata and display only.
+# Does NOT affect individual agents unless their section is missing.
+model = "gpt-5.2-2025-12-11"
+
+
+# -----------------------------------------------------------------------------
+# Agent: Analysis Agent (Phase 1)
+# -----------------------------------------------------------------------------
+[agents.analysis]
+model = "gpt-5.2-2025-12-11"
+
+# -----------------------------------------------------------------------------
+# Agent: Context Planner Agent (Phase 2)
+# -----------------------------------------------------------------------------
+[agents.context_planner]
+model = "gpt-5.2-2025-12-11"
+
+# -----------------------------------------------------------------------------
+# Agent: File Summarizer (inline LLM call inside read_base_project_file)
+# A faster/cheaper model is usually sufficient here.
+# -----------------------------------------------------------------------------
+[agents.file_summarizer]
+model = "gpt-5.2-2025-12-11"
+
+# -----------------------------------------------------------------------------
+# Agent: MASCA (project-level context summarizer, masca_runner.py)
+# Reads README + directory tree and produces a structured project summary
+# consumed by the Analysis Agent. A strong model improves context quality.
+# -----------------------------------------------------------------------------
+[agents.masca]
+model = "gpt-5.2-2025-12-11"

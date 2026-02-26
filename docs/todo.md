@@ -1,0 +1,2 @@
+- evaluation.ground_truth_extractor.GroundTruthExtractor._extract_step_plan
+- NOTA IMPORTANTE SUL NUMERO DI STEP in step_planner nella docstring

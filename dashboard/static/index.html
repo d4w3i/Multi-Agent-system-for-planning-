@@ -1,0 +1,2348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>PR4Code · Evaluation Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<style>
+/* BRUTALIST MINIMAL — no gradients, no glass, no rounded corners */
+
+/* dynamic background canvas */
+#bg-canvas {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.45;
+}
+:root {
+  --bg:            #f2efe8;
+  --surface:       #ffffff;
+  --surface-hover: #f0ece3;
+  --border:        #000000;
+  --border-hi:     #000000;
+  --text-1:        #000000;
+  --text-2:        #333333;
+  --text-3:        #666666;
+  --cyan:    #0000cc;
+  --emerald: #006600;
+  --amber:   #885500;
+  --rose:    #cc0000;
+  --cream:   #444444;
+  --radius:  0px;
+  --radius-lg: 0px;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'Courier New', Courier, monospace;
+  background: var(--bg);
+  color: var(--text-1);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+.glass {
+  background: var(--surface);
+  border: 1px solid var(--border);
+}
+
+.wrapper {
+  position: relative; z-index: 1;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 28px 80px;
+}
+
+/* NAV */
+nav {
+  position: sticky; top: 0; z-index: 100;
+  background: #000000;
+  border-bottom: 2px solid #000000;
+}
+.nav-inner {
+  max-width: 1400px; margin: 0 auto;
+  display: flex; align-items: center; gap: 16px;
+  padding: 12px 28px;
+}
+.nav-logo {
+  display: flex; align-items: center; gap: 10px;
+  font-weight: 700; font-size: 1rem; letter-spacing: 0.05em;
+  text-transform: uppercase; color: #ffffff;
+}
+.nav-logo-icon {
+  width: 24px; height: 24px;
+  background: #ffffff;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; color: #000000; font-weight: 900;
+}
+.nav-tag {
+  font-size: 0.65rem; font-weight: 400;
+  color: #999999; letter-spacing: 0.08em;
+  text-transform: uppercase; margin-left: 4px;
+}
+.nav-spacer { flex: 1; }
+.nav-status {
+  font-size: 0.72rem; color: #aaaaaa;
+  font-family: 'Courier New', Courier, monospace;
+}
+#nav-pr-count { color: #ffffff; font-weight: 700; }
+
+/* SECTION LABELS */
+.section-label {
+  font-size: 0.65rem; font-weight: 700; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--text-3);
+  margin-bottom: 14px; margin-top: 48px;
+  display: flex; align-items: center; gap: 12px;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 8px;
+}
+.section-label::after { display: none; }
+
+/* OVERVIEW — outer wrapper gives the ONE consistent border */
+.overview-block {
+  border: 2px solid var(--border);
+}
+
+/* OVERVIEW — dataset status bar */
+.overview-status {
+  display: flex; align-items: stretch;
+  background: #000000;
+  color: #ffffff;
+  font-family: 'Courier New', Courier, monospace;
+  flex-wrap: wrap;
+  border-bottom: 1px solid #444444;
+}
+.ds-block {
+  display: flex; flex-direction: column; justify-content: center;
+  padding: 14px 24px; flex: 1; min-width: 150px;
+  border-right: 1px solid #333333;
+}
+.ds-block:last-child { border-right: none; flex: 2; }
+.ds-num {
+  font-size: 2rem; font-weight: 700; line-height: 1;
+  font-family: 'Courier New', Courier, monospace;
+}
+.ds-lbl {
+  font-size: 0.58rem; text-transform: uppercase; letter-spacing: 0.1em;
+  color: #888888; margin-top: 3px;
+}
+.ds-bar-row { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
+.ds-bar { flex: 1; height: 2px; background: #333333; max-width: 120px; }
+.ds-bar-fill { height: 100%; background: #ffffff; transition: width 0.6s; }
+.ds-pct { font-size: 0.62rem; color: #aaaaaa; }
+.ds-model-label {
+  font-size: 0.58rem; text-transform: uppercase; letter-spacing: 0.1em;
+  color: #888888; margin-bottom: 4px;
+}
+.ds-model-val { font-size: 0.82rem; color: #ffffff; word-break: break-all; }
+.ds-completeness {
+  display: flex; flex-direction: column; gap: 5px;
+  margin-top: 2px;
+}
+.ds-comp-row { display: flex; align-items: center; gap: 8px; }
+.ds-comp-lbl { font-size: 0.58rem; color: #888888; text-transform: uppercase; letter-spacing: 0.08em; width: 90px; }
+.ds-comp-bar { flex: 1; height: 3px; background: #333333; max-width: 140px; }
+.ds-comp-fill { height: 100%; background: #ffffff; transition: width 0.6s; }
+.ds-comp-pct { font-size: 0.6rem; color: #aaaaaa; width: 36px; text-align: right; }
+
+/* OVERVIEW — metric panels (no outer border — .overview-block provides it) */
+.metric-panels {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 1px;
+  background: var(--border);
+}
+@media (max-width: 1200px) { .metric-panels { grid-template-columns: repeat(3, 1fr); } }
+@media (max-width: 700px)  { .metric-panels { grid-template-columns: 1fr 1fr; } }
+
+.metric-panel {
+  background: var(--surface);
+  padding: 16px 18px;
+  display: flex; flex-direction: column;
+}
+.mp-header {
+  font-size: 0.58rem; font-weight: 700; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--text-3);
+  border-bottom: 2px solid var(--border);
+  padding-bottom: 8px; margin-bottom: 12px;
+}
+.mp-primary {
+  display: flex; align-items: baseline; gap: 6px;
+  margin-bottom: 12px;
+}
+.mp-big {
+  font-size: 2.4rem; font-weight: 700; line-height: 1;
+  font-family: 'Courier New', Courier, monospace;
+  font-variant-numeric: tabular-nums;
+}
+.mp-big-lbl {
+  font-size: 0.58rem; text-transform: uppercase; letter-spacing: 0.1em;
+  color: var(--text-3);
+}
+.mp-rows { display: flex; flex-direction: column; gap: 6px; flex: 1; }
+.mp-row { display: flex; align-items: center; gap: 6px; }
+.mp-row-sep {
+  margin-top: 5px; padding-top: 7px;
+  border-top: 1px dashed #cccccc;
+}
+.mp-key {
+  font-size: 0.6rem; color: var(--text-3); text-transform: uppercase;
+  letter-spacing: 0.05em; flex-shrink: 0; width: 82px;
+}
+.mp-val {
+  font-size: 0.8rem; font-weight: 700;
+  font-family: 'Courier New', Courier, monospace;
+  flex-shrink: 0; min-width: 42px;
+}
+.mp-note { font-size: 0.58rem; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.04em; }
+.mp-bar { flex: 1; height: 3px; background: #e0ddd6; min-width: 24px; }
+.mp-bar-fill { height: 100%; background: var(--text-1); max-width: 100%; transition: width 0.6s; }
+.mp-insight {
+  margin-top: auto; padding-top: 10px;
+  font-size: 0.6rem; color: var(--text-3); line-height: 1.5;
+  border-top: 1px solid #e0ddd6;
+}
+
+/* METRICS REFERENCE */
+.metrics-ref-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1px;
+  border: 2px solid var(--border);
+  background: var(--border);
+}
+@media (max-width: 900px)  { .metrics-ref-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 600px)  { .metrics-ref-grid { grid-template-columns: 1fr; } }
+
+.mref-card { background: var(--surface); }
+.mref-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 16px; cursor: pointer; user-select: none;
+  border-bottom: 1px solid transparent;
+}
+.mref-header:hover { background: var(--surface-hover); }
+.mref-card.open .mref-header { border-bottom-color: var(--border); }
+.mref-name {
+  font-size: 0.65rem; font-weight: 700; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--text-1);
+}
+.mref-chevron { font-size: 0.65rem; color: var(--text-3); transition: transform 0.2s; }
+.mref-card.open .mref-chevron { transform: rotate(180deg); }
+.mref-details { display: none; padding: 12px 16px; }
+.mref-card.open .mref-details { display: block; }
+.mref-formula {
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 0.7rem; color: var(--text-2);
+  background: var(--bg); border: 1px solid #cccccc;
+  padding: 5px 8px; margin-bottom: 8px;
+  word-break: break-all;
+}
+.mref-body { font-size: 0.68rem; line-height: 1.6; color: var(--text-2); }
+.mref-body em { font-style: normal; font-weight: 700; color: var(--text-1); }
+
+/* CHARTS */
+.charts-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1px;
+  border: 1px solid var(--border);
+  background: var(--border);
+}
+@media (max-width: 900px) { .charts-grid { grid-template-columns: 1fr; } }
+
+.charts-grid-4 {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1px;
+  border: 1px solid var(--border);
+  background: var(--border);
+}
+@media (max-width: 1200px) { .charts-grid-4 { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 700px)  { .charts-grid-4 { grid-template-columns: 1fr; } }
+
+.charts-grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1px;
+  border: 1px solid var(--border);
+  background: var(--border);
+}
+@media (max-width: 900px) { .charts-grid-3 { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 600px) { .charts-grid-3 { grid-template-columns: 1fr; } }
+
+.chart-card {
+  background: var(--surface);
+  padding: 20px;
+}
+.chart-header {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  margin-bottom: 16px;
+}
+.chart-title {
+  font-size: 0.78rem; font-weight: 700; color: var(--text-1);
+  text-transform: uppercase; letter-spacing: 0.06em;
+}
+.chart-desc {
+  font-size: 0.65rem; color: var(--text-3); margin-top: 4px;
+}
+.chart-wrap    { position: relative; height: 240px; }
+.chart-wrap-sm { position: relative; height: 180px; }
+.chart-wrap-lg { position: relative; height: 300px; }
+
+/* FILTERS */
+.filters-bar {
+  display: flex; flex-wrap: wrap; align-items: center;
+  gap: 8px; margin-bottom: 16px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+.filter-group { display: flex; align-items: center; gap: 6px; }
+.filter-label { font-size: 0.65rem; color: var(--text-3); white-space: nowrap; text-transform: uppercase; letter-spacing: 0.06em; font-weight: 700; }
+
+select, input[type="range"], input[type="text"] {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 0;
+  color: var(--text-1);
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 0.75rem;
+  padding: 5px 10px;
+  outline: none;
+  appearance: none;
+}
+select:focus, input:focus { border-color: var(--text-1); outline: 2px solid var(--text-1); outline-offset: -2px; }
+
+input[type="range"] {
+  padding: 0; width: 100px; cursor: pointer;
+  -webkit-appearance: none;
+  height: 4px;
+  background: #cccccc;
+  border: none;
+  outline: none;
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px; height: 14px;
+  background: var(--text-1);
+  border: none;
+}
+
+.chip-group { display: flex; gap: 4px; flex-wrap: wrap; }
+.chip {
+  padding: 4px 10px; font-size: 0.65rem; font-weight: 700;
+  border: 1px solid var(--border); background: var(--bg);
+  color: var(--text-2); cursor: pointer;
+  white-space: nowrap; text-transform: uppercase; letter-spacing: 0.05em;
+}
+.chip.active { background: var(--text-1); color: var(--surface); border-color: var(--text-1); }
+.chip.active::before { content: '✓ '; }
+.chip:hover:not(.active) { background: var(--surface-hover); }
+
+.sort-select-wrap { position: relative; }
+.sort-select-wrap::after {
+  content: '↕';
+  position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+  color: var(--text-3); pointer-events: none; font-size: 0.75rem;
+}
+select { padding-right: 26px; }
+
+.results-count {
+  margin-left: auto; font-size: 0.65rem; color: var(--text-3);
+  font-family: 'Courier New', Courier, monospace; text-transform: uppercase; letter-spacing: 0.06em;
+}
+#search-input { width: 200px; }
+
+/* PR GRID */
+.pr-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1px;
+  border: 1px solid var(--border);
+  background: var(--border);
+}
+
+.pr-card {
+  position: relative;
+  background: var(--surface);
+  padding: 0;
+  cursor: pointer;
+}
+.pr-card:hover { background: var(--surface-hover); }
+.pr-card:focus-visible { outline: 2px solid var(--text-1); outline-offset: -2px; z-index: 1; }
+.pr-card.not-evaluated {
+  opacity: 0.45;
+  border: 1px dashed #aaaaaa;
+  background: var(--bg);
+}
+.pr-card.not-evaluated:hover { opacity: 0.7; background: var(--surface-hover); }
+.pr-card.not-evaluated .card-score-stripe { opacity: 0.3; }
+
+.card-score-stripe { height: 4px; width: 100%; }
+.pr-card:hover .card-score-stripe { opacity: 0.7; }
+
+.card-body { padding: 14px 16px 12px; }
+
+.card-top {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 6px;
+}
+.card-repo {
+  font-size: 0.6rem; font-weight: 700; letter-spacing: 0.06em;
+  color: var(--text-3); text-transform: uppercase;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  max-width: 70%;
+}
+.card-num {
+  font-size: 0.65rem; color: var(--text-3);
+  font-family: 'Courier New', Courier, monospace;
+}
+
+.card-title {
+  font-size: 0.82rem; font-weight: 400; line-height: 1.45;
+  color: var(--text-1); margin-bottom: 12px;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.card-metrics {
+  display: flex; gap: 0;
+  border-top: 1px solid var(--border);
+  padding-top: 10px;
+}
+.card-metric { flex: 1; text-align: center; }
+.card-metric + .card-metric { border-left: 1px solid var(--border); }
+.card-metric-val {
+  font-size: 0.88rem; font-weight: 700;
+  font-family: 'Courier New', Courier, monospace;
+  display: block; margin-bottom: 2px;
+}
+.card-metric-lbl {
+  font-size: 0.55rem; color: var(--text-3);
+  text-transform: uppercase; letter-spacing: 0.07em;
+}
+
+.card-badges {
+  display: flex; gap: 4px; flex-wrap: wrap; margin-top: 8px;
+}
+.badge {
+  font-size: 0.55rem; font-weight: 700; letter-spacing: 0.06em;
+  text-transform: uppercase; padding: 1px 6px;
+  border: 1px solid;
+}
+.badge-gt   { color: var(--emerald); border-color: var(--emerald); background: transparent; }
+.badge-pred { color: var(--cyan);    border-color: var(--cyan);    background: transparent; }
+.badge-miss { color: var(--text-3);  border-color: var(--text-3);  background: transparent; }
+
+.score-high   { color: var(--emerald); }
+.score-medium { color: var(--amber); }
+.score-low    { color: var(--rose); }
+.score-none   { color: var(--text-3); }
+
+/* LOADING */
+.state-msg {
+  grid-column: 1/-1; text-align: center;
+  padding: 60px 20px; color: var(--text-3); font-size: 0.85rem;
+  background: var(--surface);
+  text-transform: uppercase; letter-spacing: 0.05em;
+}
+.loader {
+  width: 28px; height: 28px; margin: 0 auto 16px;
+  border: 2px solid var(--border); border-top-color: transparent;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* OVERLAY + DETAIL PANEL */
+#overlay {
+  position: fixed; inset: 0; z-index: 200;
+  background: rgba(0,0,0,0.5);
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.2s;
+}
+#overlay.active { opacity: 1; pointer-events: all; }
+
+#detail-panel {
+  position: fixed; top: 0; right: 0; bottom: 0; z-index: 201;
+  width: min(72vw, 960px);
+  background: var(--surface);
+  border-left: 2px solid var(--border);
+  transform: translateX(100%);
+  transition: transform 0.3s ease;
+  display: flex; flex-direction: column;
+  overflow: hidden;
+}
+#detail-panel.open { transform: translateX(0); }
+
+#panel-score-stripe { height: 4px; flex-shrink: 0; }
+
+.panel-header {
+  padding: 20px 24px 0;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--border);
+}
+.panel-header-top {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  margin-bottom: 12px;
+}
+.panel-meta {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 6px;
+}
+.panel-repo-badge {
+  font-size: 0.6rem; font-weight: 700; letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--text-3);
+}
+.panel-pr-num {
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 0.68rem; color: var(--text-2);
+  padding: 1px 6px;
+  border: 1px solid var(--border); background: var(--bg);
+}
+#panel-title {
+  font-size: 1rem; font-weight: 700; line-height: 1.35;
+  color: var(--text-1); margin-bottom: 14px;
+  padding-right: 48px;
+}
+.close-btn {
+  flex-shrink: 0;
+  width: 32px; height: 32px;
+  border: 1px solid var(--border); background: var(--bg);
+  color: var(--text-1); font-size: 1rem; line-height: 1;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Courier New', Courier, monospace;
+}
+.close-btn:hover { background: var(--text-1); color: var(--surface); }
+
+.panel-metrics {
+  display: flex; gap: 0; margin-bottom: 16px; flex-wrap: wrap;
+  border: 1px solid var(--border); background: var(--border);
+}
+.panel-metric {
+  display: flex; flex-direction: column;
+  background: var(--bg);
+  padding: 10px 16px; min-width: 110px;
+  border-right: 1px solid var(--border);
+}
+.panel-metric:last-child { border-right: none; }
+.panel-metric-val {
+  font-size: 1rem; font-weight: 700;
+  font-family: 'Courier New', Courier, monospace;
+}
+.panel-metric-lbl {
+  font-size: 0.55rem; color: var(--text-3);
+  text-transform: uppercase; letter-spacing: 0.07em; margin-top: 3px;
+}
+
+/* AGENT TOOL CALLS ROW */
+.panel-agent-tools {
+  display: flex; flex-wrap: wrap; gap: 0;
+  border-top: 1px solid var(--border);
+  background: var(--bg);
+  min-height: 0;
+}
+.panel-agent-tools:empty { display: none; }
+.pat-item {
+  display: flex; flex-direction: column;
+  padding: 6px 14px;
+  border-right: 1px solid #e0ddd6;
+}
+.pat-item:last-child { border-right: none; }
+.pat-agent {
+  font-size: 0.55rem; text-transform: uppercase; letter-spacing: 0.07em;
+  color: var(--text-3); margin-bottom: 2px;
+}
+.pat-count {
+  font-size: 0.78rem; font-weight: 700;
+  font-family: 'Courier New', Courier, monospace;
+  color: var(--text-1);
+}
+.pat-lbl {
+  font-size: 0.5rem; text-transform: uppercase; letter-spacing: 0.06em;
+  color: var(--text-3);
+}
+
+/* TABS */
+.tab-nav { display: flex; gap: 0; border-top: 1px solid var(--border); }
+.tab-btn {
+  padding: 10px 18px; font-size: 0.68rem; font-weight: 700;
+  background: none; border: none; color: var(--text-3); cursor: pointer;
+  border-bottom: 3px solid transparent; margin-bottom: -1px;
+  text-transform: uppercase; letter-spacing: 0.06em;
+  font-family: 'Courier New', Courier, monospace;
+}
+.tab-btn:hover { color: var(--text-1); }
+.tab-btn.active { color: var(--text-1); border-bottom-color: var(--text-1); }
+
+.panel-body {
+  flex: 1; overflow-y: auto; padding: 24px;
+  scrollbar-width: thin; scrollbar-color: #cccccc transparent;
+}
+.panel-body::-webkit-scrollbar { width: 4px; }
+.panel-body::-webkit-scrollbar-thumb { background: #cccccc; }
+
+.tab-pane { display: none; }
+.tab-pane.active { display: block; }
+
+/* OVERVIEW TAB */
+.ov-section {
+  margin-bottom: 0;
+  border: 1px solid var(--border);
+  border-top: none;
+}
+.ov-section:first-child { border-top: 1px solid var(--border); }
+.ov-section-title {
+  font-size: 0.6rem; font-weight: 700; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--text-3);
+  padding: 8px 14px; background: var(--bg);
+  border-bottom: 1px solid var(--border);
+}
+.ov-section-body { padding: 14px; }
+.ov-body-text {
+  font-size: 0.78rem; line-height: 1.6; color: var(--text-2);
+  background: var(--bg); border: 1px solid var(--border);
+  padding: 14px;
+  max-height: 180px; overflow-y: auto;
+  white-space: pre-wrap; word-break: break-word;
+  font-family: 'Courier New', Courier, monospace;
+}
+
+/* TOKEN TABLE */
+.token-table { width: 100%; border-collapse: collapse; font-size: 0.75rem; }
+.token-table th {
+  text-align: left; padding: 7px 10px; font-size: 0.6rem;
+  letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--text-3); border-bottom: 1px solid var(--border);
+  font-weight: 700; background: var(--bg);
+}
+.token-table td {
+  padding: 9px 10px; border-bottom: 1px solid #e0ddd6;
+  color: var(--text-2);
+}
+.token-table tr:last-child td { border-bottom: none; }
+.token-table .agent-name {
+  font-family: 'Courier New', Courier, monospace; color: var(--text-1);
+  font-size: 0.72rem;
+}
+.token-table .num {
+  font-family: 'Courier New', Courier, monospace; text-align: right;
+}
+.token-bar-cell { width: 120px; }
+.token-bar-wrap { background: #e0ddd6; height: 6px; overflow: hidden; }
+.token-bar-fill { height: 100%; background: var(--text-1); }
+
+.files-list { display: flex; flex-direction: column; gap: 0; border: 1px solid var(--border); }
+.file-item {
+  display: flex; align-items: center; gap: 10px;
+  background: var(--surface); border-bottom: 1px solid #e0ddd6;
+  padding: 7px 12px; font-size: 0.75rem;
+}
+.file-item:last-child { border-bottom: none; }
+.file-name { font-family: 'Courier New', Courier, monospace; color: var(--text-1); flex: 1; word-break: break-all; }
+.file-status {
+  font-size: 0.6rem; font-weight: 700; letter-spacing: 0.06em;
+  text-transform: uppercase; padding: 1px 6px;
+  border: 1px solid;
+}
+.status-modified { color: var(--amber); border-color: var(--amber); background: transparent; }
+.status-added    { color: var(--emerald); border-color: var(--emerald); background: transparent; }
+.status-removed  { color: var(--rose); border-color: var(--rose); background: transparent; }
+
+/* STEP PLAN TAB */
+.plan-compare {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+@media (max-width: 700px) { .plan-compare { grid-template-columns: 1fr; } }
+
+.plan-col-header {
+  font-size: 0.6rem; font-weight: 700; letter-spacing: 0.08em;
+  text-transform: uppercase; margin-bottom: 10px;
+  display: flex; align-items: center; gap: 8px;
+  border-bottom: 1px solid var(--border); padding-bottom: 6px;
+}
+.plan-col-dot { width: 8px; height: 8px; flex-shrink: 0; }
+.plan-col-dot.gt   { background: var(--emerald); }
+.plan-col-dot.pred { background: var(--text-1); }
+
+.plan-summary-box {
+  padding: 12px;
+  border: 1px solid; font-size: 0.75rem; line-height: 1.6;
+  color: var(--text-2); margin-bottom: 12px;
+  font-family: 'Courier New', Courier, monospace;
+}
+.plan-summary-box.gt   { border-color: var(--emerald); background: transparent; }
+.plan-summary-box.pred { border-color: var(--border);  background: transparent; }
+
+.step-card {
+  padding: 12px;
+  border: 1px solid var(--border); background: var(--surface);
+  margin-bottom: 8px;
+  font-size: 0.75rem;
+}
+.step-card.matched-gt   { border-color: var(--emerald); border-left-width: 3px; }
+.step-card.matched-pred { border-color: var(--text-1);  border-left-width: 3px; }
+
+.step-num {
+  font-size: 0.58rem; font-weight: 700; letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--text-3); margin-bottom: 6px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.step-similarity {
+  font-family: 'Courier New', Courier, monospace; font-size: 0.62rem;
+  padding: 0 5px;
+  background: transparent; color: var(--text-2); border: 1px solid var(--border);
+}
+.step-no-match {
+  font-size: 0.58rem; font-weight: 700; letter-spacing: 0.1em;
+  color: var(--rose); border: 1px solid var(--rose); padding: 0 5px;
+  text-transform: uppercase;
+}
+.step-op { color: var(--text-1); font-weight: 400; line-height: 1.45; margin-bottom: 6px; }
+.step-meta { display: flex; flex-direction: column; gap: 3px; }
+.step-meta-row {
+  font-size: 0.68rem; display: flex; gap: 6px; align-items: flex-start;
+}
+.step-meta-key { color: var(--text-3); flex-shrink: 0; font-weight: 700; width: 70px; }
+.step-meta-val { color: var(--text-2); font-family: 'Courier New', Courier, monospace; word-break: break-word; }
+
+/* AGENT LOGS */
+.agent-timeline { display: flex; flex-direction: column; gap: 0; }
+
+.agent-block { display: flex; gap: 0; }
+
+.agent-timeline-line {
+  display: flex; flex-direction: column; align-items: center;
+  width: 32px; flex-shrink: 0; padding-top: 4px;
+}
+.agent-timeline-dot {
+  width: 8px; height: 8px; flex-shrink: 0;
+  background: var(--text-1);
+  border: 2px solid var(--bg);
+}
+.agent-timeline-connector {
+  width: 1px; flex: 1; background: var(--border); margin: 3px 0;
+  min-height: 20px;
+}
+.agent-timeline-end { display: none; }
+.agent-block:last-child .agent-timeline-connector { display: none; }
+.agent-block:last-child .agent-timeline-end { display: block; width: 8px; height: 8px; }
+
+.agent-content { flex: 1; padding-bottom: 20px; }
+.agent-name-row {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 8px; cursor: pointer;
+}
+.agent-collapse-btn {
+  margin-left: auto; font-size: 0.72rem; color: var(--text-3);
+  background: none; border: none; cursor: pointer; font-family: 'Courier New', Courier, monospace;
+  padding: 0 4px; flex-shrink: 0;
+}
+.agent-name {
+  font-weight: 700; font-size: 0.8rem;
+  font-family: 'Courier New', Courier, monospace;
+  text-transform: uppercase; letter-spacing: 0.04em;
+}
+.agent-phase-badge {
+  font-size: 0.58rem; font-weight: 700; letter-spacing: 0.06em;
+  text-transform: uppercase; padding: 1px 6px;
+  background: var(--bg); border: 1px solid var(--border);
+  color: var(--text-3);
+}
+.agent-token-row {
+  display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px;
+}
+.agent-token-pill {
+  font-family: 'Courier New', Courier, monospace; font-size: 0.65rem;
+  padding: 2px 8px; border: 1px solid var(--border); background: var(--bg);
+}
+.pill-in  { color: var(--cyan);    border-color: var(--cyan); }
+.pill-out { color: var(--emerald); border-color: var(--emerald); }
+.pill-req { color: var(--text-2);  border-color: var(--border); }
+
+/* TOOL CALLS */
+.tool-calls { display: flex; flex-direction: column; gap: 4px; }
+.tool-call {
+  border: 1px solid var(--border);
+  background: var(--surface); overflow: hidden;
+}
+.tool-call-header {
+  display: flex; align-items: center; gap: 8px;
+  padding: 7px 10px; cursor: pointer;
+  user-select: none;
+}
+.tool-call-header:hover { background: var(--surface-hover); }
+.tool-call-icon { font-size: 0.7rem; color: var(--amber); }
+.tool-call-name {
+  font-family: 'Courier New', Courier, monospace; font-size: 0.72rem;
+  color: var(--text-1); font-weight: 700; flex: 1;
+  text-transform: uppercase; letter-spacing: 0.03em;
+}
+.tool-call-duration { font-size: 0.62rem; color: var(--text-3); font-family: 'Courier New', Courier, monospace; }
+.tool-call-chevron { color: var(--text-3); font-size: 0.65rem; }
+.tool-call.expanded .tool-call-chevron { transform: rotate(180deg); }
+
+.tool-call-body {
+  display: none; padding: 0 10px 10px; border-top: 1px solid var(--border);
+}
+.tool-call.expanded .tool-call-body { display: block; }
+.tool-call-section { margin-top: 8px; }
+.tool-call-section-title {
+  font-size: 0.58rem; font-weight: 700; letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--text-3); margin-bottom: 4px;
+}
+.tool-call-code {
+  background: var(--bg); padding: 8px 10px;
+  font-family: 'Courier New', Courier, monospace; font-size: 0.7rem;
+  color: var(--text-2); overflow-x: auto; white-space: pre-wrap;
+  word-break: break-word; max-height: 240px; overflow-y: auto;
+  line-height: 1.5; border: 1px solid #cccccc;
+}
+
+.no-logs-msg {
+  text-align: center; padding: 40px 20px;
+  color: var(--text-3); font-size: 0.8rem;
+  text-transform: uppercase; letter-spacing: 0.05em;
+}
+.no-logs-icon { font-size: 1.5rem; margin-bottom: 10px; }
+
+/* prompt blocks */
+.prompt-block {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  overflow: hidden;
+  margin-bottom: 6px;
+}
+.prompt-block-header {
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 10px; cursor: pointer; user-select: none;
+}
+.prompt-block-header:hover { background: var(--surface-hover); }
+.prompt-block-label {
+  font-size: 0.58rem; font-weight: 700; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--text-3); flex: 1;
+}
+.prompt-block-chars {
+  font-size: 0.62rem; color: var(--text-3);
+  font-family: 'Courier New', Courier, monospace;
+}
+.prompt-block-chevron { color: var(--text-3); font-size: 0.65rem; }
+.prompt-block.expanded .prompt-block-chevron { transform: rotate(180deg); }
+.prompt-block-body {
+  display: none; border-top: 1px solid var(--border);
+  padding: 0 10px 10px;
+}
+.prompt-block.expanded .prompt-block-body { display: block; }
+
+/* UTILITIES */
+.pr-url-link {
+  color: var(--cyan); font-size: 0.72rem; text-decoration: underline;
+}
+.pr-url-link:hover { color: var(--text-1); }
+
+.spacer-8  { height: 8px; }
+.spacer-16 { height: 16px; }
+.spacer-24 { height: 24px; }
+</style>
+</head>
+<body>
+
+<canvas id="bg-canvas"></canvas>
+
+<!-- navbar -->
+<nav>
+  <div class="nav-inner">
+    <div class="nav-logo">
+      PR4Code
+      <span class="nav-tag">Evaluation Dashboard</span>
+    </div>
+    <div class="nav-spacer"></div>
+    <span class="nav-status"><span id="nav-pr-count">—</span> pull requests</span>
+  </div>
+</nav>
+
+<!-- main content -->
+<div class="wrapper">
+
+  <!-- overview -->
+  <div class="section-label">Overview</div>
+
+  <div class="overview-block">
+
+  <!-- dataset status bar -->
+  <div class="overview-status">
+    <div class="ds-block">
+      <div class="ds-num" id="ds-total">—</div>
+      <div class="ds-lbl">Total PRs</div>
+    </div>
+    <div class="ds-block">
+      <div class="ds-completeness">
+        <div class="ds-comp-row">
+          <span class="ds-comp-lbl">Evaluated</span>
+          <div class="ds-comp-bar"><div class="ds-comp-fill" id="ds-eval-bar"></div></div>
+          <span class="ds-comp-pct" id="ds-eval-pct">—</span>
+          <span class="ds-pct" id="ds-evaluated" style="color:#fff;font-weight:700;margin-left:4px">—</span>
+        </div>
+        <div class="ds-comp-row">
+          <span class="ds-comp-lbl">Prediction</span>
+          <div class="ds-comp-bar"><div class="ds-comp-fill" id="ds-pred-bar"></div></div>
+          <span class="ds-comp-pct" id="ds-pred-pct">—</span>
+          <span class="ds-pct" id="ds-pred" style="color:#fff;font-weight:700;margin-left:4px">—</span>
+        </div>
+        <div class="ds-comp-row">
+          <span class="ds-comp-lbl">Ground Truth</span>
+          <div class="ds-comp-bar"><div class="ds-comp-fill" id="ds-gt-bar"></div></div>
+          <span class="ds-comp-pct" id="ds-gt-pct">—</span>
+          <span class="ds-pct" id="ds-gt" style="color:#fff;font-weight:700;margin-left:4px">—</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- metric panels -->
+  <div class="metric-panels">
+
+    <!-- Function Matching — PRIMARY -->
+    <div class="metric-panel" style="border-left: 4px solid var(--border);">
+      <div class="mp-header" style="color:var(--text-1);font-size:0.65rem;">★ Function Matching</div>
+      <div class="mp-primary">
+        <span class="mp-big" id="mp-funcs-f1">—</span>
+        <span class="mp-big-lbl">avg F1</span>
+      </div>
+      <div class="mp-rows">
+        <div class="mp-row">
+          <span class="mp-key">Precision</span>
+          <span class="mp-val" id="mp-funcs-p">—</span>
+          <div class="mp-bar"><div class="mp-bar-fill" id="mp-funcs-p-bar"></div></div>
+        </div>
+        <div class="mp-row">
+          <span class="mp-key">Recall</span>
+          <span class="mp-val" id="mp-funcs-r">—</span>
+          <div class="mp-bar"><div class="mp-bar-fill" id="mp-funcs-r-bar"></div></div>
+        </div>
+        <div class="mp-row mp-row-sep">
+          <span class="mp-key">vs Files F1</span>
+          <span class="mp-val" id="mp-funcs-vs-files">—</span>
+          <span class="mp-note" id="mp-funcs-vs-note"></span>
+        </div>
+      </div>
+      <div class="mp-insight" id="mp-funcs-insight">—</div>
+    </div>
+
+    <!-- File Identification -->
+    <div class="metric-panel">
+      <div class="mp-header">File Identification</div>
+      <div class="mp-primary">
+        <span class="mp-big" id="mp-files-f1">—</span>
+        <span class="mp-big-lbl">avg F1</span>
+      </div>
+      <div class="mp-rows">
+        <div class="mp-row">
+          <span class="mp-key">Precision</span>
+          <span class="mp-val" id="mp-files-p">—</span>
+          <div class="mp-bar"><div class="mp-bar-fill" id="mp-files-p-bar"></div></div>
+        </div>
+        <div class="mp-row">
+          <span class="mp-key">Recall</span>
+          <span class="mp-val" id="mp-files-r">—</span>
+          <div class="mp-bar"><div class="mp-bar-fill" id="mp-files-r-bar"></div></div>
+        </div>
+        <div class="mp-row mp-row-sep">
+          <span class="mp-key">Median F1</span>
+          <span class="mp-val" id="mp-files-med">—</span>
+          <div class="mp-bar"><div class="mp-bar-fill" id="mp-files-med-bar"></div></div>
+        </div>
+        <div class="mp-row">
+          <span class="mp-key">Std Dev</span>
+          <span class="mp-val" id="mp-files-sd">—</span>
+          <span class="mp-note">spread</span>
+        </div>
+      </div>
+      <div class="mp-insight" id="mp-files-insight">—</div>
+    </div>
+
+    <!-- Semantic Similarity -->
+    <div class="metric-panel">
+      <div class="mp-header">Semantic Similarity</div>
+      <div class="mp-primary">
+        <span class="mp-big" id="mp-semantic">—</span>
+        <span class="mp-big-lbl">avg score</span>
+      </div>
+      <div class="mp-rows">
+        <div class="mp-row">
+          <span class="mp-key">Median</span>
+          <span class="mp-val" id="mp-sem-med">—</span>
+          <div class="mp-bar"><div class="mp-bar-fill" id="mp-sem-med-bar"></div></div>
+        </div>
+        <div class="mp-row">
+          <span class="mp-key">Summary Sim.</span>
+          <span class="mp-val" id="mp-sum-sim">—</span>
+          <div class="mp-bar"><div class="mp-bar-fill" id="mp-sum-sim-bar"></div></div>
+        </div>
+        <div class="mp-row mp-row-sep">
+          <span class="mp-key">vs F1 gap</span>
+          <span class="mp-val" id="mp-sem-gap">—</span>
+          <span class="mp-note" id="mp-sem-gap-note"></span>
+        </div>
+      </div>
+      <div class="mp-insight" id="mp-sem-insight">—</div>
+    </div>
+
+    <!-- Step Planning -->
+    <div class="metric-panel">
+      <div class="mp-header">Step Planning</div>
+      <div class="mp-primary">
+        <span class="mp-big" id="mp-step-diff">—</span>
+        <span class="mp-big-lbl">avg bias</span>
+      </div>
+      <div class="mp-rows">
+        <div class="mp-row">
+          <span class="mp-key">Actual avg</span>
+          <span class="mp-val" id="mp-steps-actual">—</span>
+          <span class="mp-note">steps/PR</span>
+        </div>
+        <div class="mp-row">
+          <span class="mp-key">Predicted avg</span>
+          <span class="mp-val" id="mp-steps-pred">—</span>
+          <span class="mp-note">steps/PR</span>
+        </div>
+        <div class="mp-row">
+          <span class="mp-key">Δ Std Dev</span>
+          <span class="mp-val" id="mp-step-std">—</span>
+          <span class="mp-note">variability</span>
+        </div>
+        <div class="mp-row mp-row-sep">
+          <span class="mp-key">Coverage</span>
+          <span class="mp-val" id="mp-target-cov">—</span>
+          <div class="mp-bar"><div class="mp-bar-fill" id="mp-target-cov-bar"></div></div>
+        </div>
+      </div>
+      <div class="mp-insight" id="mp-steps-insight">—</div>
+    </div>
+
+    <!-- Cost & Efficiency -->
+    <div class="metric-panel">
+      <div class="mp-header">Cost / Efficiency</div>
+      <div class="mp-primary">
+        <span class="mp-big" id="mp-tokens">—</span>
+        <span class="mp-big-lbl">tok/PR</span>
+      </div>
+      <div class="mp-rows">
+        <div class="mp-row">
+          <span class="mp-key">Avg requests</span>
+          <span class="mp-val" id="mp-requests">—</span>
+          <span class="mp-note">API calls/PR</span>
+        </div>
+        <div class="mp-row mp-row-sep">
+          <span class="mp-key">tok per F1pt</span>
+          <span class="mp-val" id="mp-tok-per-f1">—</span>
+          <span class="mp-note">efficiency</span>
+        </div>
+        <div class="mp-row">
+          <span class="mp-key">req per F1pt</span>
+          <span class="mp-val" id="mp-req-per-f1">—</span>
+          <span class="mp-note">efficiency</span>
+        </div>
+      </div>
+      <div class="mp-insight" id="mp-cost-insight">—</div>
+    </div>
+
+  </div><!-- /metric-panels -->
+  </div><!-- /overview-block -->
+
+  <!-- metrics reference -->
+  <div class="section-label">Metrics Reference</div>
+  <div class="metrics-ref-grid">
+
+    <div class="mref-card" onclick="this.classList.toggle('open')">
+      <div class="mref-header"><span class="mref-name">Files F1</span><span class="mref-chevron">▾</span></div>
+      <div class="mref-details">
+        <div class="mref-formula">2 · P · R / (P + R)  where P = matched / predicted, R = matched / actual</div>
+        <div class="mref-body">Harmonic mean of Precision and Recall over the set of <em>files to modify</em>. Matching is path-aware with 3 quality levels: exact path (3) &gt; suffix/prefix match (2) &gt; basename only (1). Greedy exclusive bipartite assignment — each file matches at most once.</div>
+      </div>
+    </div>
+
+    <div class="mref-card" onclick="this.classList.toggle('open')">
+      <div class="mref-header"><span class="mref-name">Functions F1</span><span class="mref-chevron">▾</span></div>
+      <div class="mref-details">
+        <div class="mref-formula">2 · P · R / (P + R)  where P = matched / predicted, R = matched / actual</div>
+        <div class="mref-body">Same bipartite F1 formula applied to <em>function names</em>. Matching uses 3 quality levels: fully-qualified name (3) &gt; short name (2) &gt; last component after stripping class prefix (1). Harder than file identification as function names must resolve to specific callables.</div>
+      </div>
+    </div>
+
+    <div class="mref-card" onclick="this.classList.toggle('open')">
+      <div class="mref-header"><span class="mref-name">Semantic Score</span><span class="mref-chevron">▾</span></div>
+      <div class="mref-details">
+        <div class="mref-formula">0.30 · summary_sim + 0.70 · avg_step_sim</div>
+        <div class="mref-body">Weighted combination of summary similarity and step similarity. Steps are embedded with <em>OpenAI text-embedding-3-large</em> using operation + function + reason (file_to_modify excluded to avoid contamination). Steps are greedily matched by cosine similarity; unmatched predicted steps score 0.</div>
+      </div>
+    </div>
+
+    <div class="mref-card" onclick="this.classList.toggle('open')">
+      <div class="mref-header"><span class="mref-name">Summary Similarity</span><span class="mref-chevron">▾</span></div>
+      <div class="mref-details">
+        <div class="mref-formula">cosine_sim(embed(summary_gt), embed(summary_pred))</div>
+        <div class="mref-body">Cosine similarity between <em>OpenAI text-embedding-3-large</em> embeddings of the ground-truth plan summary and the predicted plan summary. Captures high-level intent alignment. Also contributes 30% weight to the overall Semantic Score.</div>
+      </div>
+    </div>
+
+    <div class="mref-card" onclick="this.classList.toggle('open')">
+      <div class="mref-header"><span class="mref-name">Step Δ (Diff)</span><span class="mref-chevron">▾</span></div>
+      <div class="mref-details">
+        <div class="mref-formula">predicted_steps − actual_steps</div>
+        <div class="mref-body">Signed difference in step count. <em>actual_steps</em> is derived from GT structure: for each modified file, count its functions (or 1 if no functions listed). Positive = over-decomposition. Negative = under-prediction. σ measures variability across PRs, not run-to-run.</div>
+      </div>
+    </div>
+
+    <div class="mref-card" onclick="this.classList.toggle('open')">
+      <div class="mref-header"><span class="mref-name">Target Coverage</span><span class="mref-chevron">▾</span></div>
+      <div class="mref-details">
+        <div class="mref-formula">matched_targets / total_predicted_steps</div>
+        <div class="mref-body">Fraction of <em>predicted</em> steps whose file or function target matches a ground-truth entry (path-aware / name-aware quality match). Measures how precisely the model's plan points at real targets — not how many GT steps are covered.</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- correlation charts -->
+  <div class="section-label">Correlation Analysis</div>
+  <div class="charts-grid">
+    <div class="chart-card glass glass-border">
+      <div class="chart-header">
+        <div>
+          <div class="chart-title">Token Usage vs Functions F1</div>
+          <div class="chart-desc">Does spending more tokens yield better function identification?</div>
+        </div>
+      </div>
+      <div class="chart-wrap"><canvas id="chart-tokens-f1"></canvas></div>
+    </div>
+    <div class="chart-card glass glass-border">
+      <div class="chart-header">
+        <div>
+          <div class="chart-title">Token Usage vs Semantic Score</div>
+          <div class="chart-desc">Does spending more tokens yield better semantic alignment?</div>
+        </div>
+      </div>
+      <div class="chart-wrap"><canvas id="chart-calls-f1"></canvas></div>
+    </div>
+  </div>
+
+  <!-- score distributions -->
+  <div class="section-label">Score Distributions</div>
+  <div class="charts-grid-3">
+    <div class="chart-card glass glass-border">
+      <div class="chart-header"><div>
+        <div class="chart-title">Functions F1 Distribution</div>
+        <div class="chart-desc">How often each F1 range is achieved</div>
+      </div></div>
+      <div class="chart-wrap-sm"><canvas id="chart-f1-dist"></canvas></div>
+    </div>
+    <div class="chart-card glass glass-border">
+      <div class="chart-header"><div>
+        <div class="chart-title">Semantic Distribution</div>
+        <div class="chart-desc">Embedding score spread</div>
+      </div></div>
+      <div class="chart-wrap-sm"><canvas id="chart-sem-dist"></canvas></div>
+    </div>
+    <div class="chart-card glass glass-border">
+      <div class="chart-header"><div>
+        <div class="chart-title">Functions F1 vs Semantic</div>
+        <div class="chart-desc">Do structural and semantic scores correlate?</div>
+      </div></div>
+      <div class="chart-wrap-sm"><canvas id="chart-f1-sem"></canvas></div>
+    </div>
+  </div>
+
+  <!-- steps analysis -->
+  <div class="section-label">Steps Analysis</div>
+  <div class="charts-grid">
+    <div class="chart-card glass glass-border">
+      <div class="chart-header"><div>
+        <div class="chart-title">Actual vs Predicted Steps</div>
+        <div class="chart-desc">Diagonal = perfect prediction. Above = over-estimate</div>
+      </div></div>
+      <div class="chart-wrap"><canvas id="chart-steps-scatter"></canvas></div>
+    </div>
+    <div class="chart-card glass glass-border">
+      <div class="chart-header"><div>
+        <div class="chart-title">Step Δ Distribution</div>
+        <div class="chart-desc">predicted − actual (positive = over-prediction)</div>
+      </div></div>
+      <div class="chart-wrap"><canvas id="chart-step-diff-dist"></canvas></div>
+    </div>
+  </div>
+
+  <!-- PR list -->
+  <div class="section-label">Pull Requests</div>
+
+  <!-- filters -->
+  <div class="filters-bar">
+    <input type="text" id="search-input" placeholder="Search title or repo…" oninput="applyFilters()" />
+
+    <div class="filter-group">
+      <span class="filter-label">Sort</span>
+      <div class="sort-select-wrap">
+        <select id="sort-select" onchange="applyFilters()">
+          <option value="functions_f1-desc">Funcs F1 ↓</option>
+          <option value="files_f1-desc">Files F1 ↓</option>
+          <option value="semantic-desc">Semantic ↓</option>
+          <option value="tokens-asc">Tokens ↑</option>
+          <option value="tokens-desc">Tokens ↓</option>
+          <option value="date-desc">Date ↓</option>
+          <option value="date-asc">Date ↑</option>
+
+        </select>
+      </div>
+    </div>
+
+    <div class="filter-group">
+      <span class="filter-label">Repo</span>
+      <div class="sort-select-wrap">
+        <select id="repo-filter" onchange="applyFilters()">
+          <option value="">All</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="chip-group">
+      <button class="chip" id="chip-pred"  onclick="toggleChip('pred')"  >Has Prediction</button>
+      <button class="chip" id="chip-gt"    onclick="toggleChip('gt')"    >Has Ground Truth</button>
+      <button class="chip" id="chip-scored" onclick="toggleChip('scored')">Evaluated</button>
+    </div>
+
+    <span class="results-count" id="results-count"></span>
+  </div>
+
+  <!-- grid -->
+  <div class="pr-grid" id="pr-grid">
+    <div class="state-msg"><div class="loader"></div>Loading pull requests…</div>
+  </div>
+
+</div><!-- /wrapper -->
+
+<!-- ── Detail panel ─────────────────────────────────────────────────── -->
+<div id="overlay" onclick="closeDetail()"></div>
+
+<aside id="detail-panel">
+  <div id="panel-score-stripe"></div>
+
+  <div class="panel-header">
+    <div class="panel-header-top">
+      <div>
+        <div class="panel-meta">
+          <span class="panel-repo-badge" id="panel-repo">—</span>
+          <span class="panel-pr-num" id="panel-num">#—</span>
+          <a class="pr-url-link" id="panel-url" target="_blank" rel="noopener">↗ GitHub</a>
+        </div>
+        <div id="panel-title">Loading…</div>
+      </div>
+      <button class="close-btn" onclick="closeDetail()" title="Close">✕</button>
+    </div>
+
+    <div class="panel-metrics" id="panel-metrics-row"></div>
+    <div class="panel-agent-tools" id="panel-agent-tools"></div>
+
+    <div class="tab-nav">
+      <button class="tab-btn active" onclick="switchTab('overview')">Overview</button>
+      <button class="tab-btn"        onclick="switchTab('plan')">Step Plan</button>
+      <button class="tab-btn"        onclick="switchTab('logs')">Agent Logs</button>
+    </div>
+  </div>
+
+  <div class="panel-body">
+    <div class="tab-pane active" id="tab-overview"></div>
+    <div class="tab-pane"        id="tab-plan"></div>
+    <div class="tab-pane"        id="tab-logs"></div>
+  </div>
+</aside>
+
+<script>
+/* ════════════════════════════════════════════════════════════════════
+   DATA STORE
+   ════════════════════════════════════════════════════════════════════ */
+let allPRs = [];
+let activeChips = new Set();
+let chartRefs = {};
+
+/* ════════════════════════════════════════════════════════════════════
+   HELPERS
+   ════════════════════════════════════════════════════════════════════ */
+function fmt(val, decimals = 3) {
+  if (val === null || val === undefined) return '—';
+  return Number(val).toFixed(decimals);
+}
+function fmtK(n) {
+  if (n === null || n === undefined) return '—';
+  return n >= 1000 ? (n/1000).toFixed(1) + 'k' : String(n);
+}
+function scoreClass(f1) {
+  if (f1 === null || f1 === undefined) return 'score-none';
+  if (f1 >= 0.7) return 'score-high';
+  if (f1 >= 0.4) return 'score-medium';
+  return 'score-low';
+}
+function scoreColor(f1) {
+  if (f1 === null || f1 === undefined) return 'rgba(255,255,255,0.2)';
+  if (f1 >= 0.7) return 'var(--emerald)';
+  if (f1 >= 0.4) return 'var(--amber)';
+  return 'var(--rose)';
+}
+function scoreGradient(f1) {
+  const c = scoreColor(f1);
+  return `linear-gradient(90deg, ${c}, transparent)`;
+}
+function ago(dateStr) {
+  if (!dateStr) return '';
+  const d = new Date(dateStr);
+  const diff = Date.now() - d.getTime();
+  const days = Math.floor(diff / 86400000);
+  if (days < 1) return 'today';
+  if (days < 30) return `${days}d ago`;
+  const months = Math.floor(days / 30);
+  if (months < 12) return `${months}mo ago`;
+  return `${Math.floor(months/12)}y ago`;
+}
+function escHtml(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   BOOTSTRAP
+   ════════════════════════════════════════════════════════════════════ */
+async function init() {
+  try {
+    const [summaryRes, prsRes] = await Promise.all([
+      fetch('/api/summary'),
+      fetch('/api/prs'),
+    ]);
+    const summary = await summaryRes.json();
+    allPRs = await prsRes.json();
+
+    renderSummary(summary);
+    renderAllCharts(summary);
+    populateRepoFilter(summary.repositories || []);
+    applyFilters();
+
+    document.getElementById('nav-pr-count').textContent = allPRs.length;
+  } catch (e) {
+    document.getElementById('pr-grid').innerHTML =
+      `<div class="state-msg">⚠️ Could not connect to server.<br><small style="color:var(--text-3)">${e.message}</small></div>`;
+  }
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   SUMMARY STATS
+   ════════════════════════════════════════════════════════════════════ */
+function renderSummary(s) {
+  const tx  = (id, v)      => { const el = document.getElementById(id); if (el) el.textContent = v ?? '—'; };
+  const bar = (id, v)      => { const el = document.getElementById(id); if (el) el.style.width = `${Math.min(100, Math.max(0, Math.round((v || 0) * 100)))}%`; };
+  const cls = (id, v, add) => { const el = document.getElementById(id); if (el) { el.className = el.className.replace(/score-\S+/g, '').trim(); if (add) el.classList.add(add); el.classList.add(scoreClass(v)); } };
+  const pct = v => v != null ? `${Math.round(v * 100)}%` : '—';
+
+  // ── dataset status ──────────────────────────────────────────────
+  const total = s.total_prs || 1;
+  tx('ds-total',     s.total_prs);
+  tx('ds-evaluated', s.evaluated_prs);
+  tx('ds-eval-pct',  pct(s.evaluated_prs / total));
+  bar('ds-eval-bar', s.evaluated_prs / total);
+  tx('ds-pred',      s.with_prediction);
+  tx('ds-pred-pct',  pct(s.with_prediction / total));
+  bar('ds-pred-bar', s.with_prediction / total);
+  tx('ds-gt',        s.with_ground_truth);
+  tx('ds-gt-pct',    pct(s.with_ground_truth / total));
+  bar('ds-gt-bar',   s.with_ground_truth / total);
+
+  // ── file identification ─────────────────────────────────────────
+  const f1    = s.avg_files_f1;
+  const f1med = s.median_files_f1;
+  const f1sd  = s.stdev_files_f1;
+  const fp    = s.avg_files_precision;
+  const fr    = s.avg_files_recall;
+  cls('mp-files-f1', f1, 'mp-big'); tx('mp-files-f1', fmt(f1));
+  tx('mp-files-p',   fmt(fp));      bar('mp-files-p-bar',   fp);
+  tx('mp-files-r',   fmt(fr));      bar('mp-files-r-bar',   fr);
+  tx('mp-files-med', fmt(f1med));   bar('mp-files-med-bar', f1med);
+  tx('mp-files-sd',  fmt(f1sd));
+  // insight
+  let filesInsight = '—';
+  if (f1 != null && f1med != null && f1sd != null) {
+    const skew = f1 - f1med;
+    const skewDir = Math.abs(skew) < 0.02 ? 'symmetric' : skew > 0 ? 'right-skewed (outliers pull mean up)' : 'left-skewed (outliers drag mean down)';
+    const quality = f1 >= 0.7 ? 'strong' : f1 >= 0.4 ? 'moderate' : 'weak';
+    const prBalance = fp != null && fr != null ? (fp > fr + 0.05 ? 'precision-dominant — model is conservative' : fr > fp + 0.05 ? 'recall-dominant — model over-retrieves' : 'balanced P/R') : '';
+    filesInsight = `${quality} file identification. Distribution is ${skewDir}.${prBalance ? ' ' + prBalance + '.' : ''} σ=${fmt(f1sd)} indicates ${f1sd > 0.3 ? 'high' : f1sd > 0.15 ? 'moderate' : 'low'} variance across PRs.`;
+  }
+  tx('mp-files-insight', filesInsight);
+
+  // ── function matching ───────────────────────────────────────────
+  const ff1 = s.avg_functions_f1;
+  const fp2 = s.avg_functions_precision;
+  const fr2 = s.avg_functions_recall;
+  cls('mp-funcs-f1', ff1, 'mp-big'); tx('mp-funcs-f1', fmt(ff1));
+  tx('mp-funcs-p', fmt(fp2)); bar('mp-funcs-p-bar', fp2);
+  tx('mp-funcs-r', fmt(fr2)); bar('mp-funcs-r-bar', fr2);
+  const ffDiff = (ff1 != null && f1 != null) ? ff1 - f1 : null;
+  tx('mp-funcs-vs-files', ffDiff != null ? (ffDiff >= 0 ? '+' : '') + fmt(ffDiff) : '—');
+  tx('mp-funcs-vs-note', ffDiff != null ? (ffDiff > 0.02 ? 'funcs easier' : ffDiff < -0.02 ? 'funcs harder' : 'similar') : '');
+  let funcsInsight = '—';
+  if (ff1 != null && f1 != null) {
+    const rel = ffDiff > 0.05 ? 'Easier to match functions than files' : ffDiff < -0.05 ? 'Harder to pinpoint functions than files' : 'File and function difficulty are comparable';
+    const prBalance2 = fp2 != null && fr2 != null ? (fp2 > fr2 + 0.05 ? 'Conservative: high precision, lower recall.' : fr2 > fp2 + 0.05 ? 'Aggressive: high recall, lower precision.' : 'Balanced P/R.') : '';
+    funcsInsight = `${rel}. ${prBalance2}`;
+  }
+  tx('mp-funcs-insight', funcsInsight);
+
+  // ── semantic ────────────────────────────────────────────────────
+  const sem    = s.avg_semantic;
+  const semMed = s.median_semantic;
+  const sumSim = s.avg_summary_similarity;
+  cls('mp-semantic', sem, 'mp-big'); tx('mp-semantic', fmt(sem));
+  tx('mp-sem-med',  fmt(semMed));  bar('mp-sem-med-bar',  semMed);
+  tx('mp-sum-sim',  fmt(sumSim));  bar('mp-sum-sim-bar',  sumSim);
+  const semGap = (sem != null && f1 != null) ? sem - f1 : null;
+  tx('mp-sem-gap',      semGap != null ? (semGap >= 0 ? '+' : '') + fmt(semGap) : '—');
+  tx('mp-sem-gap-note', semGap != null ? (semGap > 0.05 ? 'sem > structural' : semGap < -0.05 ? 'sem < structural' : 'aligned') : '');
+  let semInsight = '—';
+  if (sem != null) {
+    const q = sem >= 0.75 ? 'strong' : sem >= 0.55 ? 'moderate' : 'weak';
+    const skewS = semMed != null ? (sem - semMed > 0.02 ? ' Right-skewed.' : sem - semMed < -0.02 ? ' Left-skewed.' : '') : '';
+    const sumNote = sumSim != null ? ` Summary-level similarity is ${sumSim >= sem + 0.05 ? 'higher than step-level — high-level plans align better' : sumSim <= sem - 0.05 ? 'lower than step-level — summaries diverge more' : 'consistent with step-level'}.` : '';
+    semInsight = `${q.charAt(0).toUpperCase() + q.slice(1)} semantic alignment.${skewS}${sumNote}`;
+  }
+  tx('mp-sem-insight', semInsight);
+
+  // ── step planning ───────────────────────────────────────────────
+  const stepDiff = s.avg_step_diff;
+  const stepStd  = s.std_step_diff;
+  const stepAct  = s.avg_steps_actual;
+  const stepPred = s.avg_steps_predicted;
+  const stepCov  = s.avg_target_coverage;
+  // Step diff uses |Δ| for color: green≈0 (good), yellow=moderate, red=large
+  { const el = document.getElementById('mp-step-diff');
+    if (el) {
+      el.className = 'mp-big';
+      const abs = stepDiff != null ? Math.abs(stepDiff) : null;
+      el.classList.add(abs == null ? 'score-none' : abs < 0.5 ? 'score-high' : abs < 2 ? 'score-medium' : 'score-low');
+      el.textContent = stepDiff != null ? (stepDiff >= 0 ? '+' : '') + fmt(stepDiff, 1) : '—';
+    }
+  }
+  tx('mp-steps-actual', stepAct  != null ? fmt(stepAct,  1) : '—');
+  tx('mp-steps-pred',   stepPred != null ? fmt(stepPred, 1) : '—');
+  tx('mp-step-std',     stepStd  != null ? fmt(stepStd,  2) : '—');
+  tx('mp-target-cov',   stepCov  != null ? fmt(stepCov,  3) : '—');
+  bar('mp-target-cov-bar', stepCov);
+  let stepsInsight = '—';
+  if (stepDiff != null) {
+    const bias = Math.abs(stepDiff) < 0.5 ? 'nearly unbiased' : stepDiff > 0 ? `over-predicts by ${fmt(stepDiff, 1)} steps on average` : `under-predicts by ${fmt(Math.abs(stepDiff), 1)} steps on average`;
+    const consistency = stepStd != null ? ` Δ σ=${fmt(stepStd, 2)} — ${stepStd > 3 ? 'highly inconsistent' : stepStd > 1.5 ? 'moderately variable' : 'consistent'} planning.` : '';
+    const cov = stepCov != null ? ` Coverage=${fmt(stepCov, 2)}: ${stepCov >= 0.7 ? 'most actual steps are predicted' : stepCov >= 0.4 ? 'partial step coverage' : 'low step coverage'}.` : '';
+    stepsInsight = `Model ${bias}.${consistency}${cov}`;
+  }
+  tx('mp-steps-insight', stepsInsight);
+
+  // ── cost ────────────────────────────────────────────────────────
+  const tokens = s.avg_total_tokens;
+  const reqs   = s.avg_total_requests;
+  tx('mp-tokens',   tokens != null ? fmtK(Math.round(tokens)) : '—');
+  tx('mp-requests', reqs   != null ? fmt(reqs, 1) : '—');
+  const tokPerF1 = (tokens != null && f1 != null && f1 > 0) ? Math.round(tokens / f1) : null;
+  const reqPerF1 = (reqs   != null && f1 != null && f1 > 0) ? (reqs / f1).toFixed(1) : null;
+  tx('mp-tok-per-f1', tokPerF1 != null ? fmtK(tokPerF1) : '—');
+  tx('mp-req-per-f1', reqPerF1 ?? '—');
+  let costInsight = '—';
+  if (tokens != null && f1 != null) {
+    const eff = tokPerF1 < 20000 ? 'efficient' : tokPerF1 < 60000 ? 'moderate' : 'expensive';
+    costInsight = `${fmtK(Math.round(tokens))} tokens per PR (${eff} cost/performance ratio). ${reqs != null ? `${fmt(reqs, 1)} API calls/PR on average.` : ''}`;
+  }
+  tx('mp-cost-insight', costInsight);
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   CHARTS
+   ════════════════════════════════════════════════════════════════════ */
+function chartColors(items) {
+  const palette = [
+    '#000000', '#cc0000',
+    '#006600', '#885500',
+    '#0000cc', '#555555',
+  ];
+  const repoIndex = {};
+  let idx = 0;
+  return items.map(d => {
+    if (!(d.repo in repoIndex)) repoIndex[d.repo] = idx++ % palette.length;
+    return palette[repoIndex[d.repo]];
+  });
+}
+
+const CHART_DEFAULTS = {
+  responsive: true, maintainAspectRatio: false,
+  animation: { duration: 600 },
+  plugins: {
+    legend: { display: false },
+    tooltip: {
+      backgroundColor: '#000000',
+      borderColor: '#000000',
+      borderWidth: 1,
+      titleFont: { family: 'Courier New', size: 11 },
+      bodyFont:  { family: 'Courier New', size: 11 },
+      padding: 10,
+      callbacks: {
+        title: ctx => ctx[0].raw.title || '',
+        label: ctx => {
+          const d = ctx.raw;
+          return [
+            `Tokens: ${fmtK(d.x)}`,
+            `Files F1: ${fmt(d.y)}`,
+            `Semantic: ${fmt(d.semantic)}`,
+          ];
+        },
+      },
+    },
+  },
+  scales: {
+    x: {
+      grid: { color: 'rgba(0,0,0,0.08)' },
+      ticks: { color: '#666666', font: { family: 'Courier New', size: 10 } },
+      border: { color: '#000000' },
+    },
+    y: {
+      min: 0, max: 1,
+      grid: { color: 'rgba(0,0,0,0.08)' },
+      ticks: { color: '#666666', font: { family: 'Courier New', size: 10 } },
+      border: { color: '#000000' },
+    },
+  },
+};
+
+function makeCharPoint(char, color, size) {
+  const c = document.createElement('canvas');
+  c.width = size; c.height = size;
+  const cx = c.getContext('2d');
+  cx.font = `bold ${Math.round(size * 0.9)}px 'Courier New', monospace`;
+  cx.fillStyle = color;
+  cx.textAlign = 'center';
+  cx.textBaseline = 'middle';
+  cx.fillText(char, size / 2, size / 2);
+  return c;
+}
+
+/* shared axis/tooltip defaults */
+function scaleOpts(xLabel, yLabel, yMin = null, yMax = null) {
+  const base = {
+    x: {
+      grid: { color: 'rgba(0,0,0,0.08)' },
+      ticks: { color: '#666666', font: { family: 'Courier New', size: 10 } },
+      border: { color: '#000000' },
+      title: { display: !!xLabel, text: xLabel, color: '#666666', font: { family: 'Courier New', size: 10 } },
+    },
+    y: {
+      grid: { color: 'rgba(0,0,0,0.08)' },
+      ticks: { color: '#666666', font: { family: 'Courier New', size: 10 } },
+      border: { color: '#000000' },
+      title: { display: !!yLabel, text: yLabel, color: '#666666', font: { family: 'Courier New', size: 10 } },
+    },
+  };
+  if (yMin !== null) base.y.min = yMin;
+  if (yMax !== null) base.y.max = yMax;
+  return base;
+}
+
+function tooltipBase(labelFn) {
+  return {
+    backgroundColor: '#000000', borderColor: '#000000', borderWidth: 1,
+    titleFont: { family: 'Courier New', size: 11 },
+    bodyFont:  { family: 'Courier New', size: 11 },
+    padding: 10,
+    callbacks: { title: ctx => ctx[0].raw?.title || '', label: labelFn },
+  };
+}
+
+function mkChart(id, cfg) {
+  if (chartRefs[id]) chartRefs[id].destroy();
+  chartRefs[id] = new Chart(document.getElementById(id), cfg);
+  return chartRefs[id];
+}
+
+function pearsonR(pts) {
+  const n = pts.length;
+  if (n < 2) return null;
+  const mx = pts.reduce((s, p) => s + p.x, 0) / n;
+  const my = pts.reduce((s, p) => s + p.y, 0) / n;
+  const num = pts.reduce((s, p) => s + (p.x - mx) * (p.y - my), 0);
+  const dx  = Math.sqrt(pts.reduce((s, p) => s + (p.x - mx) ** 2, 0));
+  const dy  = Math.sqrt(pts.reduce((s, p) => s + (p.y - my) ** 2, 0));
+  return (dx && dy) ? num / (dx * dy) : null;
+}
+
+function regressionLine(pts, xMin, xMax) {
+  const n = pts.length;
+  if (n < 2) return [];
+  const mx = pts.reduce((s, p) => s + p.x, 0) / n;
+  const my = pts.reduce((s, p) => s + p.y, 0) / n;
+  const slope = pts.reduce((s, p) => s + (p.x - mx) * (p.y - my), 0) /
+                pts.reduce((s, p) => s + (p.x - mx) ** 2, 0);
+  const b = my - slope * mx;
+  return [{ x: xMin, y: slope * xMin + b }, { x: xMax, y: slope * xMax + b }];
+}
+
+function renderAllCharts(summary) {
+  const data   = summary.chart_data || [];
+  const colors = chartColors(data);
+
+  /* ── Correlation: Tokens vs Functions F1 ───────────────────────── */
+  {
+    const pts1 = data.map(d => ({ x: d.tokens, y: d.functions_f1 })).filter(p => p.x != null && p.y != null);
+    const r1   = pearsonR(pts1);
+    const xMin1 = pts1.length ? Math.min(...pts1.map(p => p.x)) : 0;
+    const xMax1 = pts1.length ? Math.max(...pts1.map(p => p.x)) : 1;
+    const trend1 = regressionLine(pts1, xMin1, xMax1);
+    mkChart('chart-tokens-f1', {
+      type: 'scatter',
+      data: { datasets: [
+        { data: data.map((d, i) => ({
+            x: d.tokens, y: d.functions_f1, title: d.title, semantic: d.semantic, files_f1: d.files_f1,
+            backgroundColor: colors[i], borderColor: 'transparent', borderWidth: 0,
+            pointStyle: makeCharPoint('$', colors[i], 18), pointRadius: 9, pointHoverRadius: 13,
+          })) },
+        { type: 'line', data: trend1, borderColor: '#000000', borderWidth: 1,
+          borderDash: [5, 3], pointRadius: 0, fill: false, tension: 0 },
+      ] },
+      options: {
+        responsive: true, maintainAspectRatio: false, animation: { duration: 400 },
+        plugins: {
+          legend: { display: false },
+          title: { display: r1 !== null, text: `Pearson r = ${r1?.toFixed(3)}`, position: 'bottom',
+            color: '#666666', font: { family: 'Courier New', size: 10 }, padding: { top: 6 } },
+          tooltip: tooltipBase(ctx => {
+            if (ctx.dataset.type === 'line') return null;
+            const d = ctx.raw;
+            return [`Tokens: ${fmtK(d.x)}`, `Funcs F1: ${fmt(d.y)}`, `Files F1: ${fmt(d.files_f1)}`, `Sem: ${fmt(d.semantic)}`];
+          }),
+        },
+        scales: scaleOpts('Total Tokens', 'Functions F1', 0, 1),
+      },
+    });
+  }
+
+  /* ── Correlation: Token Usage vs Semantic Score ─────────────────── */
+  {
+    const pts2 = data.map(d => ({ x: d.tokens, y: d.semantic })).filter(p => p.x != null && p.y != null);
+    const r2   = pearsonR(pts2);
+    const xMin2 = pts2.length ? Math.min(...pts2.map(p => p.x)) : 0;
+    const xMax2 = pts2.length ? Math.max(...pts2.map(p => p.x)) : 1;
+    const trend2 = regressionLine(pts2, xMin2, xMax2);
+    mkChart('chart-calls-f1', {
+      type: 'scatter',
+      data: { datasets: [
+        { data: data.map((d, i) => ({
+            x: d.tokens, y: d.semantic, title: d.title, functions_f1: d.functions_f1,
+            backgroundColor: colors[i], borderColor: 'transparent', borderWidth: 0,
+            pointStyle: makeCharPoint('*', colors[i], 18), pointRadius: 9, pointHoverRadius: 13,
+          })) },
+        { type: 'line', data: trend2, borderColor: '#000000', borderWidth: 1,
+          borderDash: [5, 3], pointRadius: 0, fill: false, tension: 0 },
+      ] },
+      options: {
+        responsive: true, maintainAspectRatio: false, animation: { duration: 400 },
+        plugins: {
+          legend: { display: false },
+          title: { display: r2 !== null, text: `Pearson r = ${r2?.toFixed(3)}`, position: 'bottom',
+            color: '#666666', font: { family: 'Courier New', size: 10 }, padding: { top: 6 } },
+          tooltip: tooltipBase(ctx => {
+            if (ctx.dataset.type === 'line') return null;
+            const d = ctx.raw;
+            return [`Tokens: ${fmtK(d.x)}`, `Semantic: ${fmt(d.y)}`, `Funcs F1: ${fmt(d.functions_f1)}`];
+          }),
+        },
+        scales: scaleOpts('Total Tokens', 'Semantic Score', 0, 1),
+      },
+    });
+  }
+
+  /* ── Functions F1 Distribution ──────────────────────────────────── */
+  const binLabels = ['0.0','0.1','0.2','0.3','0.4','0.5','0.6','0.7','0.8','0.9'];
+  mkChart('chart-f1-dist', {
+    type: 'bar',
+    data: { labels: binLabels, datasets: [{
+      data: summary.functions_f1_distribution || [],
+      backgroundColor: '#000000', borderColor: '#000000', borderWidth: 0,
+    }] },
+    options: {
+      responsive: true, maintainAspectRatio: false, animation: { duration: 400 },
+      plugins: { legend: { display: false }, tooltip: {
+        backgroundColor: '#000000', bodyFont: { family: 'Courier New', size: 11 }, padding: 8,
+        callbacks: { title: ctx => `F1 [${ctx[0].label}–${(+ctx[0].label + 0.1).toFixed(1)})`,
+                     label: ctx => `Count: ${ctx.raw}` },
+      }},
+      scales: {
+        x: { grid: { display: false }, ticks: { color: '#666666', font: { family: 'Courier New', size: 9 } }, border: { color: '#000000' } },
+        y: { grid: { color: 'rgba(0,0,0,0.08)' }, ticks: { color: '#666666', font: { family: 'Courier New', size: 9 } }, border: { color: '#000000' } },
+      },
+    },
+  });
+
+  /* ── Semantic Distribution ──────────────────────────────────────── */
+  mkChart('chart-sem-dist', {
+    type: 'bar',
+    data: { labels: binLabels, datasets: [{
+      data: summary.semantic_distribution || [],
+      backgroundColor: '#333333', borderColor: '#333333', borderWidth: 0,
+    }] },
+    options: {
+      responsive: true, maintainAspectRatio: false, animation: { duration: 400 },
+      plugins: { legend: { display: false }, tooltip: {
+        backgroundColor: '#000000', bodyFont: { family: 'Courier New', size: 11 }, padding: 8,
+        callbacks: { title: ctx => `Sem [${ctx[0].label}–${(+ctx[0].label + 0.1).toFixed(1)})`,
+                     label: ctx => `Count: ${ctx.raw}` },
+      }},
+      scales: {
+        x: { grid: { display: false }, ticks: { color: '#666666', font: { family: 'Courier New', size: 9 } }, border: { color: '#000000' } },
+        y: { grid: { color: 'rgba(0,0,0,0.08)' }, ticks: { color: '#666666', font: { family: 'Courier New', size: 9 } }, border: { color: '#000000' } },
+      },
+    },
+  });
+
+  /* ── Functions F1 vs Semantic scatter ──────────────────────────── */
+  mkChart('chart-f1-sem', {
+    type: 'scatter',
+    data: { datasets: [{ data: data.map((d, i) => ({
+      x: d.functions_f1, y: d.semantic, title: d.title, files_f1: d.files_f1,
+      backgroundColor: colors[i], borderColor: 'transparent',
+      pointStyle: 'rect', pointRadius: 5, pointHoverRadius: 8,
+    })) }] },
+    options: {
+      responsive: true, maintainAspectRatio: false, animation: { duration: 400 },
+      plugins: { legend: { display: false }, tooltip: tooltipBase(ctx => {
+        const d = ctx.raw;
+        return [`Funcs F1: ${fmt(d.x)}`, `Sem: ${fmt(d.y)}`, `Files F1: ${fmt(d.files_f1)}`];
+      }) },
+      scales: scaleOpts('Functions F1', 'Semantic', 0, 1),
+    },
+  });
+
+  /* ── Steps: Actual vs Predicted scatter ─────────────────────────── */
+  const stepsRaw   = summary.steps_chart_data || [];
+  const stepColors = chartColors(stepsRaw);
+  const stepsData = stepsRaw.map((d, i) => ({
+    x: d.steps_actual, y: d.steps_predicted, title: d.title,
+    backgroundColor: stepColors[i], borderColor: 'transparent',
+    pointStyle: 'rect', pointRadius: 6, pointHoverRadius: 9,
+  }));
+  const maxS = stepsData.length
+    ? Math.max(...stepsData.map(d => Math.max(d.x, d.y))) + 1
+    : 10;
+  mkChart('chart-steps-scatter', {
+    type: 'scatter',
+    data: { datasets: [
+      { data: stepsData },
+      { type: 'line', data: [{x:0,y:0},{x:maxS,y:maxS}],
+        borderColor: '#000000', borderWidth: 1, borderDash: [4,4],
+        pointRadius: 0, fill: false, tension: 0 },
+    ] },
+    options: {
+      responsive: true, maintainAspectRatio: false, animation: { duration: 400 },
+      plugins: { legend: { display: false }, tooltip: tooltipBase(ctx => {
+        if (ctx.dataset.type === 'line') return null;
+        const d = ctx.raw;
+        return [`Actual: ${d.x}`, `Predicted: ${d.y}`, `Δ: ${d.y - d.x}`];
+      }) },
+      scales: {
+        x: { min: 0, grid: { color: 'rgba(0,0,0,0.08)' }, ticks: { color: '#666666', font: { family: 'Courier New', size: 10 } }, border: { color: '#000000' }, title: { display: true, text: 'Actual Steps', color: '#666666', font: { family: 'Courier New', size: 10 } } },
+        y: { min: 0, grid: { color: 'rgba(0,0,0,0.08)' }, ticks: { color: '#666666', font: { family: 'Courier New', size: 10 } }, border: { color: '#000000' }, title: { display: true, text: 'Predicted Steps', color: '#666666', font: { family: 'Courier New', size: 10 } } },
+      },
+    },
+  });
+
+  /* ── Step Δ Distribution ────────────────────────────────────────── */
+  const diffs = stepsRaw.map(d => d.steps_predicted - d.steps_actual);
+  if (diffs.length) {
+    const minD = Math.min(...diffs), maxD = Math.max(...diffs);
+    const span = Math.max(maxD - minD, 1);
+    const nBins = Math.min(20, span + 1);
+    const binW  = span / nBins;
+    const counts = new Array(nBins).fill(0);
+    const diffLabels = [];
+    for (let i = 0; i < nBins; i++) diffLabels.push((minD + i * binW).toFixed(0));
+    for (const v of diffs) {
+      const idx = Math.min(Math.floor((v - minD) / binW), nBins - 1);
+      if (idx >= 0) counts[idx]++;
+    }
+    mkChart('chart-step-diff-dist', {
+      type: 'bar',
+      data: { labels: diffLabels, datasets: [{
+        data: counts,
+        backgroundColor: counts.map((_, i) => {
+          const mid = minD + (i + 0.5) * binW;
+          return mid < 0 ? '#cc0000' : mid > 0 ? '#0000cc' : '#000000';
+        }),
+        borderWidth: 0,
+      }] },
+      options: {
+        responsive: true, maintainAspectRatio: false, animation: { duration: 400 },
+        plugins: { legend: { display: false }, tooltip: {
+          backgroundColor: '#000000', bodyFont: { family: 'Courier New', size: 11 }, padding: 8,
+          callbacks: { title: ctx => `Δ ≈ ${ctx[0].label}`, label: ctx => `Count: ${ctx.raw}` },
+        }},
+        scales: {
+          x: { grid: { display: false }, ticks: { color: '#666666', font: { family: 'Courier New', size: 9 } }, border: { color: '#000000' } },
+          y: { grid: { color: 'rgba(0,0,0,0.08)' }, ticks: { color: '#666666', font: { family: 'Courier New', size: 9 } }, border: { color: '#000000' } },
+        },
+      },
+    });
+  }
+
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   FILTERS + SORT
+   ════════════════════════════════════════════════════════════════════ */
+function populateRepoFilter(repos) {
+  const sel = document.getElementById('repo-filter');
+  repos.forEach(r => {
+    const opt = document.createElement('option');
+    opt.value = r; opt.textContent = r;
+    sel.appendChild(opt);
+  });
+}
+
+function toggleChip(key) {
+  if (activeChips.has(key)) activeChips.delete(key);
+  else activeChips.add(key);
+  document.getElementById(`chip-${key}`).classList.toggle('active', activeChips.has(key));
+  applyFilters();
+}
+
+function applyFilters() {
+  const search   = document.getElementById('search-input').value.toLowerCase();
+  const repo     = document.getElementById('repo-filter').value;
+  const sort     = document.getElementById('sort-select').value;
+
+  let prs = allPRs.filter(p => {
+    if (search && !(
+      (p.title || '').toLowerCase().includes(search) ||
+      (p.repository || '').toLowerCase().includes(search)
+    )) return false;
+    if (repo && p.repository !== repo) return false;
+    if (activeChips.has('pred')   && !p.has_prediction)   return false;
+    if (activeChips.has('gt')     && !p.has_ground_truth)  return false;
+    if (activeChips.has('scored') && !p.has_score)         return false;
+    return true;
+  });
+
+  const [field, dir] = sort.split('-');
+  prs = prs.sort((a, b) => {
+    let av = a[field], bv = b[field];
+    if (field === 'date') { av = a.pr_date; bv = b.pr_date; }
+    if (av === null || av === undefined) return 1;
+    if (bv === null || bv === undefined) return -1;
+    if (typeof av === 'string') return dir === 'asc' ? av.localeCompare(bv) : bv.localeCompare(av);
+    return dir === 'asc' ? av - bv : bv - av;
+  });
+
+  document.getElementById('results-count').textContent = `${prs.length} results`;
+  renderPRGrid(prs);
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   PR GRID
+   ════════════════════════════════════════════════════════════════════ */
+function renderPRGrid(prs) {
+  const grid = document.getElementById('pr-grid');
+  if (!prs.length) {
+    grid.innerHTML = '<div class="state-msg">No pull requests match your filters.</div>';
+    return;
+  }
+
+  grid.innerHTML = prs.map((p, i) => {
+    const ff1   = p.functions_f1;
+    const f1    = p.files_f1;
+    const sem   = p.semantic;
+    const color = scoreColor(ff1 ?? f1);
+    const unevaluated = !p.has_score;
+
+    const badges = [
+      p.has_ground_truth ? '<span class="badge badge-gt">Ground Truth</span>'      : '<span class="badge badge-miss">No GT</span>',
+      p.has_prediction   ? '<span class="badge badge-pred">Prediction</span>'       : '<span class="badge badge-miss">No Pred</span>',
+    ].join('');
+
+    return `
+    <div class="pr-card glass glass-border${unevaluated ? ' not-evaluated' : ''}"
+         role="button" tabindex="0"
+         onclick="openDetail('${escHtml(p.id)}')"
+         onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openDetail('${escHtml(p.id)}')}"
+         >
+      <div class="card-score-stripe" style="background:${scoreGradient(ff1 ?? f1)}"></div>
+      <div class="card-body">
+        <div class="card-top">
+          <span class="card-repo">${escHtml(p.repository || p.repo_dir)}</span>
+          <span class="card-num">#${p.pr_num || '—'}</span>
+        </div>
+        <p class="card-title">${escHtml(p.title || 'Untitled')}</p>
+        <div class="card-metrics">
+          <div class="card-metric">
+            <span class="card-metric-val ${scoreClass(ff1)}">${ff1 !== null ? fmt(ff1) : '—'}</span>
+            <span class="card-metric-lbl">Funcs F1</span>
+          </div>
+          <div class="card-metric">
+            <span class="card-metric-val ${scoreClass(f1)}">${f1 !== null ? fmt(f1) : '—'}</span>
+            <span class="card-metric-lbl">Files F1</span>
+          </div>
+          <div class="card-metric">
+            <span class="card-metric-val ${scoreClass(sem)}">${sem !== null ? fmt(sem) : '—'}</span>
+            <span class="card-metric-lbl">Semantic</span>
+          </div>
+          <div class="card-metric">
+            <span class="card-metric-val">${fmtK(p.total_tokens)}</span>
+            <span class="card-metric-lbl">Tokens</span>
+          </div>
+        </div>
+        <div class="card-badges">${badges}
+          <span style="margin-left:auto;font-size:0.62rem;color:var(--text-3)">${ago(p.pr_date)}</span>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+
+/* ════════════════════════════════════════════════════════════════════
+   DETAIL PANEL
+   ════════════════════════════════════════════════════════════════════ */
+async function openDetail(id) {
+  document.getElementById('panel-title').textContent = 'Loading…';
+  document.getElementById('panel-metrics-row').innerHTML = '';
+  document.getElementById('tab-overview').innerHTML    = '';
+  document.getElementById('tab-plan').innerHTML        = '';
+  document.getElementById('tab-logs').innerHTML        = '';
+  document.getElementById('panel-agent-tools').innerHTML = '';
+
+  document.getElementById('overlay').classList.add('active');
+  document.getElementById('detail-panel').classList.add('open');
+  switchTab('overview');
+
+  try {
+    const res = await fetch(`/api/pr/${encodeURIComponent(id).replace('%2F', '/')}`);
+    const d   = await res.json();
+    renderDetail(id, d);
+  } catch (e) {
+    document.getElementById('panel-title').textContent = '⚠️ Failed to load PR data';
+  }
+}
+
+function closeDetail() {
+  document.getElementById('overlay').classList.remove('active');
+  document.getElementById('detail-panel').classList.remove('open');
+}
+
+function switchTab(name) {
+  document.querySelectorAll('.tab-btn').forEach((btn, i) => {
+    const names = ['overview','plan','logs'];
+    btn.classList.toggle('active', names[i] === name);
+  });
+  document.querySelectorAll('.tab-pane').forEach(p => {
+    p.classList.toggle('active', p.id === `tab-${name}`);
+  });
+}
+
+/* ─── main render ────────────────────────────────────────────────── */
+function renderDetail(id, d) {
+  const { data, score, tokens, ground_truth, prediction, session_log } = d;
+  const f1 = score?.functions?.f1 ?? score?.files?.f1 ?? null;
+
+  // header
+  document.getElementById('panel-score-stripe').style.background = scoreGradient(f1);
+  document.getElementById('panel-repo').textContent = data?.repository || id.split('/')[0];
+  document.getElementById('panel-num').textContent  = `#${data?.pull_request_number || '—'}`;
+  const urlEl = document.getElementById('panel-url');
+  if (data?.pull_request_url) urlEl.href = data.pull_request_url;
+  else urlEl.style.display = 'none';
+  document.getElementById('panel-title').textContent = data?.title || 'Untitled';
+
+  // mini metrics
+  const metrics = [
+    { label: 'Funcs F1',   val: fmt(score?.functions?.f1), cls: scoreClass(score?.functions?.f1) },
+    { label: 'Files F1',   val: fmt(score?.files?.f1),     cls: scoreClass(score?.files?.f1) },
+    { label: 'Semantic',   val: fmt(score?.semantic?.overall_semantic_score), cls: scoreClass(score?.semantic?.overall_semantic_score) },
+    { label: 'Sum. Sim.',  val: fmt(score?.semantic?.summary_similarity),     cls: scoreClass(score?.semantic?.summary_similarity) },
+    { label: 'Tokens',     val: fmtK(tokens?.total_tokens) },
+    { label: 'Steps GT',   val: score?.steps?.actual_steps    ?? '—' },
+    { label: 'Steps Pred', val: score?.steps?.predicted_steps ?? '—' },
+  ];
+  document.getElementById('panel-metrics-row').innerHTML = metrics.map(m =>
+    `<div class="panel-metric">
+      <span class="panel-metric-val ${m.cls || ''}">${m.val}</span>
+      <span class="panel-metric-lbl">${m.label}</span>
+    </div>`
+  ).join('');
+
+  // per-agent tool call counts row
+  const agentToolsEl = document.getElementById('panel-agent-tools');
+  const agentsWithTools = (session_log?.agents || []).filter(a => a.tool_calls !== undefined);
+  if (agentsWithTools.length) {
+    agentToolsEl.innerHTML = agentsWithTools.map(a =>
+      `<div class="pat-item">
+        <span class="pat-agent">${escHtml(a.name)}</span>
+        <span class="pat-count">${(a.tool_calls || []).length}</span>
+        <span class="pat-lbl">tool calls</span>
+      </div>`
+    ).join('');
+  }
+
+  renderTabOverview(data, score, tokens, session_log);
+  renderTabPlan(ground_truth, prediction, score);
+  renderTabLogs(tokens, session_log);
+}
+
+/* ─── tab: overview ──────────────────────────────────────────────── */
+function renderTabOverview(data, score, tokens, sessionLog) {
+  const body   = data?.body || '_No description._';
+  const errors = score?.error ? `<div style="color:var(--rose);font-size:0.78rem;padding:8px 14px;background:rgba(248,113,113,0.07);border-radius:8px;border:1px solid rgba(248,113,113,0.2)">⚠️ Eval error: ${escHtml(score.error)}</div>` : '';
+
+  // build name → tool call count from session_log
+  const toolCallMap = {};
+  (sessionLog?.agents || []).forEach(a => {
+    toolCallMap[a.name] = (a.tool_calls || []).length;
+  });
+
+  // token table
+  let tokenTable = '<div style="color:var(--text-3);font-size:0.8rem">No token data available.</div>';
+  if (tokens?.agents?.length) {
+    const maxTok = Math.max(...tokens.agents.map(a => a.total_tokens));
+    const rows = tokens.agents.map(a => {
+      const pct      = maxTok > 0 ? (a.total_tokens / maxTok * 100).toFixed(1) : 0;
+      const toolCalls = toolCallMap[a.agent_name] ?? '—';
+      return `<tr>
+        <td class="agent-name">${escHtml(a.agent_name)}</td>
+        <td class="num">${fmtK(a.input_tokens)}</td>
+        <td class="num">${fmtK(a.output_tokens)}</td>
+        <td class="num">${fmtK(a.total_tokens)}</td>
+        <td class="num">${a.requests}</td>
+        <td class="num">${toolCalls}</td>
+        <td class="token-bar-cell">
+          <div class="token-bar-wrap"><div class="token-bar-fill" style="width:${pct}%"></div></div>
+        </td>
+      </tr>`;
+    }).join('');
+    tokenTable = `<table class="token-table">
+      <thead><tr><th>Agent</th><th style="text-align:right">Input</th><th style="text-align:right">Output</th><th style="text-align:right">Total</th><th style="text-align:right">Reqs</th><th style="text-align:right">Tools</th><th></th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    <div style="margin-top:8px;font-size:0.72rem;color:var(--text-3);font-family:'JetBrains Mono',monospace">
+      Total: ${fmtK(tokens.total_tokens)} tokens · ${tokens.total_requests} requests · Model: ${escHtml(tokens.model_name || '—')}
+    </div>`;
+  }
+
+  // files modified
+  const filesSource = score?.has_ground_truth !== false
+    ? (data?.diff_between_base_and_last || [])
+    : [];
+  let filesList = '';
+  if (filesSource.length) {
+    filesList = `<div class="files-list">${filesSource.slice(0,20).map(f =>
+      `<div class="file-item">
+        <span class="file-name">${escHtml(f.filename)}</span>
+        <span class="file-status status-${f.status || 'modified'}">${f.status || 'modified'}</span>
+        <span style="font-size:0.68rem;color:var(--emerald);font-family:'JetBrains Mono',monospace">+${f.additions||0}</span>
+        <span style="font-size:0.68rem;color:var(--rose);font-family:'JetBrains Mono',monospace">-${f.deletions||0}</span>
+      </div>`
+    ).join('')}</div>`;
+  } else {
+    filesList = '<div style="color:var(--text-3);font-size:0.8rem">No diff data available.</div>';
+  }
+
+  document.getElementById('tab-overview').innerHTML = `
+    ${errors ? `<div style="color:var(--rose);font-size:0.78rem;padding:10px 14px;border:1px solid var(--rose);margin-bottom:0">${escHtml(score?.error || 'Evaluation error')}</div>` : ''}
+    <div class="ov-section">
+      <div class="ov-section-title">PR Description</div>
+      <div class="ov-section-body"><div class="ov-body-text">${escHtml(body)}</div></div>
+    </div>
+    <div class="ov-section">
+      <div class="ov-section-title">Agent Token Usage</div>
+      <div class="ov-section-body">${tokenTable}</div>
+    </div>
+    <div class="ov-section">
+      <div class="ov-section-title">Files Changed</div>
+      <div class="ov-section-body">${filesList}</div>
+    </div>
+  `;
+}
+
+/* ─── tab: step plan comparison ──────────────────────────────────── */
+function renderTabPlan(gt, pred, score) {
+  if (!gt && !pred) {
+    document.getElementById('tab-plan').innerHTML =
+      '<div class="state-msg">No ground truth or prediction data available.</div>';
+    return;
+  }
+
+  // build match lookup: gt_idx → similarity, pred_idx → similarity
+  const matchMap = {};
+  (score?.semantic?.step_matches || []).forEach(m => {
+    matchMap[`gt_${m.gt_idx}`]   = m.similarity;
+    matchMap[`pred_${m.pred_idx}`] = m.similarity;
+  });
+
+  function renderStep(step, idx, side) {
+    const key = `${side}_${idx}`;
+    const sim = matchMap[key];
+    const isMatched = sim !== undefined;
+    return `<div class="step-card ${isMatched ? `matched-${side}` : ''}">
+      <div class="step-num">
+        Step ${idx + 1}
+        ${isMatched ? `<span class="step-similarity">sim ${fmt(sim)}</span>` : `<span class="step-no-match">no match</span>`}
+      </div>
+      <div class="step-op">${escHtml(step.operation || '')}</div>
+      <div class="step-meta">
+        <div class="step-meta-row"><span class="step-meta-key">File</span><span class="step-meta-val">${escHtml(step.file_to_modify || '—')}</span></div>
+        <div class="step-meta-row"><span class="step-meta-key">Function</span><span class="step-meta-val">${escHtml(step.function_to_modify || '—')}</span></div>
+        ${step.reason ? `<div class="step-meta-row"><span class="step-meta-key">Reason</span><span class="step-meta-val" style="color:var(--text-3)">${escHtml(step.reason)}</span></div>` : ''}
+      </div>
+    </div>`;
+  }
+
+  const gtSteps   = gt?.step_plan?.steps   || [];
+  const predSteps = pred?.step_plan?.steps || [];
+
+  const semScore  = score?.semantic?.overall_semantic_score;
+  const semBadge  = semScore !== null && semScore !== undefined
+    ? `<span style="font-family:'JetBrains Mono',monospace;font-size:0.75rem;color:${scoreColor(semScore)}">${fmt(semScore)}</span>`
+    : '';
+
+  document.getElementById('tab-plan').innerHTML = `
+    <div style="margin-bottom:16px;display:flex;align-items:center;gap:10px">
+      <span style="font-size:0.72rem;color:var(--text-3)">Overall semantic score</span>
+      ${semBadge}
+    </div>
+    <div class="plan-compare">
+      <div>
+        <div class="plan-col-header">
+          <div class="plan-col-dot gt"></div>
+          Ground Truth <span style="color:var(--text-3);margin-left:4px">(${gtSteps.length} steps)</span>
+        </div>
+        ${gt?.step_plan?.summary ? `<div class="plan-summary-box gt">${escHtml(gt.step_plan.summary)}</div>` : ''}
+        ${gtSteps.map((s,i) => renderStep(s, i, 'gt')).join('') || '<div style="color:var(--text-3);font-size:0.8rem">No steps.</div>'}
+      </div>
+      <div>
+        <div class="plan-col-header">
+          <div class="plan-col-dot pred"></div>
+          Prediction <span style="color:var(--text-3);margin-left:4px">(${predSteps.length} steps)</span>
+        </div>
+        ${pred?.step_plan?.summary ? `<div class="plan-summary-box pred">${escHtml(pred.step_plan.summary)}</div>` : ''}
+        ${predSteps.map((s,i) => renderStep(s, i, 'pred')).join('') || '<div style="color:var(--text-3);font-size:0.8rem">No steps.</div>'}
+      </div>
+    </div>
+  `;
+}
+
+/* ─── tab: agent logs ────────────────────────────────────────────── */
+function renderTabLogs(tokens, sessionLog) {
+  const container = document.getElementById('tab-logs');
+
+  // prefer session_log if available
+  if (sessionLog?.agents?.length) {
+    const agentColors = ['var(--cyan)','var(--cream)','var(--emerald)','var(--amber)','var(--rose)'];
+    const items = sessionLog.agents.map((agent, i) => {
+      const color = agentColors[i % agentColors.length];
+      const toolCallsHtml = (agent.tool_calls || []).map((tc, ti) => {
+        const tcId = `tc-${i}-${ti}`;
+        const argsStr = typeof tc.arguments === 'object' ? JSON.stringify(tc.arguments, null, 2) : String(tc.arguments || '');
+        const resStr  = String(tc.result || '').slice(0, 4000);
+        return `<div class="tool-call" id="${tcId}">
+          <div class="tool-call-header" onclick="toggleToolCall('${tcId}')">
+            <span class="tool-call-icon">⚙</span>
+            <span class="tool-call-name">${escHtml(tc.tool_name)}</span>
+            <span class="tool-call-duration">${tc.duration_seconds?.toFixed(2) || ''}s</span>
+            <span class="tool-call-chevron">▾</span>
+          </div>
+          <div class="tool-call-body">
+            <div class="tool-call-section">
+              <div class="tool-call-section-title">Arguments</div>
+              <pre class="tool-call-code">${escHtml(argsStr)}</pre>
+            </div>
+            <div class="tool-call-section">
+              <div class="tool-call-section-title">Result ${tc.truncated ? '(truncated)' : ''}</div>
+              <pre class="tool-call-code">${escHtml(resStr)}</pre>
+            </div>
+          </div>
+        </div>`;
+      }).join('');
+
+      const spId = `sp-${i}`;
+      const ipId = `ip-${i}`;
+      const systemPromptHtml = agent.system_prompt ? `
+        <div class="prompt-block" id="${spId}">
+          <div class="prompt-block-header" onclick="togglePromptBlock('${spId}')">
+            <span class="prompt-block-label">System Prompt</span>
+            <span class="prompt-block-chars">${(agent.system_prompt_chars || agent.system_prompt.length).toLocaleString()} chars</span>
+            <span class="prompt-block-chevron">▾</span>
+          </div>
+          <div class="prompt-block-body">
+            <pre class="tool-call-code">${escHtml(agent.system_prompt)}</pre>
+          </div>
+        </div>` : '';
+      const inputPromptHtml = agent.input_prompt ? `
+        <div class="prompt-block" id="${ipId}">
+          <div class="prompt-block-header" onclick="togglePromptBlock('${ipId}')">
+            <span class="prompt-block-label">Agent Prompt</span>
+            <span class="prompt-block-chars">${(agent.input_prompt_chars || agent.input_prompt.length).toLocaleString()} chars</span>
+            <span class="prompt-block-chevron">▾</span>
+          </div>
+          <div class="prompt-block-body">
+            <pre class="tool-call-code">${escHtml(agent.input_prompt)}</pre>
+          </div>
+        </div>` : '';
+
+      const abId = `ab-${i}`;
+      return `<div class="agent-block">
+        <div class="agent-timeline-line">
+          <div class="agent-timeline-dot" style="background:${color};border-color:var(--bg)"></div>
+          <div class="agent-timeline-connector"></div>
+        </div>
+        <div class="agent-content">
+          <div class="agent-name-row" onclick="toggleAgent('${abId}', this.querySelector('.agent-collapse-btn'))">
+            <span class="agent-name" style="color:${color}">${escHtml(agent.name)}</span>
+            <span class="agent-phase-badge">Phase ${agent.phase ?? i+1}</span>
+            ${agent.duration_seconds ? `<span style="font-size:0.68rem;color:var(--text-3);font-family:'Courier New',monospace">${agent.duration_seconds.toFixed(1)}s</span>` : ''}
+            <button class="agent-collapse-btn" title="Collapse agent">▾</button>
+          </div>
+          <div id="${abId}">
+            <div class="agent-token-row">
+              <span class="agent-token-pill pill-in">↓ ${fmtK(agent.token_usage?.input_tokens)} in</span>
+              <span class="agent-token-pill pill-out">↑ ${fmtK(agent.token_usage?.output_tokens)} out</span>
+              <span class="agent-token-pill pill-req">${agent.token_usage?.requests || 0} req</span>
+            </div>
+            ${systemPromptHtml}
+            ${inputPromptHtml}
+            ${agent.tool_calls?.length ? `<div class="tool-calls">${toolCallsHtml}</div>` : ''}
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+
+    container.innerHTML = `<div class="agent-timeline">${items}</div>`;
+    return;
+  }
+
+  // fallback: token_usage.json timeline
+  if (tokens?.agents?.length) {
+    const agentColors = ['var(--cyan)','var(--cream)','var(--emerald)','var(--amber)','var(--rose)'];
+    const items = tokens.agents.map((agent, i) => {
+      const color = agentColors[i % agentColors.length];
+      return `<div class="agent-block">
+        <div class="agent-timeline-line">
+          <div class="agent-timeline-dot" style="background:${color};border-color:var(--bg)"></div>
+          <div class="agent-timeline-connector"></div>
+        </div>
+        <div class="agent-content">
+          <div class="agent-name-row">
+            <span class="agent-name" style="color:${color}">${escHtml(agent.agent_name)}</span>
+          </div>
+          <div class="agent-token-row">
+            <span class="agent-token-pill pill-in">↓ ${fmtK(agent.input_tokens)} in</span>
+            <span class="agent-token-pill pill-out">↑ ${fmtK(agent.output_tokens)} out</span>
+            <span class="agent-token-pill pill-req">${agent.requests} req</span>
+          </div>
+          <div style="font-size:0.75rem;color:var(--text-3);margin-top:4px">
+            Total: ${fmtK(agent.total_tokens)} tokens
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+
+    container.innerHTML = `
+      <div style="margin-bottom:20px;padding:12px 16px;background:rgba(56,189,248,0.05);border:1px solid rgba(56,189,248,0.15);border-radius:10px;font-size:0.78rem;color:var(--text-2)">
+        ℹ Session log not available for this PR. Showing token usage summary.
+        <br><small style="color:var(--text-3)">Run with a newer version of batch_predict.py to capture full logs.</small>
+      </div>
+      <div class="agent-timeline">${items}</div>
+    `;
+    return;
+  }
+
+  container.innerHTML = `
+    <div class="no-logs-msg">
+      <div class="no-logs-icon">📭</div>
+      No execution logs available for this PR.
+    </div>`;
+}
+
+function toggleToolCall(id) {
+  document.getElementById(id).classList.toggle('expanded');
+}
+
+function togglePromptBlock(id) {
+  document.getElementById(id).classList.toggle('expanded');
+}
+
+function toggleAgent(bodyId, btn) {
+  const el = document.getElementById(bodyId);
+  const collapsed = el.style.display === 'none';
+  el.style.display = collapsed ? '' : 'none';
+  btn.textContent = collapsed ? '▾' : '▸';
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   KEYBOARD
+   ════════════════════════════════════════════════════════════════════ */
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeDetail();
+});
+
+/* ════════════════════════════════════════════════════════════════════
+   BACKGROUND ANIMATION — drifting grid of small squares
+   ════════════════════════════════════════════════════════════════════ */
+(function bgAnim() {
+  const canvas = document.getElementById('bg-canvas');
+  const ctx = canvas.getContext('2d');
+  const SPACING = 48;
+  const SIZE    = 3;
+  let W, H, cols, rows, t = 0;
+  const dots = [];
+
+  function resize() {
+    W = canvas.width  = window.innerWidth;
+    H = canvas.height = window.innerHeight;
+    cols = Math.ceil(W / SPACING) + 2;
+    rows = Math.ceil(H / SPACING) + 2;
+    dots.length = 0;
+    for (let c = 0; c < cols; c++) {
+      for (let r = 0; r < rows; r++) {
+        dots.push({
+          bx: c * SPACING,
+          by: r * SPACING,
+          phase: Math.random() * Math.PI * 2,
+          speed: 0.3 + Math.random() * 0.4,
+          amp:   4 + Math.random() * 6,
+        });
+      }
+    }
+  }
+
+  function draw(ts) {
+    t = ts * 0.001;
+    ctx.clearRect(0, 0, W, H);
+    ctx.fillStyle = '#000000';
+    for (const d of dots) {
+      const x = d.bx + Math.sin(t * d.speed + d.phase) * d.amp;
+      const y = d.by + Math.cos(t * d.speed * 0.7 + d.phase) * d.amp;
+      if (x < -SPACING || x > W + SPACING || y < -SPACING || y > H + SPACING) continue;
+      ctx.fillRect(x - SIZE / 2, y - SIZE / 2, SIZE, SIZE);
+    }
+    requestAnimationFrame(draw);
+  }
+
+  window.addEventListener('resize', resize);
+  resize();
+  requestAnimationFrame(draw);
+})();
+
+/* ─── boot ───────────────────────────────────────────────────────── */
+init();
+</script>
+</body>
+</html>
