@@ -9,6 +9,7 @@ Visit: http://localhost:2002
 """
 
 import json
+import os
 import statistics
 import time
 from collections import defaultdict
@@ -19,10 +20,10 @@ from flask import Flask, abort, jsonify, redirect, render_template_string, reque
 DATASET = Path(__file__).parent.parent / "PR4Code" / "dataset_pr_commits_py"
 STATIC = Path(__file__).parent / "static"
 
-_PASSWORD = "RapidVienn4gain"
+_PASSWORD = os.environ.get("DASHBOARD_PASSWORD", "RapidVienn4gain")
 
 app = Flask(__name__, static_folder=str(STATIC))
-app.secret_key = "pr4code-dashboard-secret-f7a2"
+app.secret_key = os.environ.get("DASHBOARD_SECRET_KEY", "pr4code-dashboard-secret-f7a2")
 
 
 _LOGIN_HTML = """
