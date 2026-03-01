@@ -14,12 +14,70 @@ import time
 from collections import defaultdict
 from pathlib import Path
 
-from flask import Flask, abort, jsonify, send_from_directory
+from flask import Flask, abort, jsonify, redirect, render_template_string, request, send_from_directory, session, url_for
 
 DATASET = Path(__file__).parent.parent / "PR4Code" / "dataset_pr_commits_py"
 STATIC = Path(__file__).parent / "static"
 
+_PASSWORD = "RapidVienn4gain"
+
 app = Flask(__name__, static_folder=str(STATIC))
+app.secret_key = "pr4code-dashboard-secret-f7a2"
+
+
+_LOGIN_HTML = """
+<!doctype html>
+<html>
+<head>
+  <title>Dashboard — Login</title>
+  <style>
+    body { font-family: sans-serif; display: flex; justify-content: center;
+           align-items: center; height: 100vh; margin: 0; background: #0f0f0f; color: #eee; }
+    form { display: flex; flex-direction: column; gap: 12px; min-width: 280px; }
+    h2   { margin: 0 0 8px; }
+    input[type=password] { padding: 10px; border: 1px solid #444; border-radius: 6px;
+                           background: #1e1e1e; color: #eee; font-size: 15px; }
+    button { padding: 10px; background: #4f8ef7; border: none; border-radius: 6px;
+             color: #fff; font-size: 15px; cursor: pointer; }
+    button:hover { background: #3a7bd5; }
+    .err { color: #f77; font-size: 14px; }
+  </style>
+</head>
+<body>
+  <form method="post">
+    <h2>PR4Code Dashboard</h2>
+    {% if error %}<p class="err">Incorrect password.</p>{% endif %}
+    <input type="password" name="password" placeholder="Password" autofocus>
+    <button type="submit">Enter</button>
+  </form>
+</body>
+</html>
+"""
+
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    error = False
+    if request.method == "POST":
+        if request.form.get("password") == _PASSWORD:
+            session["authenticated"] = True
+            return redirect(url_for("index"))
+        error = True
+    return render_template_string(_LOGIN_HTML, error=error)
+
+
+@app.route("/logout")
+def logout():
+    session.clear()
+    return redirect(url_for("login"))
+
+
+@app.before_request
+def require_auth():
+    if request.endpoint in ("login", "static"):
+        return
+    if not session.get("authenticated"):
+        return redirect(url_for("login"))
 
 
 # ─── helpers ──────────────────────────────────────────────────────────────────
