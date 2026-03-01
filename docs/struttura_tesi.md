@@ -18,7 +18,7 @@
         3. llm+dp
     3. limiti dei sistemi di planning ad oggi
 
-
+## DA RIVEDERE:
 1. Design esperimento
     1. Research questions
         renderle più domande e meno discorsive
