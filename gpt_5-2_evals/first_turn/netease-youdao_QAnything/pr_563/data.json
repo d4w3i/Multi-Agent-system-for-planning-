@@ -1,0 +1,85 @@
+{
+    "repository": "netease-youdao/QAnything",
+    "pull_request_number": 563,
+    "title": "\u4fee\u590d\u9519\u8bef\u5c06chunk_size\u66f4\u65b0\u4e3achunks_number\u7684\u95ee\u9898",
+    "body": "KnowledgeBaseManager\u7c7b\u4e2d\uff0c\u66f4\u65b0File\u8868\u7684chunk_number\u5b57\u6bb5\u4f7f\u7528\u7684\u65b9\u6cd5update_chunks_number\u5b58\u5728sql\u8bed\u53e5\u9519\u8bef\u3002\r\n\u5b9e\u9645\u4e3a\"UPDATE File SET chunk_size = %s WHERE file_id = %s\"\u3002\u8fd9\u4f1a\u9519\u8bef\u5730\u4fee\u6539chunk_size\uff0c\u5bfc\u81f4chunk_size\u548cchunks_number\u503c\u76f8\u540c\u3002\r\n![image](https://github.com/user-attachments/assets/e0f5ffb4-1b4b-4dc7-95c1-f1d8af871685)\r\n\r\n\u540c\u65f6\uff0c\u5728\u6587\u4ef6\u63d2\u5165\u5411\u91cf\u6570\u636e\u5e93\u7ed3\u675f\u540e\uff0c\u539f\u4ee3\u7801\u4f1a\u6709\u9488\u5bf9chunks_number\u7b49\u4fe1\u606f\u7684\u7edf\u4e00\u4fee\u6539\u3002\r\n![image](https://github.com/user-attachments/assets/b11b5b82-5ae1-47e6-b1c6-68e5c83ea667)\r\n\r\n\u6240\u4ee5\u53ef\u4ee5\u5c06insert_files_server.py\u4e2d\uff0cprocess_data\u4e2d\u5bf9chunks_number\u505a\u7684\u66f4\u65b0\u8bed\u53e5\uff1amysql_client.update_chunks_number(local_file.file_id, chunks_number)\u8fdb\u884c\u5220\u9664\u3002\r\n\u4fee\u6539\u540e\uff0c\u6587\u4ef6\u4e0a\u4f20\u6210\u529f\u540echunks_number\u548cchunk_size\u7684\u503c\u5b8c\u5168\u6b63\u786e\u3002\r\n![image](https://github.com/user-attachments/assets/c42b3537-5775-43a9-8d43-750525e690a4)\r\n",
+    "pr_date": "2024-10-29T11:04:46Z",
+    "source_branch": "fix-update_chunks_number",
+    "language": "en",
+    "keywords_detected": {
+        "branch": [
+            "fix"
+        ],
+        "requirement": [],
+        "body": [
+            "update"
+        ]
+    },
+    "number_of_links_in_pr": 6,
+    "base_sha": "42cc3f38acd3553f757383388e16416796844301",
+    "last_commit_sha": "d0053857a0ddfc0e8e8d23e831db60ffb0157bbb",
+    "diff_between_base_and_last": [
+        {
+            "sha": "cba72ed54406f990cca971130ae121d6b7dd499c",
+            "filename": "qanything_kernel/connector/database/mysql/mysql_client.py",
+            "status": "modified",
+            "additions": 1,
+            "deletions": 1,
+            "changes": 2,
+            "blob_url": "https://github.com/netease-youdao/QAnything/blob/d0053857a0ddfc0e8e8d23e831db60ffb0157bbb/qanything_kernel%2Fconnector%2Fdatabase%2Fmysql%2Fmysql_client.py",
+            "raw_url": "https://github.com/netease-youdao/QAnything/raw/d0053857a0ddfc0e8e8d23e831db60ffb0157bbb/qanything_kernel%2Fconnector%2Fdatabase%2Fmysql%2Fmysql_client.py",
+            "contents_url": "https://api.github.com/repos/netease-youdao/QAnything/contents/qanything_kernel%2Fconnector%2Fdatabase%2Fmysql%2Fmysql_client.py?ref=d0053857a0ddfc0e8e8d23e831db60ffb0157bbb",
+            "patch": "@@ -460,7 +460,7 @@ def update_content_length(self, file_id, content_length):\n \n     #  \u66f4\u65b0file\u4e2d\u7684chunk_number\n     def update_chunks_number(self, file_id, chunks_number):\n-        query = \"UPDATE File SET chunk_size = %s WHERE file_id = %s\"\n+        query = \"UPDATE File SET chunks_number = %s WHERE file_id = %s\"\n         self.execute_query_(query, (chunks_number, file_id), commit=True)\n \n     def update_file_status(self, file_id, status):"
+        },
+        {
+            "sha": "710c34cd6c0bd1e7d32f9e4947ecc7cd8ceddffe",
+            "filename": "qanything_kernel/dependent_server/insert_files_serve/insert_files_server.py",
+            "status": "modified",
+            "additions": 0,
+            "deletions": 1,
+            "changes": 1,
+            "blob_url": "https://github.com/netease-youdao/QAnything/blob/d0053857a0ddfc0e8e8d23e831db60ffb0157bbb/qanything_kernel%2Fdependent_server%2Finsert_files_serve%2Finsert_files_server.py",
+            "raw_url": "https://github.com/netease-youdao/QAnything/raw/d0053857a0ddfc0e8e8d23e831db60ffb0157bbb/qanything_kernel%2Fdependent_server%2Finsert_files_serve%2Finsert_files_server.py",
+            "contents_url": "https://api.github.com/repos/netease-youdao/QAnything/contents/qanything_kernel%2Fdependent_server%2Finsert_files_serve%2Finsert_files_server.py?ref=d0053857a0ddfc0e8e8d23e831db60ffb0157bbb",
+            "patch": "@@ -111,7 +111,6 @@ async def process_data(retriever, milvus_kb, mysql_client, file_info, time_recor\n         insert_time = time.perf_counter()\n         time_record.update(insert_time_record)\n         insert_logger.info(f'insert time: {insert_time - start}')\n-        mysql_client.update_chunks_number(local_file.file_id, chunks_number)\n     except asyncio.TimeoutError:\n         insert_logger.error(f'Timeout: milvus insert took longer than {insert_timeout_seconds} seconds')\n         expr = f'file_id == \\\"{local_file.file_id}\\\"'"
+        }
+    ],
+    "commits": [
+        {
+            "sha": "d0053857a0ddfc0e8e8d23e831db60ffb0157bbb",
+            "commit_date": "2024-10-29T10:28:23Z",
+            "message": "\u4fee\u590d\u9519\u8bef\u5c06chunk_size\u66f4\u65b0\u4e3achunks_number\u7684\u95ee\u9898",
+            "number_of_links_in_commit": 0,
+            "files_changed_count": 2,
+            "files": [
+                {
+                    "sha": "cba72ed54406f990cca971130ae121d6b7dd499c",
+                    "filename": "qanything_kernel/connector/database/mysql/mysql_client.py",
+                    "status": "modified",
+                    "additions": 1,
+                    "deletions": 1,
+                    "changes": 2,
+                    "blob_url": "https://github.com/netease-youdao/QAnything/blob/d0053857a0ddfc0e8e8d23e831db60ffb0157bbb/qanything_kernel%2Fconnector%2Fdatabase%2Fmysql%2Fmysql_client.py",
+                    "raw_url": "https://github.com/netease-youdao/QAnything/raw/d0053857a0ddfc0e8e8d23e831db60ffb0157bbb/qanything_kernel%2Fconnector%2Fdatabase%2Fmysql%2Fmysql_client.py",
+                    "contents_url": "https://api.github.com/repos/netease-youdao/QAnything/contents/qanything_kernel%2Fconnector%2Fdatabase%2Fmysql%2Fmysql_client.py?ref=d0053857a0ddfc0e8e8d23e831db60ffb0157bbb",
+                    "patch": "@@ -460,7 +460,7 @@ def update_content_length(self, file_id, content_length):\n \n     #  \u66f4\u65b0file\u4e2d\u7684chunk_number\n     def update_chunks_number(self, file_id, chunks_number):\n-        query = \"UPDATE File SET chunk_size = %s WHERE file_id = %s\"\n+        query = \"UPDATE File SET chunks_number = %s WHERE file_id = %s\"\n         self.execute_query_(query, (chunks_number, file_id), commit=True)\n \n     def update_file_status(self, file_id, status):"
+                },
+                {
+                    "sha": "710c34cd6c0bd1e7d32f9e4947ecc7cd8ceddffe",
+                    "filename": "qanything_kernel/dependent_server/insert_files_serve/insert_files_server.py",
+                    "status": "modified",
+                    "additions": 0,
+                    "deletions": 1,
+                    "changes": 1,
+                    "blob_url": "https://github.com/netease-youdao/QAnything/blob/d0053857a0ddfc0e8e8d23e831db60ffb0157bbb/qanything_kernel%2Fdependent_server%2Finsert_files_serve%2Finsert_files_server.py",
+                    "raw_url": "https://github.com/netease-youdao/QAnything/raw/d0053857a0ddfc0e8e8d23e831db60ffb0157bbb/qanything_kernel%2Fdependent_server%2Finsert_files_serve%2Finsert_files_server.py",
+                    "contents_url": "https://api.github.com/repos/netease-youdao/QAnything/contents/qanything_kernel%2Fdependent_server%2Finsert_files_serve%2Finsert_files_server.py?ref=d0053857a0ddfc0e8e8d23e831db60ffb0157bbb",
+                    "patch": "@@ -111,7 +111,6 @@ async def process_data(retriever, milvus_kb, mysql_client, file_info, time_recor\n         insert_time = time.perf_counter()\n         time_record.update(insert_time_record)\n         insert_logger.info(f'insert time: {insert_time - start}')\n-        mysql_client.update_chunks_number(local_file.file_id, chunks_number)\n     except asyncio.TimeoutError:\n         insert_logger.error(f'Timeout: milvus insert took longer than {insert_timeout_seconds} seconds')\n         expr = f'file_id == \\\"{local_file.file_id}\\\"'"
+                }
+            ]
+        }
+    ],
+    "pull_request_url": "https://github.com/netease-youdao/QAnything/pull/563",
+    "commits_url": "https://github.com/netease-youdao/QAnything/pull/563/commits",
+    "files_url": "https://github.com/netease-youdao/QAnything/pull/563/files"
+}

@@ -1,0 +1,84 @@
+{
+    "repository": "skypilot-org/skypilot",
+    "pull_request_number": 6295,
+    "title": "Fix hyperbolic unit test",
+    "body": "The `1x-T4-4-17` instance type were missing in the latest catalog ([commit](https://github.com/skypilot-org/skypilot-catalog/commit/06cb4087855609446f3ce9739d863ffd92cdbcd6)), causing this unit test to fail, as it's explicitly looking for that type.\r\n\r\nThis PR fixes it by switching to a valid instance type which exist on the latest catalog.\r\n\r\nWe probably should still investigate though why `1x-T4-4-17` went missing.\r\n\r\nTested (run the relevant ones):\r\n\r\n- [x] Code formatting: install pre-commit (auto-check on commit) or `bash format.sh`\r\n- [x] Any manual or new tests for this PR (please specify below)\r\n- [ ] All smoke tests: `/smoke-test` (CI) or `pytest tests/test_smoke.py` (local)\r\n- [x] Relevant individual tests: `/smoke-test -k test_name` (CI) or `pytest tests/test_smoke.py::test_name` (local)\r\n- [ ] Backward compatibility: `/quicktest-core` (CI) or `pytest tests/smoke_tests/test_backward_compat.py` (local)\r\n\r\n<!-- CI commands (/-prefixed) can only be triggered by repo members -->\r\n",
+    "pr_date": "2025-07-18T16:43:30Z",
+    "source_branch": "hyperbolic-ci-fix",
+    "language": "en",
+    "keywords_detected": {
+        "branch": [
+            "fix"
+        ],
+        "requirement": [
+            "fix"
+        ],
+        "body": [
+            "fix"
+        ]
+    },
+    "number_of_links_in_pr": 2,
+    "base_sha": "b42961713bb671977b52f6ebab1ac32721183cf8",
+    "last_commit_sha": "f2c6039f74aca49157a7c1c42f68a3aff58e4b22",
+    "diff_between_base_and_last": [
+        {
+            "sha": "2cd6ffebf04fb5df7be3015f24140267171f4fd7",
+            "filename": "tests/unit_tests/test_hyperbolic.py",
+            "status": "modified",
+            "additions": 2,
+            "deletions": 2,
+            "changes": 4,
+            "blob_url": "https://github.com/skypilot-org/skypilot/blob/f2c6039f74aca49157a7c1c42f68a3aff58e4b22/tests%2Funit_tests%2Ftest_hyperbolic.py",
+            "raw_url": "https://github.com/skypilot-org/skypilot/raw/f2c6039f74aca49157a7c1c42f68a3aff58e4b22/tests%2Funit_tests%2Ftest_hyperbolic.py",
+            "contents_url": "https://api.github.com/repos/skypilot-org/skypilot/contents/tests%2Funit_tests%2Ftest_hyperbolic.py?ref=f2c6039f74aca49157a7c1c42f68a3aff58e4b22",
+            "patch": "@@ -53,8 +53,8 @@ def test_hyperbolic_resource_feasibility():\n     \"\"\"Test resource feasibility for Hyperbolic.\"\"\"\n     cloud = hyperbolic.Hyperbolic()\n     resources = Resources(cloud=cloud,\n-                          instance_type='1x-T4-4-17',\n-                          accelerators={'T4': 1})\n+                          instance_type='1x-H100-28-271',\n+                          accelerators={'H100': 1})\n     feasible = cloud._get_feasible_launchable_resources(resources)\n     assert hasattr(feasible, 'resources_list')\n     assert hasattr(feasible, 'fuzzy_candidate_list')"
+        }
+    ],
+    "commits": [
+        {
+            "sha": "4910d9805a90e69e7fe0443fb008ac0d7b177997",
+            "commit_date": "2025-07-18T16:41:40Z",
+            "message": "fix hyperbolic unit test",
+            "number_of_links_in_commit": 0,
+            "files_changed_count": 1,
+            "files": [
+                {
+                    "sha": "39e380b8631d8612414052102d9c553ecfb89fe8",
+                    "filename": "tests/unit_tests/test_hyperbolic.py",
+                    "status": "modified",
+                    "additions": 1,
+                    "deletions": 1,
+                    "changes": 2,
+                    "blob_url": "https://github.com/skypilot-org/skypilot/blob/4910d9805a90e69e7fe0443fb008ac0d7b177997/tests%2Funit_tests%2Ftest_hyperbolic.py",
+                    "raw_url": "https://github.com/skypilot-org/skypilot/raw/4910d9805a90e69e7fe0443fb008ac0d7b177997/tests%2Funit_tests%2Ftest_hyperbolic.py",
+                    "contents_url": "https://api.github.com/repos/skypilot-org/skypilot/contents/tests%2Funit_tests%2Ftest_hyperbolic.py?ref=4910d9805a90e69e7fe0443fb008ac0d7b177997",
+                    "patch": "@@ -53,7 +53,7 @@ def test_hyperbolic_resource_feasibility():\n     \"\"\"Test resource feasibility for Hyperbolic.\"\"\"\n     cloud = hyperbolic.Hyperbolic()\n     resources = Resources(cloud=cloud,\n-                          instance_type='1x-T4-4-17',\n+                          instance_type='1x-H100-28-271',\n                           accelerators={'T4': 1})\n     feasible = cloud._get_feasible_launchable_resources(resources)\n     assert hasattr(feasible, 'resources_list')"
+                }
+            ]
+        },
+        {
+            "sha": "f2c6039f74aca49157a7c1c42f68a3aff58e4b22",
+            "commit_date": "2025-07-18T16:49:14Z",
+            "message": "fix accelerators",
+            "number_of_links_in_commit": 0,
+            "files_changed_count": 1,
+            "files": [
+                {
+                    "sha": "2cd6ffebf04fb5df7be3015f24140267171f4fd7",
+                    "filename": "tests/unit_tests/test_hyperbolic.py",
+                    "status": "modified",
+                    "additions": 1,
+                    "deletions": 1,
+                    "changes": 2,
+                    "blob_url": "https://github.com/skypilot-org/skypilot/blob/f2c6039f74aca49157a7c1c42f68a3aff58e4b22/tests%2Funit_tests%2Ftest_hyperbolic.py",
+                    "raw_url": "https://github.com/skypilot-org/skypilot/raw/f2c6039f74aca49157a7c1c42f68a3aff58e4b22/tests%2Funit_tests%2Ftest_hyperbolic.py",
+                    "contents_url": "https://api.github.com/repos/skypilot-org/skypilot/contents/tests%2Funit_tests%2Ftest_hyperbolic.py?ref=f2c6039f74aca49157a7c1c42f68a3aff58e4b22",
+                    "patch": "@@ -54,7 +54,7 @@ def test_hyperbolic_resource_feasibility():\n     cloud = hyperbolic.Hyperbolic()\n     resources = Resources(cloud=cloud,\n                           instance_type='1x-H100-28-271',\n-                          accelerators={'T4': 1})\n+                          accelerators={'H100': 1})\n     feasible = cloud._get_feasible_launchable_resources(resources)\n     assert hasattr(feasible, 'resources_list')\n     assert hasattr(feasible, 'fuzzy_candidate_list')"
+                }
+            ]
+        }
+    ],
+    "pull_request_url": "https://github.com/skypilot-org/skypilot/pull/6295",
+    "commits_url": "https://github.com/skypilot-org/skypilot/pull/6295/commits",
+    "files_url": "https://github.com/skypilot-org/skypilot/pull/6295/files"
+}

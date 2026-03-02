@@ -17,7 +17,7 @@ from pathlib import Path
 
 from flask import Flask, abort, jsonify, redirect, render_template_string, request, send_from_directory, session, url_for
 
-DATASET = Path(__file__).parent.parent / "PR4Code" / "dataset_pr_commits_py"
+DATASET = Path(__file__).parent.parent / "gpt_5-2_evals" / "first_turn"
 STATIC = Path(__file__).parent / "static"
 
 _PASSWORD = os.environ.get("DASHBOARD_PASSWORD", "RapidVienn4gain")
@@ -367,7 +367,7 @@ def api_pr_detail(pr_id: str):
 
 if __name__ == "__main__":
     print()
-    print("  ◆ PR4Code Evaluation Dashboard")
+    print("  ◆ PR4Code Evaluation Dashboard  [gpt_5-2_evals / first_turn]")
     print(f"  ◆ Dataset : {DATASET}")
     print(f"  ◆ URL     : http://localhost:2002")
     print()

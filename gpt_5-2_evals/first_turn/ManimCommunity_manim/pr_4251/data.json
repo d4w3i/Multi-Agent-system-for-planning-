@@ -1,0 +1,102 @@
+{
+    "repository": "ManimCommunity/manim",
+    "pull_request_number": 4251,
+    "title": "Fix(graph): Allow any Line subclass as edge_type in Graph/DiGraph",
+    "body": "## Overview: What does this pull request change?\r\n<!--changelog-start-->\r\nFix #4250 \r\n<!--changelog-end-->\r\n**More broadly, this fix allows any subclass of `Line` to be used as an `edge_type`** in the `Graph` and `DiGraph`, making the implementation more flexible and extensible.\r\n\r\n## Motivation and Explanation: Why and how do your changes improve the library?\r\nPreviously, the `Graph` and `DiGraph` classes assumed that the `edge_type`  will always have its first two arguments as start and end point.\r\nBut, such is not true for subclasses of `Line`. This change lets user use any subclass of `Line` in `Graph` and `DiGraph`.\r\n\r\n## Changes\r\n\r\n- **Refactored Graph and DiGraph:**\r\n  - Fixed edge handling logic to support all subclasses of `Line`, not just `LabeledLine`.\r\n  - Modified `_add_edge` accordingly.\r\n- **Testing:**\r\n  - Added/updated tests for `LabeledLine` as edge types in `test_graph.py`.\r\n\r\n \r\n\r\n<!-- Thank you again for contributing! Do not modify the lines below, they are for reviewers. -->\r\n## Reviewer Checklist\r\n- [ ] The PR title is descriptive enough for the changelog, and the PR is labeled correctly\r\n- [ ] If applicable: newly added non-private functions and classes have a docstring including a short summary and a PARAMETERS section\r\n- [ ] If applicable: newly added functions and classes are tested\r\n",
+    "pr_date": "2025-05-18T10:30:50Z",
+    "source_branch": "fix/labeledline-graph",
+    "language": "en",
+    "keywords_detected": {
+        "branch": [
+            "fix"
+        ],
+        "requirement": [
+            "fix"
+        ],
+        "body": [
+            "add",
+            "implement",
+            "change",
+            "fix",
+            "update",
+            "support",
+            "refactor"
+        ]
+    },
+    "number_of_links_in_pr": 0,
+    "base_sha": "f304bd93eab1ca450a86eff476c7f51bd81fe1fb",
+    "last_commit_sha": "fddf53ad089cfb410d899acb273ebe5ecbdc2e26",
+    "diff_between_base_and_last": [
+        {
+            "sha": "2879c81a605b8c7cc8a02a7329e80b36e148448c",
+            "filename": "manim/mobject/graph.py",
+            "status": "modified",
+            "additions": 8,
+            "deletions": 5,
+            "changes": 13,
+            "blob_url": "https://github.com/ManimCommunity/manim/blob/fddf53ad089cfb410d899acb273ebe5ecbdc2e26/manim%2Fmobject%2Fgraph.py",
+            "raw_url": "https://github.com/ManimCommunity/manim/raw/fddf53ad089cfb410d899acb273ebe5ecbdc2e26/manim%2Fmobject%2Fgraph.py",
+            "contents_url": "https://api.github.com/repos/ManimCommunity/manim/contents/manim%2Fmobject%2Fgraph.py?ref=fddf53ad089cfb410d899acb273ebe5ecbdc2e26",
+            "patch": "@@ -1035,7 +1035,10 @@ def _add_edge(\n         self._edge_config[(u, v)] = edge_config\n \n         edge_mobject = edge_type(\n-            self[u].get_center(), self[v].get_center(), z_index=-1, **edge_config\n+            start=self[u].get_center(),\n+            end=self[v].get_center(),\n+            z_index=-1,\n+            **edge_config,\n         )\n         self.edges[(u, v)] = edge_mobject\n \n@@ -1543,8 +1546,8 @@ def _populate_edge_dict(\n     ):\n         self.edges = {\n             (u, v): edge_type(\n-                self[u].get_center(),\n-                self[v].get_center(),\n+                start=self[u].get_center(),\n+                end=self[v].get_center(),\n                 z_index=-1,\n                 **self._edge_config[(u, v)],\n             )\n@@ -1750,8 +1753,8 @@ def _populate_edge_dict(\n     ):\n         self.edges = {\n             (u, v): edge_type(\n-                self[u],\n-                self[v],\n+                start=self[u],\n+                end=self[v],\n                 z_index=-1,\n                 **self._edge_config[(u, v)],\n             )"
+        },
+        {
+            "sha": "b76840bc39d460f5c190875d7270fd854aa9fcbe",
+            "filename": "tests/module/mobject/test_graph.py",
+            "status": "modified",
+            "additions": 24,
+            "deletions": 1,
+            "changes": 25,
+            "blob_url": "https://github.com/ManimCommunity/manim/blob/fddf53ad089cfb410d899acb273ebe5ecbdc2e26/tests%2Fmodule%2Fmobject%2Ftest_graph.py",
+            "raw_url": "https://github.com/ManimCommunity/manim/raw/fddf53ad089cfb410d899acb273ebe5ecbdc2e26/tests%2Fmodule%2Fmobject%2Ftest_graph.py",
+            "contents_url": "https://api.github.com/repos/ManimCommunity/manim/contents/tests%2Fmodule%2Fmobject%2Ftest_graph.py?ref=fddf53ad089cfb410d899acb273ebe5ecbdc2e26",
+            "patch": "@@ -2,7 +2,7 @@\n \n import pytest\n \n-from manim import DiGraph, Graph, Scene, Text, tempconfig\n+from manim import DiGraph, Graph, LabeledLine, Scene, Text, tempconfig\n from manim.mobject.graph import _layouts\n \n \n@@ -91,6 +91,29 @@ def test_graph_remove_edges():\n     assert set(G.edges.keys()) == set()\n \n \n+def test_graph_accepts_labeledline_as_edge_type():\n+    vertices = [1, 2, 3, 4]\n+    edges = [(1, 2), (2, 3), (3, 4), (4, 1)]\n+    edge_config = {\n+        (1, 2): {\"label\": \"A\"},\n+        (2, 3): {\"label\": \"B\"},\n+        (3, 4): {\"label\": \"C\"},\n+        (4, 1): {\"label\": \"D\"},\n+    }\n+    G_manual = Graph(vertices, edges, edge_type=LabeledLine, edge_config=edge_config)\n+    G_directed = DiGraph(\n+        vertices, edges, edge_type=LabeledLine, edge_config=edge_config\n+    )\n+\n+    for _edge_key, edge_obj in G_manual.edges.items():\n+        assert isinstance(edge_obj, LabeledLine)\n+        assert hasattr(edge_obj, \"label\")\n+\n+    for _edge_key, edge_obj in G_directed.edges.items():\n+        assert isinstance(edge_obj, LabeledLine)\n+        assert hasattr(edge_obj, \"label\")\n+\n+\n def test_custom_animation_mobject_list():\n     G = Graph([1, 2, 3], [(1, 2), (2, 3)])\n     scene = Scene()"
+        }
+    ],
+    "commits": [
+        {
+            "sha": "8e23991e58ea8df22c3f1c07bcadfd4076fd7b79",
+            "commit_date": "2025-05-17T14:04:43Z",
+            "message": "Fix(graph) : fix Line subclass usage for Graph and DiGraph\n\nFix(graph): LabeledLine can now be used in _add_edge",
+            "number_of_links_in_commit": 0,
+            "files_changed_count": 1,
+            "files": [
+                {
+                    "sha": "2879c81a605b8c7cc8a02a7329e80b36e148448c",
+                    "filename": "manim/mobject/graph.py",
+                    "status": "modified",
+                    "additions": 8,
+                    "deletions": 5,
+                    "changes": 13,
+                    "blob_url": "https://github.com/ManimCommunity/manim/blob/8e23991e58ea8df22c3f1c07bcadfd4076fd7b79/manim%2Fmobject%2Fgraph.py",
+                    "raw_url": "https://github.com/ManimCommunity/manim/raw/8e23991e58ea8df22c3f1c07bcadfd4076fd7b79/manim%2Fmobject%2Fgraph.py",
+                    "contents_url": "https://api.github.com/repos/ManimCommunity/manim/contents/manim%2Fmobject%2Fgraph.py?ref=8e23991e58ea8df22c3f1c07bcadfd4076fd7b79",
+                    "patch": "@@ -1035,7 +1035,10 @@ def _add_edge(\n         self._edge_config[(u, v)] = edge_config\n \n         edge_mobject = edge_type(\n-            self[u].get_center(), self[v].get_center(), z_index=-1, **edge_config\n+            start=self[u].get_center(),\n+            end=self[v].get_center(),\n+            z_index=-1,\n+            **edge_config,\n         )\n         self.edges[(u, v)] = edge_mobject\n \n@@ -1543,8 +1546,8 @@ def _populate_edge_dict(\n     ):\n         self.edges = {\n             (u, v): edge_type(\n-                self[u].get_center(),\n-                self[v].get_center(),\n+                start=self[u].get_center(),\n+                end=self[v].get_center(),\n                 z_index=-1,\n                 **self._edge_config[(u, v)],\n             )\n@@ -1750,8 +1753,8 @@ def _populate_edge_dict(\n     ):\n         self.edges = {\n             (u, v): edge_type(\n-                self[u],\n-                self[v],\n+                start=self[u],\n+                end=self[v],\n                 z_index=-1,\n                 **self._edge_config[(u, v)],\n             )"
+                }
+            ]
+        },
+        {
+            "sha": "fddf53ad089cfb410d899acb273ebe5ecbdc2e26",
+            "commit_date": "2025-05-17T14:21:20Z",
+            "message": "Test(test_graph.py): add tests for LabeledLine as edge_type in Graph and DiGraph\n\nFix(test_graph): Fixed test_graph_accepts_labeledline_as_edge_type() always failing.",
+            "number_of_links_in_commit": 0,
+            "files_changed_count": 1,
+            "files": [
+                {
+                    "sha": "b76840bc39d460f5c190875d7270fd854aa9fcbe",
+                    "filename": "tests/module/mobject/test_graph.py",
+                    "status": "modified",
+                    "additions": 24,
+                    "deletions": 1,
+                    "changes": 25,
+                    "blob_url": "https://github.com/ManimCommunity/manim/blob/fddf53ad089cfb410d899acb273ebe5ecbdc2e26/tests%2Fmodule%2Fmobject%2Ftest_graph.py",
+                    "raw_url": "https://github.com/ManimCommunity/manim/raw/fddf53ad089cfb410d899acb273ebe5ecbdc2e26/tests%2Fmodule%2Fmobject%2Ftest_graph.py",
+                    "contents_url": "https://api.github.com/repos/ManimCommunity/manim/contents/tests%2Fmodule%2Fmobject%2Ftest_graph.py?ref=fddf53ad089cfb410d899acb273ebe5ecbdc2e26",
+                    "patch": "@@ -2,7 +2,7 @@\n \n import pytest\n \n-from manim import DiGraph, Graph, Scene, Text, tempconfig\n+from manim import DiGraph, Graph, LabeledLine, Scene, Text, tempconfig\n from manim.mobject.graph import _layouts\n \n \n@@ -91,6 +91,29 @@ def test_graph_remove_edges():\n     assert set(G.edges.keys()) == set()\n \n \n+def test_graph_accepts_labeledline_as_edge_type():\n+    vertices = [1, 2, 3, 4]\n+    edges = [(1, 2), (2, 3), (3, 4), (4, 1)]\n+    edge_config = {\n+        (1, 2): {\"label\": \"A\"},\n+        (2, 3): {\"label\": \"B\"},\n+        (3, 4): {\"label\": \"C\"},\n+        (4, 1): {\"label\": \"D\"},\n+    }\n+    G_manual = Graph(vertices, edges, edge_type=LabeledLine, edge_config=edge_config)\n+    G_directed = DiGraph(\n+        vertices, edges, edge_type=LabeledLine, edge_config=edge_config\n+    )\n+\n+    for _edge_key, edge_obj in G_manual.edges.items():\n+        assert isinstance(edge_obj, LabeledLine)\n+        assert hasattr(edge_obj, \"label\")\n+\n+    for _edge_key, edge_obj in G_directed.edges.items():\n+        assert isinstance(edge_obj, LabeledLine)\n+        assert hasattr(edge_obj, \"label\")\n+\n+\n def test_custom_animation_mobject_list():\n     G = Graph([1, 2, 3], [(1, 2), (2, 3)])\n     scene = Scene()"
+                }
+            ]
+        }
+    ],
+    "pull_request_url": "https://github.com/ManimCommunity/manim/pull/4251",
+    "commits_url": "https://github.com/ManimCommunity/manim/pull/4251/commits",
+    "files_url": "https://github.com/ManimCommunity/manim/pull/4251/files"
+}

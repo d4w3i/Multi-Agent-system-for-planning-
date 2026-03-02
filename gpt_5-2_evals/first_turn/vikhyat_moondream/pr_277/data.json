@@ -1,0 +1,146 @@
+{
+    "repository": "vikhyat/moondream",
+    "pull_request_number": 277,
+    "title": "finetune_region.py fixed. Added waste_detection eval",
+    "body": "Fixed bug in finetune_region.py that was introduced when log2 was added. Bug pointed out here: https://github.com/vikhyat/moondream/issues/267\r\n\r\nIncluded an eval script for waste detection. The F1 score improves from 65.67 ->  66.23 after 1 epoch of finetuning.",
+    "pr_date": "2025-05-06T00:15:48Z",
+    "source_branch": "region_fix",
+    "language": "en",
+    "keywords_detected": {
+        "branch": [
+            "fix"
+        ],
+        "requirement": [
+            "add",
+            "fix"
+        ],
+        "body": [
+            "add",
+            "fix"
+        ]
+    },
+    "number_of_links_in_pr": 1,
+    "base_sha": "f660ccb82ca901642c9ba22d061b5e9bce08e315",
+    "last_commit_sha": "44ae6489d9ce5c7682f113f857ee5a36a09971ce",
+    "diff_between_base_and_last": [
+        {
+            "sha": "c5bc1ee88a3fc0e425b056a11b4be8972ee1e1ac",
+            "filename": ".gitignore",
+            "status": "modified",
+            "additions": 2,
+            "deletions": 0,
+            "changes": 2,
+            "blob_url": "https://github.com/vikhyat/moondream/blob/44ae6489d9ce5c7682f113f857ee5a36a09971ce/.gitignore",
+            "raw_url": "https://github.com/vikhyat/moondream/raw/44ae6489d9ce5c7682f113f857ee5a36a09971ce/.gitignore",
+            "contents_url": "https://api.github.com/repos/vikhyat/moondream/contents/.gitignore?ref=44ae6489d9ce5c7682f113f857ee5a36a09971ce",
+            "patch": "@@ -6,3 +6,5 @@ data\n poetry.lock\n dist\n clients/python/moondream/torch\n+wandb/\n+moondream_finetune.safetensors"
+        },
+        {
+            "sha": "a928a455f6831d9abd5ce3de4fed6f904d685168",
+            "filename": "moondream/eval/waste_detection.py",
+            "status": "added",
+            "additions": 152,
+            "deletions": 0,
+            "changes": 152,
+            "blob_url": "https://github.com/vikhyat/moondream/blob/44ae6489d9ce5c7682f113f857ee5a36a09971ce/moondream%2Feval%2Fwaste_detection.py",
+            "raw_url": "https://github.com/vikhyat/moondream/raw/44ae6489d9ce5c7682f113f857ee5a36a09971ce/moondream%2Feval%2Fwaste_detection.py",
+            "contents_url": "https://api.github.com/repos/vikhyat/moondream/contents/moondream%2Feval%2Fwaste_detection.py?ref=44ae6489d9ce5c7682f113f857ee5a36a09971ce",
+            "patch": "@@ -0,0 +1,152 @@\n+import argparse\n+from collections import defaultdict\n+from typing import Dict, List, Tuple\n+\n+import torch\n+from PIL import Image\n+from tqdm import tqdm\n+from datasets import load_dataset\n+\n+from ..torch.config import MoondreamConfig\n+from ..torch.moondream import MoondreamModel\n+from ..torch.weights import load_weights_into_model\n+\n+\n+Box = Tuple[float, float, float, float]  # (x1, y1, x2, y2) \u2013 in proportion form\n+\n+\n+def iou(a: Box, b: Box) -> float:\n+    \"\"\"Corner-format IoU. Returns 0 when either box has zero area.\"\"\"\n+    x1, y1 = max(a[0], b[0]), max(a[1], b[1])\n+    x2, y2 = min(a[2], b[2]), min(a[3], b[3])\n+    inter = max(0.0, x2 - x1) * max(0.0, y2 - y1)\n+\n+    union = (a[2] - a[0]) * (a[3] - a[1]) + (b[2] - b[0]) * (b[3] - b[1]) - inter\n+    return inter / union if union else 0.0\n+\n+\n+def match(gt: List[Box], pr: List[Box], iou_thr: float) -> Tuple[int, int, int]:\n+    \"\"\"\n+    Greedy one-to-one matching with no confidences.\n+    Predictions are taken in the order produced by the model.\n+    \"\"\"\n+    tp = fp = 0\n+    seen = [False] * len(gt)\n+\n+    for p in pr:\n+        best, best_i = 0.0, -1\n+        for i, g in enumerate(gt):\n+            if seen[i]:\n+                continue\n+            iou_ = iou(p, g)\n+            if iou_ > best:\n+                best, best_i = iou_, i\n+        if best >= iou_thr:\n+            tp += 1\n+            seen[best_i] = True\n+        else:\n+            fp += 1\n+\n+    fn = len(gt) - tp\n+    return tp, fp, fn\n+\n+\n+class WasteDetection(torch.utils.data.Dataset):\n+    def __init__(self, name: str = \"moondream/waste_detection\", split: str = \"test\"):\n+        self.ds = load_dataset(name, split=split)\n+\n+    def __len__(self):\n+        return len(self.ds)\n+\n+    def __getitem__(self, idx: int) -> Dict:\n+        s = self.ds[idx]\n+        img = (\n+            s[\"image\"]\n+            if isinstance(s[\"image\"], Image.Image)\n+            else Image.fromarray(s[\"image\"])\n+        )\n+        W, H = float(s.get(\"width\", img.width)), float(s.get(\"height\", img.height))\n+\n+        lbl_to_boxes = defaultdict(list)\n+        for (xc, yc, bw, bh), lbl in zip(s[\"boxes\"], s[\"labels\"]):\n+            x1 = xc - bw / 2\n+            y1 = yc - bh / 2\n+            x2 = xc + bw / 2\n+            y2 = yc + bh / 2\n+            lbl_to_boxes[lbl].append((x1, y1, x2, y2))\n+\n+        return {\"image\": img, \"gt\": lbl_to_boxes, \"W\": W, \"H\": H}\n+\n+\n+def evaluate(\n+    model: MoondreamModel,\n+    iou_thr: float,\n+    debug: bool,\n+):\n+    ds = WasteDetection(split=\"test\")\n+    TP = FP = FN = 0\n+\n+    for s in tqdm(ds, disable=debug, desc=\"Waste\"):\n+        img, gts = s[\"image\"], s[\"gt\"]\n+        enc = model.encode_image(img)\n+\n+        for lbl, gt_boxes in gts.items():\n+            preds: List[Box] = [\n+                (\n+                    o[\"x_min\"],\n+                    o[\"y_min\"],\n+                    o[\"x_max\"],\n+                    o[\"y_max\"],\n+                )\n+                for o in model.detect(enc, lbl)[\"objects\"]\n+            ]\n+            tp, fp, fn = match(gt_boxes, preds, iou_thr)\n+            TP += tp\n+            FP += fp\n+            FN += fn\n+\n+    prec = TP / (TP + FP) if TP + FP else 0.0\n+    rec = TP / (TP + FN) if TP + FN else 0.0\n+    f1 = 2 * prec * rec / (prec + rec) if prec + rec else 0.0\n+    return dict(precision=prec, recall=rec, f1=f1, tp=TP, fp=FP, fn=FN)\n+\n+\n+def load_model(path: str, device: torch.device) -> MoondreamModel:\n+    cfg = MoondreamConfig()\n+    model = MoondreamModel(cfg)\n+    load_weights_into_model(path, model)\n+    model.compile()\n+    model.to(device)\n+    return model\n+\n+\n+def main():\n+    p = argparse.ArgumentParser()\n+    p.add_argument(\"--model\", required=True)\n+    p.add_argument(\"--iou_thr\", type=float, default=0.5)\n+    p.add_argument(\"--gpu\", type=int, default=0)\n+    p.add_argument(\"--debug\", action=\"store_true\")\n+    args = p.parse_args()\n+\n+    if torch.cuda.is_available():\n+        torch.cuda.set_device(args.gpu)\n+        device = torch.device(f\"cuda:{args.gpu}\")\n+    elif torch.backends.mps.is_available():\n+        device = torch.device(\"mps\")\n+    else:\n+        device = torch.device(\"cpu\")\n+\n+    model = load_model(args.model, device)\n+    res = evaluate(model, args.iou_thr, args.debug)\n+\n+    print(f\"Precision: {res['precision']*100:.2f}%\")\n+    print(f\"Recall: {res['recall']*100:.2f}%\")\n+    print(f\"F1 Score:  {res['f1']*100:.2f}%\")\n+    print(f\"TP: {res['tp']}  FP: {res['fp']}  FN: {res['fn']}\")\n+\n+\n+if __name__ == \"__main__\":\n+    \"\"\"\n+    Eval to accompany finetune_region.py.\n+    \"\"\"\n+    main()"
+        },
+        {
+            "sha": "c010c0fe07f81a731d1d6ccd72a83c716b185861",
+            "filename": "moondream/finetune/finetune_region.py",
+            "status": "modified",
+            "additions": 4,
+            "deletions": 13,
+            "changes": 17,
+            "blob_url": "https://github.com/vikhyat/moondream/blob/44ae6489d9ce5c7682f113f857ee5a36a09971ce/moondream%2Ffinetune%2Ffinetune_region.py",
+            "raw_url": "https://github.com/vikhyat/moondream/raw/44ae6489d9ce5c7682f113f857ee5a36a09971ce/moondream%2Ffinetune%2Ffinetune_region.py",
+            "contents_url": "https://api.github.com/repos/vikhyat/moondream/contents/moondream%2Ffinetune%2Ffinetune_region.py?ref=44ae6489d9ce5c7682f113f857ee5a36a09971ce",
+            "patch": "@@ -22,9 +22,9 @@\n \n # This is a intended to be a basic starting point. Your optimal hyperparams and data may be different.\n MODEL_PATH = \"\"\n-LR = 3e-5\n+LR = 1e-5\n EPOCHS = 1\n-GRAD_ACCUM_STEPS = 64\n+GRAD_ACCUM_STEPS = 128\n \n \n def lr_schedule(step, max_steps):\n@@ -184,9 +184,9 @@ def main():\n                     c_idx.extend([l_cs, l_cs + 1])\n                     s_idx.append(l_cs + 2)\n \n-                    # Create coordinate bin labels - unchanged\n+                    # Create coordinate bin labels\n                     coord_labels = [\n-                        min(max(torch.round(p * 1023), 0), 1023) for p in bb[:2]\n+                        min(max(torch.round(p * 1023), 0), 1023).item() for p in bb[:2]\n                     ]\n \n                     # Create size bin labels using log-scale mapping\n@@ -202,12 +202,6 @@ def main():\n \n                     # Combine coordinate and size bin labels\n                     cs_labels.extend(coord_labels + s_log2_bins)\n-                    cs_labels.extend(\n-                        [\n-                            int(torch.clamp(torch.round(p * 1023), 0, 1023).item())\n-                            for p in bb\n-                        ]\n-                    )\n \n                 if len(cs_emb) == 0:\n                     continue\n@@ -266,8 +260,5 @@ def main():\n     \"\"\"\n     Replace paths with your appropriate paths.\n     To run: python -m moondream.finetune.finetune_region\n-\n-    1 epoch of fine-tuning on the example 'Waste Detection' dataset results in an\n-    increase in mAP from 61.82 to 69.82.\n     \"\"\"\n     main()"
+        }
+    ],
+    "commits": [
+        {
+            "sha": "2790a07a1b59776527fc10363de4192978977626",
+            "commit_date": "2025-05-05T23:59:14Z",
+            "message": "Region finetune fixed. Added waste_detection eval",
+            "number_of_links_in_commit": 0,
+            "files_changed_count": 3,
+            "files": [
+                {
+                    "sha": "c5bc1ee88a3fc0e425b056a11b4be8972ee1e1ac",
+                    "filename": ".gitignore",
+                    "status": "modified",
+                    "additions": 2,
+                    "deletions": 0,
+                    "changes": 2,
+                    "blob_url": "https://github.com/vikhyat/moondream/blob/2790a07a1b59776527fc10363de4192978977626/.gitignore",
+                    "raw_url": "https://github.com/vikhyat/moondream/raw/2790a07a1b59776527fc10363de4192978977626/.gitignore",
+                    "contents_url": "https://api.github.com/repos/vikhyat/moondream/contents/.gitignore?ref=2790a07a1b59776527fc10363de4192978977626",
+                    "patch": "@@ -6,3 +6,5 @@ data\n poetry.lock\n dist\n clients/python/moondream/torch\n+wandb/\n+moondream_finetune.safetensors"
+                },
+                {
+                    "sha": "bdac8f303a3400307b4f357b19c99ba03477e4fc",
+                    "filename": "moondream/eval/waste_detection.py",
+                    "status": "added",
+                    "additions": 152,
+                    "deletions": 0,
+                    "changes": 152,
+                    "blob_url": "https://github.com/vikhyat/moondream/blob/2790a07a1b59776527fc10363de4192978977626/moondream%2Feval%2Fwaste_detection.py",
+                    "raw_url": "https://github.com/vikhyat/moondream/raw/2790a07a1b59776527fc10363de4192978977626/moondream%2Feval%2Fwaste_detection.py",
+                    "contents_url": "https://api.github.com/repos/vikhyat/moondream/contents/moondream%2Feval%2Fwaste_detection.py?ref=2790a07a1b59776527fc10363de4192978977626",
+                    "patch": "@@ -0,0 +1,152 @@\n+import argparse\n+from collections import defaultdict\n+from typing import Dict, List, Tuple\n+\n+import torch\n+from PIL import Image\n+from tqdm import tqdm\n+from datasets import load_dataset\n+\n+from ..torch.config import MoondreamConfig\n+from ..torch.moondream import MoondreamModel\n+from ..torch.weights import load_weights_into_model\n+\n+\n+Box = Tuple[float, float, float, float]  # (x1, y1, x2, y2) \u2013 in proportion form\n+\n+\n+def iou(a: Box, b: Box) -> float:\n+    \"\"\"Corner-format IoU. Returns 0 when either box has zero area.\"\"\"\n+    x1, y1 = max(a[0], b[0]), max(a[1], b[1])\n+    x2, y2 = min(a[2], b[2]), min(a[3], b[3])\n+    inter = max(0.0, x2 - x1) * max(0.0, y2 - y1)\n+\n+    union = (\n+        (a[2] - a[0]) * (a[3] - a[1]) +\n+        (b[2] - b[0]) * (b[3] - b[1]) -\n+        inter\n+    )\n+    return inter / union if union else 0.0\n+\n+\n+def match(gt: List[Box], pr: List[Box], iou_thr: float) -> Tuple[int, int, int]:\n+    \"\"\"\n+    Greedy one-to-one matching with no confidences.\n+    Predictions are taken in the order produced by the model.\n+    \"\"\"\n+    tp = fp = 0\n+    seen = [False] * len(gt)\n+\n+    for p in pr:\n+        best, best_i = 0.0, -1\n+        for i, g in enumerate(gt):\n+            if seen[i]:\n+                continue\n+            iou_ = iou(p, g)\n+            if iou_ > best:\n+                best, best_i = iou_, i\n+        if best >= iou_thr:\n+            tp += 1\n+            seen[best_i] = True\n+        else:\n+            fp += 1\n+\n+    fn = len(gt) - tp\n+    return tp, fp, fn\n+\n+\n+class WasteDetection(torch.utils.data.Dataset):\n+    def __init__(self, name: str = \"moondream/waste_detection\", split: str = \"test\"):\n+        self.ds = load_dataset(name, split=split)\n+\n+    def __len__(self):\n+        return len(self.ds)\n+\n+    def __getitem__(self, idx: int) -> Dict:\n+        s   = self.ds[idx]\n+        img = s[\"image\"] if isinstance(s[\"image\"], Image.Image) else Image.fromarray(s[\"image\"])\n+        W, H = float(s.get(\"width\", img.width)), float(s.get(\"height\", img.height))\n+\n+        \n+        lbl_to_boxes = defaultdict(list)\n+        for (xc, yc, bw, bh), lbl in zip(s[\"boxes\"], s[\"labels\"]):\n+            x1 = (xc - bw / 2)\n+            y1 = (yc - bh / 2)\n+            x2 = (xc + bw / 2)\n+            y2 = (yc + bh / 2)\n+            lbl_to_boxes[lbl].append((x1, y1, x2, y2))\n+\n+        return {\"image\": img, \"gt\": lbl_to_boxes, \"W\": W, \"H\": H}\n+\n+\n+def evaluate(\n+    model: MoondreamModel,\n+    iou_thr: float,\n+    debug: bool,\n+):\n+    ds = WasteDetection(split=\"test\")\n+    TP = FP = FN = 0\n+\n+    for s in tqdm(ds, disable=debug, desc=\"Waste\"):\n+        img, gts = s[\"image\"], s[\"gt\"]\n+        enc = model.encode_image(img)\n+\n+        for lbl, gt_boxes in gts.items():\n+            preds: List[Box] = [\n+                (\n+                    o[\"x_min\"],\n+                    o[\"y_min\"],\n+                    o[\"x_max\"],\n+                    o[\"y_max\"],\n+                )\n+                for o in model.detect(enc, lbl)[\"objects\"]\n+            ]\n+            tp, fp, fn = match(gt_boxes, preds, iou_thr)\n+            TP += tp\n+            FP += fp\n+            FN += fn\n+\n+    prec = TP / (TP + FP) if TP + FP else 0.0\n+    rec  = TP / (TP + FN) if TP + FN else 0.0\n+    f1   = 2 * prec * rec / (prec + rec) if prec + rec else 0.0\n+    return dict(precision=prec, recall=rec, f1=f1, tp=TP, fp=FP, fn=FN)\n+\n+def load_model(path: str, device: torch.device) -> MoondreamModel:\n+    cfg = MoondreamConfig()\n+    model = MoondreamModel(cfg)\n+    load_weights_into_model(path, model)\n+    model.compile()\n+    model.to(device)\n+    return model\n+\n+\n+def main():\n+    p = argparse.ArgumentParser()\n+    p.add_argument(\"--model\", required=True)\n+    p.add_argument(\"--iou_thr\", type=float, default=0.5)\n+    p.add_argument(\"--gpu\", type=int, default=0)\n+    p.add_argument(\"--debug\", action=\"store_true\")\n+    args = p.parse_args()\n+\n+    if torch.cuda.is_available():\n+        torch.cuda.set_device(args.gpu)\n+        device = torch.device(f\"cuda:{args.gpu}\")\n+    elif torch.backends.mps.is_available():\n+        device = torch.device(\"mps\")\n+    else:\n+        device = torch.device(\"cpu\")\n+\n+    model = load_model(args.model, device)\n+    res = evaluate(model, args.iou_thr, args.debug)\n+\n+    print(f\"Precision: {res['precision']*100:.2f}%\")\n+    print(f\"Recall: {res['recall']*100:.2f}%\")\n+    print(f\"F1 Score:  {res['f1']*100:.2f}%\")\n+    print(f\"TP: {res['tp']}  FP: {res['fp']}  FN: {res['fn']}\")\n+\n+\n+if __name__ == \"__main__\":\n+    \"\"\"\n+    Eval to accompany finetune_region.py.\n+    \"\"\"\n+    main()\n\\ No newline at end of file"
+                },
+                {
+                    "sha": "b2c6ab480390f9abde4bff2983d280688fb99aef",
+                    "filename": "moondream/finetune/finetune_region.py",
+                    "status": "modified",
+                    "additions": 5,
+                    "deletions": 14,
+                    "changes": 19,
+                    "blob_url": "https://github.com/vikhyat/moondream/blob/2790a07a1b59776527fc10363de4192978977626/moondream%2Ffinetune%2Ffinetune_region.py",
+                    "raw_url": "https://github.com/vikhyat/moondream/raw/2790a07a1b59776527fc10363de4192978977626/moondream%2Ffinetune%2Ffinetune_region.py",
+                    "contents_url": "https://api.github.com/repos/vikhyat/moondream/contents/moondream%2Ffinetune%2Ffinetune_region.py?ref=2790a07a1b59776527fc10363de4192978977626",
+                    "patch": "@@ -22,9 +22,9 @@\n \n # This is a intended to be a basic starting point. Your optimal hyperparams and data may be different.\n MODEL_PATH = \"\"\n-LR = 3e-5\n+LR = 1e-5\n EPOCHS = 1\n-GRAD_ACCUM_STEPS = 64\n+GRAD_ACCUM_STEPS = 128\n \n \n def lr_schedule(step, max_steps):\n@@ -184,9 +184,9 @@ def main():\n                     c_idx.extend([l_cs, l_cs + 1])\n                     s_idx.append(l_cs + 2)\n \n-                    # Create coordinate bin labels - unchanged\n+                    # Create coordinate bin labels\n                     coord_labels = [\n-                        min(max(torch.round(p * 1023), 0), 1023) for p in bb[:2]\n+                        min(max(torch.round(p * 1023), 0), 1023).item() for p in bb[:2]\n                     ]\n \n                     # Create size bin labels using log-scale mapping\n@@ -202,12 +202,6 @@ def main():\n \n                     # Combine coordinate and size bin labels\n                     cs_labels.extend(coord_labels + s_log2_bins)\n-                    cs_labels.extend(\n-                        [\n-                            int(torch.clamp(torch.round(p * 1023), 0, 1023).item())\n-                            for p in bb\n-                        ]\n-                    )\n \n                 if len(cs_emb) == 0:\n                     continue\n@@ -224,7 +218,7 @@ def main():\n                 hidden = _produce_hidden(\n                     inputs_embeds=inputs_embeds, w=model.text, config=config.text\n                 )\n-\n+                \n                 loss = region_loss(\n                     hidden_states=hidden,\n                     w=model.region,\n@@ -266,8 +260,5 @@ def main():\n     \"\"\"\n     Replace paths with your appropriate paths.\n     To run: python -m moondream.finetune.finetune_region\n-\n-    1 epoch of fine-tuning on the example 'Waste Detection' dataset results in an\n-    increase in mAP from 61.82 to 69.82.\n     \"\"\"\n     main()"
+                }
+            ]
+        },
+        {
+            "sha": "44ae6489d9ce5c7682f113f857ee5a36a09971ce",
+            "commit_date": "2025-05-06T00:26:07Z",
+            "message": "Region finetune fixed. Waste detection eval added to accompany the example in the ft script.",
+            "number_of_links_in_commit": 0,
+            "files_changed_count": 2,
+            "files": [
+                {
+                    "sha": "a928a455f6831d9abd5ce3de4fed6f904d685168",
+                    "filename": "moondream/eval/waste_detection.py",
+                    "status": "modified",
+                    "additions": 15,
+                    "deletions": 15,
+                    "changes": 30,
+                    "blob_url": "https://github.com/vikhyat/moondream/blob/44ae6489d9ce5c7682f113f857ee5a36a09971ce/moondream%2Feval%2Fwaste_detection.py",
+                    "raw_url": "https://github.com/vikhyat/moondream/raw/44ae6489d9ce5c7682f113f857ee5a36a09971ce/moondream%2Feval%2Fwaste_detection.py",
+                    "contents_url": "https://api.github.com/repos/vikhyat/moondream/contents/moondream%2Feval%2Fwaste_detection.py?ref=44ae6489d9ce5c7682f113f857ee5a36a09971ce",
+                    "patch": "@@ -21,11 +21,7 @@ def iou(a: Box, b: Box) -> float:\n     x2, y2 = min(a[2], b[2]), min(a[3], b[3])\n     inter = max(0.0, x2 - x1) * max(0.0, y2 - y1)\n \n-    union = (\n-        (a[2] - a[0]) * (a[3] - a[1]) +\n-        (b[2] - b[0]) * (b[3] - b[1]) -\n-        inter\n-    )\n+    union = (a[2] - a[0]) * (a[3] - a[1]) + (b[2] - b[0]) * (b[3] - b[1]) - inter\n     return inter / union if union else 0.0\n \n \n@@ -63,17 +59,20 @@ def __len__(self):\n         return len(self.ds)\n \n     def __getitem__(self, idx: int) -> Dict:\n-        s   = self.ds[idx]\n-        img = s[\"image\"] if isinstance(s[\"image\"], Image.Image) else Image.fromarray(s[\"image\"])\n+        s = self.ds[idx]\n+        img = (\n+            s[\"image\"]\n+            if isinstance(s[\"image\"], Image.Image)\n+            else Image.fromarray(s[\"image\"])\n+        )\n         W, H = float(s.get(\"width\", img.width)), float(s.get(\"height\", img.height))\n \n-        \n         lbl_to_boxes = defaultdict(list)\n         for (xc, yc, bw, bh), lbl in zip(s[\"boxes\"], s[\"labels\"]):\n-            x1 = (xc - bw / 2)\n-            y1 = (yc - bh / 2)\n-            x2 = (xc + bw / 2)\n-            y2 = (yc + bh / 2)\n+            x1 = xc - bw / 2\n+            y1 = yc - bh / 2\n+            x2 = xc + bw / 2\n+            y2 = yc + bh / 2\n             lbl_to_boxes[lbl].append((x1, y1, x2, y2))\n \n         return {\"image\": img, \"gt\": lbl_to_boxes, \"W\": W, \"H\": H}\n@@ -107,10 +106,11 @@ def evaluate(\n             FN += fn\n \n     prec = TP / (TP + FP) if TP + FP else 0.0\n-    rec  = TP / (TP + FN) if TP + FN else 0.0\n-    f1   = 2 * prec * rec / (prec + rec) if prec + rec else 0.0\n+    rec = TP / (TP + FN) if TP + FN else 0.0\n+    f1 = 2 * prec * rec / (prec + rec) if prec + rec else 0.0\n     return dict(precision=prec, recall=rec, f1=f1, tp=TP, fp=FP, fn=FN)\n \n+\n def load_model(path: str, device: torch.device) -> MoondreamModel:\n     cfg = MoondreamConfig()\n     model = MoondreamModel(cfg)\n@@ -149,4 +149,4 @@ def main():\n     \"\"\"\n     Eval to accompany finetune_region.py.\n     \"\"\"\n-    main()\n\\ No newline at end of file\n+    main()"
+                },
+                {
+                    "sha": "c010c0fe07f81a731d1d6ccd72a83c716b185861",
+                    "filename": "moondream/finetune/finetune_region.py",
+                    "status": "modified",
+                    "additions": 1,
+                    "deletions": 1,
+                    "changes": 2,
+                    "blob_url": "https://github.com/vikhyat/moondream/blob/44ae6489d9ce5c7682f113f857ee5a36a09971ce/moondream%2Ffinetune%2Ffinetune_region.py",
+                    "raw_url": "https://github.com/vikhyat/moondream/raw/44ae6489d9ce5c7682f113f857ee5a36a09971ce/moondream%2Ffinetune%2Ffinetune_region.py",
+                    "contents_url": "https://api.github.com/repos/vikhyat/moondream/contents/moondream%2Ffinetune%2Ffinetune_region.py?ref=44ae6489d9ce5c7682f113f857ee5a36a09971ce",
+                    "patch": "@@ -218,7 +218,7 @@ def main():\n                 hidden = _produce_hidden(\n                     inputs_embeds=inputs_embeds, w=model.text, config=config.text\n                 )\n-                \n+\n                 loss = region_loss(\n                     hidden_states=hidden,\n                     w=model.region,"
+                }
+            ]
+        }
+    ],
+    "pull_request_url": "https://github.com/vikhyat/moondream/pull/277",
+    "commits_url": "https://github.com/vikhyat/moondream/pull/277/commits",
+    "files_url": "https://github.com/vikhyat/moondream/pull/277/files"
+}

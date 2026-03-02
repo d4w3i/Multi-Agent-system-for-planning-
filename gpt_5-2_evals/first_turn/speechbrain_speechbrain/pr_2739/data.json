@@ -1,0 +1,61 @@
+{
+    "repository": "speechbrain/speechbrain",
+    "pull_request_number": 2739,
+    "title": "Allow importing model params with `convs_intermedite` typo in `PostNet`",
+    "body": "## What does this PR do?\r\n\r\nThis fixes importing some (older?) models that were failing to import otherwise.  \r\nPutting it as a PR to make it easier to find but not bothering with review since this is a very minor fix that shouldn't be functionally different (`convs_intermedite` no longer has any reference in codebase)",
+    "pr_date": "2024-10-30T14:52:12Z",
+    "source_branch": "fix-postnet-import-typo",
+    "language": "en",
+    "keywords_detected": {
+        "branch": [
+            "fix"
+        ],
+        "requirement": [],
+        "body": [
+            "fix"
+        ]
+    },
+    "number_of_links_in_pr": 0,
+    "base_sha": "4ad7446a3245b7b72b37d9a14fcc07b53a9207cb",
+    "last_commit_sha": "b7105cd92148f3d591a75a6a4b75766a50ecc8cd",
+    "diff_between_base_and_last": [
+        {
+            "sha": "e19813487f6850e4f50b603f0f588c6acf75eea6",
+            "filename": "speechbrain/utils/checkpoints.py",
+            "status": "modified",
+            "additions": 1,
+            "deletions": 0,
+            "changes": 1,
+            "blob_url": "https://github.com/speechbrain/speechbrain/blob/b7105cd92148f3d591a75a6a4b75766a50ecc8cd/speechbrain%2Futils%2Fcheckpoints.py",
+            "raw_url": "https://github.com/speechbrain/speechbrain/raw/b7105cd92148f3d591a75a6a4b75766a50ecc8cd/speechbrain%2Futils%2Fcheckpoints.py",
+            "contents_url": "https://api.github.com/repos/speechbrain/speechbrain/contents/speechbrain%2Futils%2Fcheckpoints.py?ref=b7105cd92148f3d591a75a6a4b75766a50ecc8cd",
+            "patch": "@@ -81,6 +81,7 @@\n # some keys have been renamed in the new version of the code\n KEYS_MAPPING: Dict[str, str] = {\n     \".mutihead_attn\": \".multihead_attn\",  # see PR #2489\n+    \".convs_intermedite\": \".convs_intermediate\",  # fix for PostNet blame #2463\n }\n \n "
+        }
+    ],
+    "commits": [
+        {
+            "sha": "b7105cd92148f3d591a75a6a4b75766a50ecc8cd",
+            "commit_date": "2024-10-30T14:40:44Z",
+            "message": "Allow importing model params with `convs_intermedite` typo in `PostNet`",
+            "number_of_links_in_commit": 0,
+            "files_changed_count": 1,
+            "files": [
+                {
+                    "sha": "e19813487f6850e4f50b603f0f588c6acf75eea6",
+                    "filename": "speechbrain/utils/checkpoints.py",
+                    "status": "modified",
+                    "additions": 1,
+                    "deletions": 0,
+                    "changes": 1,
+                    "blob_url": "https://github.com/speechbrain/speechbrain/blob/b7105cd92148f3d591a75a6a4b75766a50ecc8cd/speechbrain%2Futils%2Fcheckpoints.py",
+                    "raw_url": "https://github.com/speechbrain/speechbrain/raw/b7105cd92148f3d591a75a6a4b75766a50ecc8cd/speechbrain%2Futils%2Fcheckpoints.py",
+                    "contents_url": "https://api.github.com/repos/speechbrain/speechbrain/contents/speechbrain%2Futils%2Fcheckpoints.py?ref=b7105cd92148f3d591a75a6a4b75766a50ecc8cd",
+                    "patch": "@@ -81,6 +81,7 @@\n # some keys have been renamed in the new version of the code\n KEYS_MAPPING: Dict[str, str] = {\n     \".mutihead_attn\": \".multihead_attn\",  # see PR #2489\n+    \".convs_intermedite\": \".convs_intermediate\",  # fix for PostNet blame #2463\n }\n \n "
+                }
+            ]
+        }
+    ],
+    "pull_request_url": "https://github.com/speechbrain/speechbrain/pull/2739",
+    "commits_url": "https://github.com/speechbrain/speechbrain/pull/2739/commits",
+    "files_url": "https://github.com/speechbrain/speechbrain/pull/2739/files"
+}

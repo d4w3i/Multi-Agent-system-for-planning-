@@ -1,0 +1,93 @@
+{
+    "repository": "goauthentik/authentik",
+    "pull_request_number": 15574,
+    "title": "enterprise/audit: fix diff with update_fields",
+    "body": "<!--\r\n\ud83d\udc4b Hi there! Welcome.\r\n\r\nPlease check the Contributing guidelines: https://docs.goauthentik.io/docs/developer-docs/#how-can-i-contribute\r\n-->\r\n\r\n## Details\r\n\r\n<!--\r\nExplain what this PR changes, what the rationale behind the change is, if any new requirements are introduced or any breaking changes caused by this PR.\r\n\r\nIdeally also link an Issue for context that this PR will close using `closes #`\r\n-->\r\nREPLACE ME\r\n\r\n---\r\n\r\n## Checklist\r\n\r\n-   [ ] Local tests pass (`ak test authentik/`)\r\n-   [ ] The code has been formatted (`make lint-fix`)\r\n\r\nIf an API change has been made\r\n\r\n-   [ ] The API schema has been updated (`make gen-build`)\r\n\r\nIf changes to the frontend have been made\r\n\r\n-   [ ] The code has been formatted (`make web`)\r\n\r\nIf applicable\r\n\r\n-   [ ] The documentation has been updated\r\n-   [ ] The documentation has been formatted (`make docs`)\r\n",
+    "pr_date": "2025-07-15T15:25:46Z",
+    "source_branch": "enterprise/audit/fix-diff-update_fields",
+    "language": "en",
+    "keywords_detected": {
+        "branch": [
+            "fix"
+        ],
+        "requirement": [
+            "fix",
+            "update"
+        ],
+        "body": [
+            "requirement",
+            "change",
+            "develop",
+            "fix",
+            "update",
+            "build"
+        ]
+    },
+    "number_of_links_in_pr": 1,
+    "base_sha": "a088a629818baa0dd929aaeeb43047f4b465b091",
+    "last_commit_sha": "0d8a3021276de8c19e77cd90c471b96eee253a45",
+    "diff_between_base_and_last": [
+        {
+            "sha": "99820c0ac12180f91df734ab85c9c8f7d8f61d66",
+            "filename": "authentik/enterprise/audit/middleware.py",
+            "status": "modified",
+            "additions": 8,
+            "deletions": 6,
+            "changes": 14,
+            "blob_url": "https://github.com/goauthentik/authentik/blob/0d8a3021276de8c19e77cd90c471b96eee253a45/authentik%2Fenterprise%2Faudit%2Fmiddleware.py",
+            "raw_url": "https://github.com/goauthentik/authentik/raw/0d8a3021276de8c19e77cd90c471b96eee253a45/authentik%2Fenterprise%2Faudit%2Fmiddleware.py",
+            "contents_url": "https://api.github.com/repos/goauthentik/authentik/contents/authentik%2Fenterprise%2Faudit%2Fmiddleware.py?ref=0d8a3021276de8c19e77cd90c471b96eee253a45",
+            "patch": "@@ -44,7 +44,7 @@ def disconnect(self, request: HttpRequest):\n             return\n         post_init.disconnect(dispatch_uid=request.request_id)\n \n-    def serialize_simple(self, model: Model, update_fields: list[str] | None = None) -> dict:\n+    def serialize_simple(self, model: Model) -> dict:\n         \"\"\"Serialize a model in a very simple way. No ForeignKeys or other relationships are\n         resolved\"\"\"\n         data = {}\n@@ -53,8 +53,6 @@ def serialize_simple(self, model: Model, update_fields: list[str] | None = None)\n             value = None\n             if field.get_attname() in deferred_fields:\n                 continue\n-            if update_fields and field.name not in update_fields:\n-                continue\n \n             field_value = getattr(model, field.attname)\n             if isinstance(value, File):\n@@ -67,13 +65,17 @@ def serialize_simple(self, model: Model, update_fields: list[str] | None = None)\n             data[field.name] = deepcopy(field_value)\n         return cleanse_dict(data)\n \n-    def diff(self, before: dict, after: dict) -> dict:\n+    def diff(self, before: dict, after: dict, update_fields: list[str] | None = None) -> dict:\n         \"\"\"Generate diff between dicts\"\"\"\n         diff = {}\n         for key, value in before.items():\n+            if update_fields and key not in update_fields:\n+                continue\n             if after.get(key) != value:\n                 diff[key] = {\"previous_value\": value, \"new_value\": after.get(key)}\n         for key, value in after.items():\n+            if update_fields and key not in update_fields:\n+                continue\n             if key not in before and key not in diff and before.get(key) != value:\n                 diff[key] = {\"previous_value\": before.get(key), \"new_value\": value}\n         return sanitize_item(diff)\n@@ -110,8 +112,8 @@ def post_save_handler(\n             if created:\n                 prev_state = {}\n             # Get current state\n-            new_state = self.serialize_simple(instance, update_fields)\n-            diff = self.diff(prev_state, new_state)\n+            new_state = self.serialize_simple(instance)\n+            diff = self.diff(prev_state, new_state, update_fields)\n             thread_kwargs[\"diff\"] = diff\n         return super().post_save_handler(request, sender, instance, created, thread_kwargs, **_)\n "
+        },
+        {
+            "sha": "790711d26c302c32189417b43aa79cc5fee835f2",
+            "filename": "authentik/enterprise/audit/tests.py",
+            "status": "modified",
+            "additions": 13,
+            "deletions": 4,
+            "changes": 17,
+            "blob_url": "https://github.com/goauthentik/authentik/blob/0d8a3021276de8c19e77cd90c471b96eee253a45/authentik%2Fenterprise%2Faudit%2Ftests.py",
+            "raw_url": "https://github.com/goauthentik/authentik/raw/0d8a3021276de8c19e77cd90c471b96eee253a45/authentik%2Fenterprise%2Faudit%2Ftests.py",
+            "contents_url": "https://api.github.com/repos/goauthentik/authentik/contents/authentik%2Fenterprise%2Faudit%2Ftests.py?ref=0d8a3021276de8c19e77cd90c471b96eee253a45",
+            "patch": "@@ -214,9 +214,18 @@ def test_m2m_remove(self):\n         \"authentik.enterprise.audit.middleware.EnterpriseAuditMiddleware.enabled\",\n         PropertyMock(return_value=True),\n     )\n-    def test_serialize_fields(self):\n+    def test_diff_update_fields(self):\n         \"\"\"Test update audit log\"\"\"\n         self.client.force_login(self.user)\n-        user = create_test_admin_user()\n-        state = EnterpriseAuditMiddleware(None).serialize_simple(user, update_fields=[\"is_active\"])\n-        self.assertEqual(state, {\"is_active\": True})\n+        diff = EnterpriseAuditMiddleware(None).diff(\n+            {\n+                \"foo\": \"bar\",\n+                \"is_active\": False,\n+            },\n+            {\n+                \"foo\": \"baz\",\n+                \"is_active\": True,\n+            },\n+            update_fields=[\"is_active\"],\n+        )\n+        self.assertEqual(diff, {\"is_active\": {\"new_value\": True, \"previous_value\": False}})"
+        }
+    ],
+    "commits": [
+        {
+            "sha": "0d8a3021276de8c19e77cd90c471b96eee253a45",
+            "commit_date": "2025-07-15T15:25:32Z",
+            "message": "enterprise/audit: fix diff with update_fields\n\nSigned-off-by: Jens Langhammer <jens@goauthentik.io>",
+            "number_of_links_in_commit": 0,
+            "files_changed_count": 2,
+            "files": [
+                {
+                    "sha": "99820c0ac12180f91df734ab85c9c8f7d8f61d66",
+                    "filename": "authentik/enterprise/audit/middleware.py",
+                    "status": "modified",
+                    "additions": 8,
+                    "deletions": 6,
+                    "changes": 14,
+                    "blob_url": "https://github.com/goauthentik/authentik/blob/0d8a3021276de8c19e77cd90c471b96eee253a45/authentik%2Fenterprise%2Faudit%2Fmiddleware.py",
+                    "raw_url": "https://github.com/goauthentik/authentik/raw/0d8a3021276de8c19e77cd90c471b96eee253a45/authentik%2Fenterprise%2Faudit%2Fmiddleware.py",
+                    "contents_url": "https://api.github.com/repos/goauthentik/authentik/contents/authentik%2Fenterprise%2Faudit%2Fmiddleware.py?ref=0d8a3021276de8c19e77cd90c471b96eee253a45",
+                    "patch": "@@ -44,7 +44,7 @@ def disconnect(self, request: HttpRequest):\n             return\n         post_init.disconnect(dispatch_uid=request.request_id)\n \n-    def serialize_simple(self, model: Model, update_fields: list[str] | None = None) -> dict:\n+    def serialize_simple(self, model: Model) -> dict:\n         \"\"\"Serialize a model in a very simple way. No ForeignKeys or other relationships are\n         resolved\"\"\"\n         data = {}\n@@ -53,8 +53,6 @@ def serialize_simple(self, model: Model, update_fields: list[str] | None = None)\n             value = None\n             if field.get_attname() in deferred_fields:\n                 continue\n-            if update_fields and field.name not in update_fields:\n-                continue\n \n             field_value = getattr(model, field.attname)\n             if isinstance(value, File):\n@@ -67,13 +65,17 @@ def serialize_simple(self, model: Model, update_fields: list[str] | None = None)\n             data[field.name] = deepcopy(field_value)\n         return cleanse_dict(data)\n \n-    def diff(self, before: dict, after: dict) -> dict:\n+    def diff(self, before: dict, after: dict, update_fields: list[str] | None = None) -> dict:\n         \"\"\"Generate diff between dicts\"\"\"\n         diff = {}\n         for key, value in before.items():\n+            if update_fields and key not in update_fields:\n+                continue\n             if after.get(key) != value:\n                 diff[key] = {\"previous_value\": value, \"new_value\": after.get(key)}\n         for key, value in after.items():\n+            if update_fields and key not in update_fields:\n+                continue\n             if key not in before and key not in diff and before.get(key) != value:\n                 diff[key] = {\"previous_value\": before.get(key), \"new_value\": value}\n         return sanitize_item(diff)\n@@ -110,8 +112,8 @@ def post_save_handler(\n             if created:\n                 prev_state = {}\n             # Get current state\n-            new_state = self.serialize_simple(instance, update_fields)\n-            diff = self.diff(prev_state, new_state)\n+            new_state = self.serialize_simple(instance)\n+            diff = self.diff(prev_state, new_state, update_fields)\n             thread_kwargs[\"diff\"] = diff\n         return super().post_save_handler(request, sender, instance, created, thread_kwargs, **_)\n "
+                },
+                {
+                    "sha": "790711d26c302c32189417b43aa79cc5fee835f2",
+                    "filename": "authentik/enterprise/audit/tests.py",
+                    "status": "modified",
+                    "additions": 13,
+                    "deletions": 4,
+                    "changes": 17,
+                    "blob_url": "https://github.com/goauthentik/authentik/blob/0d8a3021276de8c19e77cd90c471b96eee253a45/authentik%2Fenterprise%2Faudit%2Ftests.py",
+                    "raw_url": "https://github.com/goauthentik/authentik/raw/0d8a3021276de8c19e77cd90c471b96eee253a45/authentik%2Fenterprise%2Faudit%2Ftests.py",
+                    "contents_url": "https://api.github.com/repos/goauthentik/authentik/contents/authentik%2Fenterprise%2Faudit%2Ftests.py?ref=0d8a3021276de8c19e77cd90c471b96eee253a45",
+                    "patch": "@@ -214,9 +214,18 @@ def test_m2m_remove(self):\n         \"authentik.enterprise.audit.middleware.EnterpriseAuditMiddleware.enabled\",\n         PropertyMock(return_value=True),\n     )\n-    def test_serialize_fields(self):\n+    def test_diff_update_fields(self):\n         \"\"\"Test update audit log\"\"\"\n         self.client.force_login(self.user)\n-        user = create_test_admin_user()\n-        state = EnterpriseAuditMiddleware(None).serialize_simple(user, update_fields=[\"is_active\"])\n-        self.assertEqual(state, {\"is_active\": True})\n+        diff = EnterpriseAuditMiddleware(None).diff(\n+            {\n+                \"foo\": \"bar\",\n+                \"is_active\": False,\n+            },\n+            {\n+                \"foo\": \"baz\",\n+                \"is_active\": True,\n+            },\n+            update_fields=[\"is_active\"],\n+        )\n+        self.assertEqual(diff, {\"is_active\": {\"new_value\": True, \"previous_value\": False}})"
+                }
+            ]
+        }
+    ],
+    "pull_request_url": "https://github.com/goauthentik/authentik/pull/15574",
+    "commits_url": "https://github.com/goauthentik/authentik/pull/15574/commits",
+    "files_url": "https://github.com/goauthentik/authentik/pull/15574/files"
+}

@@ -51,7 +51,8 @@ def create_pr_subset(
     dataset_path: str,
     size: int = 100,
     seed: int = 42,
-    output_file: str = None
+    output_file: str = None,
+    exclude_repos: set[str] | None = None
 ) -> dict:
     """
     Create a fixed subset of PRs from different repositories.
@@ -61,6 +62,7 @@ def create_pr_subset(
         size: Number of PRs to select (one per repo)
         seed: Random seed for reproducibility
         output_file: Path to save the subset JSON (None = don't save)
+        exclude_repos: Set of repo names to exclude from selection
 
     Returns:
         Dictionary with subset metadata and PR paths
@@ -74,7 +76,11 @@ def create_pr_subset(
         repo_name = Path(pr_path).parent.name
         prs_by_repo[repo_name].append(pr_path)
 
-    print(f"Found {len(all_pr_paths)} Python-only PRs from {len(prs_by_repo)} repositories")
+    # Exclude repos from existing subsets if requested
+    if exclude_repos:
+        prs_by_repo = {r: prs for r, prs in prs_by_repo.items() if r not in exclude_repos}
+
+    print(f"Found {len(all_pr_paths)} Python-only PRs from {len(prs_by_repo)} repositories (after exclusions)")
 
     # Check if we have enough repos
     if len(prs_by_repo) < size:
@@ -109,7 +115,11 @@ def create_pr_subset(
             "random_seed": seed,
             "constraints": [
                 "Python-only files in modified_files/ and original_files/",
-                "One PR per repository"
+                "One PR per repository",
+                *(
+                    [f"Excluded repos from: {sorted(exclude_repos)}"]
+                    if exclude_repos else []
+                )
             ]
         },
         "prs": selected_prs
@@ -190,6 +200,13 @@ def main():
         help="Show subset without saving"
     )
 
+    parser.add_argument(
+        '--exclude-subsets',
+        nargs='*',
+        metavar='FILE',
+        help='Subset JSON files whose repos should be excluded from selection'
+    )
+
     args = parser.parse_args()
 
     # Validate dataset path
@@ -198,6 +215,12 @@ def main():
         print(f"Error: Dataset not found at {dataset_path}")
         return
 
+    # Build set of repos to exclude from passed subset files
+    exclude_repos: set[str] = set()
+    for f in (args.exclude_subsets or []):
+        data = load_pr_subset_data(f)
+        exclude_repos.update(pr['repo'] for pr in data['prs'])
+
     print("=" * 70)
     print("  CREATE PR SUBSET")
     print("=" * 70)
@@ -205,6 +228,8 @@ def main():
     print(f"  Size:        {args.size}")
     print(f"  Seed:        {args.seed}")
     print(f"  Output:      {args.output if not args.dry_run else '(dry-run)'}")
+    if exclude_repos:
+        print(f"  Excluding:   {len(exclude_repos)} repos from {args.exclude_subsets}")
     print()
 
     # Create subset
@@ -213,7 +238,8 @@ def main():
         dataset_path=str(dataset_path),
         size=args.size,
         seed=args.seed,
-        output_file=output_file
+        output_file=output_file,
+        exclude_repos=exclude_repos if exclude_repos else None
     )
 
     # Print summary

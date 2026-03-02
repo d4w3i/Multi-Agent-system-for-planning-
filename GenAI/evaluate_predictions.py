@@ -798,7 +798,7 @@ def print_pr_score(score: PRScore, verbose: bool = True):
         print(f"   {Fore.RED}❌ Poor prediction{Style.RESET_ALL}")
 
 
-def evaluate_batch(base_path: Path, limit: Optional[int] = None, compute_semantic: bool = False) -> BatchReport:
+def evaluate_batch(base_path: Path, limit: Optional[int] = None, compute_semantic: bool = False, skip_existing: bool = False) -> BatchReport:
     """
     Evaluate all PRs in a directory.
 
@@ -814,6 +814,14 @@ def evaluate_batch(base_path: Path, limit: Optional[int] = None, compute_semanti
         gt_path.parent
         for gt_path in base_path.rglob("ground_truth.json")
     })
+
+    if skip_existing:
+        original_count = len(pr_dirs)
+        pr_dirs = [d for d in pr_dirs if not (d / "evaluation_score.json").exists()]
+        skipped = original_count - len(pr_dirs)
+        if skipped:
+            print(f"{Fore.YELLOW}⏭️  Skipping {skipped} PRs with existing evaluation_score.json{Style.RESET_ALL}")
+
     if limit:
         pr_dirs = pr_dirs[:limit]
 
@@ -1004,6 +1012,12 @@ Metrics:
     )
 
     parser.add_argument(
+        "--skip-existing",
+        action="store_true",
+        help="Skip PRs that already have evaluation_score.json (only with --batch)"
+    )
+
+    parser.add_argument(
         "-s", "--semantic",
         action="store_true",
         help="Also compute semantic similarity using OpenAI embeddings (requires OPENAI_API_KEY)"
@@ -1024,7 +1038,7 @@ Metrics:
     if args.batch:
         # Batch evaluation
         print(f"{Fore.CYAN}🔍 Searching for PRs with predicted_plan.json and ground_truth.json...{Style.RESET_ALL}")
-        report = evaluate_batch(path, args.limit, compute_semantic=args.semantic)
+        report = evaluate_batch(path, args.limit, compute_semantic=args.semantic, skip_existing=args.skip_existing)
 
         if not args.quiet:
             print_batch_report(report)

@@ -1,0 +1,67 @@
+{
+    "repository": "piskvorky/gensim",
+    "pull_request_number": 3597,
+    "title": "Clarify BM25 Documentation in Gensim Core Tutorials (Document Fix)",
+    "body": "**What changes were proposed in this pull request?**\r\n\r\nThis pull request corrects the documentation for the BM25 algorithm within the core tutorials of the Gensim library. The previous documentation misleadingly implied that BM25 transforms vectors into other vectors while altering their values based on feature rarity. This update provides an accurate description of BM25, highlighting its actual function as a scoring algorithm that does not manipulate the dimensionality of its input data.\r\n\r\n**Why are these changes needed?**\r\n\r\nThe correction ensures the Gensim documentation accurately reflects the true nature of BM25 as a relevance scoring mechanism, not a vector transformation tool. It rectifies misconceptions and provides clarity, which is vital for users and developers relying on the Gensim documentation for implementing and understanding BM25.\r\n\r\n**File Modified**\r\n\r\n- gensim/docs/src/gallery/core/run_topics_and_transformations.py\r\n\r\n\r\n",
+    "pr_date": "2024-12-24T20:24:31Z",
+    "source_branch": "fix-doc-bm25",
+    "language": "en",
+    "keywords_detected": {
+        "branch": [
+            "fix"
+        ],
+        "requirement": [
+            "fix"
+        ],
+        "body": [
+            "feature",
+            "implement",
+            "change",
+            "develop",
+            "update"
+        ]
+    },
+    "number_of_links_in_pr": 0,
+    "base_sha": "8b6b69c29fd58a93136e8f591ea9379ac2c8290c",
+    "last_commit_sha": "a2bd3b56e443d91d727fbf130746c6355cc10b92",
+    "diff_between_base_and_last": [
+        {
+            "sha": "e1ad3d5dfe8e6177ed98d667982885f26fcd13ea",
+            "filename": "docs/src/gallery/core/run_topics_and_transformations.py",
+            "status": "modified",
+            "additions": 6,
+            "deletions": 5,
+            "changes": 11,
+            "blob_url": "https://github.com/piskvorky/gensim/blob/a2bd3b56e443d91d727fbf130746c6355cc10b92/docs%2Fsrc%2Fgallery%2Fcore%2Frun_topics_and_transformations.py",
+            "raw_url": "https://github.com/piskvorky/gensim/raw/a2bd3b56e443d91d727fbf130746c6355cc10b92/docs%2Fsrc%2Fgallery%2Fcore%2Frun_topics_and_transformations.py",
+            "contents_url": "https://api.github.com/repos/piskvorky/gensim/contents/docs%2Fsrc%2Fgallery%2Fcore%2Frun_topics_and_transformations.py?ref=a2bd3b56e443d91d727fbf130746c6355cc10b92",
+            "patch": "@@ -189,11 +189,12 @@\n #     model = models.TfidfModel(corpus, normalize=True)\n #\n # * `Okapi Best Matching, Okapi BM25 <https://en.wikipedia.org/wiki/Okapi_BM25>`_\n-#   expects a bag-of-words (integer values) training corpus during initialization.\n-#   During transformation, it will take a vector and return another vector of the\n-#   same dimensionality, except that features which were rare in the training corpus\n-#   will have their value increased. It therefore converts integer-valued\n-#   vectors into real-valued ones, while leaving the number of dimensions intact.\n+#   operates on a bag-of-words (integer values) representation of the corpus during initialization.\n+#   BM25 does not transform vectors but rather computes a relevance score for each document \n+#   relative to a specific query. This score is derived using a formula that incorporates term \n+#   frequency, inverse document frequency, and length normalization of the documents.\n+#   The function calculates a single score per document, indicating its relevance to the query,\n+#   without altering the dimensionality or converting the integer-valued vectors into real-valued ones.\n #\n #   Okapi BM25 is the standard ranking function used by search engines to estimate\n #   the relevance of documents to a given search query."
+        }
+    ],
+    "commits": [
+        {
+            "sha": "a2bd3b56e443d91d727fbf130746c6355cc10b92",
+            "commit_date": "2024-12-24T20:08:24Z",
+            "message": "Fix BM25 documentation",
+            "number_of_links_in_commit": 0,
+            "files_changed_count": 1,
+            "files": [
+                {
+                    "sha": "e1ad3d5dfe8e6177ed98d667982885f26fcd13ea",
+                    "filename": "docs/src/gallery/core/run_topics_and_transformations.py",
+                    "status": "modified",
+                    "additions": 6,
+                    "deletions": 5,
+                    "changes": 11,
+                    "blob_url": "https://github.com/piskvorky/gensim/blob/a2bd3b56e443d91d727fbf130746c6355cc10b92/docs%2Fsrc%2Fgallery%2Fcore%2Frun_topics_and_transformations.py",
+                    "raw_url": "https://github.com/piskvorky/gensim/raw/a2bd3b56e443d91d727fbf130746c6355cc10b92/docs%2Fsrc%2Fgallery%2Fcore%2Frun_topics_and_transformations.py",
+                    "contents_url": "https://api.github.com/repos/piskvorky/gensim/contents/docs%2Fsrc%2Fgallery%2Fcore%2Frun_topics_and_transformations.py?ref=a2bd3b56e443d91d727fbf130746c6355cc10b92",
+                    "patch": "@@ -189,11 +189,12 @@\n #     model = models.TfidfModel(corpus, normalize=True)\n #\n # * `Okapi Best Matching, Okapi BM25 <https://en.wikipedia.org/wiki/Okapi_BM25>`_\n-#   expects a bag-of-words (integer values) training corpus during initialization.\n-#   During transformation, it will take a vector and return another vector of the\n-#   same dimensionality, except that features which were rare in the training corpus\n-#   will have their value increased. It therefore converts integer-valued\n-#   vectors into real-valued ones, while leaving the number of dimensions intact.\n+#   operates on a bag-of-words (integer values) representation of the corpus during initialization.\n+#   BM25 does not transform vectors but rather computes a relevance score for each document \n+#   relative to a specific query. This score is derived using a formula that incorporates term \n+#   frequency, inverse document frequency, and length normalization of the documents.\n+#   The function calculates a single score per document, indicating its relevance to the query,\n+#   without altering the dimensionality or converting the integer-valued vectors into real-valued ones.\n #\n #   Okapi BM25 is the standard ranking function used by search engines to estimate\n #   the relevance of documents to a given search query."
+                }
+            ]
+        }
+    ],
+    "pull_request_url": "https://github.com/piskvorky/gensim/pull/3597",
+    "commits_url": "https://github.com/piskvorky/gensim/pull/3597/commits",
+    "files_url": "https://github.com/piskvorky/gensim/pull/3597/files"
+}

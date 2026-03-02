@@ -1,0 +1,61 @@
+{
+    "repository": "keras-team/keras",
+    "pull_request_number": 21457,
+    "title": "[OpenVINO backend] fix ops.array",
+    "body": "@rkazants\r\n@fchollet \r\nIn https://github.com/keras-team/keras-hub/blob/master/keras_hub/src/samplers/random_sampler_test.py#L60-L74\r\nThis test fails due to `ops.array(logits)`,  where logits is an `OpenVINOKerasTensor`\r\n```python\r\ndef test_temperature(self):\r\n        def next(prompt, cache, index):\r\n            # Dummy hidden states.\r\n            hidden_states = ops.ones([self.batch_size, 5])\r\n            logits = ops.arange(self.vocab_size, 0, -1, dtype=\"float32\")\r\n            logits = ops.reshape(logits[None, :], (self.batch_size, -1))\r\n            return ops.array(logits), hidden_states, cache\r\n\r\n        prompt = ops.full((self.batch_size, self.length), self.char_lookup[\"z\"])\r\n\r\n        output = RandomSampler(temperature=1e-5)(\r\n            next=next,\r\n            prompt=prompt,\r\n        )\r\n        self.assertAllEqual(output, ops.zeros_like(output))\r\n```\r\n\r\n",
+    "pr_date": "2025-07-07T23:50:27Z",
+    "source_branch": "fix_ops_array",
+    "language": "en",
+    "keywords_detected": {
+        "branch": [
+            "fix"
+        ],
+        "requirement": [
+            "fix"
+        ],
+        "body": []
+    },
+    "number_of_links_in_pr": 1,
+    "base_sha": "22ab5a33484cf9a39e7a07f24ddfb2072f0da698",
+    "last_commit_sha": "e2deefd56278b1274215f0e54d4e3e79fdfcfeea",
+    "diff_between_base_and_last": [
+        {
+            "sha": "64af4d6d8b0a6dbebb55fe3b6337c6eddaf078c8",
+            "filename": "keras/src/backend/openvino/numpy.py",
+            "status": "modified",
+            "additions": 7,
+            "deletions": 0,
+            "changes": 7,
+            "blob_url": "https://github.com/keras-team/keras/blob/e2deefd56278b1274215f0e54d4e3e79fdfcfeea/keras%2Fsrc%2Fbackend%2Fopenvino%2Fnumpy.py",
+            "raw_url": "https://github.com/keras-team/keras/raw/e2deefd56278b1274215f0e54d4e3e79fdfcfeea/keras%2Fsrc%2Fbackend%2Fopenvino%2Fnumpy.py",
+            "contents_url": "https://api.github.com/repos/keras-team/keras/contents/keras%2Fsrc%2Fbackend%2Fopenvino%2Fnumpy.py?ref=e2deefd56278b1274215f0e54d4e3e79fdfcfeea",
+            "patch": "@@ -12,6 +12,7 @@\n from keras.src.backend.openvino.core import (\n     align_operand_types as _align_operand_types,\n )\n+from keras.src.backend.openvino.core import convert_to_numpy\n from keras.src.backend.openvino.core import convert_to_tensor\n from keras.src.backend.openvino.core import get_ov_output\n from keras.src.backend.openvino.core import ov_to_keras_type\n@@ -432,6 +433,12 @@ def argsort(x, axis=-1):\n \n \n def array(x, dtype=None):\n+    if isinstance(x, OpenVINOKerasTensor):\n+        if dtype is not None:\n+            dtype = standardize_dtype(dtype)\n+            dtype = OPENVINO_DTYPES[dtype]\n+            x = ov_opset.convert(x.output, dtype)\n+        return convert_to_numpy(OpenVINOKerasTensor(x.output))\n     if dtype is not None:\n         return np.array(x, dtype=dtype)\n     return np.array(x)"
+        }
+    ],
+    "commits": [
+        {
+            "sha": "e2deefd56278b1274215f0e54d4e3e79fdfcfeea",
+            "commit_date": "2025-07-07T23:51:36Z",
+            "message": "[OpenVINO backend] fic ops.array",
+            "number_of_links_in_commit": 0,
+            "files_changed_count": 1,
+            "files": [
+                {
+                    "sha": "64af4d6d8b0a6dbebb55fe3b6337c6eddaf078c8",
+                    "filename": "keras/src/backend/openvino/numpy.py",
+                    "status": "modified",
+                    "additions": 7,
+                    "deletions": 0,
+                    "changes": 7,
+                    "blob_url": "https://github.com/keras-team/keras/blob/e2deefd56278b1274215f0e54d4e3e79fdfcfeea/keras%2Fsrc%2Fbackend%2Fopenvino%2Fnumpy.py",
+                    "raw_url": "https://github.com/keras-team/keras/raw/e2deefd56278b1274215f0e54d4e3e79fdfcfeea/keras%2Fsrc%2Fbackend%2Fopenvino%2Fnumpy.py",
+                    "contents_url": "https://api.github.com/repos/keras-team/keras/contents/keras%2Fsrc%2Fbackend%2Fopenvino%2Fnumpy.py?ref=e2deefd56278b1274215f0e54d4e3e79fdfcfeea",
+                    "patch": "@@ -12,6 +12,7 @@\n from keras.src.backend.openvino.core import (\n     align_operand_types as _align_operand_types,\n )\n+from keras.src.backend.openvino.core import convert_to_numpy\n from keras.src.backend.openvino.core import convert_to_tensor\n from keras.src.backend.openvino.core import get_ov_output\n from keras.src.backend.openvino.core import ov_to_keras_type\n@@ -432,6 +433,12 @@ def argsort(x, axis=-1):\n \n \n def array(x, dtype=None):\n+    if isinstance(x, OpenVINOKerasTensor):\n+        if dtype is not None:\n+            dtype = standardize_dtype(dtype)\n+            dtype = OPENVINO_DTYPES[dtype]\n+            x = ov_opset.convert(x.output, dtype)\n+        return convert_to_numpy(OpenVINOKerasTensor(x.output))\n     if dtype is not None:\n         return np.array(x, dtype=dtype)\n     return np.array(x)"
+                }
+            ]
+        }
+    ],
+    "pull_request_url": "https://github.com/keras-team/keras/pull/21457",
+    "commits_url": "https://github.com/keras-team/keras/pull/21457/commits",
+    "files_url": "https://github.com/keras-team/keras/pull/21457/files"
+}

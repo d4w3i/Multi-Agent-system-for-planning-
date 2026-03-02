@@ -172,18 +172,20 @@ def run_batch(
     model_name: str = "gpt-5.2-2025-12-11",
     skip_existing: bool = False,
     verbose: bool = False,
-    parallel: int = 1
+    parallel: int = 1,
+    pr_dirs_override: Optional[List[Path]] = None
 ) -> dict:
     """
     Execute batch processing of PRs.
 
     Args:
-        base_path: Base path containing the PRs
+        base_path: Base path containing the PRs (used for the report location)
         limit: Maximum number of PRs to process
         model_name: OpenAI model to use
         skip_existing: Skip PRs with existing predicted_plan.json
         verbose: Detailed output for each PR
         parallel: Number of PRs to process in parallel (1 = sequential)
+        pr_dirs_override: When set, use these paths directly and skip discovery
 
     Returns:
         Dict with batch statistics
@@ -203,9 +205,15 @@ def run_batch(
     print(f"{Fore.CYAN}Parallel: {parallel}")
     print(f"{Fore.CYAN}{'='*80}{Style.RESET_ALL}\n")
 
-    # Find PR directories
-    print(f"{Fore.YELLOW}Searching for PR directories...{Style.RESET_ALL}")
-    pr_dirs = find_pr_directories(base, limit, skip_existing)
+    # Find PR directories (or use the provided override list)
+    if pr_dirs_override is not None:
+        pr_dirs = pr_dirs_override
+        if skip_existing:
+            pr_dirs = [d for d in pr_dirs if not (d / "predicted_plan.json").exists()]
+        print(f"{Fore.YELLOW}Using {len(pr_dirs)} PRs from subset{Style.RESET_ALL}")
+    else:
+        print(f"{Fore.YELLOW}Searching for PR directories...{Style.RESET_ALL}")
+        pr_dirs = find_pr_directories(base, limit, skip_existing)
 
     if not pr_dirs:
         print(f"{Fore.RED}No PRs found to process{Style.RESET_ALL}")
@@ -346,6 +354,12 @@ Examples:
         help="Process all found PRs"
     )
 
+    group.add_argument(
+        "--subset",
+        metavar='FILE',
+        help='Subset JSON file (from create_pr_subset.py); bypasses base_path discovery'
+    )
+
     parser.add_argument(
         "-m", "--model",
         default="gpt-5.2-2025-12-11",
@@ -386,7 +400,12 @@ Examples:
         sys.exit(1)
 
     try:
-        limit = None if args.all else args.limit
+        limit = None if (args.all or args.subset) else args.limit
+
+        pr_dirs_override = None
+        if args.subset:
+            from scripts.create_pr_subset import load_pr_subset
+            pr_dirs_override = [Path(p) for p in load_pr_subset(args.subset)]
 
         results = run_batch(
             base_path=args.base_path,
@@ -394,7 +413,8 @@ Examples:
             model_name=args.model,
             skip_existing=args.skip_existing,
             verbose=args.verbose,
-            parallel=args.parallel
+            parallel=args.parallel,
+            pr_dirs_override=pr_dirs_override
         )
 
         # Save report if requested

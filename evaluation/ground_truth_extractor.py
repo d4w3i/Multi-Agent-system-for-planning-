@@ -721,12 +721,18 @@ def main():
         description="Extract ground truth from PR4Code dataset"
     )
 
-    # Positional argument: PR directories
-    # Accepts one or more paths (nargs='+')
+    # Positional argument: PR directories (optional when --subset is provided)
     parser.add_argument(
         'pr_dirs',
-        nargs='+',
+        nargs='*',
         help='PR directory paths or parent directory containing PRs'
+    )
+
+    # Option: load PR paths from a subset JSON file
+    parser.add_argument(
+        '--subset',
+        metavar='FILE',
+        help='Subset JSON file (from create_pr_subset.py); overrides positional pr_dirs'
     )
 
     # Flag: disable LLM
@@ -759,26 +765,35 @@ def main():
 
     # -------------------------------------------------------------------------
     # Collect PR directories
-    # Handles both single PRs and parent directories
+    # --subset overrides positional pr_dirs
     pr_dirs = []
 
-    for path_str in args.pr_dirs:
-        path = Path(path_str)
+    if args.subset:
+        from scripts.create_pr_subset import load_pr_subset
+        pr_dirs = [Path(p) for p in load_pr_subset(args.subset)]
+        logger.info(f"Loaded {len(pr_dirs)} PRs from subset: {args.subset}")
+    else:
+        if not args.pr_dirs:
+            logger.error("Provide at least one PR directory or use --subset")
+            sys.exit(1)
 
-        if path.is_dir():
-            # Check if it's a PR directory (contains data.json)
-            # or a parent directory (contains pr_* subdirectories)
-            if (path / 'data.json').exists():
-                # It's a single PR
-                pr_dirs.append(path)
+        for path_str in args.pr_dirs:
+            path = Path(path_str)
+
+            if path.is_dir():
+                # Check if it's a PR directory (contains data.json)
+                # or a parent directory (contains pr_* subdirectories)
+                if (path / 'data.json').exists():
+                    # It's a single PR
+                    pr_dirs.append(path)
+                else:
+                    # It's a parent directory - find all PRs
+                    # Pattern: */pr_*/ finds all subdirectories starting with "pr_"
+                    # sorted() for deterministic order
+                    pr_dirs.extend(sorted(path.glob('*/pr_*/')))
             else:
-                # It's a parent directory - find all PRs
-                # Pattern: */pr_*/ finds all subdirectories starting with "pr_"
-                # sorted() for deterministic order
-                pr_dirs.extend(sorted(path.glob('*/pr_*/')))
-        else:
-            # Not a directory - warn but continue
-            logger.warning(f"Not a directory: {path}")
+                # Not a directory - warn but continue
+                logger.warning(f"Not a directory: {path}")
 
     # Verify there are PRs to process
     if not pr_dirs:

@@ -1,0 +1,63 @@
+{
+    "repository": "Netflix/metaflow",
+    "pull_request_number": 2468,
+    "title": "Fixup how commands show up as part of the Runner API",
+    "body": "When injecting commands to the runner, the stubs generated were not accurate or complete. This addresses this issue",
+    "pr_date": "2025-06-21T09:10:33Z",
+    "source_branch": "fix/runner_subcommands_stubs",
+    "language": "en",
+    "keywords_detected": {
+        "branch": [
+            "fix"
+        ],
+        "requirement": [
+            "fix"
+        ],
+        "body": [
+            "add"
+        ]
+    },
+    "number_of_links_in_pr": 0,
+    "base_sha": "69a040b832c20c5f9b689d6e9cdd774af47ad548",
+    "last_commit_sha": "5c0cbfdded6cda79bafe241fb09e86400d7d58e5",
+    "diff_between_base_and_last": [
+        {
+            "sha": "84eb8ac42844021ced86e38f7f375dd34feb47c1",
+            "filename": "metaflow/runner/metaflow_runner.py",
+            "status": "modified",
+            "additions": 16,
+            "deletions": 1,
+            "changes": 17,
+            "blob_url": "https://github.com/Netflix/metaflow/blob/5c0cbfdded6cda79bafe241fb09e86400d7d58e5/metaflow%2Frunner%2Fmetaflow_runner.py",
+            "raw_url": "https://github.com/Netflix/metaflow/raw/5c0cbfdded6cda79bafe241fb09e86400d7d58e5/metaflow%2Frunner%2Fmetaflow_runner.py",
+            "contents_url": "https://api.github.com/repos/Netflix/metaflow/contents/metaflow%2Frunner%2Fmetaflow_runner.py?ref=5c0cbfdded6cda79bafe241fb09e86400d7d58e5",
+            "patch": "@@ -1,4 +1,5 @@\n import importlib\n+import inspect\n import os\n import sys\n import json\n@@ -200,8 +201,22 @@ def _injected_method(subcommand_name, runner_subcommand):\n             def f(self, *args, **kwargs):\n                 return runner_subcommand(self, *args, **kwargs)\n \n-            f.__doc__ = runner_subcommand.__doc__ or \"\"\n+            f.__doc__ = runner_subcommand.__init__.__doc__ or \"\"\n             f.__name__ = subcommand_name\n+            sig = inspect.signature(runner_subcommand)\n+            # We take all the same parameters except replace the first with\n+            # simple \"self\"\n+            new_parameters = {}\n+            for name, param in sig.parameters.items():\n+                if new_parameters:\n+                    new_parameters[name] = param\n+                else:\n+                    new_parameters[\"self\"] = inspect.Parameter(\n+                        \"self\", inspect.Parameter.POSITIONAL_OR_KEYWORD\n+                    )\n+            f.__signature__ = inspect.Signature(\n+                list(new_parameters.values()), return_annotation=runner_subcommand\n+            )\n \n             return f\n "
+        }
+    ],
+    "commits": [
+        {
+            "sha": "5c0cbfdded6cda79bafe241fb09e86400d7d58e5",
+            "commit_date": "2025-06-21T09:09:01Z",
+            "message": "Fixup how commands show up as part of the Runner API\n\nWhen injecting commands to the runner, the stubs generated\nwere not accurate or complete. This addresses this issue",
+            "number_of_links_in_commit": 0,
+            "files_changed_count": 1,
+            "files": [
+                {
+                    "sha": "84eb8ac42844021ced86e38f7f375dd34feb47c1",
+                    "filename": "metaflow/runner/metaflow_runner.py",
+                    "status": "modified",
+                    "additions": 16,
+                    "deletions": 1,
+                    "changes": 17,
+                    "blob_url": "https://github.com/Netflix/metaflow/blob/5c0cbfdded6cda79bafe241fb09e86400d7d58e5/metaflow%2Frunner%2Fmetaflow_runner.py",
+                    "raw_url": "https://github.com/Netflix/metaflow/raw/5c0cbfdded6cda79bafe241fb09e86400d7d58e5/metaflow%2Frunner%2Fmetaflow_runner.py",
+                    "contents_url": "https://api.github.com/repos/Netflix/metaflow/contents/metaflow%2Frunner%2Fmetaflow_runner.py?ref=5c0cbfdded6cda79bafe241fb09e86400d7d58e5",
+                    "patch": "@@ -1,4 +1,5 @@\n import importlib\n+import inspect\n import os\n import sys\n import json\n@@ -200,8 +201,22 @@ def _injected_method(subcommand_name, runner_subcommand):\n             def f(self, *args, **kwargs):\n                 return runner_subcommand(self, *args, **kwargs)\n \n-            f.__doc__ = runner_subcommand.__doc__ or \"\"\n+            f.__doc__ = runner_subcommand.__init__.__doc__ or \"\"\n             f.__name__ = subcommand_name\n+            sig = inspect.signature(runner_subcommand)\n+            # We take all the same parameters except replace the first with\n+            # simple \"self\"\n+            new_parameters = {}\n+            for name, param in sig.parameters.items():\n+                if new_parameters:\n+                    new_parameters[name] = param\n+                else:\n+                    new_parameters[\"self\"] = inspect.Parameter(\n+                        \"self\", inspect.Parameter.POSITIONAL_OR_KEYWORD\n+                    )\n+            f.__signature__ = inspect.Signature(\n+                list(new_parameters.values()), return_annotation=runner_subcommand\n+            )\n \n             return f\n "
+                }
+            ]
+        }
+    ],
+    "pull_request_url": "https://github.com/Netflix/metaflow/pull/2468",
+    "commits_url": "https://github.com/Netflix/metaflow/pull/2468/commits",
+    "files_url": "https://github.com/Netflix/metaflow/pull/2468/files"
+}

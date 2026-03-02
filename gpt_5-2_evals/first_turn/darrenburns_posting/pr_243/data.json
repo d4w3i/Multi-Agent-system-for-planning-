@@ -1,0 +1,63 @@
+{
+    "repository": "darrenburns/posting",
+    "pull_request_number": 243,
+    "title": "fix(collection): prevent markup parsing",
+    "body": "Prevent the request description trying to parse the content with markup.\r\n\r\nFixes #241.",
+    "pr_date": "2025-03-27T20:54:36Z",
+    "source_branch": "fix-collection-prevent-markup-parsing",
+    "language": "en",
+    "keywords_detected": {
+        "branch": [
+            "fix"
+        ],
+        "requirement": [
+            "fix"
+        ],
+        "body": [
+            "fix"
+        ]
+    },
+    "number_of_links_in_pr": 0,
+    "base_sha": "e580095ed6b458204f900cafa5f8f315c8909405",
+    "last_commit_sha": "da07c235dd027ca683426a44a9c45186312f44bb",
+    "diff_between_base_and_last": [
+        {
+            "sha": "cfd488098b65f81f1ba1d8807266e6de99baaefc",
+            "filename": "src/posting/widgets/collection/browser.py",
+            "status": "modified",
+            "additions": 1,
+            "deletions": 1,
+            "changes": 2,
+            "blob_url": "https://github.com/darrenburns/posting/blob/da07c235dd027ca683426a44a9c45186312f44bb/src%2Fposting%2Fwidgets%2Fcollection%2Fbrowser.py",
+            "raw_url": "https://github.com/darrenburns/posting/raw/da07c235dd027ca683426a44a9c45186312f44bb/src%2Fposting%2Fwidgets%2Fcollection%2Fbrowser.py",
+            "contents_url": "https://api.github.com/repos/darrenburns/posting/contents/src%2Fposting%2Fwidgets%2Fcollection%2Fbrowser.py?ref=da07c235dd027ca683426a44a9c45186312f44bb",
+            "patch": "@@ -574,7 +574,7 @@ class RequestPreview(VerticalScroll):\n \n     def compose(self) -> ComposeResult:\n         self.can_focus = False\n-        yield Static(\"\", id=\"description\")\n+        yield Static(\"\", markup=False, id=\"description\")\n \n     def watch_request(self, request: RequestModel | None) -> None:\n         self.set_class(request is None or not request.description, \"hidden\")"
+        }
+    ],
+    "commits": [
+        {
+            "sha": "da07c235dd027ca683426a44a9c45186312f44bb",
+            "commit_date": "2025-03-27T20:49:26Z",
+            "message": "fix(collection): prevent markup parsing\n\nPrevent the request description trying to parse the content with markup.\n\nFixes #241.",
+            "number_of_links_in_commit": 0,
+            "files_changed_count": 1,
+            "files": [
+                {
+                    "sha": "cfd488098b65f81f1ba1d8807266e6de99baaefc",
+                    "filename": "src/posting/widgets/collection/browser.py",
+                    "status": "modified",
+                    "additions": 1,
+                    "deletions": 1,
+                    "changes": 2,
+                    "blob_url": "https://github.com/darrenburns/posting/blob/da07c235dd027ca683426a44a9c45186312f44bb/src%2Fposting%2Fwidgets%2Fcollection%2Fbrowser.py",
+                    "raw_url": "https://github.com/darrenburns/posting/raw/da07c235dd027ca683426a44a9c45186312f44bb/src%2Fposting%2Fwidgets%2Fcollection%2Fbrowser.py",
+                    "contents_url": "https://api.github.com/repos/darrenburns/posting/contents/src%2Fposting%2Fwidgets%2Fcollection%2Fbrowser.py?ref=da07c235dd027ca683426a44a9c45186312f44bb",
+                    "patch": "@@ -574,7 +574,7 @@ class RequestPreview(VerticalScroll):\n \n     def compose(self) -> ComposeResult:\n         self.can_focus = False\n-        yield Static(\"\", id=\"description\")\n+        yield Static(\"\", markup=False, id=\"description\")\n \n     def watch_request(self, request: RequestModel | None) -> None:\n         self.set_class(request is None or not request.description, \"hidden\")"
+                }
+            ]
+        }
+    ],
+    "pull_request_url": "https://github.com/darrenburns/posting/pull/243",
+    "commits_url": "https://github.com/darrenburns/posting/pull/243/commits",
+    "files_url": "https://github.com/darrenburns/posting/pull/243/files"
+}

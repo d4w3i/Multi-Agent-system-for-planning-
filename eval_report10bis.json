@@ -1,0 +1,557 @@
+{
+  "timestamp": "2026-03-02T09:53:14.616936",
+  "total_prs": 10,
+  "evaluated_prs": 10,
+  "skipped_prs": 0,
+  "avg_file_precision": 0.68333,
+  "avg_file_recall": 0.78334,
+  "avg_file_f1": 0.7033400000000001,
+  "avg_function_precision": 0.28443999999999997,
+  "avg_function_recall": 0.47778,
+  "avg_function_f1": 0.33022999999999997,
+  "avg_step_diff": 1.0,
+  "std_step_diff": 3.2998316455372216,
+  "avg_target_coverage": 0.73556,
+  "avg_semantic_score": 0.60466,
+  "avg_summary_similarity": 0.78792,
+  "avg_step_similarity": 0.5261199999999999,
+  "semantic_evaluated": 10,
+  "pr_scores": [
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/PR4Code/dataset_pr_commits_py/KwaiVGI_LivePortrait/pr_31",
+      "pr_number": 31,
+      "repository": "KwaiVGI/LivePortrait",
+      "files": {
+        "precision": 1.0,
+        "recall": 0.6667,
+        "f1": 0.8,
+        "predicted_count": 2,
+        "actual_count": 3,
+        "correct_count": 2
+      },
+      "functions": {
+        "precision": 0.3333,
+        "recall": 0.5,
+        "f1": 0.4,
+        "predicted_count": 3,
+        "actual_count": 2,
+        "correct_count": 1
+      },
+      "steps": {
+        "predicted_steps": 3,
+        "actual_steps": 3,
+        "step_diff": 0,
+        "target_coverage": 1.0,
+        "targets_matched": 3,
+        "targets_total": 3
+      },
+      "semantic": {
+        "summary_similarity": 0.8152,
+        "avg_step_similarity": 0.7161,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Extend video-writing utility to optionally mux audio from a source video after encoding f...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Add a new CLI/config flag to control whether audio should be muxed into the generated vid...",
+            "similarity": 0.6581
+          },
+          {
+            "pred_idx": 1,
+            "pred_text": "Operation: Update ffmpeg mux helper to support taking audio from a video input and to use explicit s...",
+            "gt_idx": 1,
+            "gt_text": "Operation: Implement an ffmpeg-based helper to mux audio from the driving input into a silent render...",
+            "similarity": 0.7446
+          },
+          {
+            "pred_idx": 2,
+            "pred_text": "Operation: Integrate keep-audio logic in the main pipeline execution when driving input is a video |...",
+            "gt_idx": 2,
+            "gt_text": "Operation: Wire audio muxing into the main pipeline outputs (both the concatenated preview and the f...",
+            "similarity": 0.7457
+          }
+        ],
+        "overall_semantic_score": 0.7458,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/PR4Code/dataset_pr_commits_py/Mikubill_sd-webui-controlnet/pr_2952",
+      "pr_number": 2952,
+      "repository": "Mikubill/sd-webui-controlnet",
+      "files": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "predicted_count": 1,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "functions": {
+        "precision": 0.25,
+        "recall": 1.0,
+        "f1": 0.4,
+        "predicted_count": 4,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "steps": {
+        "predicted_steps": 4,
+        "actual_steps": 1,
+        "step_diff": 3,
+        "target_coverage": 1.0,
+        "targets_matched": 4,
+        "targets_total": 4
+      },
+      "semantic": {
+        "summary_similarity": 0.8793,
+        "avg_step_similarity": 0.2168,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Harden pip command construction in requirements installer by safely quoting/escaping requ...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Quote pip install specifiers passed to launch.run_pip to prevent shell redirection when r...",
+            "similarity": 0.8674
+          }
+        ],
+        "overall_semantic_score": 0.4155,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/PR4Code/dataset_pr_commits_py/NVIDIA_NeMo/pr_14200",
+      "pr_number": 14200,
+      "repository": "NVIDIA/NeMo",
+      "files": {
+        "precision": 0.3333,
+        "recall": 0.5,
+        "f1": 0.4,
+        "predicted_count": 3,
+        "actual_count": 2,
+        "correct_count": 1
+      },
+      "functions": {
+        "precision": 0.4,
+        "recall": 0.6667,
+        "f1": 0.5,
+        "predicted_count": 5,
+        "actual_count": 3,
+        "correct_count": 2
+      },
+      "steps": {
+        "predicted_steps": 5,
+        "actual_steps": 3,
+        "step_diff": 2,
+        "target_coverage": 0.8,
+        "targets_matched": 4,
+        "targets_total": 5
+      },
+      "semantic": {
+        "summary_similarity": 0.7682,
+        "avg_step_similarity": 0.4103,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Switch SPECTER reranker dataset construction to use the on-disk JSONL query field key | F...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Adjust Specter preprocessing output schema to emit the new question field name | Function...",
+            "similarity": 0.7753
+          },
+          {
+            "pred_idx": 1,
+            "pred_text": "Operation: (Optional hardening) Add backward-compatible fallback for question/query key mismatch whe...",
+            "gt_idx": 1,
+            "gt_text": "Operation: Remove leftover debug output / tidy formatting around example processing | Function: _pro...",
+            "similarity": 0.431
+          },
+          {
+            "pred_idx": 4,
+            "pred_text": "Operation: Update schema assertion test to reflect the canonical key and prevent regressions | Funct...",
+            "gt_idx": 2,
+            "gt_text": "Operation: Update the unit test to assert the new output key | Function: test_specter_reranker_datam...",
+            "similarity": 0.8453
+          }
+        ],
+        "overall_semantic_score": 0.5177,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/PR4Code/dataset_pr_commits_py/SYSTRAN_faster-whisper/pr_1134",
+      "pr_number": 1134,
+      "repository": "SYSTRAN/faster-whisper",
+      "files": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "predicted_count": 1,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "functions": {
+        "precision": 0.5,
+        "recall": 1.0,
+        "f1": 0.6667,
+        "predicted_count": 2,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "steps": {
+        "predicted_steps": 2,
+        "actual_steps": 1,
+        "step_diff": 1,
+        "target_coverage": 1.0,
+        "targets_matched": 2,
+        "targets_total": 2
+      },
+      "semantic": {
+        "summary_similarity": 0.6988,
+        "avg_step_similarity": 0.4231,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Change the default value of `language_detection_threshold` to a numeric value (e.g., 0.7)...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Change the default `language_detection_threshold` parameter to `0.5` and simplify the ear...",
+            "similarity": 0.8462
+          }
+        ],
+        "overall_semantic_score": 0.5058,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/PR4Code/dataset_pr_commits_py/TheAlgorithms_Python/pr_12679",
+      "pr_number": 12679,
+      "repository": "TheAlgorithms/Python",
+      "files": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "predicted_count": 1,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "functions": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "predicted_count": 1,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "steps": {
+        "predicted_steps": 1,
+        "actual_steps": 1,
+        "step_diff": 0,
+        "target_coverage": 1.0,
+        "targets_matched": 1,
+        "targets_total": 1
+      },
+      "semantic": {
+        "summary_similarity": 0.8017,
+        "avg_step_similarity": 0.856,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Rewrite overtime computation to explicit regular-hours + 1.5× overtime-hours formula (whi...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Fix overtime calculation by separating regular vs overtime hours and applying the correct...",
+            "similarity": 0.856
+          }
+        ],
+        "overall_semantic_score": 0.8397,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/PR4Code/dataset_pr_commits_py/XiaoMi_ha_xiaomi_home/pr_1264",
+      "pr_number": 1264,
+      "repository": "XiaoMi/ha_xiaomi_home",
+      "files": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "predicted_count": 1,
+        "actual_count": 1,
+        "correct_count": 0
+      },
+      "functions": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "predicted_count": 1,
+        "actual_count": 1,
+        "correct_count": 0
+      },
+      "steps": {
+        "predicted_steps": 1,
+        "actual_steps": 1,
+        "step_diff": 0,
+        "target_coverage": 0.0,
+        "targets_matched": 0,
+        "targets_total": 1
+      },
+      "semantic": {
+        "summary_similarity": 0.8204,
+        "avg_step_similarity": 0.8382,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Skip MIoT cloud per-device online/offline state subscription for BLE DIDs (prefix `blt.`)...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Add early-return guard to skip subscribing to MIoT cloud online/offline state broadcasts ...",
+            "similarity": 0.8382
+          }
+        ],
+        "overall_semantic_score": 0.8329,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/PR4Code/dataset_pr_commits_py/confident-ai_deepeval/pr_1706",
+      "pr_number": 1706,
+      "repository": "confident-ai/deepeval",
+      "files": {
+        "precision": 0.5,
+        "recall": 1.0,
+        "f1": 0.6667,
+        "predicted_count": 2,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "functions": {
+        "precision": 0.1111,
+        "recall": 0.5,
+        "f1": 0.1818,
+        "predicted_count": 9,
+        "actual_count": 2,
+        "correct_count": 1
+      },
+      "steps": {
+        "predicted_steps": 9,
+        "actual_steps": 2,
+        "step_diff": 7,
+        "target_coverage": 0.5556,
+        "targets_matched": 5,
+        "targets_total": 9
+      },
+      "semantic": {
+        "summary_similarity": 0.728,
+        "avg_step_similarity": 0.0994,
+        "step_matches": [
+          {
+            "pred_idx": 2,
+            "pred_text": "Operation: Fix out-of-range indexing when evolving inputs per context: cap iteration to max_goldens_...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Add bounds-checking when selecting a source_file entry to avoid IndexError | Function: pr...",
+            "similarity": 0.5754
+          },
+          {
+            "pred_idx": 8,
+            "pred_text": "Operation: Fix the async per-source-file sampler with the same alignment logic: ensure contexts, sco...",
+            "gt_idx": 1,
+            "gt_text": "Operation: Reformat the updated conditional expression to match Black formatting | Reason: After add...",
+            "similarity": 0.3196
+          }
+        ],
+        "overall_semantic_score": 0.288,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/PR4Code/dataset_pr_commits_py/saleor_saleor/pr_17947",
+      "pr_number": 17947,
+      "repository": "saleor/saleor",
+      "files": {
+        "precision": 0.3333,
+        "recall": 1.0,
+        "f1": 0.5,
+        "predicted_count": 3,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "functions": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "predicted_count": 4,
+        "actual_count": 0,
+        "correct_count": 0
+      },
+      "steps": {
+        "predicted_steps": 4,
+        "actual_steps": 1,
+        "step_diff": 3,
+        "target_coverage": 0.25,
+        "targets_matched": 1,
+        "targets_total": 4
+      },
+      "semantic": {
+        "summary_similarity": 0.7936,
+        "avg_step_similarity": 0.205,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Fix COST_MAP entries so `Attribute.values` uses the `limit` multiplier and `SelectedAttri...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Fix query cost multipliers for Attribute.values and SelectedAttribute.values by moving th...",
+            "similarity": 0.8198
+          }
+        ],
+        "overall_semantic_score": 0.3816,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/PR4Code/dataset_pr_commits_py/scikit-learn_scikit-learn/pr_31674",
+      "pr_number": 31674,
+      "repository": "scikit-learn/scikit-learn",
+      "files": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "predicted_count": 1,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "functions": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "predicted_count": 1,
+        "actual_count": 0,
+        "correct_count": 0
+      },
+      "steps": {
+        "predicted_steps": 1,
+        "actual_steps": 1,
+        "step_diff": 0,
+        "target_coverage": 1.0,
+        "targets_matched": 1,
+        "targets_total": 1
+      },
+      "semantic": {
+        "summary_similarity": 0.7113,
+        "avg_step_similarity": 0.8972,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Fix the Sphinx extension module name in the docs build configuration | Function: setup | ...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Fix Sphinx extension module name in the documentation build configuration by replacing th...",
+            "similarity": 0.8972
+          }
+        ],
+        "overall_semantic_score": 0.8414,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/PR4Code/dataset_pr_commits_py/vikhyat_moondream/pr_277",
+      "pr_number": 277,
+      "repository": "vikhyat/moondream",
+      "files": {
+        "precision": 0.6667,
+        "recall": 0.6667,
+        "f1": 0.6667,
+        "predicted_count": 3,
+        "actual_count": 3,
+        "correct_count": 2
+      },
+      "functions": {
+        "precision": 0.25,
+        "recall": 0.1111,
+        "f1": 0.1538,
+        "predicted_count": 4,
+        "actual_count": 9,
+        "correct_count": 1
+      },
+      "steps": {
+        "predicted_steps": 4,
+        "actual_steps": 10,
+        "step_diff": -6,
+        "target_coverage": 0.75,
+        "targets_matched": 3,
+        "targets_total": 4
+      },
+      "semantic": {
+        "summary_similarity": 0.8627,
+        "avg_step_similarity": 0.5991,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Fix label construction and index alignment for region finetuning under log2 size binning ...",
+            "gt_idx": 9,
+            "gt_text": "Operation: Remove duplicated/incorrect extra bounding-box label appending and update the script’s tr...",
+            "similarity": 0.7206
+          },
+          {
+            "pred_idx": 1,
+            "pred_text": "Operation: Review and, if necessary, adjust region_loss indexing/label grouping assumptions to match...",
+            "gt_idx": 7,
+            "gt_text": "Operation: Adjust finetuning hyperparameters (learning rate and gradient accumulation) for region fi...",
+            "similarity": 0.5473
+          },
+          {
+            "pred_idx": 2,
+            "pred_text": "Operation: Add waste detection evaluation implementation that loads the waste detection dataset, run...",
+            "gt_idx": 4,
+            "gt_text": "Operation: Add evaluation loop to run detection per label and aggregate TP/FP/FN into precision/reca...",
+            "similarity": 0.7272
+          },
+          {
+            "pred_idx": 3,
+            "pred_text": "Operation: Register the new waste detection eval in the central eval runner so it can be invoked via...",
+            "gt_idx": 6,
+            "gt_text": "Operation: Add CLI entrypoint to select model path, IoU threshold, GPU index, and debug mode and pri...",
+            "similarity": 0.4014
+          }
+        ],
+        "overall_semantic_score": 0.6782,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    }
+  ]
+}

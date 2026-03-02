@@ -1,0 +1,190 @@
+{
+    "repository": "recommenders-team/recommenders",
+    "pull_request_number": 2071,
+    "title": "Fixing TF to < 2.16",
+    "body": "### Description\r\n<!--- Describe your changes in detail -->\r\n<!--- Why is this change required? What problem does it solve? -->\r\n\r\n\r\n### Related Issues\r\n<!--- If it fixes an open issue, please link to the issue here. -->\r\n#2073\r\n\r\n### References\r\n<!--- References would be helpful to understand the changes. -->\r\n<!--- References can be books, links, etc. -->\r\n\r\n\r\n### Checklist:\r\n<!--- Go over all the following points, and put an `x` in all the boxes that apply. -->\r\n<!--- If you're unsure about any of these, don't hesitate to ask. We're here to help! -->\r\n- [ ] I have followed the [contribution guidelines](CONTRIBUTING.md) and code style for this project.\r\n- [ ] I have added tests covering my contributions.\r\n- [ ] I have updated the documentation accordingly.\r\n- [ ] I have [signed the commits](https://github.com/recommenders-team/recommenders/wiki/How-to-sign-commits), e.g. `git commit -s -m \"your commit message\"`. \r\n- [ ] This PR is being made to `staging branch` AND NOT TO `main branch`.\r\n",
+    "pr_date": "2024-03-18T19:17:12Z",
+    "source_branch": "miguel/fix_tf",
+    "language": "en",
+    "keywords_detected": {
+        "branch": [
+            "fix"
+        ],
+        "requirement": [
+            "fix"
+        ],
+        "body": [
+            "add",
+            "change",
+            "fix",
+            "update"
+        ]
+    },
+    "number_of_links_in_pr": 3,
+    "base_sha": "d8e8ac30e8eca6ff33f4c9a90a1fdfdeb36942be",
+    "last_commit_sha": "21492c91cc5cfb7379c44887ef89bf3ab93edb65",
+    "diff_between_base_and_last": [
+        {
+            "sha": "f6b6a8986a96b851651e8055cc031f04e62b39f0",
+            "filename": "recommenders/models/fastai/fastai_utils.py",
+            "status": "modified",
+            "additions": 4,
+            "deletions": 0,
+            "changes": 4,
+            "blob_url": "https://github.com/recommenders-team/recommenders/blob/21492c91cc5cfb7379c44887ef89bf3ab93edb65/recommenders%2Fmodels%2Ffastai%2Ffastai_utils.py",
+            "raw_url": "https://github.com/recommenders-team/recommenders/raw/21492c91cc5cfb7379c44887ef89bf3ab93edb65/recommenders%2Fmodels%2Ffastai%2Ffastai_utils.py",
+            "contents_url": "https://api.github.com/repos/recommenders-team/recommenders/contents/recommenders%2Fmodels%2Ffastai%2Ffastai_utils.py?ref=21492c91cc5cfb7379c44887ef89bf3ab93edb65",
+            "patch": "@@ -62,18 +62,22 @@ def score(\n \n     # score the pytorch model\n     x = torch.column_stack((u, m))\n+\n     if torch.cuda.is_available():\n         x = x.to(\"cuda\")\n         learner.model = learner.model.to(\"cuda\")\n+\n     pred = learner.model.forward(x).detach().cpu().numpy()\n     scores = pd.DataFrame(\n         {user_col: test_df[user_col], item_col: test_df[item_col], prediction_col: pred}\n     )\n     scores = scores.sort_values([user_col, prediction_col], ascending=[True, False])\n+\n     if top_k is not None:\n         top_scores = scores.groupby(user_col).head(top_k).reset_index(drop=True)\n     else:\n         top_scores = scores\n+\n     return top_scores\n \n "
+        },
+        {
+            "sha": "c5fc49bb84ce1d9c267969d952ee58bbe7bf424d",
+            "filename": "setup.py",
+            "status": "modified",
+            "additions": 1,
+            "deletions": 1,
+            "changes": 2,
+            "blob_url": "https://github.com/recommenders-team/recommenders/blob/21492c91cc5cfb7379c44887ef89bf3ab93edb65/setup.py",
+            "raw_url": "https://github.com/recommenders-team/recommenders/raw/21492c91cc5cfb7379c44887ef89bf3ab93edb65/setup.py",
+            "contents_url": "https://api.github.com/repos/recommenders-team/recommenders/contents/setup.py?ref=21492c91cc5cfb7379c44887ef89bf3ab93edb65",
+            "patch": "@@ -53,7 +53,7 @@\n     \"gpu\": [\n         \"fastai>=2.7.11,<3\",\n         \"nvidia-ml-py>=11.525.84\",\n-        \"tensorflow>=2.8.4,!=2.9.0.*,!=2.9.1,!=2.9.2,!=2.10.0.*,<=2.15.0\",\n+        \"tensorflow>=2.8.4,!=2.9.0.*,!=2.9.1,!=2.9.2,!=2.10.0.*,<2.16\",  # Fixed TF due to constant security problems and breaking changes #2073\n         \"tf-slim>=1.1.0\",  # No python_requires in its setup.py\n         \"torch>=2.0.1,<3\",\n     ],"
+        },
+        {
+            "sha": "05b53c68e1b1f38d023fc065e35b358467c732f0",
+            "filename": "tests/functional/examples/test_notebooks_gpu.py",
+            "status": "modified",
+            "additions": 5,
+            "deletions": 3,
+            "changes": 8,
+            "blob_url": "https://github.com/recommenders-team/recommenders/blob/21492c91cc5cfb7379c44887ef89bf3ab93edb65/tests%2Ffunctional%2Fexamples%2Ftest_notebooks_gpu.py",
+            "raw_url": "https://github.com/recommenders-team/recommenders/raw/21492c91cc5cfb7379c44887ef89bf3ab93edb65/tests%2Ffunctional%2Fexamples%2Ftest_notebooks_gpu.py",
+            "contents_url": "https://api.github.com/repos/recommenders-team/recommenders/contents/tests%2Ffunctional%2Fexamples%2Ftest_notebooks_gpu.py?ref=21492c91cc5cfb7379c44887ef89bf3ab93edb65",
+            "patch": "@@ -247,7 +247,9 @@ def test_wide_deep_functional(\n             os.path.join(\"tests\", \"resources\", \"deeprec\", \"slirec\"),\n             10,\n             400,\n-            {\"auc\": 0.7183},  # Don't do logloss check as SLi-Rec uses ranking loss, not a point-wise loss\n+            {\n+                \"auc\": 0.7183\n+            },  # Don't do logloss check as SLi-Rec uses ranking loss, not a point-wise loss\n             42,\n         )\n     ],\n@@ -278,7 +280,7 @@ def test_slirec_quickstart_functional(\n     results = read_notebook(output_notebook)\n \n     assert results[\"auc\"] == pytest.approx(expected_values[\"auc\"], rel=TOL, abs=ABS_TOL)\n-    \n+\n \n @pytest.mark.gpu\n @pytest.mark.notebooks\n@@ -567,7 +569,7 @@ def test_dkn_quickstart_functional(notebooks, output_notebook, kernel_name):\n         notebook_path,\n         output_notebook,\n         kernel_name=kernel_name,\n-        parameters=dict(EPOCHS=5, BATCH_SIZE=500),\n+        parameters=dict(EPOCHS=5, BATCH_SIZE=200),\n     )\n     results = read_notebook(output_notebook)\n "
+        }
+    ],
+    "commits": [
+        {
+            "sha": "730a5e98d7ad8b2adf5d6a14ce64984c3041a251",
+            "commit_date": "2024-03-18T19:16:32Z",
+            "message": "Fixing TF to < 2.16",
+            "number_of_links_in_commit": 0,
+            "files_changed_count": 1,
+            "files": [
+                {
+                    "sha": "89d3af503f00d630b5a298c083dfaf0d80b4c355",
+                    "filename": "setup.py",
+                    "status": "modified",
+                    "additions": 1,
+                    "deletions": 1,
+                    "changes": 2,
+                    "blob_url": "https://github.com/recommenders-team/recommenders/blob/730a5e98d7ad8b2adf5d6a14ce64984c3041a251/setup.py",
+                    "raw_url": "https://github.com/recommenders-team/recommenders/raw/730a5e98d7ad8b2adf5d6a14ce64984c3041a251/setup.py",
+                    "contents_url": "https://api.github.com/repos/recommenders-team/recommenders/contents/setup.py?ref=730a5e98d7ad8b2adf5d6a14ce64984c3041a251",
+                    "patch": "@@ -53,7 +53,7 @@\n     \"gpu\": [\n         \"fastai>=2.7.11,<3\",\n         \"nvidia-ml-py>=11.525.84\",\n-        \"tensorflow>=2.8.4,!=2.9.0.*,!=2.9.1,!=2.9.2,!=2.10.0.*,<3\",\n+        \"tensorflow>=2.8.4,!=2.9.0.*,!=2.9.1,!=2.9.2,!=2.10.0.*,<2.16\",\n         \"tf-slim>=1.1.0\",  # No python_requires in its setup.py\n         \"torch>=2.0.1,<3\",\n     ],"
+                }
+            ]
+        },
+        {
+            "sha": "657531ac355d87cc319a849cdd0c7fa18a3ae552",
+            "commit_date": "2024-03-18T20:06:05Z",
+            "message": ":bug:\n\nSigned-off-by: miguelgfierro <miguelgfierro@users.noreply.github.com>",
+            "number_of_links_in_commit": 0,
+            "files_changed_count": 1,
+            "files": [
+                {
+                    "sha": "0742857f30414b49f5d9eb1b6d0a51f523ced1f5",
+                    "filename": "recommenders/models/fastai/fastai_utils.py",
+                    "status": "modified",
+                    "additions": 2,
+                    "deletions": 2,
+                    "changes": 4,
+                    "blob_url": "https://github.com/recommenders-team/recommenders/blob/657531ac355d87cc319a849cdd0c7fa18a3ae552/recommenders%2Fmodels%2Ffastai%2Ffastai_utils.py",
+                    "raw_url": "https://github.com/recommenders-team/recommenders/raw/657531ac355d87cc319a849cdd0c7fa18a3ae552/recommenders%2Fmodels%2Ffastai%2Ffastai_utils.py",
+                    "contents_url": "https://api.github.com/repos/recommenders-team/recommenders/contents/recommenders%2Fmodels%2Ffastai%2Ffastai_utils.py?ref=657531ac355d87cc319a849cdd0c7fa18a3ae552",
+                    "patch": "@@ -62,8 +62,8 @@ def score(\n \n     # score the pytorch model\n     x = torch.column_stack((u, m))\n-    if torch.cuda.is_available()\n-        x = x.to('cuda')\n+    if torch.cuda.is_available():\n+        x = x.to(\"cuda\")\n     pred = learner.model.forward(x).detach().cpu().numpy()\n     scores = pd.DataFrame(\n         {user_col: test_df[user_col], item_col: test_df[item_col], prediction_col: pred}"
+                }
+            ]
+        },
+        {
+            "sha": "e99b8d04f46861daf60181b956a4a42714b52957",
+            "commit_date": "2024-03-18T21:18:12Z",
+            "message": "model to CUDA as well as data\n\nSigned-off-by: miguelgfierro <miguelgfierro@users.noreply.github.com>",
+            "number_of_links_in_commit": 0,
+            "files_changed_count": 1,
+            "files": [
+                {
+                    "sha": "f6b6a8986a96b851651e8055cc031f04e62b39f0",
+                    "filename": "recommenders/models/fastai/fastai_utils.py",
+                    "status": "modified",
+                    "additions": 5,
+                    "deletions": 0,
+                    "changes": 5,
+                    "blob_url": "https://github.com/recommenders-team/recommenders/blob/e99b8d04f46861daf60181b956a4a42714b52957/recommenders%2Fmodels%2Ffastai%2Ffastai_utils.py",
+                    "raw_url": "https://github.com/recommenders-team/recommenders/raw/e99b8d04f46861daf60181b956a4a42714b52957/recommenders%2Fmodels%2Ffastai%2Ffastai_utils.py",
+                    "contents_url": "https://api.github.com/repos/recommenders-team/recommenders/contents/recommenders%2Fmodels%2Ffastai%2Ffastai_utils.py?ref=e99b8d04f46861daf60181b956a4a42714b52957",
+                    "patch": "@@ -62,17 +62,22 @@ def score(\n \n     # score the pytorch model\n     x = torch.column_stack((u, m))\n+\n     if torch.cuda.is_available():\n         x = x.to(\"cuda\")\n+        learner.model = learner.model.to(\"cuda\")\n+\n     pred = learner.model.forward(x).detach().cpu().numpy()\n     scores = pd.DataFrame(\n         {user_col: test_df[user_col], item_col: test_df[item_col], prediction_col: pred}\n     )\n     scores = scores.sort_values([user_col, prediction_col], ascending=[True, False])\n+\n     if top_k is not None:\n         top_scores = scores.groupby(user_col).head(top_k).reset_index(drop=True)\n     else:\n         top_scores = scores\n+\n     return top_scores\n \n "
+                }
+            ]
+        },
+        {
+            "sha": "19bcf1a8961a111e0bea3613fbfb5ccf97e0435c",
+            "commit_date": "2024-03-19T05:48:15Z",
+            "message": "Merge branch 'simonz-dep-upgrade-20230606' into miguel/fix_tf",
+            "number_of_links_in_commit": 0,
+            "files_changed_count": 0,
+            "files": []
+        },
+        {
+            "sha": "b255fae97203ee0f82bbc5faba1f971d07a25f80",
+            "commit_date": "2024-03-19T06:14:39Z",
+            "message": ":memo:\n\nSigned-off-by: miguelgfierro <miguelgfierro@users.noreply.github.com>",
+            "number_of_links_in_commit": 0,
+            "files_changed_count": 1,
+            "files": [
+                {
+                    "sha": "c5fc49bb84ce1d9c267969d952ee58bbe7bf424d",
+                    "filename": "setup.py",
+                    "status": "modified",
+                    "additions": 1,
+                    "deletions": 1,
+                    "changes": 2,
+                    "blob_url": "https://github.com/recommenders-team/recommenders/blob/b255fae97203ee0f82bbc5faba1f971d07a25f80/setup.py",
+                    "raw_url": "https://github.com/recommenders-team/recommenders/raw/b255fae97203ee0f82bbc5faba1f971d07a25f80/setup.py",
+                    "contents_url": "https://api.github.com/repos/recommenders-team/recommenders/contents/setup.py?ref=b255fae97203ee0f82bbc5faba1f971d07a25f80",
+                    "patch": "@@ -53,7 +53,7 @@\n     \"gpu\": [\n         \"fastai>=2.7.11,<3\",\n         \"nvidia-ml-py>=11.525.84\",\n-        \"tensorflow>=2.8.4,!=2.9.0.*,!=2.9.1,!=2.9.2,!=2.10.0.*,<2.16\",\n+        \"tensorflow>=2.8.4,!=2.9.0.*,!=2.9.1,!=2.9.2,!=2.10.0.*,<2.16\",  # Fixed TF due to constant security problems and breaking changes #2073\n         \"tf-slim>=1.1.0\",  # No python_requires in its setup.py\n         \"torch>=2.0.1,<3\",\n     ],"
+                }
+            ]
+        },
+        {
+            "sha": "85899cf7f9bad8ad84f405074dbe4bd6acea0371",
+            "commit_date": "2024-03-19T08:22:46Z",
+            "message": "Reducing DKN batch size to 200\n\nSigned-off-by: miguelgfierro <miguelgfierro@users.noreply.github.com>",
+            "number_of_links_in_commit": 0,
+            "files_changed_count": 1,
+            "files": [
+                {
+                    "sha": "05b53c68e1b1f38d023fc065e35b358467c732f0",
+                    "filename": "tests/functional/examples/test_notebooks_gpu.py",
+                    "status": "modified",
+                    "additions": 5,
+                    "deletions": 3,
+                    "changes": 8,
+                    "blob_url": "https://github.com/recommenders-team/recommenders/blob/85899cf7f9bad8ad84f405074dbe4bd6acea0371/tests%2Ffunctional%2Fexamples%2Ftest_notebooks_gpu.py",
+                    "raw_url": "https://github.com/recommenders-team/recommenders/raw/85899cf7f9bad8ad84f405074dbe4bd6acea0371/tests%2Ffunctional%2Fexamples%2Ftest_notebooks_gpu.py",
+                    "contents_url": "https://api.github.com/repos/recommenders-team/recommenders/contents/tests%2Ffunctional%2Fexamples%2Ftest_notebooks_gpu.py?ref=85899cf7f9bad8ad84f405074dbe4bd6acea0371",
+                    "patch": "@@ -247,7 +247,9 @@ def test_wide_deep_functional(\n             os.path.join(\"tests\", \"resources\", \"deeprec\", \"slirec\"),\n             10,\n             400,\n-            {\"auc\": 0.7183},  # Don't do logloss check as SLi-Rec uses ranking loss, not a point-wise loss\n+            {\n+                \"auc\": 0.7183\n+            },  # Don't do logloss check as SLi-Rec uses ranking loss, not a point-wise loss\n             42,\n         )\n     ],\n@@ -278,7 +280,7 @@ def test_slirec_quickstart_functional(\n     results = read_notebook(output_notebook)\n \n     assert results[\"auc\"] == pytest.approx(expected_values[\"auc\"], rel=TOL, abs=ABS_TOL)\n-    \n+\n \n @pytest.mark.gpu\n @pytest.mark.notebooks\n@@ -567,7 +569,7 @@ def test_dkn_quickstart_functional(notebooks, output_notebook, kernel_name):\n         notebook_path,\n         output_notebook,\n         kernel_name=kernel_name,\n-        parameters=dict(EPOCHS=5, BATCH_SIZE=500),\n+        parameters=dict(EPOCHS=5, BATCH_SIZE=200),\n     )\n     results = read_notebook(output_notebook)\n "
+                }
+            ]
+        },
+        {
+            "sha": "21492c91cc5cfb7379c44887ef89bf3ab93edb65",
+            "commit_date": "2024-03-19T09:39:27Z",
+            "message": "Merge branch 'simonz-dep-upgrade-20230606' into miguel/fix_tf",
+            "number_of_links_in_commit": 0,
+            "files_changed_count": 0,
+            "files": []
+        }
+    ],
+    "pull_request_url": "https://github.com/recommenders-team/recommenders/pull/2071",
+    "commits_url": "https://github.com/recommenders-team/recommenders/pull/2071/commits",
+    "files_url": "https://github.com/recommenders-team/recommenders/pull/2071/files"
+}

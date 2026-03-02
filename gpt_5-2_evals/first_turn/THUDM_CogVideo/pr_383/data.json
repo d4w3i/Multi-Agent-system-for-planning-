@@ -1,0 +1,61 @@
+{
+    "repository": "THUDM/CogVideo",
+    "pull_request_number": 383,
+    "title": "fix deprecation of clear_objs_and_retain_memory",
+    "body": "The API of diffusers `clear_objs_and_retain_memory` has been deprecated in [huggingface/diffusers#9543](https://github.com/huggingface/diffusers/pull/9543/files#diff-5c07adf115dbb937f26dbfedff2aef0d31b4e8e3a58ba9cfb4a0c9f64672a8c5L263) and is replaced with `free_memory`. Therefore, the corresponding parts in the LoRA training script need to be adjusted to adapt to the latest version of diffusers.",
+    "pr_date": "2024-09-30T12:49:40Z",
+    "source_branch": "fix-deprecation",
+    "language": "en",
+    "keywords_detected": {
+        "branch": [
+            "fix"
+        ],
+        "requirement": [
+            "fix"
+        ],
+        "body": []
+    },
+    "number_of_links_in_pr": 2,
+    "base_sha": "7130d2274b06ce7a388a5b4120f8fe6ce466afa4",
+    "last_commit_sha": "a59ed84b52c77b88231745cf194ddd216df50560",
+    "diff_between_base_and_last": [
+        {
+            "sha": "a746af814af051366fe3c1bf7dcac1c5d1c68b53",
+            "filename": "finetune/train_cogvideox_lora.py",
+            "status": "modified",
+            "additions": 2,
+            "deletions": 2,
+            "changes": 4,
+            "blob_url": "https://github.com/THUDM/CogVideo/blob/a59ed84b52c77b88231745cf194ddd216df50560/finetune%2Ftrain_cogvideox_lora.py",
+            "raw_url": "https://github.com/THUDM/CogVideo/raw/a59ed84b52c77b88231745cf194ddd216df50560/finetune%2Ftrain_cogvideox_lora.py",
+            "contents_url": "https://api.github.com/repos/THUDM/CogVideo/contents/finetune%2Ftrain_cogvideox_lora.py?ref=a59ed84b52c77b88231745cf194ddd216df50560",
+            "patch": "@@ -40,7 +40,7 @@\n from diffusers.pipelines.cogvideo.pipeline_cogvideox import get_resize_crop_region_for_grid\n from diffusers.training_utils import (\n     cast_training_params,\n-    clear_objs_and_retain_memory,\n+    free_memory,\n )\n from diffusers.utils import check_min_version, convert_unet_state_dict_to_peft, export_to_video, is_wandb_available\n from diffusers.utils.hub_utils import load_or_create_model_card, populate_model_card\n@@ -726,7 +726,7 @@ def log_validation(\n                 }\n             )\n \n-    clear_objs_and_retain_memory([pipe])\n+    free_memory()\n \n     return videos\n "
+        }
+    ],
+    "commits": [
+        {
+            "sha": "a59ed84b52c77b88231745cf194ddd216df50560",
+            "commit_date": "2024-09-30T12:45:53Z",
+            "message": "fix deprecation of clear_objs_and_retain_memory",
+            "number_of_links_in_commit": 0,
+            "files_changed_count": 1,
+            "files": [
+                {
+                    "sha": "a746af814af051366fe3c1bf7dcac1c5d1c68b53",
+                    "filename": "finetune/train_cogvideox_lora.py",
+                    "status": "modified",
+                    "additions": 2,
+                    "deletions": 2,
+                    "changes": 4,
+                    "blob_url": "https://github.com/THUDM/CogVideo/blob/a59ed84b52c77b88231745cf194ddd216df50560/finetune%2Ftrain_cogvideox_lora.py",
+                    "raw_url": "https://github.com/THUDM/CogVideo/raw/a59ed84b52c77b88231745cf194ddd216df50560/finetune%2Ftrain_cogvideox_lora.py",
+                    "contents_url": "https://api.github.com/repos/THUDM/CogVideo/contents/finetune%2Ftrain_cogvideox_lora.py?ref=a59ed84b52c77b88231745cf194ddd216df50560",
+                    "patch": "@@ -40,7 +40,7 @@\n from diffusers.pipelines.cogvideo.pipeline_cogvideox import get_resize_crop_region_for_grid\n from diffusers.training_utils import (\n     cast_training_params,\n-    clear_objs_and_retain_memory,\n+    free_memory,\n )\n from diffusers.utils import check_min_version, convert_unet_state_dict_to_peft, export_to_video, is_wandb_available\n from diffusers.utils.hub_utils import load_or_create_model_card, populate_model_card\n@@ -726,7 +726,7 @@ def log_validation(\n                 }\n             )\n \n-    clear_objs_and_retain_memory([pipe])\n+    free_memory()\n \n     return videos\n "
+                }
+            ]
+        }
+    ],
+    "pull_request_url": "https://github.com/THUDM/CogVideo/pull/383",
+    "commits_url": "https://github.com/THUDM/CogVideo/pull/383/commits",
+    "files_url": "https://github.com/THUDM/CogVideo/pull/383/files"
+}

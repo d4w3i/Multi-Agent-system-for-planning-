@@ -1,0 +1,110 @@
+{
+    "repository": "KwaiVGI/LivePortrait",
+    "pull_request_number": 31,
+    "title": "Fix: add sound in generated video",
+    "body": "Amazing project!!!\r\nI found a small bug where the generated video does not have the sound of the original video.",
+    "pr_date": "2024-07-05T11:15:31Z",
+    "source_branch": "fix-bug-sound",
+    "language": "en",
+    "keywords_detected": {
+        "branch": [
+            "fix"
+        ],
+        "requirement": [
+            "add",
+            "fix"
+        ],
+        "body": []
+    },
+    "number_of_links_in_pr": 0,
+    "base_sha": "d09527c76275969e99f4d9e29775f02df1b4c48e",
+    "last_commit_sha": "02e73f12525968a26532e28d967eb1723e7bc934",
+    "diff_between_base_and_last": [
+        {
+            "sha": "b4ff7b44bf9b832352ea8ba79d5090963de9d1f3",
+            "filename": "src/config/argument_config.py",
+            "status": "modified",
+            "additions": 1,
+            "deletions": 0,
+            "changes": 1,
+            "blob_url": "https://github.com/KwaiVGI/LivePortrait/blob/02e73f12525968a26532e28d967eb1723e7bc934/src%2Fconfig%2Fargument_config.py",
+            "raw_url": "https://github.com/KwaiVGI/LivePortrait/raw/02e73f12525968a26532e28d967eb1723e7bc934/src%2Fconfig%2Fargument_config.py",
+            "contents_url": "https://api.github.com/repos/KwaiVGI/LivePortrait/contents/src%2Fconfig%2Fargument_config.py?ref=02e73f12525968a26532e28d967eb1723e7bc934",
+            "patch": "@@ -29,6 +29,7 @@ class ArgumentConfig(PrintableConfig):\n     flag_pasteback: bool = True  # whether to paste-back/stitch the animated face cropping from the face-cropping space to the original image space\n     flag_do_crop: bool = True  # whether to crop the source portrait to the face-cropping space\n     flag_do_rot: bool = True  # whether to conduct the rotation when flag_do_crop is True\n+    flag_add_sound: bool = True  # whether to add sound when flag_add_sound is True\n     #########################################\n \n     ########## crop arguments ##########"
+        },
+        {
+            "sha": "3f54a7c2b9e1a3c5158b04ce3bf9ee9229969b8f",
+            "filename": "src/live_portrait_pipeline.py",
+            "status": "modified",
+            "additions": 7,
+            "deletions": 1,
+            "changes": 8,
+            "blob_url": "https://github.com/KwaiVGI/LivePortrait/blob/02e73f12525968a26532e28d967eb1723e7bc934/src%2Flive_portrait_pipeline.py",
+            "raw_url": "https://github.com/KwaiVGI/LivePortrait/raw/02e73f12525968a26532e28d967eb1723e7bc934/src%2Flive_portrait_pipeline.py",
+            "contents_url": "https://api.github.com/repos/KwaiVGI/LivePortrait/contents/src%2Flive_portrait_pipeline.py?ref=02e73f12525968a26532e28d967eb1723e7bc934",
+            "patch": "@@ -19,7 +19,7 @@\n from .config.crop_config import CropConfig\n from .utils.cropper import Cropper\n from .utils.camera import get_rotation_matrix\n-from .utils.video import images2video, concat_frames\n+from .utils.video import images2video, concat_frames, add_audio_to_video\n from .utils.crop import _transform_img, prepare_paste_back, paste_back\n from .utils.retargeting_utils import calc_lip_close_ratio\n from .utils.io import load_image_rgb, load_driving_info, resize_to_limit\n@@ -179,12 +179,18 @@ def execute(self, args: ArgumentConfig):\n             # save (driving frames, source image, drived frames) result\n             wfp_concat = osp.join(args.output_dir, f'{basename(args.source_image)}--{basename(args.driving_info)}_concat.mp4')\n             images2video(frames_concatenated, wfp=wfp_concat)\n+            if args.flag_add_sound:\n+                wfp_concat_sound = osp.join(args.output_dir, f'{basename(args.source_image)}--{basename(args.driving_info)}_concat--sound.mp4')\n+                add_audio_to_video(wfp_concat, args.driving_info, wfp_concat_sound)\n \n         # save drived result\n         wfp = osp.join(args.output_dir, f'{basename(args.source_image)}--{basename(args.driving_info)}.mp4')\n         if inference_cfg.flag_pasteback:\n             images2video(I_p_paste_lst, wfp=wfp)\n         else:\n             images2video(I_p_lst, wfp=wfp)\n+        if args.flag_add_sound:\n+            wfp_sound = osp.join(args.output_dir, f'{basename(args.source_image)}--{basename(args.driving_info)}--sound.mp4')\n+            add_audio_to_video(wfp, args.driving_info, wfp_sound)\n \n         return wfp, wfp_concat"
+        },
+        {
+            "sha": "146b76f6609473da51352ae8363a75931932804d",
+            "filename": "src/utils/video.py",
+            "status": "modified",
+            "additions": 19,
+            "deletions": 0,
+            "changes": 19,
+            "blob_url": "https://github.com/KwaiVGI/LivePortrait/blob/02e73f12525968a26532e28d967eb1723e7bc934/src%2Futils%2Fvideo.py",
+            "raw_url": "https://github.com/KwaiVGI/LivePortrait/raw/02e73f12525968a26532e28d967eb1723e7bc934/src%2Futils%2Fvideo.py",
+            "contents_url": "https://api.github.com/repos/KwaiVGI/LivePortrait/contents/src%2Futils%2Fvideo.py?ref=02e73f12525968a26532e28d967eb1723e7bc934",
+            "patch": "@@ -137,3 +137,22 @@ def get_fps(filepath):\n     video_stream = next((stream for stream in probe['streams'] if stream['codec_type'] == 'video'), None)\n     fps = eval(video_stream['avg_frame_rate'])\n     return fps\n+\n+def add_audio_to_video(silent_video_path, input_audio_path, output_video_path):\n+    command = [\n+        'ffmpeg',\n+        '-y',\n+        '-i', silent_video_path,\n+        '-i', input_audio_path,\n+        '-map', '0:v',\n+        '-map', '1:a',\n+        '-c:v', 'copy',\n+        '-shortest',\n+        output_video_path\n+    ]\n+\n+    try:\n+        subprocess.run(command, check=True)\n+        print(f\"Video with audio generated successfully: {output_video_path}\")\n+    except subprocess.CalledProcessError as e:\n+        print(f\"Error occurred: {e}\")"
+        }
+    ],
+    "commits": [
+        {
+            "sha": "02e73f12525968a26532e28d967eb1723e7bc934",
+            "commit_date": "2024-07-05T11:14:32Z",
+            "message": "Fix: add sound in generated video",
+            "number_of_links_in_commit": 0,
+            "files_changed_count": 3,
+            "files": [
+                {
+                    "sha": "b4ff7b44bf9b832352ea8ba79d5090963de9d1f3",
+                    "filename": "src/config/argument_config.py",
+                    "status": "modified",
+                    "additions": 1,
+                    "deletions": 0,
+                    "changes": 1,
+                    "blob_url": "https://github.com/KwaiVGI/LivePortrait/blob/02e73f12525968a26532e28d967eb1723e7bc934/src%2Fconfig%2Fargument_config.py",
+                    "raw_url": "https://github.com/KwaiVGI/LivePortrait/raw/02e73f12525968a26532e28d967eb1723e7bc934/src%2Fconfig%2Fargument_config.py",
+                    "contents_url": "https://api.github.com/repos/KwaiVGI/LivePortrait/contents/src%2Fconfig%2Fargument_config.py?ref=02e73f12525968a26532e28d967eb1723e7bc934",
+                    "patch": "@@ -29,6 +29,7 @@ class ArgumentConfig(PrintableConfig):\n     flag_pasteback: bool = True  # whether to paste-back/stitch the animated face cropping from the face-cropping space to the original image space\n     flag_do_crop: bool = True  # whether to crop the source portrait to the face-cropping space\n     flag_do_rot: bool = True  # whether to conduct the rotation when flag_do_crop is True\n+    flag_add_sound: bool = True  # whether to add sound when flag_add_sound is True\n     #########################################\n \n     ########## crop arguments ##########"
+                },
+                {
+                    "sha": "3f54a7c2b9e1a3c5158b04ce3bf9ee9229969b8f",
+                    "filename": "src/live_portrait_pipeline.py",
+                    "status": "modified",
+                    "additions": 7,
+                    "deletions": 1,
+                    "changes": 8,
+                    "blob_url": "https://github.com/KwaiVGI/LivePortrait/blob/02e73f12525968a26532e28d967eb1723e7bc934/src%2Flive_portrait_pipeline.py",
+                    "raw_url": "https://github.com/KwaiVGI/LivePortrait/raw/02e73f12525968a26532e28d967eb1723e7bc934/src%2Flive_portrait_pipeline.py",
+                    "contents_url": "https://api.github.com/repos/KwaiVGI/LivePortrait/contents/src%2Flive_portrait_pipeline.py?ref=02e73f12525968a26532e28d967eb1723e7bc934",
+                    "patch": "@@ -19,7 +19,7 @@\n from .config.crop_config import CropConfig\n from .utils.cropper import Cropper\n from .utils.camera import get_rotation_matrix\n-from .utils.video import images2video, concat_frames\n+from .utils.video import images2video, concat_frames, add_audio_to_video\n from .utils.crop import _transform_img, prepare_paste_back, paste_back\n from .utils.retargeting_utils import calc_lip_close_ratio\n from .utils.io import load_image_rgb, load_driving_info, resize_to_limit\n@@ -179,12 +179,18 @@ def execute(self, args: ArgumentConfig):\n             # save (driving frames, source image, drived frames) result\n             wfp_concat = osp.join(args.output_dir, f'{basename(args.source_image)}--{basename(args.driving_info)}_concat.mp4')\n             images2video(frames_concatenated, wfp=wfp_concat)\n+            if args.flag_add_sound:\n+                wfp_concat_sound = osp.join(args.output_dir, f'{basename(args.source_image)}--{basename(args.driving_info)}_concat--sound.mp4')\n+                add_audio_to_video(wfp_concat, args.driving_info, wfp_concat_sound)\n \n         # save drived result\n         wfp = osp.join(args.output_dir, f'{basename(args.source_image)}--{basename(args.driving_info)}.mp4')\n         if inference_cfg.flag_pasteback:\n             images2video(I_p_paste_lst, wfp=wfp)\n         else:\n             images2video(I_p_lst, wfp=wfp)\n+        if args.flag_add_sound:\n+            wfp_sound = osp.join(args.output_dir, f'{basename(args.source_image)}--{basename(args.driving_info)}--sound.mp4')\n+            add_audio_to_video(wfp, args.driving_info, wfp_sound)\n \n         return wfp, wfp_concat"
+                },
+                {
+                    "sha": "146b76f6609473da51352ae8363a75931932804d",
+                    "filename": "src/utils/video.py",
+                    "status": "modified",
+                    "additions": 19,
+                    "deletions": 0,
+                    "changes": 19,
+                    "blob_url": "https://github.com/KwaiVGI/LivePortrait/blob/02e73f12525968a26532e28d967eb1723e7bc934/src%2Futils%2Fvideo.py",
+                    "raw_url": "https://github.com/KwaiVGI/LivePortrait/raw/02e73f12525968a26532e28d967eb1723e7bc934/src%2Futils%2Fvideo.py",
+                    "contents_url": "https://api.github.com/repos/KwaiVGI/LivePortrait/contents/src%2Futils%2Fvideo.py?ref=02e73f12525968a26532e28d967eb1723e7bc934",
+                    "patch": "@@ -137,3 +137,22 @@ def get_fps(filepath):\n     video_stream = next((stream for stream in probe['streams'] if stream['codec_type'] == 'video'), None)\n     fps = eval(video_stream['avg_frame_rate'])\n     return fps\n+\n+def add_audio_to_video(silent_video_path, input_audio_path, output_video_path):\n+    command = [\n+        'ffmpeg',\n+        '-y',\n+        '-i', silent_video_path,\n+        '-i', input_audio_path,\n+        '-map', '0:v',\n+        '-map', '1:a',\n+        '-c:v', 'copy',\n+        '-shortest',\n+        output_video_path\n+    ]\n+\n+    try:\n+        subprocess.run(command, check=True)\n+        print(f\"Video with audio generated successfully: {output_video_path}\")\n+    except subprocess.CalledProcessError as e:\n+        print(f\"Error occurred: {e}\")"
+                }
+            ]
+        }
+    ],
+    "pull_request_url": "https://github.com/KwaiVGI/LivePortrait/pull/31",
+    "commits_url": "https://github.com/KwaiVGI/LivePortrait/pull/31/commits",
+    "files_url": "https://github.com/KwaiVGI/LivePortrait/pull/31/files"
+}

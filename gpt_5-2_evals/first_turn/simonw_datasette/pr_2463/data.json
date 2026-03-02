@@ -1,0 +1,87 @@
+{
+    "repository": "simonw/datasette",
+    "pull_request_number": 2463,
+    "title": "Use the event_loop fixture",
+    "body": "Refs:\r\n- https://github.com/simonw/datasette/issues/2461#issuecomment-2634920351\r\n\r\n<!-- readthedocs-preview datasette start -->\r\n----\n\ud83d\udcda Documentation preview \ud83d\udcda: https://datasette--2463.org.readthedocs.build/en/2463/\n\r\n<!-- readthedocs-preview datasette end -->",
+    "pr_date": "2025-02-04T19:56:11Z",
+    "source_branch": "event-loop-fixture",
+    "language": "en",
+    "keywords_detected": {
+        "branch": [
+            "fix"
+        ],
+        "requirement": [
+            "fix"
+        ],
+        "body": [
+            "build"
+        ]
+    },
+    "number_of_links_in_pr": 2,
+    "base_sha": "b9047d812a5107490d85b91e6c329c48074a57c8",
+    "last_commit_sha": "c8749995a88aeed9596272c7a8f073b8235e3ec9",
+    "diff_between_base_and_last": [
+        {
+            "sha": "aa78a5de12f3c6553df9fe19d7c7751ff3a3a4b0",
+            "filename": "tests/test_auth.py",
+            "status": "modified",
+            "additions": 1,
+            "deletions": 1,
+            "changes": 2,
+            "blob_url": "https://github.com/simonw/datasette/blob/c8749995a88aeed9596272c7a8f073b8235e3ec9/tests%2Ftest_auth.py",
+            "raw_url": "https://github.com/simonw/datasette/raw/c8749995a88aeed9596272c7a8f073b8235e3ec9/tests%2Ftest_auth.py",
+            "contents_url": "https://api.github.com/repos/simonw/datasette/contents/tests%2Ftest_auth.py?ref=c8749995a88aeed9596272c7a8f073b8235e3ec9",
+            "patch": "@@ -307,7 +307,7 @@ async def test_auth_with_dstok_token(ds_client, scenario, should_work):\n \n \n @pytest.mark.parametrize(\"expires\", (None, 1000, -1000))\n-def test_cli_create_token(app_client, expires):\n+def test_cli_create_token(event_loop, app_client, expires):\n     secret = app_client.ds._secret\n     runner = CliRunner(mix_stderr=False)\n     args = [\"create-token\", \"--secret\", secret, \"test\"]"
+        },
+        {
+            "sha": "32ffa6591e6cf943919762d5fbb5d34dc7f2f724",
+            "filename": "tests/test_permissions.py",
+            "status": "modified",
+            "additions": 1,
+            "deletions": 2,
+            "changes": 3,
+            "blob_url": "https://github.com/simonw/datasette/blob/c8749995a88aeed9596272c7a8f073b8235e3ec9/tests%2Ftest_permissions.py",
+            "raw_url": "https://github.com/simonw/datasette/raw/c8749995a88aeed9596272c7a8f073b8235e3ec9/tests%2Ftest_permissions.py",
+            "contents_url": "https://api.github.com/repos/simonw/datasette/contents/tests%2Ftest_permissions.py?ref=c8749995a88aeed9596272c7a8f073b8235e3ec9",
+            "patch": "@@ -929,7 +929,6 @@ async def test_actor_endpoint_allows_any_token():\n     }\n \n \n-@pytest.mark.serial\n @pytest.mark.parametrize(\n     \"options,expected\",\n     (\n@@ -984,7 +983,7 @@ async def test_actor_endpoint_allows_any_token():\n         ),\n     ),\n )\n-def test_cli_create_token(options, expected):\n+def test_cli_create_token(event_loop, options, expected):\n     runner = CliRunner()\n     result1 = runner.invoke(\n         cli,"
+        }
+    ],
+    "commits": [
+        {
+            "sha": "c8749995a88aeed9596272c7a8f073b8235e3ec9",
+            "commit_date": "2025-02-04T19:50:47Z",
+            "message": "Try the event_loop fixture\n\nRefs https://github.com/simonw/datasette/issues/2461#issuecomment-2634920351",
+            "number_of_links_in_commit": 1,
+            "files_changed_count": 2,
+            "files": [
+                {
+                    "sha": "aa78a5de12f3c6553df9fe19d7c7751ff3a3a4b0",
+                    "filename": "tests/test_auth.py",
+                    "status": "modified",
+                    "additions": 1,
+                    "deletions": 1,
+                    "changes": 2,
+                    "blob_url": "https://github.com/simonw/datasette/blob/c8749995a88aeed9596272c7a8f073b8235e3ec9/tests%2Ftest_auth.py",
+                    "raw_url": "https://github.com/simonw/datasette/raw/c8749995a88aeed9596272c7a8f073b8235e3ec9/tests%2Ftest_auth.py",
+                    "contents_url": "https://api.github.com/repos/simonw/datasette/contents/tests%2Ftest_auth.py?ref=c8749995a88aeed9596272c7a8f073b8235e3ec9",
+                    "patch": "@@ -307,7 +307,7 @@ async def test_auth_with_dstok_token(ds_client, scenario, should_work):\n \n \n @pytest.mark.parametrize(\"expires\", (None, 1000, -1000))\n-def test_cli_create_token(app_client, expires):\n+def test_cli_create_token(event_loop, app_client, expires):\n     secret = app_client.ds._secret\n     runner = CliRunner(mix_stderr=False)\n     args = [\"create-token\", \"--secret\", secret, \"test\"]"
+                },
+                {
+                    "sha": "32ffa6591e6cf943919762d5fbb5d34dc7f2f724",
+                    "filename": "tests/test_permissions.py",
+                    "status": "modified",
+                    "additions": 1,
+                    "deletions": 2,
+                    "changes": 3,
+                    "blob_url": "https://github.com/simonw/datasette/blob/c8749995a88aeed9596272c7a8f073b8235e3ec9/tests%2Ftest_permissions.py",
+                    "raw_url": "https://github.com/simonw/datasette/raw/c8749995a88aeed9596272c7a8f073b8235e3ec9/tests%2Ftest_permissions.py",
+                    "contents_url": "https://api.github.com/repos/simonw/datasette/contents/tests%2Ftest_permissions.py?ref=c8749995a88aeed9596272c7a8f073b8235e3ec9",
+                    "patch": "@@ -929,7 +929,6 @@ async def test_actor_endpoint_allows_any_token():\n     }\n \n \n-@pytest.mark.serial\n @pytest.mark.parametrize(\n     \"options,expected\",\n     (\n@@ -984,7 +983,7 @@ async def test_actor_endpoint_allows_any_token():\n         ),\n     ),\n )\n-def test_cli_create_token(options, expected):\n+def test_cli_create_token(event_loop, options, expected):\n     runner = CliRunner()\n     result1 = runner.invoke(\n         cli,"
+                }
+            ]
+        }
+    ],
+    "pull_request_url": "https://github.com/simonw/datasette/pull/2463",
+    "commits_url": "https://github.com/simonw/datasette/pull/2463/commits",
+    "files_url": "https://github.com/simonw/datasette/pull/2463/files"
+}

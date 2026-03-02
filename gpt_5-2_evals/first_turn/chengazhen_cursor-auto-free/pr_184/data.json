@@ -1,0 +1,66 @@
+{
+    "repository": "chengazhen/cursor-auto-free",
+    "pull_request_number": 184,
+    "title": "update build.py as to use env prioritized",
+    "body": "Developers would prefer to build the src locally thus taking their own `.env` (if not exists then use env.example) to build the final `CursorPro` executable. Do you like it @chengazhen ?",
+    "pr_date": "2025-02-08T18:45:33Z",
+    "source_branch": "feature/env",
+    "language": "en",
+    "keywords_detected": {
+        "branch": [
+            "feature",
+            "feat"
+        ],
+        "requirement": [
+            "update",
+            "build"
+        ],
+        "body": [
+            "develop",
+            "build"
+        ]
+    },
+    "number_of_links_in_pr": 0,
+    "base_sha": "59fe7c144b37108ae3776b2340f2edd713b80d37",
+    "last_commit_sha": "6979638b4ec093af850d6f335ffa19749173e69d",
+    "diff_between_base_and_last": [
+        {
+            "sha": "641d1a037f24a6e7d1d450f4cda91a32ea4d175e",
+            "filename": "build.py",
+            "status": "modified",
+            "additions": 6,
+            "deletions": 7,
+            "changes": 13,
+            "blob_url": "https://github.com/chengazhen/cursor-auto-free/blob/6979638b4ec093af850d6f335ffa19749173e69d/build.py",
+            "raw_url": "https://github.com/chengazhen/cursor-auto-free/raw/6979638b4ec093af850d6f335ffa19749173e69d/build.py",
+            "contents_url": "https://api.github.com/repos/chengazhen/cursor-auto-free/contents/build.py?ref=6979638b4ec093af850d6f335ffa19749173e69d",
+            "patch": "@@ -162,13 +162,12 @@ def build():\n         else:\n             subprocess.run([\"cp\", \"config.ini.example\", f\"{output_dir}/config.ini\"])\n \n-    # Copy .env.example file\n-    if os.path.exists(\".env.example\"):\n-        simulate_progress(\"Copying environment file...\", 0.5)\n-        if system == \"windows\":\n-            subprocess.run([\"copy\", \".env.example\", f\"{output_dir}\\\\.env\"], shell=True)\n-        else:\n-            subprocess.run([\"cp\", \".env.example\", f\"{output_dir}/.env\"])\n+    # Copy .env file or .env.example if .env doesn't exist\n+    env_file = \".env\" if os.path.exists(\".env\") else \".env.example\"\n+    if os.path.exists(env_file):\n+        simulate_progress(f\"Copying {'example ' if env_file == '.env.example' else ''}environment file...\", 0.5)\n+        copy_command = \"copy\" if system == \"windows\" else \"cp\"\n+        subprocess.run([copy_command, env_file, f\"{output_dir}/.env\"], shell=(system == \"windows\"))\n \n     print(\n         f\"\\n\\033[92mBuild completed successfully! Output directory: {output_dir}\\033[0m\""
+        }
+    ],
+    "commits": [
+        {
+            "sha": "6979638b4ec093af850d6f335ffa19749173e69d",
+            "commit_date": "2025-02-08T18:43:36Z",
+            "message": "update build.py as to use env prioritized",
+            "number_of_links_in_commit": 0,
+            "files_changed_count": 1,
+            "files": [
+                {
+                    "sha": "641d1a037f24a6e7d1d450f4cda91a32ea4d175e",
+                    "filename": "build.py",
+                    "status": "modified",
+                    "additions": 6,
+                    "deletions": 7,
+                    "changes": 13,
+                    "blob_url": "https://github.com/chengazhen/cursor-auto-free/blob/6979638b4ec093af850d6f335ffa19749173e69d/build.py",
+                    "raw_url": "https://github.com/chengazhen/cursor-auto-free/raw/6979638b4ec093af850d6f335ffa19749173e69d/build.py",
+                    "contents_url": "https://api.github.com/repos/chengazhen/cursor-auto-free/contents/build.py?ref=6979638b4ec093af850d6f335ffa19749173e69d",
+                    "patch": "@@ -162,13 +162,12 @@ def build():\n         else:\n             subprocess.run([\"cp\", \"config.ini.example\", f\"{output_dir}/config.ini\"])\n \n-    # Copy .env.example file\n-    if os.path.exists(\".env.example\"):\n-        simulate_progress(\"Copying environment file...\", 0.5)\n-        if system == \"windows\":\n-            subprocess.run([\"copy\", \".env.example\", f\"{output_dir}\\\\.env\"], shell=True)\n-        else:\n-            subprocess.run([\"cp\", \".env.example\", f\"{output_dir}/.env\"])\n+    # Copy .env file or .env.example if .env doesn't exist\n+    env_file = \".env\" if os.path.exists(\".env\") else \".env.example\"\n+    if os.path.exists(env_file):\n+        simulate_progress(f\"Copying {'example ' if env_file == '.env.example' else ''}environment file...\", 0.5)\n+        copy_command = \"copy\" if system == \"windows\" else \"cp\"\n+        subprocess.run([copy_command, env_file, f\"{output_dir}/.env\"], shell=(system == \"windows\"))\n \n     print(\n         f\"\\n\\033[92mBuild completed successfully! Output directory: {output_dir}\\033[0m\""
+                }
+            ]
+        }
+    ],
+    "pull_request_url": "https://github.com/chengazhen/cursor-auto-free/pull/184",
+    "commits_url": "https://github.com/chengazhen/cursor-auto-free/pull/184/commits",
+    "files_url": "https://github.com/chengazhen/cursor-auto-free/pull/184/files"
+}

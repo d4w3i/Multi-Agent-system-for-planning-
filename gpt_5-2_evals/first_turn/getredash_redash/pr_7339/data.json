@@ -1,0 +1,90 @@
+{
+    "repository": "getredash/redash",
+    "pull_request_number": 7339,
+    "title": "Sanitize NaN, Infinite, -Infinite causing error when saving as PostgreSQL JSON",
+    "body": "## What type of PR is this? \r\n- [x] Bug Fix\r\n\r\n## Description\r\nWhen running query that output NaN, Infinite, or -Infinite, redash executor crashes with the error \"Out of range float values are not JSON compliant\" like below. Redash does not output any rows when the error was occurred.\r\n\r\n```\r\n[2025-02-19 04:48:49,040][PID:593][ERROR][rq.worker] [Job 6cfa1d1c-2a32-48c6-8bf4-0cd8f8ba6f32]: exception raised while executing (redash.tasks.queries.execution.execute_query)\r\nTraceback (most recent call last):\r\n...\r\n  File \"/usr/local/lib/python3.10/site-packages/rq/job.py\", line 1280, in perform\r\n    self._result = self._execute()\r\n  File \"/usr/local/lib/python3.10/site-packages/rq/job.py\", line 1317, in _execute\r\n    result = self.func(*self.args, **self.kwargs)\r\n  File \"/app/redash/tasks/queries/execution.py\", line 309, in execute_query\r\n    ).run()\r\n  File \"/app/redash/tasks/queries/execution.py\", line 253, in run\r\n    updated_query_ids = models.Query.update_latest_result(query_result)\r\n  File \"/app/redash/models/__init__.py\", line 738, in update_latest_result\r\n    for q in queries:\r\n  File \"/usr/local/lib/python3.10/site-packages/sqlalchemy/orm/query.py\", line 3534, in __iter__\r\n    self.session._autoflush()\r\n...\r\nsqlalchemy.exc.StatementError: (raised as a result of Query-invoked autoflush; consider using a session.no_autoflush block if this flush is occurring prematurely)\r\n(builtins.ValueError) Out of range float values are not JSON compliant\r\n[SQL: INSERT INTO query_results (org_id, data_source_id, query_hash, query, data, runtime, retrieved_at) VALUES (%(org_id)s, %(data_source_id)s, %(query_hash)s, %(query)s, %(data)s, %(runtime)s, %(retrieved_at)s) RETURNING query_results.id]\r\n...\r\n```\r\n\r\nThe error occurs because JSON(PostgreSQL JSON type) does not support NaN, Infinite, -Infinite.\r\n\r\nThis PR fixes the issue by sanitize NaN, Infinite, -Infinite value to None. This is the save behavior that JavaScript JSON.stringify() does.\r\n\r\nWe can reproduce the issue by running following query on BigQuery or PostgreSQL.\r\n\r\nBigQuery:\r\n```\r\nselect 1.0, cast('NaN' as float64), cast('Infinity' as float64), cast('-Infinity' as float64)\r\n```\r\n\r\nPostgreSQL:\r\n```\r\nselect 1.0::float, 'NaN'::float, 'Infinity'::float, '-Infinity'::float\r\n```\r\n\r\nThe issue was introduced by #6685 which removes simplejson. Before #6685 , NaN / Inf was converted to null by simplejson with ignore_nan=True. This PR change behavior for NaN/Inf as same as before #6685 .\r\n\r\n\r\n## How is this tested?\r\n\r\n- [x] Unit tests (pytest, jest)\r\n- [x] Manually\r\n\r\nUnit test was added.\r\nAlso, we can confirm by running the query on the description. \r\n\r\nBefore this PR:\r\n\r\n<img width=\"793\" alt=\"image\" src=\"https://github.com/user-attachments/assets/8a929b4d-cde4-426a-af34-160091b0ad6b\" />\r\n\r\nAfter this PR:\r\n\r\n<img width=\"709\" alt=\"image\" src=\"https://github.com/user-attachments/assets/d59e481f-26fa-4c51-8111-9861d8268251\" />\r\n\r\n",
+    "pr_date": "2025-02-19T17:05:10Z",
+    "source_branch": "feat/sanitize_nan_inf",
+    "language": "en",
+    "keywords_detected": {
+        "branch": [
+            "feat"
+        ],
+        "requirement": [],
+        "body": [
+            "add",
+            "remove",
+            "change",
+            "fix",
+            "update",
+            "support"
+        ]
+    },
+    "number_of_links_in_pr": 2,
+    "base_sha": "8387fe6fcb33f041164b3b0e101afe5eec2447af",
+    "last_commit_sha": "e6b50288a8ee342db35ab6ff64b922b993ec86f8",
+    "diff_between_base_and_last": [
+        {
+            "sha": "eff82ec4e9e6c99d7ea6edb2b513a0ea88eb938f",
+            "filename": "redash/tasks/queries/execution.py",
+            "status": "modified",
+            "additions": 13,
+            "deletions": 1,
+            "changes": 14,
+            "blob_url": "https://github.com/getredash/redash/blob/e6b50288a8ee342db35ab6ff64b922b993ec86f8/redash%2Ftasks%2Fqueries%2Fexecution.py",
+            "raw_url": "https://github.com/getredash/redash/raw/e6b50288a8ee342db35ab6ff64b922b993ec86f8/redash%2Ftasks%2Fqueries%2Fexecution.py",
+            "contents_url": "https://api.github.com/repos/getredash/redash/contents/redash%2Ftasks%2Fqueries%2Fexecution.py?ref=e6b50288a8ee342db35ab6ff64b922b993ec86f8",
+            "patch": "@@ -1,3 +1,4 @@\n+import math\n import signal\n import sys\n import time\n@@ -171,6 +172,17 @@ def _get_size_iterative(dict_obj):\n     return size\n \n \n+# Convert NaN, Inf, and -Inf to None, which PostgreSQL cannot handle.\n+def _sanitize_data(data):\n+    if isinstance(data, dict):\n+        return {k: _sanitize_data(v) for k, v in data.items()}\n+    if isinstance(data, list):\n+        return [_sanitize_data(v) for v in data]\n+    if isinstance(data, float) and (math.isnan(data) or math.isinf(data)):\n+        return None\n+    return data\n+\n+\n class QueryExecutor:\n     def __init__(self, query, data_source_id, user_id, is_api_key, metadata, is_scheduled_query):\n         self.job = get_current_job()\n@@ -245,7 +257,7 @@ def run(self):\n                 self.data_source,\n                 self.query_hash,\n                 self.query,\n-                data,\n+                _sanitize_data(data),\n                 run_time,\n                 utcnow(),\n             )"
+        },
+        {
+            "sha": "a93c23b1c66b944283ec75f109e1513c2a64f282",
+            "filename": "tests/tasks/test_queries.py",
+            "status": "modified",
+            "additions": 35,
+            "deletions": 0,
+            "changes": 35,
+            "blob_url": "https://github.com/getredash/redash/blob/e6b50288a8ee342db35ab6ff64b922b993ec86f8/tests%2Ftasks%2Ftest_queries.py",
+            "raw_url": "https://github.com/getredash/redash/raw/e6b50288a8ee342db35ab6ff64b922b993ec86f8/tests%2Ftasks%2Ftest_queries.py",
+            "contents_url": "https://api.github.com/repos/getredash/redash/contents/tests%2Ftasks%2Ftest_queries.py?ref=e6b50288a8ee342db35ab6ff64b922b993ec86f8",
+            "patch": "@@ -186,6 +186,41 @@ def test_success(self, _):\n             result = models.QueryResult.query.get(result_id)\n             self.assertEqual(result.data, query_result_data)\n \n+    def test_sanitize_nan_inf(self, _):\n+        \"\"\"\n+        NaN, Inf, and -Inf are sanitized to None.\n+        \"\"\"\n+        with patch.object(PostgreSQL, \"run_query\") as qr:\n+            qr.return_value = (\n+                {\n+                    \"columns\": [\n+                        {\"name\": \"_col0\", \"friendly_name\": \"_col0\", \"type\": \"float\"},\n+                        {\"name\": \"_col1\", \"friendly_name\": \"_col1\", \"type\": \"float\"},\n+                        {\"name\": \"_col2\", \"friendly_name\": \"_col1\", \"type\": \"float\"},\n+                        {\"name\": \"_col3\", \"friendly_name\": \"_col1\", \"type\": \"float\"},\n+                    ],\n+                    \"rows\": [{\"_col0\": 1.0, \"_col1\": float(\"nan\"), \"_col2\": float(\"inf\"), \"_col3\": float(\"-inf\")}],\n+                },\n+                None,\n+            )\n+            query_result_data = {\n+                \"columns\": [\n+                    {\"name\": \"_col0\", \"friendly_name\": \"_col0\", \"type\": \"float\"},\n+                    {\"name\": \"_col1\", \"friendly_name\": \"_col1\", \"type\": \"float\"},\n+                    {\"name\": \"_col2\", \"friendly_name\": \"_col1\", \"type\": \"float\"},\n+                    {\"name\": \"_col3\", \"friendly_name\": \"_col1\", \"type\": \"float\"},\n+                ],\n+                \"rows\": [{\"_col0\": 1.0, \"_col1\": None, \"_col2\": None, \"_col3\": None}],\n+            }\n+            result_id = execute_query(\n+                \"select 1.0::float, 'NaN'::float, 'Infinity'::float, '-Infinity'::float\",\n+                self.factory.data_source.id,\n+                {},\n+            )\n+            self.assertEqual(1, qr.call_count)\n+            result = models.QueryResult.query.get(result_id)\n+            self.assertEqual(result.data, query_result_data)\n+\n     def test_success_scheduled(self, _):\n         \"\"\"\n         Scheduled queries remember their latest results."
+        }
+    ],
+    "commits": [
+        {
+            "sha": "e6b50288a8ee342db35ab6ff64b922b993ec86f8",
+            "commit_date": "2025-02-19T16:46:23Z",
+            "message": "Sanitize NaN, Infinite, -Infinite causing error when saving as PostgreSQL JSON",
+            "number_of_links_in_commit": 0,
+            "files_changed_count": 2,
+            "files": [
+                {
+                    "sha": "eff82ec4e9e6c99d7ea6edb2b513a0ea88eb938f",
+                    "filename": "redash/tasks/queries/execution.py",
+                    "status": "modified",
+                    "additions": 13,
+                    "deletions": 1,
+                    "changes": 14,
+                    "blob_url": "https://github.com/getredash/redash/blob/e6b50288a8ee342db35ab6ff64b922b993ec86f8/redash%2Ftasks%2Fqueries%2Fexecution.py",
+                    "raw_url": "https://github.com/getredash/redash/raw/e6b50288a8ee342db35ab6ff64b922b993ec86f8/redash%2Ftasks%2Fqueries%2Fexecution.py",
+                    "contents_url": "https://api.github.com/repos/getredash/redash/contents/redash%2Ftasks%2Fqueries%2Fexecution.py?ref=e6b50288a8ee342db35ab6ff64b922b993ec86f8",
+                    "patch": "@@ -1,3 +1,4 @@\n+import math\n import signal\n import sys\n import time\n@@ -171,6 +172,17 @@ def _get_size_iterative(dict_obj):\n     return size\n \n \n+# Convert NaN, Inf, and -Inf to None, which PostgreSQL cannot handle.\n+def _sanitize_data(data):\n+    if isinstance(data, dict):\n+        return {k: _sanitize_data(v) for k, v in data.items()}\n+    if isinstance(data, list):\n+        return [_sanitize_data(v) for v in data]\n+    if isinstance(data, float) and (math.isnan(data) or math.isinf(data)):\n+        return None\n+    return data\n+\n+\n class QueryExecutor:\n     def __init__(self, query, data_source_id, user_id, is_api_key, metadata, is_scheduled_query):\n         self.job = get_current_job()\n@@ -245,7 +257,7 @@ def run(self):\n                 self.data_source,\n                 self.query_hash,\n                 self.query,\n-                data,\n+                _sanitize_data(data),\n                 run_time,\n                 utcnow(),\n             )"
+                },
+                {
+                    "sha": "a93c23b1c66b944283ec75f109e1513c2a64f282",
+                    "filename": "tests/tasks/test_queries.py",
+                    "status": "modified",
+                    "additions": 35,
+                    "deletions": 0,
+                    "changes": 35,
+                    "blob_url": "https://github.com/getredash/redash/blob/e6b50288a8ee342db35ab6ff64b922b993ec86f8/tests%2Ftasks%2Ftest_queries.py",
+                    "raw_url": "https://github.com/getredash/redash/raw/e6b50288a8ee342db35ab6ff64b922b993ec86f8/tests%2Ftasks%2Ftest_queries.py",
+                    "contents_url": "https://api.github.com/repos/getredash/redash/contents/tests%2Ftasks%2Ftest_queries.py?ref=e6b50288a8ee342db35ab6ff64b922b993ec86f8",
+                    "patch": "@@ -186,6 +186,41 @@ def test_success(self, _):\n             result = models.QueryResult.query.get(result_id)\n             self.assertEqual(result.data, query_result_data)\n \n+    def test_sanitize_nan_inf(self, _):\n+        \"\"\"\n+        NaN, Inf, and -Inf are sanitized to None.\n+        \"\"\"\n+        with patch.object(PostgreSQL, \"run_query\") as qr:\n+            qr.return_value = (\n+                {\n+                    \"columns\": [\n+                        {\"name\": \"_col0\", \"friendly_name\": \"_col0\", \"type\": \"float\"},\n+                        {\"name\": \"_col1\", \"friendly_name\": \"_col1\", \"type\": \"float\"},\n+                        {\"name\": \"_col2\", \"friendly_name\": \"_col1\", \"type\": \"float\"},\n+                        {\"name\": \"_col3\", \"friendly_name\": \"_col1\", \"type\": \"float\"},\n+                    ],\n+                    \"rows\": [{\"_col0\": 1.0, \"_col1\": float(\"nan\"), \"_col2\": float(\"inf\"), \"_col3\": float(\"-inf\")}],\n+                },\n+                None,\n+            )\n+            query_result_data = {\n+                \"columns\": [\n+                    {\"name\": \"_col0\", \"friendly_name\": \"_col0\", \"type\": \"float\"},\n+                    {\"name\": \"_col1\", \"friendly_name\": \"_col1\", \"type\": \"float\"},\n+                    {\"name\": \"_col2\", \"friendly_name\": \"_col1\", \"type\": \"float\"},\n+                    {\"name\": \"_col3\", \"friendly_name\": \"_col1\", \"type\": \"float\"},\n+                ],\n+                \"rows\": [{\"_col0\": 1.0, \"_col1\": None, \"_col2\": None, \"_col3\": None}],\n+            }\n+            result_id = execute_query(\n+                \"select 1.0::float, 'NaN'::float, 'Infinity'::float, '-Infinity'::float\",\n+                self.factory.data_source.id,\n+                {},\n+            )\n+            self.assertEqual(1, qr.call_count)\n+            result = models.QueryResult.query.get(result_id)\n+            self.assertEqual(result.data, query_result_data)\n+\n     def test_success_scheduled(self, _):\n         \"\"\"\n         Scheduled queries remember their latest results."
+                }
+            ]
+        }
+    ],
+    "pull_request_url": "https://github.com/getredash/redash/pull/7339",
+    "commits_url": "https://github.com/getredash/redash/pull/7339/commits",
+    "files_url": "https://github.com/getredash/redash/pull/7339/files"
+}

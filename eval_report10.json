@@ -1,0 +1,3388 @@
+{
+  "timestamp": "2026-03-02T09:09:15.774811",
+  "total_prs": 63,
+  "evaluated_prs": 49,
+  "skipped_prs": 14,
+  "avg_file_precision": 0.6707469387755102,
+  "avg_file_recall": 0.7051020408163264,
+  "avg_file_f1": 0.6487408163265306,
+  "avg_function_precision": 0.3837918367346939,
+  "avg_function_recall": 0.551430612244898,
+  "avg_function_f1": 0.3995795918367347,
+  "avg_step_diff": 0.0,
+  "std_step_diff": 4.928657694207081,
+  "avg_target_coverage": 0.6989571428571428,
+  "avg_semantic_score": 0.6165551020408163,
+  "avg_summary_similarity": 0.7889734693877551,
+  "avg_step_similarity": 0.5426612244897959,
+  "semantic_evaluated": 49,
+  "pr_scores": [
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/PR4Code/dataset_pr_commits_py/Acly_krita-ai-diffusion/pr_1895",
+      "pr_number": 1895,
+      "repository": "Acly/krita-ai-diffusion",
+      "files": {
+        "precision": 0.6667,
+        "recall": 0.6667,
+        "f1": 0.6667,
+        "predicted_count": 3,
+        "actual_count": 3,
+        "correct_count": 2
+      },
+      "functions": {
+        "precision": 0.8571,
+        "recall": 0.5455,
+        "f1": 0.6667,
+        "predicted_count": 7,
+        "actual_count": 11,
+        "correct_count": 6
+      },
+      "steps": {
+        "predicted_steps": 7,
+        "actual_steps": 11,
+        "step_diff": -4,
+        "target_coverage": 0.8571,
+        "targets_matched": 6,
+        "targets_total": 7
+      },
+      "semantic": {
+        "summary_similarity": 0.7553,
+        "avg_step_similarity": 0.7157,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Introduce enum-based queue mode property and migrate from boolean queue_front; implement ...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Introduce an enum representing queue insertion behavior (back/front/replace) | Reason: Re...",
+            "similarity": 0.7518
+          },
+          {
+            "pred_idx": 1,
+            "pred_text": "Operation: Apply replace semantics exactly once across batch splitting (clear only once, not per spl...",
+            "gt_idx": 5,
+            "gt_text": "Operation: Extend enqueue_jobs to support replace semantics by clearing server/client queues and the...",
+            "similarity": 0.7776
+          },
+          {
+            "pred_idx": 2,
+            "pred_text": "Operation: Translate QueueMode into client enqueue parameters (front/back) and ensure replace-specif...",
+            "gt_idx": 6,
+            "gt_text": "Operation: Update job enqueue helper to accept a computed 'front' boolean and pass it to the client ...",
+            "similarity": 0.7539
+          },
+          {
+            "pred_idx": 3,
+            "pred_text": "Operation: Refactor/extend cancel(queued=True) logic for reuse by replace mode to clear remote queue...",
+            "gt_idx": 7,
+            "gt_text": "Operation: Refactor queued-cancel path to reuse a shared local queued-job clearing routine | Functio...",
+            "similarity": 0.7996
+          },
+          {
+            "pred_idx": 4,
+            "pred_text": "Operation: Update QueuePopup binding to use the new enum property (queue_mode) instead of the old bo...",
+            "gt_idx": 1,
+            "gt_text": "Operation: Replace the persisted model property/signal from boolean queue_front to enum queue_mode |...",
+            "similarity": 0.8032
+          },
+          {
+            "pred_idx": 5,
+            "pred_text": "Operation: Populate QueuePopup combo entries for enum modes and add the new 'replace' mode option wi...",
+            "gt_idx": 10,
+            "gt_text": "Operation: Update the UI to use an enum-backed queue mode combo and add a ctrl-click-capable Generat...",
+            "similarity": 0.5989
+          },
+          {
+            "pred_idx": 6,
+            "pred_text": "Operation: Ensure backend queue clearing is correctly sequenced/awaited so replace mode can safely c...",
+            "gt_idx": 8,
+            "gt_text": "Operation: Add a helper that removes all locally tracked queued jobs and reports whether any were re...",
+            "similarity": 0.5247
+          }
+        ],
+        "overall_semantic_score": 0.7276,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/PR4Code/dataset_pr_commits_py/DLR-RM_stable-baselines3/pr_2127",
+      "pr_number": 2127,
+      "repository": "DLR-RM/stable-baselines3",
+      "files": {
+        "precision": 0.2,
+        "recall": 0.3333,
+        "f1": 0.25,
+        "predicted_count": 5,
+        "actual_count": 3,
+        "correct_count": 1
+      },
+      "functions": {
+        "precision": 0.1667,
+        "recall": 0.4,
+        "f1": 0.2353,
+        "predicted_count": 12,
+        "actual_count": 5,
+        "correct_count": 2
+      },
+      "steps": {
+        "predicted_steps": 14,
+        "actual_steps": 6,
+        "step_diff": 8,
+        "target_coverage": 0.6429,
+        "targets_matched": 9,
+        "targets_total": 14
+      },
+      "semantic": {
+        "summary_similarity": 0.7141,
+        "avg_step_similarity": 0.2513,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Extend NatureCNN to optionally insert BatchNorm2d layers in each conv block (Conv2d -> op...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Add a new `use_batch_norm` constructor flag and refactor the CNN block assembly to condit...",
+            "similarity": 0.9082
+          },
+          {
+            "pred_idx": 1,
+            "pred_text": "Operation: Add optional MLP batch normalization controlled by a use_batch_norm flag (default False),...",
+            "gt_idx": 1,
+            "gt_text": "Operation: Extend `create_mlp` with a `use_batch_norm` flag to optionally prepend BatchNorm1d on inp...",
+            "similarity": 0.8326
+          },
+          {
+            "pred_idx": 2,
+            "pred_text": "Operation: Propagate the new CNN batch-norm option when creating per-key image extractors so MultiIn...",
+            "gt_idx": 3,
+            "gt_text": "Operation: Add a targeted unit test that constructs `NatureCNN` with `use_batch_norm=True`, asserts ...",
+            "similarity": 0.4946
+          },
+          {
+            "pred_idx": 3,
+            "pred_text": "Operation: Plumb MLP batch-norm configuration into critic MLP construction by passing the new create...",
+            "gt_idx": 4,
+            "gt_text": "Operation: Add a unit test for `create_mlp(..., use_batch_norm=True)` that checks the initial BatchN...",
+            "similarity": 0.5144
+          },
+          {
+            "pred_idx": 4,
+            "pred_text": "Operation: Enable SAC actor trunk to use optional MLP batch norm by forwarding the flag/kwargs to cr...",
+            "gt_idx": 5,
+            "gt_text": "Operation: Add an example training script for PPO on Atari Breakout using a CNN policy, including en...",
+            "similarity": 0.3422
+          },
+          {
+            "pred_idx": 10,
+            "pred_text": "Operation: Propagate policy-level BN configuration through TD3Policy initialization (if a user-facin...",
+            "gt_idx": 2,
+            "gt_text": "Operation: Add a forward-pass regression test that instantiates `ActorCriticCnnPolicy` for both disc...",
+            "similarity": 0.4259
+          }
+        ],
+        "overall_semantic_score": 0.3901,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/PR4Code/dataset_pr_commits_py/HKUDS_LightRAG/pr_1718",
+      "pr_number": 0,
+      "repository": "",
+      "files": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "predicted_count": 0,
+        "actual_count": 0,
+        "correct_count": 0
+      },
+      "functions": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "predicted_count": 0,
+        "actual_count": 0,
+        "correct_count": 0
+      },
+      "steps": {
+        "predicted_steps": 0,
+        "actual_steps": 0,
+        "step_diff": 0,
+        "target_coverage": 0.0,
+        "targets_matched": 0,
+        "targets_total": 0
+      },
+      "semantic": {
+        "summary_similarity": 0.0,
+        "avg_step_similarity": 0.0,
+        "step_matches": [],
+        "overall_semantic_score": 0.0,
+        "computed": false,
+        "error": null
+      },
+      "has_prediction": false,
+      "has_ground_truth": false,
+      "error": "predicted_plan.json not found"
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/PR4Code/dataset_pr_commits_py/JoeanAmier_XHS-Downloader/pr_237",
+      "pr_number": 237,
+      "repository": "JoeanAmier/XHS-Downloader",
+      "files": {
+        "precision": 0.5,
+        "recall": 1.0,
+        "f1": 0.6667,
+        "predicted_count": 2,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "functions": {
+        "precision": 0.3333,
+        "recall": 1.0,
+        "f1": 0.5,
+        "predicted_count": 3,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "steps": {
+        "predicted_steps": 3,
+        "actual_steps": 1,
+        "step_diff": 2,
+        "target_coverage": 0.6667,
+        "targets_matched": 2,
+        "targets_total": 3
+      },
+      "semantic": {
+        "summary_similarity": 0.7772,
+        "avg_step_similarity": 0.241,
+        "step_matches": [
+          {
+            "pred_idx": 2,
+            "pred_text": "Operation: Ensure settings validation/log wiring happens when the Index screen is mounted and RichLo...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Mount a `RichLog` widget during app startup before any code path calls `query_one(RichLog...",
+            "similarity": 0.7231
+          }
+        ],
+        "overall_semantic_score": 0.4019,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/PR4Code/dataset_pr_commits_py/ManimCommunity_manim/pr_4251",
+      "pr_number": 4251,
+      "repository": "ManimCommunity/manim",
+      "files": {
+        "precision": 1.0,
+        "recall": 0.5,
+        "f1": 0.6667,
+        "predicted_count": 1,
+        "actual_count": 2,
+        "correct_count": 1
+      },
+      "functions": {
+        "precision": 0.6,
+        "recall": 0.75,
+        "f1": 0.6667,
+        "predicted_count": 5,
+        "actual_count": 4,
+        "correct_count": 3
+      },
+      "steps": {
+        "predicted_steps": 5,
+        "actual_steps": 4,
+        "step_diff": 1,
+        "target_coverage": 1.0,
+        "targets_matched": 5,
+        "targets_total": 5
+      },
+      "semantic": {
+        "summary_similarity": 0.7721,
+        "avg_step_similarity": 0.6116,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Refactor edge instantiation in `_add_edge` to construct edges using a signature-agnostic ...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Refactor edge construction to pass endpoints as keyword arguments for broad Line-subclass...",
+            "similarity": 0.8375
+          },
+          {
+            "pred_idx": 1,
+            "pred_text": "Operation: Update initial edge population to reuse the same robust edge-construction pathway used by...",
+            "gt_idx": 1,
+            "gt_text": "Operation: Update undirected graph edge population logic to instantiate edge_type with `start=`/`end...",
+            "similarity": 0.8203
+          },
+          {
+            "pred_idx": 2,
+            "pred_text": "Operation: Align directed edge creation with the new edge-construction strategy and ensure tips are ...",
+            "gt_idx": 2,
+            "gt_text": "Operation: Update directed graph edge population logic to instantiate edge_type with `start=`/`end=`...",
+            "similarity": 0.7821
+          },
+          {
+            "pred_idx": 3,
+            "pred_text": "Operation: Verify and, if needed, adjust edge-updating logic so it remains correct for `Line` subcla...",
+            "gt_idx": 3,
+            "gt_text": "Operation: Add regression test ensuring Graph and DiGraph accept `LabeledLine` as `edge_type` and pr...",
+            "similarity": 0.6181
+          }
+        ],
+        "overall_semantic_score": 0.6598,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/PR4Code/dataset_pr_commits_py/NVIDIA_Megatron-LM/pr_1270",
+      "pr_number": 1270,
+      "repository": "NVIDIA/Megatron-LM",
+      "files": {
+        "precision": 0.3333,
+        "recall": 0.4,
+        "f1": 0.3636,
+        "predicted_count": 6,
+        "actual_count": 5,
+        "correct_count": 2
+      },
+      "functions": {
+        "precision": 0.3333,
+        "recall": 0.4286,
+        "f1": 0.375,
+        "predicted_count": 9,
+        "actual_count": 7,
+        "correct_count": 3
+      },
+      "steps": {
+        "predicted_steps": 9,
+        "actual_steps": 8,
+        "step_diff": 1,
+        "target_coverage": 0.6667,
+        "targets_matched": 6,
+        "targets_total": 9
+      },
+      "semantic": {
+        "summary_similarity": 0.8018,
+        "avg_step_similarity": 0.5605,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Register CLI flag `--z-loss-coeff` and expose it on `args` | Function: _add_training_args...",
+            "gt_idx": 5,
+            "gt_text": "Operation: Add CLI logging flag to optionally emit CE and z-loss metrics alongside total loss | Func...",
+            "similarity": 0.7341
+          },
+          {
+            "pred_idx": 1,
+            "pred_text": "Operation: Thread new argument through the argument parsing path so downstream modules can read `arg...",
+            "gt_idx": 6,
+            "gt_text": "Operation: Add CLI regularization argument to control z-loss strength from the command line | Functi...",
+            "similarity": 0.6028
+          },
+          {
+            "pred_idx": 2,
+            "pred_text": "Operation: Validate and normalize z-loss settings (non-negative, default behavior) | Function: valid...",
+            "gt_idx": 3,
+            "gt_text": "Operation: Expose a public API parameter for z-loss weight in the vocab-parallel cross entropy wrapp...",
+            "similarity": 0.5147
+          },
+          {
+            "pred_idx": 3,
+            "pred_text": "Operation: Compute per-token z-loss from logits alongside CE and return an optimization loss that in...",
+            "gt_idx": 1,
+            "gt_text": "Operation: Extend the tensor-parallel cross entropy autograd forward pass to compute z-loss, clone d...",
+            "similarity": 0.667
+          },
+          {
+            "pred_idx": 4,
+            "pred_text": "Operation: Plumb CE and z-loss reporting from the model forward so the training step can log both wh...",
+            "gt_idx": 2,
+            "gt_text": "Operation: Update the tensor-parallel cross entropy backward pass to incorporate the z-loss gradient...",
+            "similarity": 0.5636
+          },
+          {
+            "pred_idx": 6,
+            "pred_text": "Operation: Ensure training logs include optimization loss plus separate CE and z-loss terms with sta...",
+            "gt_idx": 4,
+            "gt_text": "Operation: Add transformer configuration field for z-loss weighting (as implemented in this PR, dupl...",
+            "similarity": 0.5228
+          },
+          {
+            "pred_idx": 7,
+            "pred_text": "Operation: Add z-loss to the legacy GPT loss path and expose separate CE and z-loss metrics for logg...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Wire z-loss support into the language model loss computation and change return signature ...",
+            "similarity": 0.7625
+          },
+          {
+            "pred_idx": 8,
+            "pred_text": "Operation: Extend inference/training loss wrapper to optimize total loss while reporting CE and z-lo...",
+            "gt_idx": 7,
+            "gt_text": "Operation: Update GPT pretraining loss function to consume `(total_loss, extra_logs)` output and opt...",
+            "similarity": 0.6769
+          }
+        ],
+        "overall_semantic_score": 0.6329,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/PR4Code/dataset_pr_commits_py/NVIDIA_apex/pr_1894",
+      "pr_number": 0,
+      "repository": "",
+      "files": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "predicted_count": 0,
+        "actual_count": 0,
+        "correct_count": 0
+      },
+      "functions": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "predicted_count": 0,
+        "actual_count": 0,
+        "correct_count": 0
+      },
+      "steps": {
+        "predicted_steps": 0,
+        "actual_steps": 0,
+        "step_diff": 0,
+        "target_coverage": 0.0,
+        "targets_matched": 0,
+        "targets_total": 0
+      },
+      "semantic": {
+        "summary_similarity": 0.0,
+        "avg_step_similarity": 0.0,
+        "step_matches": [],
+        "overall_semantic_score": 0.0,
+        "computed": false,
+        "error": null
+      },
+      "has_prediction": false,
+      "has_ground_truth": false,
+      "error": "predicted_plan.json not found"
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/PR4Code/dataset_pr_commits_py/Netflix_metaflow/pr_2468",
+      "pr_number": 2468,
+      "repository": "Netflix/metaflow",
+      "files": {
+        "precision": 0.5,
+        "recall": 1.0,
+        "f1": 0.6667,
+        "predicted_count": 2,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "functions": {
+        "precision": 0.125,
+        "recall": 0.5,
+        "f1": 0.2,
+        "predicted_count": 8,
+        "actual_count": 2,
+        "correct_count": 1
+      },
+      "steps": {
+        "predicted_steps": 8,
+        "actual_steps": 2,
+        "step_diff": 6,
+        "target_coverage": 0.125,
+        "targets_matched": 1,
+        "targets_total": 8
+      },
+      "semantic": {
+        "summary_similarity": 0.7591,
+        "avg_step_similarity": 0.1396,
+        "step_matches": [
+          {
+            "pred_idx": 4,
+            "pred_text": "Operation: Generate accurate `inspect.Parameter` objects (kind, default, varargs/kwargs behavior, ke...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Import Python's introspection helper to enable signature rewriting for injected runner su...",
+            "similarity": 0.5324
+          },
+          {
+            "pred_idx": 5,
+            "pred_text": "Operation: Ensure extracted command wrappers expose complete metadata and include flow-parameter inj...",
+            "gt_idx": 1,
+            "gt_text": "Operation: Fix injected command method metadata by using the subcommand class' constructor docstring...",
+            "similarity": 0.5847
+          }
+        ],
+        "overall_semantic_score": 0.3255,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/PR4Code/dataset_pr_commits_py/OpenBB-finance_OpenBB/pr_7075",
+      "pr_number": 0,
+      "repository": "",
+      "files": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "predicted_count": 0,
+        "actual_count": 0,
+        "correct_count": 0
+      },
+      "functions": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "predicted_count": 0,
+        "actual_count": 0,
+        "correct_count": 0
+      },
+      "steps": {
+        "predicted_steps": 0,
+        "actual_steps": 0,
+        "step_diff": 0,
+        "target_coverage": 0.0,
+        "targets_matched": 0,
+        "targets_total": 0
+      },
+      "semantic": {
+        "summary_similarity": 0.0,
+        "avg_step_similarity": 0.0,
+        "step_matches": [],
+        "overall_semantic_score": 0.0,
+        "computed": false,
+        "error": null
+      },
+      "has_prediction": false,
+      "has_ground_truth": false,
+      "error": "predicted_plan.json not found"
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/PR4Code/dataset_pr_commits_py/Significant-Gravitas_AutoGPT/pr_10395",
+      "pr_number": 10395,
+      "repository": "Significant-Gravitas/AutoGPT",
+      "files": {
+        "precision": 0.6667,
+        "recall": 0.2,
+        "f1": 0.3077,
+        "predicted_count": 3,
+        "actual_count": 10,
+        "correct_count": 2
+      },
+      "functions": {
+        "precision": 0.75,
+        "recall": 0.2727,
+        "f1": 0.4,
+        "predicted_count": 8,
+        "actual_count": 22,
+        "correct_count": 6
+      },
+      "steps": {
+        "predicted_steps": 8,
+        "actual_steps": 23,
+        "step_diff": -15,
+        "target_coverage": 1.0,
+        "targets_matched": 8,
+        "targets_total": 8
+      },
+      "semantic": {
+        "summary_similarity": 0.7566,
+        "avg_step_similarity": 0.7854,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Add payload-size limiting + truncation to node execution update publishing (sync bus) bef...",
+            "gt_idx": 7,
+            "gt_text": "Operation: Route synchronous node execution update publishing through a truncation-aware publish hel...",
+            "similarity": 0.8486
+          },
+          {
+            "pred_idx": 1,
+            "pred_text": "Operation: Apply the same payload-size limiting + truncation policy to graph execution update publis...",
+            "gt_idx": 8,
+            "gt_text": "Operation: Route synchronous graph execution update publishing through a truncation-aware publish he...",
+            "similarity": 0.8588
+          },
+          {
+            "pred_idx": 2,
+            "pred_text": "Operation: Apply payload-size limiting + truncation to node execution update publishing (async bus),...",
+            "gt_idx": 10,
+            "gt_text": "Operation: Route async node execution update publishing through the truncation-aware async publish h...",
+            "similarity": 0.8679
+          },
+          {
+            "pred_idx": 3,
+            "pred_text": "Operation: Apply payload-size limiting + truncation to graph execution update publishing (async bus)...",
+            "gt_idx": 12,
+            "gt_text": "Operation: Implement async truncation-aware publish helper that trims execution event fields before ...",
+            "similarity": 0.8011
+          },
+          {
+            "pred_idx": 4,
+            "pred_text": "Operation: Fix termination transition data: treat TERMINATED as terminal by setting endedTime (and a...",
+            "gt_idx": 14,
+            "gt_text": "Operation: Publish execution events immediately when a graph is already terminated/completed/failed ...",
+            "similarity": 0.5575
+          },
+          {
+            "pred_idx": 5,
+            "pred_text": "Operation: Adjust graph execution stats update gating to allow final writes/events on termination/ti...",
+            "gt_idx": 17,
+            "gt_text": "Operation: Update graph execution status to TERMINATED and publish the graph termination event concu...",
+            "similarity": 0.7246
+          },
+          {
+            "pred_idx": 6,
+            "pred_text": "Operation: Enhance continuous_retry decorator to support coroutine functions: use async wrapper with...",
+            "gt_idx": 20,
+            "gt_text": "Operation: Enhance the continuous_retry decorator to support both sync and async callables | Functio...",
+            "similarity": 0.8335
+          },
+          {
+            "pred_idx": 7,
+            "pred_text": "Operation: Optimize spreadsheet reading by streaming row outputs rather than materializing full data...",
+            "gt_idx": 2,
+            "gt_text": "Operation: Change the Spreadsheet block generator logic to conditionally yield either per-row output...",
+            "similarity": 0.7914
+          }
+        ],
+        "overall_semantic_score": 0.7768,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/PR4Code/dataset_pr_commits_py/TomSchimansky_CustomTkinter/pr_2644",
+      "pr_number": 2644,
+      "repository": "TomSchimansky/CustomTkinter",
+      "files": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "predicted_count": 1,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "functions": {
+        "precision": 0.6,
+        "recall": 0.5,
+        "f1": 0.5455,
+        "predicted_count": 5,
+        "actual_count": 6,
+        "correct_count": 3
+      },
+      "steps": {
+        "predicted_steps": 5,
+        "actual_steps": 6,
+        "step_diff": -1,
+        "target_coverage": 1.0,
+        "targets_matched": 5,
+        "targets_total": 5
+      },
+      "semantic": {
+        "summary_similarity": 0.8816,
+        "avg_step_similarity": 0.6771,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Introduce and store a new configuration flag controlling whether the textvariable trace c...",
+            "gt_idx": 1,
+            "gt_text": "Operation: Add a re-entrancy/guard flag to suppress textvariable trace callbacks during internal pla...",
+            "similarity": 0.7911
+          },
+          {
+            "pred_idx": 1,
+            "pred_text": "Operation: Adjust placeholder activation logic to work even when a textvariable is assigned (e.g., a...",
+            "gt_idx": 3,
+            "gt_text": "Operation: Refine placeholder activation conditions and wrap placeholder insertion with callback blo...",
+            "similarity": 0.7628
+          },
+          {
+            "pred_idx": 2,
+            "pred_text": "Operation: Update the textvariable write-trace handler to honor the new enable/disable flag and to k...",
+            "gt_idx": 2,
+            "gt_text": "Operation: Gate the textvariable trace handler and restore real text when placeholder is active and ...",
+            "similarity": 0.8271
+          },
+          {
+            "pred_idx": 3,
+            "pred_text": "Operation: Enhance configure-time textvariable handling: when `configure(textvariable=...)` replaces...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Initialize focus state to not-focused so placeholder activation can be driven correctly b...",
+            "similarity": 0.5178
+          },
+          {
+            "pred_idx": 4,
+            "pred_text": "Operation: On widget destruction, cleanly detach the textvariable trace callback (if attached) befor...",
+            "gt_idx": 4,
+            "gt_text": "Operation: Wrap placeholder removal with callback blocking to avoid trace recursion while clearing p...",
+            "similarity": 0.4869
+          }
+        ],
+        "overall_semantic_score": 0.7385,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/PR4Code/dataset_pr_commits_py/Zulko_moviepy/pr_2195",
+      "pr_number": 2195,
+      "repository": "Zulko/moviepy",
+      "files": {
+        "precision": 1.0,
+        "recall": 0.6667,
+        "f1": 0.8,
+        "predicted_count": 2,
+        "actual_count": 3,
+        "correct_count": 2
+      },
+      "functions": {
+        "precision": 0.1429,
+        "recall": 1.0,
+        "f1": 0.25,
+        "predicted_count": 7,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "steps": {
+        "predicted_steps": 7,
+        "actual_steps": 3,
+        "step_diff": 4,
+        "target_coverage": 1.0,
+        "targets_matched": 7,
+        "targets_total": 7
+      },
+      "semantic": {
+        "summary_similarity": 0.8138,
+        "avg_step_similarity": 0.2997,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Extend FFmpeg stderr parsing to detect rotation from displaymatrix side data and populate...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Extend ffmpeg output parsing to extract rotation from the `displaymatrix` metadata line a...",
+            "similarity": 0.9037
+          },
+          {
+            "pred_idx": 2,
+            "pred_text": "Operation: Adjust duration parsing/selection logic used by ffmpeg_parse_infos so the returned durati...",
+            "gt_idx": 1,
+            "gt_text": "Operation: Pin the required Pillow dependency version to 9.5.0 in the test/install requirements | Re...",
+            "similarity": 0.3209
+          },
+          {
+            "pred_idx": 4,
+            "pred_text": "Operation: Update ffmpeg reader duration test expectations to match the fixture’s real decoded durat...",
+            "gt_idx": 2,
+            "gt_text": "Operation: Update the expected decoded duration value in the ffmpeg reader test to match the actual ...",
+            "similarity": 0.8736
+          }
+        ],
+        "overall_semantic_score": 0.4539,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/PR4Code/dataset_pr_commits_py/allenai_olmocr/pr_165",
+      "pr_number": 165,
+      "repository": "allenai/olmocr",
+      "files": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "predicted_count": 1,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "functions": {
+        "precision": 0.5,
+        "recall": 1.0,
+        "f1": 0.6667,
+        "predicted_count": 2,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "steps": {
+        "predicted_steps": 2,
+        "actual_steps": 1,
+        "step_diff": 1,
+        "target_coverage": 1.0,
+        "targets_matched": 2,
+        "targets_total": 2
+      },
+      "semantic": {
+        "summary_similarity": 0.7533,
+        "avg_step_similarity": 0.3819,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Harden JSONL→Markdown conversion logic: validate inputs, create output directory, skip bl...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Fix and enhance the JSONL-to-Markdown conversion by switching to pathlib, using 1-based l...",
+            "similarity": 0.7638
+          }
+        ],
+        "overall_semantic_score": 0.4933,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/PR4Code/dataset_pr_commits_py/apache_tvm/pr_18102",
+      "pr_number": 18102,
+      "repository": "apache/tvm",
+      "files": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "predicted_count": 1,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "functions": {
+        "precision": 1.0,
+        "recall": 0.5,
+        "f1": 0.6667,
+        "predicted_count": 1,
+        "actual_count": 2,
+        "correct_count": 1
+      },
+      "steps": {
+        "predicted_steps": 1,
+        "actual_steps": 2,
+        "step_diff": -1,
+        "target_coverage": 1.0,
+        "targets_matched": 1,
+        "targets_total": 1
+      },
+      "semantic": {
+        "summary_similarity": 0.8917,
+        "avg_step_similarity": 0.8534,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Fix LongRoPE ext_factors buffer sizing to use rotary_dim rather than head_dim in the gene...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Fix LongRope scaling buffer shape to use the actual rotary dimension | Function: fused_ro...",
+            "similarity": 0.8534
+          }
+        ],
+        "overall_semantic_score": 0.8649,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/PR4Code/dataset_pr_commits_py/bmaltais_kohya_ss/pr_3305",
+      "pr_number": 0,
+      "repository": "",
+      "files": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "predicted_count": 0,
+        "actual_count": 0,
+        "correct_count": 0
+      },
+      "functions": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "predicted_count": 0,
+        "actual_count": 0,
+        "correct_count": 0
+      },
+      "steps": {
+        "predicted_steps": 0,
+        "actual_steps": 0,
+        "step_diff": 0,
+        "target_coverage": 0.0,
+        "targets_matched": 0,
+        "targets_total": 0
+      },
+      "semantic": {
+        "summary_similarity": 0.0,
+        "avg_step_similarity": 0.0,
+        "step_matches": [],
+        "overall_semantic_score": 0.0,
+        "computed": false,
+        "error": null
+      },
+      "has_prediction": false,
+      "has_ground_truth": false,
+      "error": "predicted_plan.json not found"
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/PR4Code/dataset_pr_commits_py/borgbackup_borg/pr_8861",
+      "pr_number": 8861,
+      "repository": "borgbackup/borg",
+      "files": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "predicted_count": 1,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "functions": {
+        "precision": 0.5,
+        "recall": 1.0,
+        "f1": 0.6667,
+        "predicted_count": 2,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "steps": {
+        "predicted_steps": 2,
+        "actual_steps": 1,
+        "step_diff": 1,
+        "target_coverage": 1.0,
+        "targets_matched": 2,
+        "targets_total": 2
+      },
+      "semantic": {
+        "summary_similarity": 0.7811,
+        "avg_step_similarity": 0.3948,
+        "step_matches": [
+          {
+            "pred_idx": 1,
+            "pred_text": "Operation: Ensure the 'touch-only' modification in the basic diff test results in a distinct timesta...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Add a delay before touching a file to ensure its mtime changes on filesystems with coarse...",
+            "similarity": 0.7896
+          }
+        ],
+        "overall_semantic_score": 0.5107,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/PR4Code/dataset_pr_commits_py/ccxt_ccxt/pr_26319",
+      "pr_number": 0,
+      "repository": "",
+      "files": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "predicted_count": 0,
+        "actual_count": 0,
+        "correct_count": 0
+      },
+      "functions": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "predicted_count": 0,
+        "actual_count": 0,
+        "correct_count": 0
+      },
+      "steps": {
+        "predicted_steps": 0,
+        "actual_steps": 0,
+        "step_diff": 0,
+        "target_coverage": 0.0,
+        "targets_matched": 0,
+        "targets_total": 0
+      },
+      "semantic": {
+        "summary_similarity": 0.0,
+        "avg_step_similarity": 0.0,
+        "step_matches": [],
+        "overall_semantic_score": 0.0,
+        "computed": false,
+        "error": null
+      },
+      "has_prediction": false,
+      "has_ground_truth": false,
+      "error": "predicted_plan.json not found"
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/PR4Code/dataset_pr_commits_py/chengazhen_cursor-auto-free/pr_184",
+      "pr_number": 184,
+      "repository": "chengazhen/cursor-auto-free",
+      "files": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "predicted_count": 1,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "functions": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "predicted_count": 1,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "steps": {
+        "predicted_steps": 1,
+        "actual_steps": 1,
+        "step_diff": 0,
+        "target_coverage": 1.0,
+        "targets_matched": 1,
+        "targets_total": 1
+      },
+      "semantic": {
+        "summary_similarity": 0.6798,
+        "avg_step_similarity": 0.811,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Update post-build env-file selection to prioritize a local .env (fallback to .env.example...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Update the build process to prefer copying a local `.env` file into the build output, fal...",
+            "similarity": 0.811
+          }
+        ],
+        "overall_semantic_score": 0.7716,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/PR4Code/dataset_pr_commits_py/cython_cython/pr_6987",
+      "pr_number": 6987,
+      "repository": "cython/cython",
+      "files": {
+        "precision": 0.3333,
+        "recall": 1.0,
+        "f1": 0.5,
+        "predicted_count": 3,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "functions": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "predicted_count": 5,
+        "actual_count": 0,
+        "correct_count": 0
+      },
+      "steps": {
+        "predicted_steps": 5,
+        "actual_steps": 1,
+        "step_diff": 4,
+        "target_coverage": 0.2,
+        "targets_matched": 1,
+        "targets_total": 5
+      },
+      "semantic": {
+        "summary_similarity": 0.8034,
+        "avg_step_similarity": 0.1509,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Broaden builtin-method return type inference for attribute calls in the early type infere...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Correct the Cython builtin signature metadata for `bytes.join()` so its inferred return t...",
+            "similarity": 0.7547
+          }
+        ],
+        "overall_semantic_score": 0.3467,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/PR4Code/dataset_pr_commits_py/datalab-to_marker/pr_498",
+      "pr_number": 498,
+      "repository": "datalab-to/marker",
+      "files": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "predicted_count": 1,
+        "actual_count": 1,
+        "correct_count": 0
+      },
+      "functions": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "predicted_count": 1,
+        "actual_count": 1,
+        "correct_count": 0
+      },
+      "steps": {
+        "predicted_steps": 1,
+        "actual_steps": 1,
+        "step_diff": 0,
+        "target_coverage": 0.0,
+        "targets_matched": 0,
+        "targets_total": 1
+      },
+      "semantic": {
+        "summary_similarity": 0.6526,
+        "avg_step_similarity": 0.7463,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Adjust model wiring/config to rely on tokenizer-managed max token length (and remove/avoi...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Refactor OCR error detection input construction to join provider lines with newline separ...",
+            "similarity": 0.7463
+          }
+        ],
+        "overall_semantic_score": 0.7182,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/PR4Code/dataset_pr_commits_py/espnet_espnet/pr_6114",
+      "pr_number": 0,
+      "repository": "",
+      "files": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "predicted_count": 0,
+        "actual_count": 0,
+        "correct_count": 0
+      },
+      "functions": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "predicted_count": 0,
+        "actual_count": 0,
+        "correct_count": 0
+      },
+      "steps": {
+        "predicted_steps": 0,
+        "actual_steps": 0,
+        "step_diff": 0,
+        "target_coverage": 0.0,
+        "targets_matched": 0,
+        "targets_total": 0
+      },
+      "semantic": {
+        "summary_similarity": 0.0,
+        "avg_step_similarity": 0.0,
+        "step_matches": [],
+        "overall_semantic_score": 0.0,
+        "computed": false,
+        "error": null
+      },
+      "has_prediction": false,
+      "has_ground_truth": false,
+      "error": "predicted_plan.json not found"
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/PR4Code/dataset_pr_commits_py/eternnoir_pyTelegramBotAPI/pr_2435",
+      "pr_number": 2435,
+      "repository": "eternnoir/pyTelegramBotAPI",
+      "files": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "predicted_count": 2,
+        "actual_count": 2,
+        "correct_count": 2
+      },
+      "functions": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "predicted_count": 2,
+        "actual_count": 2,
+        "correct_count": 2
+      },
+      "steps": {
+        "predicted_steps": 2,
+        "actual_steps": 2,
+        "step_diff": 0,
+        "target_coverage": 1.0,
+        "targets_matched": 2,
+        "targets_total": 2
+      },
+      "semantic": {
+        "summary_similarity": 0.7895,
+        "avg_step_similarity": 0.8043,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Fix Sphinx/reST parameter field markup for `subscription_period` in the sync invoice-link...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Fix the Sphinx/RST parameter tag in the docstring for the invoice link creation method | ...",
+            "similarity": 0.8767
+          },
+          {
+            "pred_idx": 1,
+            "pred_text": "Operation: Mirror the same docstring fix for `subscription_period` in the async invoice-link wrapper...",
+            "gt_idx": 1,
+            "gt_text": "Operation: Mirror the same docstring parameter tag correction in the async implementation | Function...",
+            "similarity": 0.7319
+          }
+        ],
+        "overall_semantic_score": 0.7999,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/PR4Code/dataset_pr_commits_py/facefusion_facefusion/pr_868",
+      "pr_number": 0,
+      "repository": "",
+      "files": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "predicted_count": 0,
+        "actual_count": 0,
+        "correct_count": 0
+      },
+      "functions": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "predicted_count": 0,
+        "actual_count": 0,
+        "correct_count": 0
+      },
+      "steps": {
+        "predicted_steps": 0,
+        "actual_steps": 0,
+        "step_diff": 0,
+        "target_coverage": 0.0,
+        "targets_matched": 0,
+        "targets_total": 0
+      },
+      "semantic": {
+        "summary_similarity": 0.0,
+        "avg_step_similarity": 0.0,
+        "step_matches": [],
+        "overall_semantic_score": 0.0,
+        "computed": false,
+        "error": null
+      },
+      "has_prediction": false,
+      "has_ground_truth": false,
+      "error": "predicted_plan.json not found"
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/PR4Code/dataset_pr_commits_py/fishaudio_fish-speech/pr_745",
+      "pr_number": 745,
+      "repository": "fishaudio/fish-speech",
+      "files": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "predicted_count": 1,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "functions": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "predicted_count": 1,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "steps": {
+        "predicted_steps": 1,
+        "actual_steps": 1,
+        "step_diff": 0,
+        "target_coverage": 1.0,
+        "targets_matched": 1,
+        "targets_total": 1
+      },
+      "semantic": {
+        "summary_similarity": 0.7543,
+        "avg_step_similarity": 0.8722,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Fix CLI boolean parsing for playback by switching --play to BooleanOptionalAction (enabli...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Switch the `--play` CLI flag to use `argparse.BooleanOptionalAction` so argparse automati...",
+            "similarity": 0.8722
+          }
+        ],
+        "overall_semantic_score": 0.8368,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/PR4Code/dataset_pr_commits_py/getredash_redash/pr_7339",
+      "pr_number": 7339,
+      "repository": "getredash/redash",
+      "files": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "predicted_count": 3,
+        "actual_count": 2,
+        "correct_count": 0
+      },
+      "functions": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "predicted_count": 3,
+        "actual_count": 3,
+        "correct_count": 0
+      },
+      "steps": {
+        "predicted_steps": 3,
+        "actual_steps": 3,
+        "step_diff": 0,
+        "target_coverage": 0.0,
+        "targets_matched": 0,
+        "targets_total": 3
+      },
+      "semantic": {
+        "summary_similarity": 0.8916,
+        "avg_step_similarity": 0.6407,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Add recursive sanitization of non-finite floats (NaN/+Inf/-Inf) to None before JSON seria...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Add recursive sanitization helper to replace NaN/Inf/-Inf floats with None prior to JSON ...",
+            "similarity": 0.7147
+          },
+          {
+            "pred_idx": 1,
+            "pred_text": "Operation: Ensure DB binding for JSONText always uses the sanitized serialization path (and optional...",
+            "gt_idx": 2,
+            "gt_text": "Operation: Add unit test covering NaN/Inf/-Inf sanitization during query execution and result persis...",
+            "similarity": 0.5301
+          },
+          {
+            "pred_idx": 2,
+            "pred_text": "Operation: Normalize stored QueryResult data by sanitizing before assignment/persistence so the in-m...",
+            "gt_idx": 1,
+            "gt_text": "Operation: Apply sanitization when persisting query results so DB inserts never include NaN/Inf/-Inf...",
+            "similarity": 0.6772
+          }
+        ],
+        "overall_semantic_score": 0.716,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/PR4Code/dataset_pr_commits_py/google-deepmind_alphafold/pr_954",
+      "pr_number": 954,
+      "repository": "google-deepmind/alphafold",
+      "files": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "predicted_count": 1,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "functions": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "predicted_count": 1,
+        "actual_count": 0,
+        "correct_count": 0
+      },
+      "steps": {
+        "predicted_steps": 1,
+        "actual_steps": 1,
+        "step_diff": 0,
+        "target_coverage": 1.0,
+        "targets_matched": 1,
+        "targets_total": 1
+      },
+      "semantic": {
+        "summary_similarity": 0.7872,
+        "avg_step_similarity": 0.7742,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Replace deprecated SCOPData import with PDBData (optionally via a small compatibility shi...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Replace deprecated BioPython SCOPData import with PDBData in the mmCIF parsing module | R...",
+            "similarity": 0.7742
+          }
+        ],
+        "overall_semantic_score": 0.7781,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/PR4Code/dataset_pr_commits_py/huggingface_datasets/pr_7451",
+      "pr_number": 7451,
+      "repository": "huggingface/datasets",
+      "files": {
+        "precision": 1.0,
+        "recall": 0.2,
+        "f1": 0.3333,
+        "predicted_count": 1,
+        "actual_count": 5,
+        "correct_count": 1
+      },
+      "functions": {
+        "precision": 0.2,
+        "recall": 0.037,
+        "f1": 0.0625,
+        "predicted_count": 5,
+        "actual_count": 27,
+        "correct_count": 1
+      },
+      "steps": {
+        "predicted_steps": 5,
+        "actual_steps": 27,
+        "step_diff": -22,
+        "target_coverage": 1.0,
+        "targets_matched": 5,
+        "targets_total": 5
+      },
+      "semantic": {
+        "summary_similarity": 0.7582,
+        "avg_step_similarity": 0.7079,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Make set_epoch coordinate with any loaded checkpoint epoch/shuffle identity (either by re...",
+            "gt_idx": 26,
+            "gt_text": "Operation: Add regression test ensuring resuming works correctly across epoch changes (resume exhaus...",
+            "similarity": 0.7086
+          },
+          {
+            "pred_idx": 1,
+            "pred_text": "Operation: Extend the dataset checkpoint to include epoch/shuffle-order identity needed to rebuild t...",
+            "gt_idx": 24,
+            "gt_text": "Operation: Make PyTorch worker iteration build an epoch-aware top-level state dict and only restore ...",
+            "similarity": 0.7055
+          },
+          {
+            "pred_idx": 2,
+            "pred_text": "Operation: Restore epoch/shuffle identity from the state dict and ensure prepared pipeline construct...",
+            "gt_idx": 23,
+            "gt_text": "Operation: Change load_state_dict to store the provided state as starting state instead of immediate...",
+            "similarity": 0.785
+          },
+          {
+            "pred_idx": 3,
+            "pred_text": "Operation: When building the prepared iterable for iteration, select the shuffling generator/seed ba...",
+            "gt_idx": 25,
+            "gt_text": "Operation: Update iterable preparation to set epoch-aware state dict and conditionally load starting...",
+            "similarity": 0.7507
+          },
+          {
+            "pred_idx": 4,
+            "pred_text": "Operation: Add support for deriving an effective RNG from either the current epoch or an epoch/shuff...",
+            "gt_idx": 22,
+            "gt_text": "Operation: Refactor IterableDataset initialization to prepare iterables and state dict via _prepare_...",
+            "similarity": 0.5896
+          }
+        ],
+        "overall_semantic_score": 0.723,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/PR4Code/dataset_pr_commits_py/huggingface_text-generation-inference/pr_3237",
+      "pr_number": 3237,
+      "repository": "huggingface/text-generation-inference",
+      "files": {
+        "precision": 0.5,
+        "recall": 0.25,
+        "f1": 0.3333,
+        "predicted_count": 2,
+        "actual_count": 4,
+        "correct_count": 1
+      },
+      "functions": {
+        "precision": 0.7143,
+        "recall": 0.5556,
+        "f1": 0.625,
+        "predicted_count": 7,
+        "actual_count": 9,
+        "correct_count": 5
+      },
+      "steps": {
+        "predicted_steps": 7,
+        "actual_steps": 9,
+        "step_diff": -2,
+        "target_coverage": 0.8571,
+        "targets_matched": 6,
+        "targets_total": 7
+      },
+      "semantic": {
+        "summary_similarity": 0.6693,
+        "avg_step_similarity": 0.7722,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Move/allocate prefill input_ids directly on HPU (and keep adapter_meta intact) during bat...",
+            "gt_idx": 3,
+            "gt_text": "Operation: Ensure prefill padding creates `input_ids` on the same device as existing batch tensors a...",
+            "similarity": 0.8402
+          },
+          {
+            "pred_idx": 1,
+            "pred_text": "Operation: Make forward() skip redundant async H2D copy when input_ids is already on HPU and ensure ...",
+            "gt_idx": 5,
+            "gt_text": "Operation: Pass `input_ids` directly into the model forward (remove async CPU→HPU copy for `input_id...",
+            "similarity": 0.8871
+          },
+          {
+            "pred_idx": 2,
+            "pred_text": "Operation: Remove any disposal/clearing of adapter_meta during prefill→decode transition while prese...",
+            "gt_idx": 6,
+            "gt_text": "Operation: Refactor token generation state updates to avoid unnecessary CPU transfers and make adapt...",
+            "similarity": 0.7632
+          },
+          {
+            "pred_idx": 3,
+            "pred_text": "Operation: Ensure decode-time padding/reshaping keeps input_ids on HPU and does not inadvertently mo...",
+            "gt_idx": 4,
+            "gt_text": "Operation: Fix slots padding tensor device placement to match the `slots` tensor during forward pass...",
+            "similarity": 0.7365
+          },
+          {
+            "pred_idx": 4,
+            "pred_text": "Operation: Keep adapter_meta consistent when filtering a batch and avoid dropping metadata as part o...",
+            "gt_idx": 1,
+            "gt_text": "Operation: Make adapter metadata handling optional when filtering a batch (avoid unconditional acces...",
+            "similarity": 0.8644
+          },
+          {
+            "pred_idx": 5,
+            "pred_text": "Operation: Preserve adapter_meta correctness when concatenating decode batches and ensure merged bat...",
+            "gt_idx": 2,
+            "gt_text": "Operation: Gate concatenation-time adapter index aggregation behind adapter availability and adjust ...",
+            "similarity": 0.6885
+          },
+          {
+            "pred_idx": 6,
+            "pred_text": "Operation: Audit/adjust non-flash causal batch creation so token buffers are consistently placed on ...",
+            "gt_idx": 8,
+            "gt_text": "Operation: Align other Gaudi model variants to stop copying `input_ids` and fix slots padding device...",
+            "similarity": 0.6255
+          }
+        ],
+        "overall_semantic_score": 0.7413,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/PR4Code/dataset_pr_commits_py/intel_ipex-llm/pr_13205",
+      "pr_number": 13205,
+      "repository": "intel/ipex-llm",
+      "files": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "predicted_count": 3,
+        "actual_count": 1,
+        "correct_count": 0
+      },
+      "functions": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "predicted_count": 6,
+        "actual_count": 2,
+        "correct_count": 0
+      },
+      "steps": {
+        "predicted_steps": 6,
+        "actual_steps": 2,
+        "step_diff": 4,
+        "target_coverage": 0.0,
+        "targets_matched": 0,
+        "targets_total": 6
+      },
+      "semantic": {
+        "summary_similarity": 0.7388,
+        "avg_step_similarity": 0.1847,
+        "step_matches": [
+          {
+            "pred_idx": 1,
+            "pred_text": "Operation: Adjust image tensor casting so InternVL vision inputs avoid unsupported fp16 ops (keep pi...",
+            "gt_idx": 1,
+            "gt_text": "Operation: Adjust the arguments passed into `optimize_model(...)` by ensuring the `modules` list is ...",
+            "similarity": 0.5692
+          },
+          {
+            "pred_idx": 4,
+            "pred_text": "Operation: Tighten non-causal SDP gating for fp16 on XPU (or add additional guards) to prevent selec...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Fix FP16 module selection logic by preserving any previously-determined module list and a...",
+            "similarity": 0.539
+          }
+        ],
+        "overall_semantic_score": 0.3509,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/PR4Code/dataset_pr_commits_py/karpathy_nanoGPT/pr_464",
+      "pr_number": 464,
+      "repository": "karpathy/nanoGPT",
+      "files": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "predicted_count": 1,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "functions": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "predicted_count": 1,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "steps": {
+        "predicted_steps": 1,
+        "actual_steps": 1,
+        "step_diff": 0,
+        "target_coverage": 1.0,
+        "targets_matched": 1,
+        "targets_total": 1
+      },
+      "semantic": {
+        "summary_similarity": 0.8635,
+        "avg_step_similarity": 0.906,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Make MFU normalization device-aware by selecting an appropriate BF16 dense peak FLOPs con...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Adjust MFU normalization to use H100 BF16 peak FLOPs when running on an NVIDIA H100 80GB ...",
+            "similarity": 0.906
+          }
+        ],
+        "overall_semantic_score": 0.8932,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/PR4Code/dataset_pr_commits_py/keras-team_keras/pr_21457",
+      "pr_number": 21457,
+      "repository": "keras-team/keras",
+      "files": {
+        "precision": 0.3333,
+        "recall": 1.0,
+        "f1": 0.5,
+        "predicted_count": 3,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "functions": {
+        "precision": 0.3333,
+        "recall": 1.0,
+        "f1": 0.5,
+        "predicted_count": 3,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "steps": {
+        "predicted_steps": 4,
+        "actual_steps": 1,
+        "step_diff": 3,
+        "target_coverage": 0.5,
+        "targets_matched": 2,
+        "targets_total": 4
+      },
+      "semantic": {
+        "summary_similarity": 0.852,
+        "avg_step_similarity": 0.2202,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Fix OpenVINO backend `array()` to treat `OpenVINOKerasTensor` inputs as identity/cast ins...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Extend the OpenVINO backend `array()` implementation to correctly handle `OpenVINOKerasTe...",
+            "similarity": 0.8809
+          }
+        ],
+        "overall_semantic_score": 0.4097,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/PR4Code/dataset_pr_commits_py/labmlai_annotated_deep_learning_paper_implementations/pr_249",
+      "pr_number": 249,
+      "repository": "labmlai/annotated_deep_learning_paper_implementations",
+      "files": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "predicted_count": 1,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "functions": {
+        "precision": 0.2,
+        "recall": 1.0,
+        "f1": 0.3333,
+        "predicted_count": 5,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "steps": {
+        "predicted_steps": 5,
+        "actual_steps": 1,
+        "step_diff": 4,
+        "target_coverage": 1.0,
+        "targets_matched": 5,
+        "targets_total": 5
+      },
+      "semantic": {
+        "summary_similarity": 0.7279,
+        "avg_step_similarity": 0.1511,
+        "step_matches": [
+          {
+            "pred_idx": 2,
+            "pred_text": "Operation: Guard `forward()` against invalid shapes by validating input last-dim compatibility with ...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Fix rotary embedding cache broadcasting by slicing cached cos/sin tensors to match the in...",
+            "similarity": 0.7554
+          }
+        ],
+        "overall_semantic_score": 0.3241,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/PR4Code/dataset_pr_commits_py/llmware-ai_llmware/pr_1204",
+      "pr_number": 0,
+      "repository": "",
+      "files": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "predicted_count": 0,
+        "actual_count": 0,
+        "correct_count": 0
+      },
+      "functions": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "predicted_count": 0,
+        "actual_count": 0,
+        "correct_count": 0
+      },
+      "steps": {
+        "predicted_steps": 0,
+        "actual_steps": 0,
+        "step_diff": 0,
+        "target_coverage": 0.0,
+        "targets_matched": 0,
+        "targets_total": 0
+      },
+      "semantic": {
+        "summary_similarity": 0.0,
+        "avg_step_similarity": 0.0,
+        "step_matches": [],
+        "overall_semantic_score": 0.0,
+        "computed": false,
+        "error": null
+      },
+      "has_prediction": false,
+      "has_ground_truth": false,
+      "error": "predicted_plan.json not found"
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/PR4Code/dataset_pr_commits_py/lucidrains_denoising-diffusion-pytorch/pr_318",
+      "pr_number": 0,
+      "repository": "",
+      "files": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "predicted_count": 0,
+        "actual_count": 0,
+        "correct_count": 0
+      },
+      "functions": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "predicted_count": 0,
+        "actual_count": 0,
+        "correct_count": 0
+      },
+      "steps": {
+        "predicted_steps": 0,
+        "actual_steps": 0,
+        "step_diff": 0,
+        "target_coverage": 0.0,
+        "targets_matched": 0,
+        "targets_total": 0
+      },
+      "semantic": {
+        "summary_similarity": 0.0,
+        "avg_step_similarity": 0.0,
+        "step_matches": [],
+        "overall_semantic_score": 0.0,
+        "computed": false,
+        "error": null
+      },
+      "has_prediction": false,
+      "has_ground_truth": false,
+      "error": "predicted_plan.json not found"
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/PR4Code/dataset_pr_commits_py/lucidrains_vit-pytorch/pr_339",
+      "pr_number": 0,
+      "repository": "",
+      "files": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "predicted_count": 0,
+        "actual_count": 0,
+        "correct_count": 0
+      },
+      "functions": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "predicted_count": 0,
+        "actual_count": 0,
+        "correct_count": 0
+      },
+      "steps": {
+        "predicted_steps": 0,
+        "actual_steps": 0,
+        "step_diff": 0,
+        "target_coverage": 0.0,
+        "targets_matched": 0,
+        "targets_total": 0
+      },
+      "semantic": {
+        "summary_similarity": 0.0,
+        "avg_step_similarity": 0.0,
+        "step_matches": [],
+        "overall_semantic_score": 0.0,
+        "computed": false,
+        "error": null
+      },
+      "has_prediction": false,
+      "has_ground_truth": false,
+      "error": "predicted_plan.json not found"
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/PR4Code/dataset_pr_commits_py/marimo-team_marimo/pr_5610",
+      "pr_number": 5610,
+      "repository": "marimo-team/marimo",
+      "files": {
+        "precision": 1.0,
+        "recall": 0.5,
+        "f1": 0.6667,
+        "predicted_count": 1,
+        "actual_count": 2,
+        "correct_count": 1
+      },
+      "functions": {
+        "precision": 1.0,
+        "recall": 0.8571,
+        "f1": 0.9231,
+        "predicted_count": 6,
+        "actual_count": 7,
+        "correct_count": 6
+      },
+      "steps": {
+        "predicted_steps": 6,
+        "actual_steps": 7,
+        "step_diff": -1,
+        "target_coverage": 1.0,
+        "targets_matched": 6,
+        "targets_total": 6
+      },
+      "semantic": {
+        "summary_similarity": 0.8106,
+        "avg_step_similarity": 0.9227,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Add a `force: bool = False` parameter to the shared export helper and bypass overwrite co...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Extend the shared export helper to accept a `force` flag and bypass the interactive overw...",
+            "similarity": 0.9145
+          },
+          {
+            "pred_idx": 1,
+            "pred_text": "Operation: Add `--force/-f` Click option to HTML export and thread it into the helper call | Functio...",
+            "gt_idx": 1,
+            "gt_text": "Operation: Add `--force/-f` Click option to the `export html` command and thread it into the `watch_...",
+            "similarity": 0.9477
+          },
+          {
+            "pred_idx": 2,
+            "pred_text": "Operation: Add `--force/-f` Click option to script export and pass through to `watch_and_export` | F...",
+            "gt_idx": 2,
+            "gt_text": "Operation: Add `--force/-f` Click option to the `export script` command and pass it through to `watc...",
+            "similarity": 0.929
+          },
+          {
+            "pred_idx": 3,
+            "pred_text": "Operation: Add `--force/-f` Click option to markdown export and pass through to `watch_and_export` |...",
+            "gt_idx": 3,
+            "gt_text": "Operation: Add `--force/-f` Click option to the `export md` command and forward it into the export p...",
+            "similarity": 0.8943
+          },
+          {
+            "pred_idx": 4,
+            "pred_text": "Operation: Add `--force/-f` Click option to ipynb export and pass through to `watch_and_export` | Fu...",
+            "gt_idx": 4,
+            "gt_text": "Operation: Add `--force/-f` Click option to the `export ipynb` command and propagate the flag to `wa...",
+            "similarity": 0.9275
+          },
+          {
+            "pred_idx": 5,
+            "pred_text": "Operation: Add `--force/-f` Click option to html-wasm export and ensure the computed output HTML pat...",
+            "gt_idx": 5,
+            "gt_text": "Operation: Add `--force/-f` Click option to the `export html-wasm` command and pass it when exportin...",
+            "similarity": 0.9229
+          }
+        ],
+        "overall_semantic_score": 0.8891,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/PR4Code/dataset_pr_commits_py/microsoft_autogen/pr_6752",
+      "pr_number": 6752,
+      "repository": "microsoft/autogen",
+      "files": {
+        "precision": 0.5,
+        "recall": 0.5,
+        "f1": 0.5,
+        "predicted_count": 2,
+        "actual_count": 2,
+        "correct_count": 1
+      },
+      "functions": {
+        "precision": 0.2,
+        "recall": 0.0625,
+        "f1": 0.0952,
+        "predicted_count": 5,
+        "actual_count": 16,
+        "correct_count": 1
+      },
+      "steps": {
+        "predicted_steps": 5,
+        "actual_steps": 16,
+        "step_diff": -11,
+        "target_coverage": 0.4,
+        "targets_matched": 2,
+        "targets_total": 5
+      },
+      "semantic": {
+        "summary_similarity": 0.8233,
+        "avg_step_similarity": 0.7071,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Change graph completion behavior to signal natural termination (without scheduling a stop...",
+            "gt_idx": 1,
+            "gt_text": "Operation: Refactor speaker selection to stop selecting a synthetic stop agent when no ready speaker...",
+            "similarity": 0.8707
+          },
+          {
+            "pred_idx": 1,
+            "pred_text": "Operation: Remove stop-agent wiring from GraphFlow construction: do not prepend `_StopAgent` to part...",
+            "gt_idx": 4,
+            "gt_text": "Operation: Simplify GraphFlow construction by removing stop-agent participant injection and stop-mes...",
+            "similarity": 0.8741
+          },
+          {
+            "pred_idx": 2,
+            "pred_text": "Operation: Teach the base manager transition logic to treat “no next speakers” from `select_speaker(...",
+            "gt_idx": 14,
+            "gt_text": "Operation: Update serialization/deserialization test to assert no StopMessage instances appear in co...",
+            "similarity": 0.532
+          },
+          {
+            "pred_idx": 3,
+            "pred_text": "Operation: Allow immediate natural completion at start when `select_speaker()` indicates there are n...",
+            "gt_idx": 7,
+            "gt_text": "Operation: Update parallel join-all test expectations by removing stop-agent assertions and adjustin...",
+            "similarity": 0.5989
+          },
+          {
+            "pred_idx": 4,
+            "pred_text": "Operation: After processing agent responses, allow natural completion when no next speakers remain; ...",
+            "gt_idx": 2,
+            "gt_text": "Operation: Implement graph-completion-aware termination logic that signals termination without addin...",
+            "similarity": 0.6597
+          }
+        ],
+        "overall_semantic_score": 0.742,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/PR4Code/dataset_pr_commits_py/mlc-ai_mlc-llm/pr_3150",
+      "pr_number": 3150,
+      "repository": "mlc-ai/mlc-llm",
+      "files": {
+        "precision": 0.5,
+        "recall": 1.0,
+        "f1": 0.6667,
+        "predicted_count": 2,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "functions": {
+        "precision": 0.3333,
+        "recall": 1.0,
+        "f1": 0.5,
+        "predicted_count": 3,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "steps": {
+        "predicted_steps": 3,
+        "actual_steps": 1,
+        "step_diff": 2,
+        "target_coverage": 0.3333,
+        "targets_matched": 1,
+        "targets_total": 3
+      },
+      "semantic": {
+        "summary_similarity": 0.8502,
+        "avg_step_similarity": 0.2907,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Fix non-streaming aggregation to merge per-chunk logprobs per choice index instead of ove...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Fix logprob merging during streaming by accumulating per-choice token-level arrays instea...",
+            "similarity": 0.8722
+          }
+        ],
+        "overall_semantic_score": 0.4585,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/PR4Code/dataset_pr_commits_py/mlflow_mlflow/pr_16738",
+      "pr_number": 0,
+      "repository": "",
+      "files": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "predicted_count": 0,
+        "actual_count": 0,
+        "correct_count": 0
+      },
+      "functions": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "predicted_count": 0,
+        "actual_count": 0,
+        "correct_count": 0
+      },
+      "steps": {
+        "predicted_steps": 0,
+        "actual_steps": 0,
+        "step_diff": 0,
+        "target_coverage": 0.0,
+        "targets_matched": 0,
+        "targets_total": 0
+      },
+      "semantic": {
+        "summary_similarity": 0.0,
+        "avg_step_similarity": 0.0,
+        "step_matches": [],
+        "overall_semantic_score": 0.0,
+        "computed": false,
+        "error": null
+      },
+      "has_prediction": false,
+      "has_ground_truth": false,
+      "error": "predicted_plan.json not found"
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/PR4Code/dataset_pr_commits_py/mvt-project_mvt/pr_558",
+      "pr_number": 558,
+      "repository": "mvt-project/mvt",
+      "files": {
+        "precision": 0.5,
+        "recall": 1.0,
+        "f1": 0.6667,
+        "predicted_count": 2,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "functions": {
+        "precision": 0.3333,
+        "recall": 1.0,
+        "f1": 0.5,
+        "predicted_count": 3,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "steps": {
+        "predicted_steps": 3,
+        "actual_steps": 1,
+        "step_diff": 2,
+        "target_coverage": 0.6667,
+        "targets_matched": 2,
+        "targets_total": 3
+      },
+      "semantic": {
+        "summary_similarity": 0.831,
+        "avg_step_similarity": 0.2482,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Normalize missing/None user_keys to an empty list during dumpsys parsing, and always pers...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Harden parsing logic by defaulting missing/empty ADB key lists to an empty iterable when ...",
+            "similarity": 0.7447
+          }
+        ],
+        "overall_semantic_score": 0.423,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/PR4Code/dataset_pr_commits_py/netease-youdao_QAnything/pr_563",
+      "pr_number": 563,
+      "repository": "netease-youdao/QAnything",
+      "files": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "predicted_count": 2,
+        "actual_count": 2,
+        "correct_count": 2
+      },
+      "functions": {
+        "precision": 0.3333,
+        "recall": 1.0,
+        "f1": 0.5,
+        "predicted_count": 3,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "steps": {
+        "predicted_steps": 3,
+        "actual_steps": 2,
+        "step_diff": 1,
+        "target_coverage": 1.0,
+        "targets_matched": 3,
+        "targets_total": 3
+      },
+      "semantic": {
+        "summary_similarity": 0.7578,
+        "avg_step_similarity": 0.5768,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Fix SQL to update the correct column (chunks_number) instead of chunk_size | Function: Kn...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Fix the SQL update statement to write to the correct column (`chunks_number`) instead of ...",
+            "similarity": 0.8466
+          },
+          {
+            "pred_idx": 1,
+            "pred_text": "Operation: Remove redundant early chunks_number DB update after vector insertion | Function: process...",
+            "gt_idx": 1,
+            "gt_text": "Operation: Remove the redundant post-insert update call that re-updated `chunks_number` after vector...",
+            "similarity": 0.8838
+          }
+        ],
+        "overall_semantic_score": 0.6311,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/PR4Code/dataset_pr_commits_py/nginx-proxy_nginx-proxy/pr_2432",
+      "pr_number": 2432,
+      "repository": "nginx-proxy/nginx-proxy",
+      "files": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "predicted_count": 1,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "functions": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "predicted_count": 1,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "steps": {
+        "predicted_steps": 1,
+        "actual_steps": 1,
+        "step_diff": 0,
+        "target_coverage": 1.0,
+        "targets_matched": 1,
+        "targets_total": 1
+      },
+      "semantic": {
+        "summary_similarity": 0.8966,
+        "avg_step_similarity": 0.9301,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Fix invalid escape sequence in /status/<code> route regex by converting the pattern to a ...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Fix invalid escape sequence warnings by converting the regex pattern string to a raw stri...",
+            "similarity": 0.9301
+          }
+        ],
+        "overall_semantic_score": 0.9201,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/PR4Code/dataset_pr_commits_py/openinterpreter_open-interpreter/pr_1496",
+      "pr_number": 1496,
+      "repository": "openinterpreter/open-interpreter",
+      "files": {
+        "precision": 0.5,
+        "recall": 1.0,
+        "f1": 0.6667,
+        "predicted_count": 2,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "functions": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "predicted_count": 2,
+        "actual_count": 0,
+        "correct_count": 0
+      },
+      "steps": {
+        "predicted_steps": 2,
+        "actual_steps": 1,
+        "step_diff": 1,
+        "target_coverage": 0.5,
+        "targets_matched": 1,
+        "targets_total": 2
+      },
+      "semantic": {
+        "summary_similarity": 0.8185,
+        "avg_step_similarity": 0.4232,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Replace Windows-incompatible strftime day format in SYSTEM_PROMPT construction (and any o...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Make the date formatting in the SYSTEM_PROMPT Windows-compatible by selecting the correct...",
+            "similarity": 0.8463
+          }
+        ],
+        "overall_semantic_score": 0.5418,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/PR4Code/dataset_pr_commits_py/piskvorky_gensim/pr_3597",
+      "pr_number": 3597,
+      "repository": "piskvorky/gensim",
+      "files": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "predicted_count": 1,
+        "actual_count": 1,
+        "correct_count": 0
+      },
+      "functions": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "predicted_count": 3,
+        "actual_count": 0,
+        "correct_count": 0
+      },
+      "steps": {
+        "predicted_steps": 3,
+        "actual_steps": 1,
+        "step_diff": 2,
+        "target_coverage": 0.0,
+        "targets_matched": 0,
+        "targets_total": 3
+      },
+      "semantic": {
+        "summary_similarity": 0.8312,
+        "avg_step_similarity": 0.2453,
+        "step_matches": [
+          {
+            "pred_idx": 2,
+            "pred_text": "Operation: Confirm and, if needed, annotate/document internally the BM25 term-weighting mechanics (t...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Update the BM25 tutorial narrative to accurately describe BM25 as a relevance scoring fun...",
+            "similarity": 0.736
+          }
+        ],
+        "overall_semantic_score": 0.4211,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/PR4Code/dataset_pr_commits_py/plasma-umass_scalene/pr_925",
+      "pr_number": 925,
+      "repository": "plasma-umass/scalene",
+      "files": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "predicted_count": 1,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "functions": {
+        "precision": 0.5,
+        "recall": 1.0,
+        "f1": 0.6667,
+        "predicted_count": 2,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "steps": {
+        "predicted_steps": 2,
+        "actual_steps": 1,
+        "step_diff": 1,
+        "target_coverage": 1.0,
+        "targets_matched": 2,
+        "targets_total": 2
+      },
+      "semantic": {
+        "summary_similarity": 0.8511,
+        "avg_step_similarity": 0.4361,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Make LD_PRELOAD merging idempotent by tokenizing existing LD_PRELOAD, detecting any libsc...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Refactor LD_PRELOAD update logic to be idempotent by splitting the existing value on ':' ...",
+            "similarity": 0.8722
+          }
+        ],
+        "overall_semantic_score": 0.5606,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/PR4Code/dataset_pr_commits_py/pwndbg_pwndbg/pr_3108",
+      "pr_number": 3108,
+      "repository": "pwndbg/pwndbg",
+      "files": {
+        "precision": 1.0,
+        "recall": 0.5,
+        "f1": 0.6667,
+        "predicted_count": 1,
+        "actual_count": 2,
+        "correct_count": 1
+      },
+      "functions": {
+        "precision": 1.0,
+        "recall": 0.5,
+        "f1": 0.6667,
+        "predicted_count": 1,
+        "actual_count": 2,
+        "correct_count": 1
+      },
+      "steps": {
+        "predicted_steps": 1,
+        "actual_steps": 2,
+        "step_diff": -1,
+        "target_coverage": 1.0,
+        "targets_matched": 1,
+        "targets_total": 1
+      },
+      "semantic": {
+        "summary_similarity": 0.8625,
+        "avg_step_similarity": 0.9247,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Add an early-return guard in the LLDB vmmap implementation so it never falls back to kern...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Add an early-return guard in the LLDB process vmmap implementation so it returns an empty...",
+            "similarity": 0.9247
+          }
+        ],
+        "overall_semantic_score": 0.906,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/PR4Code/dataset_pr_commits_py/pydantic_pydantic/pr_11766",
+      "pr_number": 11766,
+      "repository": "pydantic/pydantic",
+      "files": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "predicted_count": 1,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "functions": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "predicted_count": 1,
+        "actual_count": 0,
+        "correct_count": 0
+      },
+      "steps": {
+        "predicted_steps": 1,
+        "actual_steps": 1,
+        "step_diff": 0,
+        "target_coverage": 1.0,
+        "targets_matched": 1,
+        "targets_total": 1
+      },
+      "semantic": {
+        "summary_similarity": 0.8689,
+        "avg_step_similarity": 0.8249,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Correct the docstring example under `ConfigDict.populate_by_name` to demonstrate populati...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Correct the `populate_by_name` docstring example to demonstrate populating the field by i...",
+            "similarity": 0.8249
+          }
+        ],
+        "overall_semantic_score": 0.8381,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/PR4Code/dataset_pr_commits_py/pyodide_pyodide/pr_5625",
+      "pr_number": 5625,
+      "repository": "pyodide/pyodide",
+      "files": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "predicted_count": 2,
+        "actual_count": 1,
+        "correct_count": 0
+      },
+      "functions": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "predicted_count": 6,
+        "actual_count": 1,
+        "correct_count": 0
+      },
+      "steps": {
+        "predicted_steps": 6,
+        "actual_steps": 1,
+        "step_diff": 5,
+        "target_coverage": 0.0,
+        "targets_matched": 0,
+        "targets_total": 6
+      },
+      "semantic": {
+        "summary_similarity": 0.7186,
+        "avg_step_similarity": 0.1237,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Relax brittle log assertions in the multi-package load test by asserting presence of key ...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Relax the assertion in the package index CLI test to tolerate extra terminal output by ch...",
+            "similarity": 0.7422
+          }
+        ],
+        "overall_semantic_score": 0.3022,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/PR4Code/dataset_pr_commits_py/pyro-ppl_pyro/pr_3433",
+      "pr_number": 3433,
+      "repository": "pyro-ppl/pyro",
+      "files": {
+        "precision": 1.0,
+        "recall": 0.5,
+        "f1": 0.6667,
+        "predicted_count": 1,
+        "actual_count": 2,
+        "correct_count": 1
+      },
+      "functions": {
+        "precision": 0.5,
+        "recall": 1.0,
+        "f1": 0.6667,
+        "predicted_count": 2,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "steps": {
+        "predicted_steps": 2,
+        "actual_steps": 2,
+        "step_diff": 0,
+        "target_coverage": 1.0,
+        "targets_matched": 2,
+        "targets_total": 2
+      },
+      "semantic": {
+        "summary_similarity": 0.8424,
+        "avg_step_similarity": 0.6721,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Make `__getstate__` always copy the state object before mutating it (so mutating `_guide`...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Fix `Group.__getstate__` to always copy the returned state dict before mutating it | Func...",
+            "similarity": 0.8925
+          },
+          {
+            "pred_idx": 1,
+            "pred_text": "Operation: Review and (if needed) harden `__setstate__` to remain symmetric with the adjusted `__get...",
+            "gt_idx": 1,
+            "gt_text": "Operation: Remove the expected-failure marker from the serialization regression test now that the bu...",
+            "similarity": 0.4517
+          }
+        ],
+        "overall_semantic_score": 0.7232,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/PR4Code/dataset_pr_commits_py/recommenders-team_recommenders/pr_2071",
+      "pr_number": 2071,
+      "repository": "recommenders-team/recommenders",
+      "files": {
+        "precision": 0.5,
+        "recall": 0.3333,
+        "f1": 0.4,
+        "predicted_count": 2,
+        "actual_count": 3,
+        "correct_count": 1
+      },
+      "functions": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "predicted_count": 2,
+        "actual_count": 2,
+        "correct_count": 0
+      },
+      "steps": {
+        "predicted_steps": 2,
+        "actual_steps": 3,
+        "step_diff": -1,
+        "target_coverage": 0.5,
+        "targets_matched": 1,
+        "targets_total": 2
+      },
+      "semantic": {
+        "summary_similarity": 0.6632,
+        "avg_step_similarity": 0.5948,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Update TensorFlow extra requirement to explicitly cap TF to <2.16 (and ensure the cap pro...",
+            "gt_idx": 1,
+            "gt_text": "Operation: Pin TensorFlow GPU extra to a version range below 2.16 to avoid known breakages/security-...",
+            "similarity": 0.7766
+          },
+          {
+            "pred_idx": 1,
+            "pred_text": "Operation: Make TensorFlow compatibility test explicitly enforce/communicate the supported TF range ...",
+            "gt_idx": 2,
+            "gt_text": "Operation: Adjust GPU notebook functional test parameters (reduce DKN batch size; minor formatting c...",
+            "similarity": 0.413
+          }
+        ],
+        "overall_semantic_score": 0.6153,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/PR4Code/dataset_pr_commits_py/redis_redis-py/pr_3534",
+      "pr_number": 3534,
+      "repository": "redis/redis-py",
+      "files": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "predicted_count": 3,
+        "actual_count": 2,
+        "correct_count": 0
+      },
+      "functions": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "predicted_count": 2,
+        "actual_count": 2,
+        "correct_count": 0
+      },
+      "steps": {
+        "predicted_steps": 3,
+        "actual_steps": 2,
+        "step_diff": 1,
+        "target_coverage": 0.0,
+        "targets_matched": 0,
+        "targets_total": 3
+      },
+      "semantic": {
+        "summary_similarity": 0.7009,
+        "avg_step_similarity": 0.4518,
+        "step_matches": [
+          {
+            "pred_idx": 1,
+            "pred_text": "Operation: Add/adjust the sync lock regression test to assert the exception message text for the 're...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Update the synchronous lock release path to raise a more informative LockError when no to...",
+            "similarity": 0.6679
+          },
+          {
+            "pred_idx": 2,
+            "pred_text": "Operation: Add/adjust the asyncio lock regression test to assert the same exception message text for...",
+            "gt_idx": 1,
+            "gt_text": "Operation: Mirror the synchronous behavior in the asyncio lock implementation by updating the error ...",
+            "similarity": 0.6876
+          }
+        ],
+        "overall_semantic_score": 0.5265,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/PR4Code/dataset_pr_commits_py/scrapy_scrapy/pr_6899",
+      "pr_number": 6899,
+      "repository": "scrapy/scrapy",
+      "files": {
+        "precision": 0.5,
+        "recall": 1.0,
+        "f1": 0.6667,
+        "predicted_count": 2,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "functions": {
+        "precision": 0.5,
+        "recall": 1.0,
+        "f1": 0.6667,
+        "predicted_count": 2,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "steps": {
+        "predicted_steps": 2,
+        "actual_steps": 1,
+        "step_diff": 1,
+        "target_coverage": 0.5,
+        "targets_matched": 1,
+        "targets_total": 2
+      },
+      "semantic": {
+        "summary_similarity": 0.7519,
+        "avg_step_similarity": 0.4469,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Introduce a typing-only Failure subclass and replace the dynamic `.request` assignment ig...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Introduce a typed `FailureWithRequest` subclass and use `typing.cast()` in `call_spider_a...",
+            "similarity": 0.8938
+          }
+        ],
+        "overall_semantic_score": 0.5384,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/PR4Code/dataset_pr_commits_py/simonw_datasette/pr_2463",
+      "pr_number": 2463,
+      "repository": "simonw/datasette",
+      "files": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "predicted_count": 1,
+        "actual_count": 2,
+        "correct_count": 0
+      },
+      "functions": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "predicted_count": 2,
+        "actual_count": 2,
+        "correct_count": 0
+      },
+      "steps": {
+        "predicted_steps": 2,
+        "actual_steps": 2,
+        "step_diff": 0,
+        "target_coverage": 0.0,
+        "targets_matched": 0,
+        "targets_total": 2
+      },
+      "semantic": {
+        "summary_similarity": 0.6707,
+        "avg_step_similarity": 0.6319,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Update the async ds_client fixture to explicitly depend on pytest-asyncio’s event loop fi...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Update the CLI token creation test to request pytest-asyncio's event loop fixture | Funct...",
+            "similarity": 0.6742
+          },
+          {
+            "pred_idx": 1,
+            "pred_text": "Operation: Review and adjust test ordering logic to ensure the intended “run before any asyncio code...",
+            "gt_idx": 1,
+            "gt_text": "Operation: Remove serial-only execution marker and require the event_loop fixture for the CLI token ...",
+            "similarity": 0.5896
+          }
+        ],
+        "overall_semantic_score": 0.6435,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/PR4Code/dataset_pr_commits_py/sqlfluff_sqlfluff/pr_6890",
+      "pr_number": 6890,
+      "repository": "sqlfluff/sqlfluff",
+      "files": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "predicted_count": 1,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "functions": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "predicted_count": 1,
+        "actual_count": 0,
+        "correct_count": 0
+      },
+      "steps": {
+        "predicted_steps": 1,
+        "actual_steps": 1,
+        "step_diff": 0,
+        "target_coverage": 1.0,
+        "targets_matched": 1,
+        "targets_total": 1
+      },
+      "semantic": {
+        "summary_similarity": 0.8567,
+        "avg_step_similarity": 0.8422,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Fix RawFileSlice construction to use correct block_idx/tag ordering (prefer keyword args)...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Update lexer test expectations to match the corrected `RawFileSlice` constructor argument...",
+            "similarity": 0.8422
+          }
+        ],
+        "overall_semantic_score": 0.8465,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/PR4Code/dataset_pr_commits_py/sshuttle_sshuttle/pr_996",
+      "pr_number": 996,
+      "repository": "sshuttle/sshuttle",
+      "files": {
+        "precision": 0.3333,
+        "recall": 1.0,
+        "f1": 0.5,
+        "predicted_count": 3,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "functions": {
+        "precision": 0.1667,
+        "recall": 1.0,
+        "f1": 0.2857,
+        "predicted_count": 6,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "steps": {
+        "predicted_steps": 6,
+        "actual_steps": 1,
+        "step_diff": 5,
+        "target_coverage": 0.1667,
+        "targets_matched": 1,
+        "targets_total": 6
+      },
+      "semantic": {
+        "summary_similarity": 0.7562,
+        "avg_step_similarity": 0.1081,
+        "step_matches": [
+          {
+            "pred_idx": 3,
+            "pred_text": "Operation: Revert remote-launch behavior that enables Windows as the *remote server* (e.g., cmd/powe...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Adjust remote python invocation quoting for POSIX shells by wrapping the python executabl...",
+            "similarity": 0.6488
+          }
+        ],
+        "overall_semantic_score": 0.3025,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/PR4Code/dataset_pr_commits_py/stanfordnlp_dspy/pr_8500",
+      "pr_number": 8500,
+      "repository": "stanfordnlp/dspy",
+      "files": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "predicted_count": 2,
+        "actual_count": 2,
+        "correct_count": 2
+      },
+      "functions": {
+        "precision": 0.5,
+        "recall": 0.1111,
+        "f1": 0.1818,
+        "predicted_count": 2,
+        "actual_count": 9,
+        "correct_count": 1
+      },
+      "steps": {
+        "predicted_steps": 2,
+        "actual_steps": 9,
+        "step_diff": -7,
+        "target_coverage": 1.0,
+        "targets_matched": 2,
+        "targets_total": 2
+      },
+      "semantic": {
+        "summary_similarity": 0.7443,
+        "avg_step_similarity": 0.7644,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Harden ModelResponseStream routing in nested streaming by validating predict_id before li...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Tighten async streaming dispatch to only delegate to listeners when the streamed chunk ca...",
+            "similarity": 0.7682
+          },
+          {
+            "pred_idx": 1,
+            "pred_text": "Operation: Add a regression test that reproduces nested streaming (agent stream + tool invokes strea...",
+            "gt_idx": 8,
+            "gt_text": "Operation: Streamify the async program with a listener, iterate the async output, and assert the con...",
+            "similarity": 0.7605
+          }
+        ],
+        "overall_semantic_score": 0.7584,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/PR4Code/dataset_pr_commits_py/statsmodels_statsmodels/pr_9396",
+      "pr_number": 9396,
+      "repository": "statsmodels/statsmodels",
+      "files": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "predicted_count": 2,
+        "actual_count": 2,
+        "correct_count": 2
+      },
+      "functions": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "predicted_count": 2,
+        "actual_count": 0,
+        "correct_count": 0
+      },
+      "steps": {
+        "predicted_steps": 2,
+        "actual_steps": 2,
+        "step_diff": 0,
+        "target_coverage": 1.0,
+        "targets_matched": 2,
+        "targets_total": 2
+      },
+      "semantic": {
+        "summary_similarity": 0.8914,
+        "avg_step_similarity": 0.8452,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Remove the side-effecting overwrite of the fitted optimizer method inside the summary2 re...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Remove the side-effect assignment that sets the fitting method during summary generation ...",
+            "similarity": 0.8925
+          },
+          {
+            "pred_idx": 1,
+            "pred_text": "Operation: Extend the existing optimizer/method regression test to ensure calling `summary2()` does ...",
+            "gt_idx": 1,
+            "gt_text": "Operation: Update and expand GLM test coverage to ensure calling `summary2()` does not mutate `res.m...",
+            "similarity": 0.7978
+          }
+        ],
+        "overall_semantic_score": 0.8591,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/PR4Code/dataset_pr_commits_py/ultrafunkamsterdam_undetected-chromedriver/pr_1632",
+      "pr_number": 1632,
+      "repository": "ultrafunkamsterdam/undetected-chromedriver",
+      "files": {
+        "precision": 0.5,
+        "recall": 1.0,
+        "f1": 0.6667,
+        "predicted_count": 2,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "functions": {
+        "precision": 0.3333,
+        "recall": 1.0,
+        "f1": 0.5,
+        "predicted_count": 3,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "steps": {
+        "predicted_steps": 3,
+        "actual_steps": 1,
+        "step_diff": 2,
+        "target_coverage": 0.6667,
+        "targets_matched": 2,
+        "targets_total": 3
+      },
+      "semantic": {
+        "summary_similarity": 0.8012,
+        "avg_step_similarity": 0.2528,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Make headless detection robust by avoiding direct `options.headless` access; compute a si...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Guard access to the ChromeOptions.headless attribute and initialize it when absent to pre...",
+            "similarity": 0.7584
+          }
+        ],
+        "overall_semantic_score": 0.4173,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/PR4Code/dataset_pr_commits_py/vllm-project_vllm/pr_20938",
+      "pr_number": 20938,
+      "repository": "vllm-project/vllm",
+      "files": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "predicted_count": 1,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "functions": {
+        "precision": 0.25,
+        "recall": 1.0,
+        "f1": 0.4,
+        "predicted_count": 4,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "steps": {
+        "predicted_steps": 4,
+        "actual_steps": 1,
+        "step_diff": 3,
+        "target_coverage": 1.0,
+        "targets_matched": 4,
+        "targets_total": 4
+      },
+      "semantic": {
+        "summary_similarity": 0.7427,
+        "avg_step_similarity": 0.2237,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Promote conv/state batch index and stride arithmetic to 64-bit inside the forward Triton ...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Cast `conv_state_batch_coord` loaded from `conv_state_indices_ptr` to `tl.int64` inside t...",
+            "similarity": 0.895
+          }
+        ],
+        "overall_semantic_score": 0.3794,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/PR4Code/dataset_pr_commits_py/yihong0618_bilingual_book_maker/pr_429",
+      "pr_number": 429,
+      "repository": "yihong0618/bilingual_book_maker",
+      "files": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "predicted_count": 1,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "functions": {
+        "precision": 0.5,
+        "recall": 1.0,
+        "f1": 0.6667,
+        "predicted_count": 2,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "steps": {
+        "predicted_steps": 2,
+        "actual_steps": 1,
+        "step_diff": 1,
+        "target_coverage": 1.0,
+        "targets_matched": 2,
+        "targets_total": 2
+      },
+      "semantic": {
+        "summary_similarity": 0.892,
+        "avg_step_similarity": 0.4493,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Fix the backoff-wrapped translation helper signature and retry configuration (add explici...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Fix the backoff-decorated wrapper to accept the positional arguments actually passed thro...",
+            "similarity": 0.8986
+          }
+        ],
+        "overall_semantic_score": 0.5821,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/PR4Code/dataset_pr_commits_py/yt-dlp_yt-dlp/pr_13539",
+      "pr_number": 0,
+      "repository": "",
+      "files": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "predicted_count": 0,
+        "actual_count": 0,
+        "correct_count": 0
+      },
+      "functions": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "predicted_count": 0,
+        "actual_count": 0,
+        "correct_count": 0
+      },
+      "steps": {
+        "predicted_steps": 0,
+        "actual_steps": 0,
+        "step_diff": 0,
+        "target_coverage": 0.0,
+        "targets_matched": 0,
+        "targets_total": 0
+      },
+      "semantic": {
+        "summary_similarity": 0.0,
+        "avg_step_similarity": 0.0,
+        "step_matches": [],
+        "overall_semantic_score": 0.0,
+        "computed": false,
+        "error": null
+      },
+      "has_prediction": false,
+      "has_ground_truth": false,
+      "error": "predicted_plan.json not found"
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/PR4Code/dataset_pr_commits_py/zyddnys_manga-image-translator/pr_900",
+      "pr_number": 0,
+      "repository": "",
+      "files": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "predicted_count": 0,
+        "actual_count": 0,
+        "correct_count": 0
+      },
+      "functions": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "predicted_count": 0,
+        "actual_count": 0,
+        "correct_count": 0
+      },
+      "steps": {
+        "predicted_steps": 0,
+        "actual_steps": 0,
+        "step_diff": 0,
+        "target_coverage": 0.0,
+        "targets_matched": 0,
+        "targets_total": 0
+      },
+      "semantic": {
+        "summary_similarity": 0.0,
+        "avg_step_similarity": 0.0,
+        "step_matches": [],
+        "overall_semantic_score": 0.0,
+        "computed": false,
+        "error": null
+      },
+      "has_prediction": false,
+      "has_ground_truth": false,
+      "error": "predicted_plan.json not found"
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/PR4Code/dataset_pr_commits_py/zylon-ai_private-gpt/pr_2025",
+      "pr_number": 0,
+      "repository": "",
+      "files": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "predicted_count": 0,
+        "actual_count": 0,
+        "correct_count": 0
+      },
+      "functions": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "predicted_count": 0,
+        "actual_count": 0,
+        "correct_count": 0
+      },
+      "steps": {
+        "predicted_steps": 0,
+        "actual_steps": 0,
+        "step_diff": 0,
+        "target_coverage": 0.0,
+        "targets_matched": 0,
+        "targets_total": 0
+      },
+      "semantic": {
+        "summary_similarity": 0.0,
+        "avg_step_similarity": 0.0,
+        "step_matches": [],
+        "overall_semantic_score": 0.0,
+        "computed": false,
+        "error": null
+      },
+      "has_prediction": false,
+      "has_ground_truth": false,
+      "error": "predicted_plan.json not found"
+    }
+  ]
+}
