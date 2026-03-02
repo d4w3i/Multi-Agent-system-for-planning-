@@ -1,0 +1,72 @@
+{
+  "pr_number": 1496,
+  "repository": "openinterpreter/open-interpreter",
+  "title": "Fix: Change date format string for Windows compatibility",
+  "body": "# Fix date format string for Windows compatibility\n\n## Problem\nWhen running `interpreter --os` on Windows, the program crashes with a ValueError due to an incompatible date format string (`%-d`).\n\n## Solution\nChanged the date format string from `%-d` to `%d` to ensure compatibility with Windows systems.\n\n## Changes\n- Modified `interpreter/computer_use/loop.py` to use Windows-compatible date format\n- Replaced `%-d` with `%d` in `strftime()` call\n\n## Testing\nTested on:\n- Windows 11\n- Python 3.11\n- open-interpreter 0.4.1\n\nThe fix allows the program to start normally with the `--os` flag on Windows.\n\nFixes #1495",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T12:53:39.933440",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "interpreter/computer_use/loop.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "SYSTEM_PROMPT (first module-level assignment)",
+          "class_name": null,
+          "full_name": "SYSTEM_PROMPT (first module-level assignment)",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "SYSTEM_PROMPT (second module-level assignment)",
+          "class_name": null,
+          "full_name": "SYSTEM_PROMPT (second module-level assignment)",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "sampling_loop",
+          "class_name": null,
+          "full_name": "sampling_loop",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Replace POSIX-only '%-d' day format specifier with a Windows-compatible approach in interpreter/computer_use/loop.py (update both module-level SYSTEM_PROMPT occurrences) and harden sampling_loop to construct a platform-agnostic date string so the --os flag no longer crashes on Windows.",
+    "steps": [
+      {
+        "operation": "Replace POSIX-only '%-d' with Windows-safe '%d' in the first module-level SYSTEM_PROMPT assignment",
+        "file_to_modify": "interpreter/computer_use/loop.py",
+        "function_to_modify": "SYSTEM_PROMPT",
+        "reason": "The '%-d' day specifier is POSIX-only and causes datetime.strftime to raise ValueError on Windows. Replacing it with '%d' prevents the crash when the module loads on Windows.",
+        "side_effects": "Day values 1-9 will become zero-padded (e.g., '03' instead of '3'), which is a cosmetic change to the prompt; any tests or code that assert the exact SYSTEM_PROMPT string will need updating. No API or runtime behavior other than prompt text is changed. Downstream code that reads SYSTEM_PROMPT will get the updated string."
+      },
+      {
+        "operation": "Replace POSIX-only '%-d' with Windows-safe '%d' in the second module-level SYSTEM_PROMPT assignment",
+        "file_to_modify": "interpreter/computer_use/loop.py",
+        "function_to_modify": "SYSTEM_PROMPT",
+        "reason": "There are multiple module-level assignments that include the problematic specifier; updating the second occurrence ensures no remaining '%-d' instances remain that could crash on Windows or cause inconsistent behavior.",
+        "side_effects": "Same cosmetic zero-padding effect for single-digit days; tests asserting the old string must be updated. If the file intentionally reassigns SYSTEM_PROMPT later, this ensures every literal occurrence is fixed, reducing risk of runtime crashes or confusion from leftover incompatible strings."
+      },
+      {
+        "operation": "Make sampling_loop construct or sanitize the date string in a platform-agnostic way before composing/sending the system prompt",
+        "file_to_modify": "interpreter/computer_use/loop.py",
+        "function_to_modify": "sampling_loop",
+        "reason": "sampling_loop is the runtime site that composes and sends the system prompt; defensively building the date string from datetime components (e.g., date.day) or using separate strftime calls (for weekday/month/year) avoids relying on platform-specific strftime flags and guarantees Windows compatibility even if other prompt definitions exist or are modified.",
+        "side_effects": "This makes the runtime prompt construction robust across platforms and avoids regressions if other SYSTEM_PROMPT values are changed later. Tests that inspect the runtime prompt may need updates to match the new date format (for example, change from non-padded to padded day or vice versa depending on chosen implementation). No API changes; minor behavioral change only for the prompt text. If other modules rely on the prior exact composition of the prompt string, they may need adjustments."
+      }
+    ]
+  }
+}

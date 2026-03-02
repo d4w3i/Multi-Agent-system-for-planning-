@@ -1,0 +1,87 @@
+{
+  "pr_number": 1362,
+  "repository": "maurosoria/dirsearch",
+  "title": "python cleanup",
+  "body": "Description\n---------------\n\n`lib/core/dictionary.py` -> fix typo, remove redundant parenthesis since you are returning a tuple anyway\n`lib/core/structures.py` -> remove redundant class parenthesis (not needed in python3)\n`lib/reports/html_report.py` -> simplify comparison statements",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T14:04:36.962438",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "lib/core/dictionary.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "__getstate__",
+          "class_name": "Dictionary",
+          "full_name": "Dictionary.__getstate__",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "lib/core/structures.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    },
+    {
+      "filename": "lib/reports/html_report.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "generate",
+          "class_name": "HTMLReport",
+          "full_name": "HTMLReport.generate",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_status_color",
+          "class_name": "HTMLReport",
+          "full_name": "HTMLReport._status_color",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Python cleanup: minor formatting and readability improvements across dictionary state handling and HTML report color mapping without changing runtime behavior.",
+    "steps": [
+      {
+        "operation": "Return a tuple without extra parentheses in __getstate__ return",
+        "file_to_modify": "lib/core/dictionary.py",
+        "function_to_modify": "Dictionary.__getstate__",
+        "reason": "Remove redundant parentheses in the tuple return to align with Python 3 conventions and improve readability/consistency of state serialization.",
+        "side_effects": "No behavioral changes; minimal diff in pickling-related paths; tests should remain unaffected."
+      },
+      {
+        "operation": "Simplify status-to-color mapping in HTMLReport.generate by using a compact conditional or inline mapping",
+        "file_to_modify": "lib/reports/html_report.py",
+        "function_to_modify": "HTMLReport.generate",
+        "reason": "Improve readability and reduce branching in the HTML color mapping logic while preserving behavior.",
+        "side_effects": "No external API changes; ensure generated HTML color outputs remain consistent with tests; potential minor diff in diff tests for formatting."
+      },
+      {
+        "operation": "Add centralized _status_color helper and refactor generate to call it",
+        "file_to_modify": "lib/reports/html_report.py",
+        "function_to_modify": "HTMLReport._status_color",
+        "reason": "Encapsulate status-to-color logic for reuse and easier maintenance; improve testability of color mapping by isolating logic.",
+        "side_effects": "Introduces a new internal helper; generate now relies on it; tests relying on color mapping should continue to pass if logic is equivalent."
+      }
+    ]
+  }
+}

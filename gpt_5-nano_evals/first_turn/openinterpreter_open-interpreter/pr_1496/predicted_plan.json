@@ -1,0 +1,42 @@
+{
+  "pr_number": 1496,
+  "repository": "openinterpreter/open-interpreter",
+  "title": "Fix: Change date format string for Windows compatibility",
+  "body": "This PR aims to fix a Windows compatibility issue when running the interpreter with the --os mode. The crash originates from an incompatible date format string using %-d in the SYSTEM_PROMPT definitions within the computer-use loop. The patch changes the format from %-d to %d to ensure compatibility with Windows' strftime implementation. Key points:\n\n- Problem: On Windows, datetime.today().strftime('%A, %B %-d, %Y') can raise a ValueError due to unsupported %-d specifier.\n- Solution: Replace %-d with %d in the STRFTIME call within the SYSTEM_PROMPT blocks.\n- Changes: Update interpreter/computer_use/loop.py to use a Windows-compatible date format; the change is confined to the SYSTEM_PROMPT definitions that embed the current date.\n- Testing notes: Verified on Windows 11 with Python 3.11 in the context of the --os setup. The fix allows the program to start normally with the OS mode and avoids the ValueError.\n\nThis aligns with the issue Fixes #1495.\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T14:13:58.856761",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "interpreter/computer_use/loop.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "SYSTEM_PROMPT",
+          "class_name": "loop",
+          "full_name": "loop.SYSTEM_PROMPT",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Fix Windows compatibility by replacing %-d with %d in SYSTEM_PROMPT date strings inside interpreter/computer_use/loop.py to avoid ValueError when running with OS mode on Windows.",
+    "steps": [
+      {
+        "operation": "Modify Windows-compatible date format in SYSTEM_PROMPT definitions",
+        "file_to_modify": "interpreter/computer_use/loop.py",
+        "function_to_modify": "get_system_prompt",
+        "reason": "%-d is not supported by Windows' strftime; replacing with %d prevents ValueError when OS mode runs on Windows",
+        "side_effects": "Date formatting for days 01-09 may now be zero-padded; verify with OS mode tests on Windows; minimal impact on other OS behaviors; no changes to OS-mode logic beyond prompt content"
+      }
+    ]
+  }
+}

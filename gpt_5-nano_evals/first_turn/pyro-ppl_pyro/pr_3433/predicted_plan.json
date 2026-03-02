@@ -1,0 +1,57 @@
+{
+  "pr_number": 3433,
+  "repository": "pyro-ppl/pyro",
+  "title": "Fixes #3430: ensure easyguide Group serialization copies state before modification to avoid corruption",
+  "body": "Root cause: On Python 3.12, the __getstate__ path for Group in easyguide.py can return a state dictionary that mutates shared state when converting the weak reference to a strong reference. This mutation can corrupt the serialized state if it happens in place. The fix is to copy the state before mutating it.\n\nProposed change: In Group.__getstate__, explicitly copy the returned state before mutating it (specifically before converting the _guide weakref to a strong reference). This ensures we do not mutate a shared or original dict, avoiding corruption across Python versions (notably 3.12). The __setstate__ path remains responsible for restoring state and re-wrapping the guide reference as a weakref.\n\nImpact: Improves serialization robustness of EasyGuide Group objects across Python versions, aligns with the described test scenarios around pickling/unpickling guides.\n\nNotes for reviewers:\n- The tests in tests/contrib/easyguide/test_easyguide.py contain a test_serialize path (xfail due to known issues). The change targets the underlying serialization logic that could be the root cause of corruption and should be validated by running the existing tests and, if possible, adding a targeted test that asserts that __getstate__ returns a separate copy when mutating _guide.\n- No public API changes beyond serialization safety; this is a correctness/predictability improvement for pickling.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T14:21:47.218435",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "pyro/contrib/easyguide/easyguide.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "__getstate__",
+          "class_name": "Group",
+          "full_name": "Group.__getstate__",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "__setstate__",
+          "class_name": "Group",
+          "full_name": "Group.__setstate__",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Fixes #3430: ensure easyguide Group serialization copies state before modification to avoid corruption during pickling, especially on Python 3.12.",
+    "steps": [
+      {
+        "operation": "Copy serialized state in __getstate__ before mutating it",
+        "file_to_modify": "pyro/contrib/easyguide/easyguide.py",
+        "function_to_modify": "Group.__getstate__",
+        "reason": "To avoid in-place mutation of the serialized state dict when converting the _guide weakref to a strong reference during pickling, which can corrupt state on Python 3.12 and other versions.",
+        "side_effects": "Tests around serialization may need updates; __getstate__ will now work on a copy, reducing risk of cross-version state corruption; no public API changes."
+      },
+      {
+        "operation": "Rebuild the guide weak reference during unpickling in __setstate__ to align with the copied-state behavior",
+        "file_to_modify": "pyro/contrib/easyguide/easyguide.py",
+        "function_to_modify": "Group.__setstate__",
+        "reason": "Ensure that unpickling preserves the intended weakref-based relationship to the guide even if __getstate__ creates and mutates a copied state.",
+        "side_effects": "Tests for pickling/unpickling should pass; minor adjustments may be needed in tests to reflect the newly copied state handling; no API changes."
+      }
+    ]
+  }
+}

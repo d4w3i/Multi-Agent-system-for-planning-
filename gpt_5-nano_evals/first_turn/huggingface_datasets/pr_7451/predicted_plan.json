@@ -1,0 +1,87 @@
+{
+  "pr_number": 7451,
+  "repository": "huggingface/datasets",
+  "title": "Fix resuming after `ds.set_epoch(new_epoch)`",
+  "body": "## Title\nFix resuming after `ds.set_epoch(new_epoch)`\n\n## Description\nclose https://github.com/huggingface/datasets/issues/7447\n\nExplore the source code to identify the files and functions to modify.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T13:56:07.467885",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "src/datasets/iterable_dataset.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "set_epoch",
+          "class_name": "IterableDataset",
+          "full_name": "IterableDataset.set_epoch",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "load_state_dict",
+          "class_name": "IterableDataset",
+          "full_name": "IterableDataset.load_state_dict",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_prepare_ex_iterable_for_iteration",
+          "class_name": "IterableDataset",
+          "full_name": "IterableDataset._prepare_ex_iterable_for_iteration",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_effective_generator",
+          "class_name": "IterableDataset",
+          "full_name": "IterableDataset._effective_generator",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Fix deterministic resumption after ds.set_epoch(new_epoch) by ensuring epoch changes propagate to the prepared iteration pipeline and that resume from state_dict respects the current epoch context, across workers and distributed shuffles.",
+    "steps": [
+      {
+        "operation": "Refactor _effective_generator to derive RNG seed strictly from the current epoch (and shuffle/distributed flags) to ensure deterministic shuffling across set_epoch changes and resume scenarios",
+        "file_to_modify": "src/datasets/iterable_dataset.py",
+        "function_to_modify": "IterableDataset._effective_generator",
+        "reason": "To guarantee robust, epoch-driven RNG seeding even when resuming from checkpoints or when shuffling is toggled, ensuring consistency across workers/processes",
+        "side_effects": "May alter shuffling behavior across all DataLoader consumers; requires downstream tests and potential re-seeding of any dependent wrappers"
+      },
+      {
+        "operation": "Invalidate or refresh the prepared ex_iterable cache when set_epoch is called",
+        "file_to_modify": "src/datasets/iterable_dataset.py",
+        "function_to_modify": "IterableDataset.set_epoch",
+        "reason": "To ensure subsequent iterations rebuild the ex_iterable stack using the new epoch seed, preventing stale RNG seeds from persisting after a change in epoch",
+        "side_effects": "Triggers reinitialization of data pipelines; may introduce a brief overhead during epoch changes; affects any component relying on cached ex_iterable (e.g., DataLoader workers)"
+      },
+      {
+        "operation": "Rebuild the ex_iterable stack using the current epoch in _prepare_ex_iterable_for_iteration",
+        "file_to_modify": "src/datasets/iterable_dataset.py",
+        "function_to_modify": "IterableDataset._prepare_ex_iterable_for_iteration",
+        "reason": "To guarantee that shuffles, wrappers (shuffle/map/batch), and distributed sharding are seeded with the current epoch, including after set_epoch calls or resume",
+        "side_effects": "Changes initialization path of the iteration pipeline; requires validation across various wrapper combinations and potential performance implications; tests must cover epoch consistency after rebuild"
+      },
+      {
+        "operation": "Enhance load_state_dict to respect the current epoch context and rebind iterables after resume",
+        "file_to_modify": "src/datasets/iterable_dataset.py",
+        "function_to_modify": "IterableDataset.load_state_dict",
+        "reason": "To avoid resuming with a stale or mismatched RNG seed by aligning the resumed state with the active epoch (or explicitly restoring epoch from saved state), and re-binding the underlying iterables accordingly",
+        "side_effects": "Might require embedding or handling epoch metadata in the saved state_dict; impacts resume paths and tests for checkpointing across epochs; could affect compatibility with older saved states"
+      }
+    ]
+  }
+}

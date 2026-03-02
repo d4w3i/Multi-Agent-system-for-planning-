@@ -1,0 +1,64 @@
+{
+  "pr_number": 3534,
+  "repository": "redis/redis-py",
+  "title": "fix(lock): Fix LockError message when releasing a lock.",
+  "body": "Fixes #3535\n\nWe aim to ensure the release path raises precise, expected error messages when a lock release is attempted, especially when ownership is lost or when releasing an unlocked lock. The PR includes an example of the expected error content:\n\n```\nThread 2: Lock error: Cannot release a lock that's no longer owned\n```\n\nWhat this analysis covers:\n- Identify where release-time errors are raised and how messages are composed.\n- Determine exact files and functions to adjust so that the release error semantics align with the desired messaging.\n- Propose targeted changes focused on the release path without altering unrelated lock behavior.\n\nProposed changes (in scope of this PR):\n- Ensure that attempting to release a lock that is no longer owned raises LockNotOwnedError with the exact message: \"Cannot release a lock that's no longer owned\".\n- Ensure releasing an unlocked lock raises LockError with the message: \"Cannot release an unlocked lock\".\n- Preserve existing context management and token-based ownership semantics while aligning messages to the expected contract.\n\nRecommended tests (not included here):\n- Acquire a lock in one thread, release in a second thread after ownership changes, assert the exception type and message from the release path.\n- Attempt to release a lock without owning or without a token, assert LockError and the expected message.\n\nThis PR focuses on clarity and consistency of release-related errors to better mirror the locking contract and improve debuggability in concurrent scenarios.\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T14:24:56.364701",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "redis/lock.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "release",
+          "class_name": "Lock",
+          "full_name": "Lock.release",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "do_release",
+          "class_name": "Lock",
+          "full_name": "Lock.do_release",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "redis/exceptions.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    }
+  ],
+  "step_plan": {
+    "summary": "This PR tightens lock release error messaging by ensuring the release path raises precise exceptions with exact messages: releasing an unlocked lock yields LockError with 'Cannot release an unlocked lock', and releasing when ownership is lost yields LockNotOwnedError with 'Cannot release a lock that's no longer owned'. The changes preserve existing token semantics and context management while aligning surface error reporting.",
+    "steps": [
+      {
+        "operation": "Refine release path to raise LockError on unlocked state",
+        "file_to_modify": "redis/lock.py",
+        "function_to_modify": "Lock.release",
+        "reason": "To ensure releasing a lock without an active ownership token yields the precise 'Cannot release an unlocked lock' message and preserves existing context management semantics.",
+        "side_effects": "Code paths that rely on catching a generic release error may now see a more specific LockError with a clearer message; some tests may need updates to assert the new message; minor API surface change in error messaging."
+      },
+      {
+        "operation": "Raise precise ownership error on do_release",
+        "file_to_modify": "redis/lock.py",
+        "function_to_modify": "Lock.do_release",
+        "reason": "When ownership is lost or a non-owner attempts release, raise LockNotOwnedError with exact message 'Cannot release a lock that's no longer owned' to align with the PR goals and messaging contract.",
+        "side_effects": "Callers and tests that expect the previous behavior may need updates to handle the new exception type/message; ensures Lua-backed release propagates the precise error for ownership violations; may require updates to documentation/CHANGES."
+      }
+    ]
+  }
+}

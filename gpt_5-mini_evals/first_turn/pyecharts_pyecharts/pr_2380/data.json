@@ -1,0 +1,167 @@
+{
+    "repository": "pyecharts/pyecharts",
+    "pull_request_number": 2380,
+    "title": "fix and update",
+    "body": "* \u4fee\u590d `timeline` \u7684 bug\uff0c\u5173\u8054\uff1ahttps://github.com/pyecharts/pyecharts/issues/2361\r\n* \u66f4\u65b0\u4e00\u4e9b\u914d\u7f6e\u7684\u5f15\u7528\u4f4d\u7f6e\u548c\u65b9\u5f0f\r\n    * `markline`, `markarea` \u589e\u52a0\u52a8\u753b\u914d\u7f6e\u9879\uff1ahttps://github.com/pyecharts/pyecharts/issues/2362 \r\n\r\n",
+    "pr_date": "2024-09-26T09:57:07Z",
+    "source_branch": "fix/timeline",
+    "language": "no",
+    "keywords_detected": {
+        "branch": [
+            "fix"
+        ],
+        "requirement": [
+            "fix",
+            "update"
+        ],
+        "body": []
+    },
+    "number_of_links_in_pr": 2,
+    "base_sha": "ed3f19435a4dd051c8681715508b0ae7b2414950",
+    "last_commit_sha": "ad6d44d716e9ceb5bd49de17abcd3315764bd522",
+    "diff_between_base_and_last": [
+        {
+            "sha": "06545651ef60411b43cea76cad6c444fb85d7250",
+            "filename": "pyecharts/charts/base.py",
+            "status": "modified",
+            "additions": 1,
+            "deletions": 2,
+            "changes": 3,
+            "blob_url": "https://github.com/pyecharts/pyecharts/blob/ad6d44d716e9ceb5bd49de17abcd3315764bd522/pyecharts%2Fcharts%2Fbase.py",
+            "raw_url": "https://github.com/pyecharts/pyecharts/raw/ad6d44d716e9ceb5bd49de17abcd3315764bd522/pyecharts%2Fcharts%2Fbase.py",
+            "contents_url": "https://api.github.com/repos/pyecharts/pyecharts/contents/pyecharts%2Fcharts%2Fbase.py?ref=ad6d44d716e9ceb5bd49de17abcd3315764bd522",
+            "patch": "@@ -7,8 +7,7 @@\n from ..commons import utils\n from ..globals import CurrentConfig, RenderType, ThemeType\n from ..options import InitOpts, RenderOpts\n-from ..options.global_options import AnimationOpts\n-from ..options.series_options import BasicOpts\n+from ..options.series_options import BasicOpts, AnimationOpts\n from ..render import engine\n from ..types import Optional, Sequence, Union\n from .mixins import ChartMixin"
+        },
+        {
+            "sha": "0434122c40d99ca446501fa1d725744ab5669391",
+            "filename": "pyecharts/charts/composite_charts/timeline.py",
+            "status": "modified",
+            "additions": 2,
+            "deletions": 6,
+            "changes": 8,
+            "blob_url": "https://github.com/pyecharts/pyecharts/blob/ad6d44d716e9ceb5bd49de17abcd3315764bd522/pyecharts%2Fcharts%2Fcomposite_charts%2Ftimeline.py",
+            "raw_url": "https://github.com/pyecharts/pyecharts/raw/ad6d44d716e9ceb5bd49de17abcd3315764bd522/pyecharts%2Fcharts%2Fcomposite_charts%2Ftimeline.py",
+            "contents_url": "https://api.github.com/repos/pyecharts/pyecharts/contents/pyecharts%2Fcharts%2Fcomposite_charts%2Ftimeline.py?ref=ad6d44d716e9ceb5bd49de17abcd3315764bd522",
+            "patch": "@@ -94,6 +94,7 @@ def add(self, chart: Base, time_point: str):\n         self.options.get(\"options\").append(\r\n             {\r\n                 \"backgroundColor\": chart.options.get(\"backgroundColor\"),\r\n+                \"legend\": chart.options.get(\"legend\"),\r\n                 \"series\": chart.options.get(\"series\"),\r\n                 \"xAxis\": chart.options.get(\"xAxis\"),\r\n                 \"yAxis\": chart.options.get(\"yAxis\"),\r\n@@ -136,9 +137,4 @@ def __check_components(self, chart: Base):\n         for component in components:\r\n             c = chart.options.get(component, None)\r\n             if c is not None:\r\n-                # eg: legend in timeline\r\n-                base_option_component = self.options.get(\"baseOption\").get(component)\r\n-                if base_option_component and isinstance(c, Sequence):\r\n-                    base_option_component.extend(c)\r\n-                else:\r\n-                    self.options.get(\"baseOption\").update({component: c})\r\n+                self.options.get(\"baseOption\").update({component: c})\r"
+        },
+        {
+            "sha": "8b96cacff78a9bb2090fcd2d97dc3a7e77e283b1",
+            "filename": "pyecharts/options/global_options.py",
+            "status": "modified",
+            "additions": 1,
+            "deletions": 24,
+            "changes": 25,
+            "blob_url": "https://github.com/pyecharts/pyecharts/blob/ad6d44d716e9ceb5bd49de17abcd3315764bd522/pyecharts%2Foptions%2Fglobal_options.py",
+            "raw_url": "https://github.com/pyecharts/pyecharts/raw/ad6d44d716e9ceb5bd49de17abcd3315764bd522/pyecharts%2Foptions%2Fglobal_options.py",
+            "contents_url": "https://api.github.com/repos/pyecharts/pyecharts/contents/pyecharts%2Foptions%2Fglobal_options.py?ref=ad6d44d716e9ceb5bd49de17abcd3315764bd522",
+            "patch": "@@ -1,6 +1,7 @@\n from ..globals import CurrentConfig, RenderType, ThemeType\r\n from ..options.series_options import (\r\n     BasicOpts,\r\n+    AnimationOpts,\r\n     AreaStyleOpts,\r\n     ItemStyleOpts,\r\n     JSFunc,\r\n@@ -18,30 +19,6 @@\n )\r\n \r\n \r\n-class AnimationOpts(BasicOpts):\r\n-    def __init__(\r\n-        self,\r\n-        animation: bool = True,\r\n-        animation_threshold: Numeric = 2000,\r\n-        animation_duration: Union[Numeric, JSFunc] = 1000,\r\n-        animation_easing: Union[str] = \"cubicOut\",\r\n-        animation_delay: Union[Numeric, JSFunc] = 0,\r\n-        animation_duration_update: Union[Numeric, JSFunc] = 300,\r\n-        animation_easing_update: Union[Numeric] = \"cubicOut\",\r\n-        animation_delay_update: Union[Numeric, JSFunc] = 0,\r\n-    ):\r\n-        self.opts: dict = {\r\n-            \"animation\": animation,\r\n-            \"animationThreshold\": animation_threshold,\r\n-            \"animationDuration\": animation_duration,\r\n-            \"animationEasing\": animation_easing,\r\n-            \"animationDelay\": animation_delay,\r\n-            \"animationDurationUpdate\": animation_duration_update,\r\n-            \"animationEasingUpdate\": animation_easing_update,\r\n-            \"animationDelayUpdate\": animation_delay_update,\r\n-        }\r\n-\r\n-\r\n class AriaLabelOpts(BasicOpts):\r\n     def __init__(\r\n         self,\r"
+        },
+        {
+            "sha": "e1a7df52a4e542d5a20e7f26a892c1f1ebdd72cb",
+            "filename": "pyecharts/options/series_options.py",
+            "status": "modified",
+            "additions": 36,
+            "deletions": 0,
+            "changes": 36,
+            "blob_url": "https://github.com/pyecharts/pyecharts/blob/ad6d44d716e9ceb5bd49de17abcd3315764bd522/pyecharts%2Foptions%2Fseries_options.py",
+            "raw_url": "https://github.com/pyecharts/pyecharts/raw/ad6d44d716e9ceb5bd49de17abcd3315764bd522/pyecharts%2Foptions%2Fseries_options.py",
+            "contents_url": "https://api.github.com/repos/pyecharts/pyecharts/contents/pyecharts%2Foptions%2Fseries_options.py?ref=ad6d44d716e9ceb5bd49de17abcd3315764bd522",
+            "patch": "@@ -16,6 +16,30 @@ def get(self, key: str) -> Any:\n         return self.opts.get(key)\n \n \n+class AnimationOpts(BasicOpts):\n+    def __init__(\n+        self,\n+        animation: bool = True,\n+        animation_threshold: Numeric = 2000,\n+        animation_duration: Union[Numeric, JSFunc] = 1000,\n+        animation_easing: Union[str] = \"cubicOut\",\n+        animation_delay: Union[Numeric, JSFunc] = 0,\n+        animation_duration_update: Union[Numeric, JSFunc] = 300,\n+        animation_easing_update: Union[Numeric] = \"cubicOut\",\n+        animation_delay_update: Union[Numeric, JSFunc] = 0,\n+    ):\n+        self.opts: dict = {\n+            \"animation\": animation,\n+            \"animationThreshold\": animation_threshold,\n+            \"animationDuration\": animation_duration,\n+            \"animationEasing\": animation_easing,\n+            \"animationDelay\": animation_delay,\n+            \"animationDurationUpdate\": animation_duration_update,\n+            \"animationEasingUpdate\": animation_easing_update,\n+            \"animationDelayUpdate\": animation_delay_update,\n+        }\n+\n+\n class ItemStyleOpts(BasicOpts):\n     def __init__(\n         self,\n@@ -216,6 +240,7 @@ def __init__(\n         symbol: Optional[str] = None,\n         symbol_size: Union[None, Numeric] = None,\n         label_opts: LabelOpts = LabelOpts(position=\"inside\", color=\"#fff\"),\n+        animation_opts: Union[AnimationOpts, dict, None] = None,\n     ):\n         self.opts: dict = {\n             \"symbol\": symbol,\n@@ -224,6 +249,9 @@ def __init__(\n             \"data\": data,\n         }\n \n+        if animation_opts:\n+            self.opts.update(**animation_opts.opts)\n+\n \n class MarkLineItem(BasicOpts):\n     def __init__(\n@@ -267,6 +295,7 @@ def __init__(\n         precision: int = 2,\n         label_opts: LabelOpts = LabelOpts(),\n         linestyle_opts: Union[LineStyleOpts, dict, None] = None,\n+        animation_opts: Union[AnimationOpts, dict, None] = None,\n     ):\n         self.opts: dict = {\n             \"silent\": is_silent,\n@@ -278,6 +307,9 @@ def __init__(\n             \"data\": data,\n         }\n \n+        if animation_opts:\n+            self.opts.update(**animation_opts.opts)\n+\n \n class MarkAreaItem(BasicOpts):\n     def __init__(\n@@ -319,6 +351,7 @@ def __init__(\n         label_opts: LabelOpts = LabelOpts(),\n         data: Sequence[Union[MarkAreaItem, Sequence, dict]] = None,\n         itemstyle_opts: ItemStyleOpts = None,\n+        animation_opts: Union[AnimationOpts, dict, None] = None,\n     ):\n         self.opts: dict = {\n             \"silent\": is_silent,\n@@ -327,6 +360,9 @@ def __init__(\n             \"itemStyle\": itemstyle_opts,\n         }\n \n+        if animation_opts:\n+            self.opts.update(**animation_opts.opts)\n+\n \n class EffectOpts(BasicOpts):\n     def __init__("
+        },
+        {
+            "sha": "3e6763c7a54dd09676140b2f2321b0d68b42f552",
+            "filename": "test/test_base.py",
+            "status": "modified",
+            "additions": 1,
+            "deletions": 1,
+            "changes": 2,
+            "blob_url": "https://github.com/pyecharts/pyecharts/blob/ad6d44d716e9ceb5bd49de17abcd3315764bd522/test%2Ftest_base.py",
+            "raw_url": "https://github.com/pyecharts/pyecharts/raw/ad6d44d716e9ceb5bd49de17abcd3315764bd522/test%2Ftest_base.py",
+            "contents_url": "https://api.github.com/repos/pyecharts/pyecharts/contents/test%2Ftest_base.py?ref=ad6d44d716e9ceb5bd49de17abcd3315764bd522",
+            "patch": "@@ -6,7 +6,7 @@\n from pyecharts.options import InitOpts, RenderOpts\n from pyecharts.globals import CurrentConfig\n from pyecharts.charts.base import Base, default\n-from pyecharts.options.global_options import AnimationOpts\n+from pyecharts.options.series_options import AnimationOpts\n \n \n class TestBaseClass(unittest.TestCase):"
+        }
+    ],
+    "commits": [
+        {
+            "sha": "94784adeef551efe36cc336752f98416274e9122",
+            "commit_date": "2024-07-10T02:15:58Z",
+            "message": "update AnimationOpts, MarkPointOpts, MarkLineOpts, MarkAreaOpts",
+            "number_of_links_in_commit": 0,
+            "files_changed_count": 4,
+            "files": [
+                {
+                    "sha": "06545651ef60411b43cea76cad6c444fb85d7250",
+                    "filename": "pyecharts/charts/base.py",
+                    "status": "modified",
+                    "additions": 1,
+                    "deletions": 2,
+                    "changes": 3,
+                    "blob_url": "https://github.com/pyecharts/pyecharts/blob/94784adeef551efe36cc336752f98416274e9122/pyecharts%2Fcharts%2Fbase.py",
+                    "raw_url": "https://github.com/pyecharts/pyecharts/raw/94784adeef551efe36cc336752f98416274e9122/pyecharts%2Fcharts%2Fbase.py",
+                    "contents_url": "https://api.github.com/repos/pyecharts/pyecharts/contents/pyecharts%2Fcharts%2Fbase.py?ref=94784adeef551efe36cc336752f98416274e9122",
+                    "patch": "@@ -7,8 +7,7 @@\n from ..commons import utils\n from ..globals import CurrentConfig, RenderType, ThemeType\n from ..options import InitOpts, RenderOpts\n-from ..options.global_options import AnimationOpts\n-from ..options.series_options import BasicOpts\n+from ..options.series_options import BasicOpts, AnimationOpts\n from ..render import engine\n from ..types import Optional, Sequence, Union\n from .mixins import ChartMixin"
+                },
+                {
+                    "sha": "8b96cacff78a9bb2090fcd2d97dc3a7e77e283b1",
+                    "filename": "pyecharts/options/global_options.py",
+                    "status": "modified",
+                    "additions": 1,
+                    "deletions": 24,
+                    "changes": 25,
+                    "blob_url": "https://github.com/pyecharts/pyecharts/blob/94784adeef551efe36cc336752f98416274e9122/pyecharts%2Foptions%2Fglobal_options.py",
+                    "raw_url": "https://github.com/pyecharts/pyecharts/raw/94784adeef551efe36cc336752f98416274e9122/pyecharts%2Foptions%2Fglobal_options.py",
+                    "contents_url": "https://api.github.com/repos/pyecharts/pyecharts/contents/pyecharts%2Foptions%2Fglobal_options.py?ref=94784adeef551efe36cc336752f98416274e9122",
+                    "patch": "@@ -1,6 +1,7 @@\n from ..globals import CurrentConfig, RenderType, ThemeType\r\n from ..options.series_options import (\r\n     BasicOpts,\r\n+    AnimationOpts,\r\n     AreaStyleOpts,\r\n     ItemStyleOpts,\r\n     JSFunc,\r\n@@ -18,30 +19,6 @@\n )\r\n \r\n \r\n-class AnimationOpts(BasicOpts):\r\n-    def __init__(\r\n-        self,\r\n-        animation: bool = True,\r\n-        animation_threshold: Numeric = 2000,\r\n-        animation_duration: Union[Numeric, JSFunc] = 1000,\r\n-        animation_easing: Union[str] = \"cubicOut\",\r\n-        animation_delay: Union[Numeric, JSFunc] = 0,\r\n-        animation_duration_update: Union[Numeric, JSFunc] = 300,\r\n-        animation_easing_update: Union[Numeric] = \"cubicOut\",\r\n-        animation_delay_update: Union[Numeric, JSFunc] = 0,\r\n-    ):\r\n-        self.opts: dict = {\r\n-            \"animation\": animation,\r\n-            \"animationThreshold\": animation_threshold,\r\n-            \"animationDuration\": animation_duration,\r\n-            \"animationEasing\": animation_easing,\r\n-            \"animationDelay\": animation_delay,\r\n-            \"animationDurationUpdate\": animation_duration_update,\r\n-            \"animationEasingUpdate\": animation_easing_update,\r\n-            \"animationDelayUpdate\": animation_delay_update,\r\n-        }\r\n-\r\n-\r\n class AriaLabelOpts(BasicOpts):\r\n     def __init__(\r\n         self,\r"
+                },
+                {
+                    "sha": "e1a7df52a4e542d5a20e7f26a892c1f1ebdd72cb",
+                    "filename": "pyecharts/options/series_options.py",
+                    "status": "modified",
+                    "additions": 36,
+                    "deletions": 0,
+                    "changes": 36,
+                    "blob_url": "https://github.com/pyecharts/pyecharts/blob/94784adeef551efe36cc336752f98416274e9122/pyecharts%2Foptions%2Fseries_options.py",
+                    "raw_url": "https://github.com/pyecharts/pyecharts/raw/94784adeef551efe36cc336752f98416274e9122/pyecharts%2Foptions%2Fseries_options.py",
+                    "contents_url": "https://api.github.com/repos/pyecharts/pyecharts/contents/pyecharts%2Foptions%2Fseries_options.py?ref=94784adeef551efe36cc336752f98416274e9122",
+                    "patch": "@@ -16,6 +16,30 @@ def get(self, key: str) -> Any:\n         return self.opts.get(key)\n \n \n+class AnimationOpts(BasicOpts):\n+    def __init__(\n+        self,\n+        animation: bool = True,\n+        animation_threshold: Numeric = 2000,\n+        animation_duration: Union[Numeric, JSFunc] = 1000,\n+        animation_easing: Union[str] = \"cubicOut\",\n+        animation_delay: Union[Numeric, JSFunc] = 0,\n+        animation_duration_update: Union[Numeric, JSFunc] = 300,\n+        animation_easing_update: Union[Numeric] = \"cubicOut\",\n+        animation_delay_update: Union[Numeric, JSFunc] = 0,\n+    ):\n+        self.opts: dict = {\n+            \"animation\": animation,\n+            \"animationThreshold\": animation_threshold,\n+            \"animationDuration\": animation_duration,\n+            \"animationEasing\": animation_easing,\n+            \"animationDelay\": animation_delay,\n+            \"animationDurationUpdate\": animation_duration_update,\n+            \"animationEasingUpdate\": animation_easing_update,\n+            \"animationDelayUpdate\": animation_delay_update,\n+        }\n+\n+\n class ItemStyleOpts(BasicOpts):\n     def __init__(\n         self,\n@@ -216,6 +240,7 @@ def __init__(\n         symbol: Optional[str] = None,\n         symbol_size: Union[None, Numeric] = None,\n         label_opts: LabelOpts = LabelOpts(position=\"inside\", color=\"#fff\"),\n+        animation_opts: Union[AnimationOpts, dict, None] = None,\n     ):\n         self.opts: dict = {\n             \"symbol\": symbol,\n@@ -224,6 +249,9 @@ def __init__(\n             \"data\": data,\n         }\n \n+        if animation_opts:\n+            self.opts.update(**animation_opts.opts)\n+\n \n class MarkLineItem(BasicOpts):\n     def __init__(\n@@ -267,6 +295,7 @@ def __init__(\n         precision: int = 2,\n         label_opts: LabelOpts = LabelOpts(),\n         linestyle_opts: Union[LineStyleOpts, dict, None] = None,\n+        animation_opts: Union[AnimationOpts, dict, None] = None,\n     ):\n         self.opts: dict = {\n             \"silent\": is_silent,\n@@ -278,6 +307,9 @@ def __init__(\n             \"data\": data,\n         }\n \n+        if animation_opts:\n+            self.opts.update(**animation_opts.opts)\n+\n \n class MarkAreaItem(BasicOpts):\n     def __init__(\n@@ -319,6 +351,7 @@ def __init__(\n         label_opts: LabelOpts = LabelOpts(),\n         data: Sequence[Union[MarkAreaItem, Sequence, dict]] = None,\n         itemstyle_opts: ItemStyleOpts = None,\n+        animation_opts: Union[AnimationOpts, dict, None] = None,\n     ):\n         self.opts: dict = {\n             \"silent\": is_silent,\n@@ -327,6 +360,9 @@ def __init__(\n             \"itemStyle\": itemstyle_opts,\n         }\n \n+        if animation_opts:\n+            self.opts.update(**animation_opts.opts)\n+\n \n class EffectOpts(BasicOpts):\n     def __init__("
+                },
+                {
+                    "sha": "3e6763c7a54dd09676140b2f2321b0d68b42f552",
+                    "filename": "test/test_base.py",
+                    "status": "modified",
+                    "additions": 1,
+                    "deletions": 1,
+                    "changes": 2,
+                    "blob_url": "https://github.com/pyecharts/pyecharts/blob/94784adeef551efe36cc336752f98416274e9122/test%2Ftest_base.py",
+                    "raw_url": "https://github.com/pyecharts/pyecharts/raw/94784adeef551efe36cc336752f98416274e9122/test%2Ftest_base.py",
+                    "contents_url": "https://api.github.com/repos/pyecharts/pyecharts/contents/test%2Ftest_base.py?ref=94784adeef551efe36cc336752f98416274e9122",
+                    "patch": "@@ -6,7 +6,7 @@\n from pyecharts.options import InitOpts, RenderOpts\n from pyecharts.globals import CurrentConfig\n from pyecharts.charts.base import Base, default\n-from pyecharts.options.global_options import AnimationOpts\n+from pyecharts.options.series_options import AnimationOpts\n \n \n class TestBaseClass(unittest.TestCase):"
+                }
+            ]
+        },
+        {
+            "sha": "ad6d44d716e9ceb5bd49de17abcd3315764bd522",
+            "commit_date": "2024-09-26T09:55:27Z",
+            "message": "fix timeline bug",
+            "number_of_links_in_commit": 0,
+            "files_changed_count": 1,
+            "files": [
+                {
+                    "sha": "0434122c40d99ca446501fa1d725744ab5669391",
+                    "filename": "pyecharts/charts/composite_charts/timeline.py",
+                    "status": "modified",
+                    "additions": 2,
+                    "deletions": 6,
+                    "changes": 8,
+                    "blob_url": "https://github.com/pyecharts/pyecharts/blob/ad6d44d716e9ceb5bd49de17abcd3315764bd522/pyecharts%2Fcharts%2Fcomposite_charts%2Ftimeline.py",
+                    "raw_url": "https://github.com/pyecharts/pyecharts/raw/ad6d44d716e9ceb5bd49de17abcd3315764bd522/pyecharts%2Fcharts%2Fcomposite_charts%2Ftimeline.py",
+                    "contents_url": "https://api.github.com/repos/pyecharts/pyecharts/contents/pyecharts%2Fcharts%2Fcomposite_charts%2Ftimeline.py?ref=ad6d44d716e9ceb5bd49de17abcd3315764bd522",
+                    "patch": "@@ -94,6 +94,7 @@ def add(self, chart: Base, time_point: str):\n         self.options.get(\"options\").append(\r\n             {\r\n                 \"backgroundColor\": chart.options.get(\"backgroundColor\"),\r\n+                \"legend\": chart.options.get(\"legend\"),\r\n                 \"series\": chart.options.get(\"series\"),\r\n                 \"xAxis\": chart.options.get(\"xAxis\"),\r\n                 \"yAxis\": chart.options.get(\"yAxis\"),\r\n@@ -136,9 +137,4 @@ def __check_components(self, chart: Base):\n         for component in components:\r\n             c = chart.options.get(component, None)\r\n             if c is not None:\r\n-                # eg: legend in timeline\r\n-                base_option_component = self.options.get(\"baseOption\").get(component)\r\n-                if base_option_component and isinstance(c, Sequence):\r\n-                    base_option_component.extend(c)\r\n-                else:\r\n-                    self.options.get(\"baseOption\").update({component: c})\r\n+                self.options.get(\"baseOption\").update({component: c})\r"
+                }
+            ]
+        }
+    ],
+    "pull_request_url": "https://github.com/pyecharts/pyecharts/pull/2380",
+    "commits_url": "https://github.com/pyecharts/pyecharts/pull/2380/commits",
+    "files_url": "https://github.com/pyecharts/pyecharts/pull/2380/files"
+}

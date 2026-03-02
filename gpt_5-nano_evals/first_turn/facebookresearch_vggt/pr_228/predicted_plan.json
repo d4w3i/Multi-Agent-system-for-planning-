@@ -1,0 +1,42 @@
+{
+  "pr_number": 228,
+  "repository": "facebookresearch/vggt",
+  "title": "Fix a typo in batch_np_matrix_to_pycolmap",
+  "body": "This PR addresses an UnboundLocalError in batch_np_matrix_to_pycolmap when max_reproj_error is None. The reproj_mask variable was only created inside the branch that handles reprojection-based masking, which can lead to references to an undefined variable if reprojection masking is disabled.\n\nChange summary:\n- Initialize reproj_mask at the start of batch_np_matrix_to_pycolmap (e.g., reproj_mask = None).\n- Compute reproj_mask only when max_reproj_error is not None.\n- Adjust the final inlier/mask combination logic to gracefully handle cases when masks or reproj_mask are None.\n\nThis preserves existing behavior when max_reproj_error is provided while fixing the crash when it is None. It also improves robustness for pipelines that pass only masks or disable reprojection masking.\n\nNotes:\n- No behavior change for the normal path where max_reproj_error is set.\n- Consider adding a lightweight unit test that calls batch_np_matrix_to_pycolmap with max_reproj_error=None and with masks=None/non-None to guard against regressions in the future.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T13:47:27.246624",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "np_to_pycolmap.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "batch_np_matrix_to_pycolmap",
+          "class_name": null,
+          "full_name": "batch_np_matrix_to_pycolmap",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Fix a crash in batch_np_matrix_to_pycolmap by initializing reproj_mask at the start and handling None cases for masks and reprojection-based masking, preserving existing behavior when reprojection masking is enabled.",
+    "steps": [
+      {
+        "operation": "Refactor batch_np_matrix_to_pycolmap to initialize reproj_mask and guard its computation",
+        "file_to_modify": "np_to_pycolmap.py",
+        "function_to_modify": "batch_np_matrix_to_pycolmap",
+        "reason": "Prevent UnboundLocalError when max_reproj_error is None by ensuring reproj_mask exists and is computed only when needed; make mask combination robust to None values.",
+        "side_effects": "No API change; adds a small initialization; downstream code paths that rely on masks fewer than expected may not crash; requires tests to cover None paths (e.g., max_reproj_error=None with masks=None or masks provided)."
+      }
+    ]
+  }
+}

@@ -1,0 +1,42 @@
+{
+  "pr_number": 8500,
+  "repository": "stanfordnlp/dspy",
+  "title": "feat: add test for nested stream and check value has predict_id",
+  "body": "This PR is to add test for nested streaming where we have an agent streaming its response and its tools to run some dspy programs.\n\n- I added the test to validate the use case\n- I add check the predict_id before attempt to response to client\n\nRelated issue: https://github.com/stanfordnlp/dspy/issues/8454\n\ncc @chenmoneygithub, @okhat ",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T13:23:46.673552",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "dspy/streaming/streamify.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "async_streamer",
+          "class_name": "streamify",
+          "full_name": "streamify.async_streamer",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Modify dspy/streaming/streamify.async_streamer to defensively check for value.predict_id in predict_id_to_listener and yield raw ModelResponseStream chunks when no listeners are registered for that predict_id, preventing KeyError and enabling nested tool streams to reach the client.",
+    "steps": [
+      {
+        "operation": "Guard predict_id lookup in async_streamer and passthrough unknown predict_id chunks",
+        "file_to_modify": "dspy/streaming/streamify.py",
+        "function_to_modify": "async_streamer",
+        "reason": "async_streamer currently indexes predict_id_to_listener[value.predict_id] without checking that value.predict_id exists in the mapping. In nested streaming (agent + tool programs), some ModelResponseStream chunks originate from tools and carry predict_ids not present in predict_id_to_listener, causing KeyError or misrouting. By defensively retrieving the predict_id (via getattr) and using dict.get to obtain matching listeners, the function can fall back to yielding the raw ModelResponseStream when no listeners are found; this preserves previous behavior and delivers tool-streamed chunks to the client.",
+        "side_effects": "Behavior is backward-compatible for configured listeners: when a chunk's predict_id matches an entry in predict_id_to_listener, listener routing remains unchanged. For chunks whose predict_id has no listeners (e.g., nested tool streams), the chunk will be yielded directly to the outer consumer instead of raising KeyError or being dropped. This may change the behavior for any code that previously assumed every chunk is routed through a StreamListener (e.g., monitoring/metrics or transformations applied by listeners); such code should be covered by tests. Run the new nested-streaming test and the existing streaming test-suite to validate listener routing, serialization of yielded ModelResponseStream objects, and ensure no regressions in APIs that consume streamed chunks."
+      }
+    ]
+  }
+}

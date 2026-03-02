@@ -1,0 +1,57 @@
+{
+  "pr_number": 2435,
+  "repository": "eternnoir/pyTelegramBotAPI",
+  "title": "Fixed \"subscription_period\" docstring",
+  "body": "## Description\nFixed method docstring for \"subscription_period\"\n\nPython version: 3.10\n\nOS: macOS Sonoma 14.7\n\n## Checklist:\n- Just minor change of param docstring",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T12:11:00.146026",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "telebot/types.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "__init__",
+          "class_name": "TransactionPartnerUser",
+          "full_name": "TransactionPartnerUser.__init__",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "de_json",
+          "class_name": "TransactionPartnerUser",
+          "full_name": "TransactionPartnerUser.de_json",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Fix the subscription_period docstring in TransactionPartnerUser to clarify its meaning/units, and add an inline comment in de_json to document that the value is passed through unchanged.",
+    "steps": [
+      {
+        "operation": "Update class-level docstring for subscription_period",
+        "file_to_modify": "telebot/types.py",
+        "function_to_modify": "TransactionPartnerUser.__init__",
+        "reason": "The current :param subscription_period: description is vague. Update the docstring to clearly state that subscription_period is an optional integer and indicate the units/meaning (or point to the API specification) so generated docs and future readers understand the field without inspecting code.",
+        "side_effects": "Purely documentation: affects generated docs and IDE tooltips. No runtime behavior changes. No tests should fail, but documentation tests (if present) may need updating. Consumers of the library are not impacted at runtime; maintainers will have clearer expectations when adding validation or normalization later."
+      },
+      {
+        "operation": "Add a short inline comment in de_json documenting pass-through behavior for subscription_period",
+        "file_to_modify": "telebot/types.py",
+        "function_to_modify": "TransactionPartnerUser.de_json",
+        "reason": "de_json currently forwards subscription_period unchanged to __init__. Add a concise inline comment to make explicit that the field is passed through as Optional[int] and that any unit/format expectations are documented in the class docstring (avoids future confusion about whether normalization is required).",
+        "side_effects": "No runtime change. Improves code readability and maintainability. Downstream code remains unaffected. If future behavior is changed to normalize/validate the field, tests and callers may need updates."
+      }
+    ]
+  }
+}

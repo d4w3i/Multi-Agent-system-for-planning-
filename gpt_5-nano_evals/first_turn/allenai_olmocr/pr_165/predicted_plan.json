@@ -1,0 +1,42 @@
+{
+  "pr_number": 165,
+  "repository": "allenai/olmocr",
+  "title": "fix jsonl_to_markdown",
+  "body": "Fixes #162\n\nChanges proposed in this pull request:\n- Add `jsonl_to_markdown.py` utility script to convert JSONL files to Markdown format\n- Script extracts the 'text' field from each line in a JSONL file and saves it as a separate Markdown file\n- Include proper error handling for JSON decoding and file operations\n- Add example usage and documentation\n\nNotes:\n- This utility is designed to operate on any JSONL file where each line is a JSON object containing a text payload under the 'text' key. It will create one Markdown file per input JSONL line.\n- It should gracefully skip or report problematic lines (e.g., invalid JSON) without aborting the entire run.\n- Suggested tests should cover: normal usage with valid lines, lines missing 'text', invalid JSON lines, and non-existent input/output paths.\n\nHow to use (basic):\n- python scripts/jsonl_to_markdown.py --input data/sample.jsonl --output markdown_out --text-field text\n\nThis PR adds minimal surface area changes and should not affect existing PDF->Markdown export workflows. It adds an independent utility that can be used for preprocessing JSONL datasets for downstream documentation or testing workflows.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T13:38:26.467012",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "scripts/jsonl_to_markdown.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "convert_jsonl_to_markdown",
+          "class_name": "jsonl_to_markdown",
+          "full_name": "jsonl_to_markdown.convert_jsonl_to_markdown",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Add a new standalone utility scripts/jsonl_to_markdown.py that converts a JSONL file into multiple Markdown files by extracting the text payload from each line, with robust error handling and a CLI for configuration.",
+    "steps": [
+      {
+        "operation": "Add jsonl_to_markdown.py with convert_jsonl_to_markdown implementation",
+        "file_to_modify": "scripts/jsonl_to_markdown.py",
+        "function_to_modify": "convert_jsonl_to_markdown",
+        "reason": "Introduce a self-contained CLI utility that reads a JSONL file, extracts the 'text' field from each line, and writes each as a separate Markdown file with deterministic naming. Includes robust error handling for invalid JSON and missing fields, and supports configurable text field name and output encoding.",
+        "side_effects": "Adds a new script independent of existing OCR/Markdown export workflows. Requires tests and documentation updates. Potential downstream usage in data prep and testing pipelines; minimal risk to existing codebase."
+      }
+    ]
+  }
+}

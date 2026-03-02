@@ -1,0 +1,42 @@
+{
+  "pr_number": 237,
+  "repository": "JoeanAmier/XHS-Downloader",
+  "title": "fix can't run by source code",
+  "body": "the error is:    fix NoMatches: No nodes match <class 'textual.widgets._rich_log.RichLog'> on XHSDownloader\n\nExplore the source code to identify the files and functions to modify.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T13:25:01.940074",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "source/TUI/app.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "on_mount",
+          "class_name": "XHSDownloader",
+          "full_name": "XHSDownloader.on_mount",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Fix an initialization-order bug by ensuring the RichLog widget is mounted before querying it in XHSDownloader.on_mount, or by using a safe fallback logger until RichLog is available.",
+    "steps": [
+      {
+        "operation": "Guard RichLog lookup with safe fallback and reorder initialization so RichLog is mounted before querying; delay SETTINGS.check_keys until after the RichLog widget is guaranteed to exist",
+        "file_to_modify": "source/TUI/app.py",
+        "function_to_modify": "XHSDownloader.on_mount",
+        "reason": "The NoMatches error occurs because the code queries RichLog before it is mounted in the UI tree. Reordering initialization or guarding the lookup ensures the RichLog widget exists when SETTINGS.check_keys is invoked, preventing startup crashes when running from source.",
+        "side_effects": "Potential changes to startup logging flow; may require updates to tests and mocks that assume immediate RichLog availability; downstream code relying on RichLog presence should still function once mounted"
+      }
+    ]
+  }
+}

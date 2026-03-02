@@ -1,0 +1,102 @@
+{
+  "pr_number": 249,
+  "repository": "labmlai/annotated_deep_learning_paper_implementations",
+  "title": "fix dim error in rope",
+  "body": "Summary:\n- The failing PR intends to fix a dimension/mismatch error when applying Rotary Positional Embeddings (RoPE) inside the rope module during _test_rotary. The traceback points to a RuntimeError where the last dimension sizes do not align between the rotated tensor and the cached cos/sin tensors:\n  x_rope = (x_rope * self.cos_cached[:x.shape[0]]) + (neg_half_x * self.sin_cached[:x.shape[0]])\n  RuntimeError: The size of tensor a (3) must match the size of tensor b (4) at non-singleton dimension 3\n\nRoot cause hypothesis:\n- The RoPE forward path slices and rotates the first d features (self.d) and uses cached cos/sin tensors built for the same dimension. If the actual rotable portion of the input (x[..., :self.d]) ends up having a different size than the cached cos/sin last dimension (for example due to dynamic rope_percentage or mismatched initialization), the elementwise broadcast will fail with a dim mismatch like 3 vs 4.\n- In short, cos_cached/sin_cached shapes are not guaranteed to match the actual rotable feature dimension used when applying RoPE to x, leading to the observed RuntimeError during forward.\n\nProposed fix (high level):\n- Ensure the cosine/sine caches always align with the actual rotable dimension used in forward. If the input x’s rotable portion size differs from self.d, either:\n  - adjust the forward path to compute the rotation using a local d_eff that matches the actual rotable portion, or\n  - ensure the caches are built for the exact d_eff on every forward call.\n- Improve robustness of RoPE forward to handle dynamic shapes where the rotable dimension might not exactly equal self.d (for example when rope_percentage or model config changes at runtime).\n- Add/adjust tests to cover scenarios where the input rotable dimension and the cached dimension could diverge, ensuring no RuntimeError and consistent outputs.\n\nValidation plan: \n- Re-run _test_rotary with inputs whose rotable dimension matches the cache (baseline).\n- Add a test where the input’s rotable portion differs from self.d (or where cached cos/sin were built for a different d) and verify that the code either correctly uses a compatible d_eff or raises a clear, predictable error with guidance (e.g., assertion).\n- Ensure existing tests in test_rotary continue to pass after the fix.\n\nNotes for reviewers:\n- The PR does not introduce new external dependencies and keeps the RoPE API intact. The change is localized to the RoPE pipeline to ensure dimension consistency across forward/broadcasts.\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T14:02:49.039126",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "labml_nn/transformers/rope/__init__.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "forward",
+          "class_name": "RotaryPositionalEmbeddings",
+          "full_name": "RotaryPositionalEmbeddings.forward",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_build_cache",
+          "class_name": "RotaryPositionalEmbeddings",
+          "full_name": "RotaryPositionalEmbeddings._build_cache",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_neg_half",
+          "class_name": "RotaryPositionalEmbeddings",
+          "full_name": "RotaryPositionalEmbeddings._neg_half",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "__init__",
+          "class_name": "RotaryPEMultiHeadAttention",
+          "full_name": "RotaryPEMultiHeadAttention.__init__",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "get_scores",
+          "class_name": "RotaryPEMultiHeadAttention",
+          "full_name": "RotaryPEMultiHeadAttention.get_scores",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Fix a dimension-mismatch when applying RoPE in the rope module by aligning cached cos/sin with the rotable dimension, making RoPE robust to dynamic shapes, and ensuring MultiHeadAttention integration handles dynamic rope configurations.",
+    "steps": [
+      {
+        "operation": "Refactor RoPE forward to compute a local effective rotable dimension (d_eff) from the input and align rotation with cos/sin caches, rebuilding caches if needed",
+        "file_to_modify": "labml_nn/transformers/rope/__init__.py",
+        "function_to_modify": "RotaryPositionalEmbeddings.forward",
+        "reason": "Currently, x[..., :self.d] is rotated against cos/sin caches built for self.d; if input rotable size differs, broadcasting fails. Derive d_eff from input and ensure cos/sin caches are compatible to prevent RuntimeError.",
+        "side_effects": "Adds a conditional cache rebuild path; may slightly affect performance; downstream components may rely on existing cache behavior; tests should cover dynamic shape scenarios."
+      },
+      {
+        "operation": "Update _build_cache to support building or rebuilding cos/sin caches for a given rotable dimension d and avoid stale caches",
+        "file_to_modify": "labml_nn/transformers/rope/__init__.py",
+        "function_to_modify": "RotaryPositionalEmbeddings._build_cache",
+        "reason": "Ensure caches always match the rotable dimension used during forward; rebuild when requested d differs from cached last-dim; improves robustness to dynamic rope sizes",
+        "side_effects": "Cache may be rebuilt more often if input shapes vary; minimal performance impact; add tests to exercise cache rebuild path."
+      },
+      {
+        "operation": "Harmonize _neg_half to respect the effective d_eff and broadcast rules",
+        "file_to_modify": "labml_nn/transformers/rope/__init__.py",
+        "function_to_modify": "RotaryPositionalEmbeddings._neg_half",
+        "reason": "Negative half rotation helper must align with the effective rotable dimension to avoid shape mismatches in rotated tensors",
+        "side_effects": "Internal adjustment; no public API changes; verify with edge-case shapes in tests."
+      },
+      {
+        "operation": "Guard and align rope dimension in RotaryPEMultiHeadAttention.__init__, clamp rope config and initialize RoPE with matching d_rope",
+        "file_to_modify": "labml_nn/transformers/rope/__init__.py",
+        "function_to_modify": "RotaryPEMultiHeadAttention.__init__",
+        "reason": "If rope_percentage yields a d_rope that does not line up with per-head dimension d_k, adjust to ensure valid d_rope and synchronize RoPE caches",
+        "side_effects": "Changes in initialization path for rope; ensure tests cover dynamic rope_percentage configurations; minimal API impact."
+      },
+      {
+        "operation": "Validate and potentially adjust get_scores to tolerate or report mismatches in RoPE shapes by using the effective d_eff or rebuilding caches",
+        "file_to_modify": "labml_nn/transformers/rope/__init__.py",
+        "function_to_modify": "RotaryPEMultiHeadAttention.get_scores",
+        "reason": "Scores calculation must use tensors with shapes consistent with the rotated queries/keys; guard against dynamic rope-shaped cache mismatches and provide fallback or clear error",
+        "side_effects": "Adds guard paths; tests should cover both normal and mismatched shape scenarios; ensures deterministic behavior and helpful errors."
+      }
+    ]
+  }
+}

@@ -1,0 +1,65 @@
+{
+  "pr_number": 2463,
+  "repository": "simonw/datasette",
+  "title": "Use the event_loop fixture",
+  "body": "Refs:\n- https://github.com/simonw/datasette/issues/2461#issuecomment-2634920351\n\n<!-- readthedocs-preview datasette start -->\n----\n📚 Documentation preview 📚: https://datasette--2463.org.readthedocs.build/en/2463/\n\n<!-- readthedocs-preview datasette end -->",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T13:19:16.339610",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "tests/conftest.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "ds_client",
+          "class_name": null,
+          "full_name": "ds_client",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "tests/test_internals_datasette_client.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "datasette",
+          "class_name": null,
+          "full_name": "datasette",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Replace two pytest-asyncio async fixtures (ds_client and datasette) with synchronous fixtures that accept pytest's event_loop and run async operations using event_loop.run_until_complete, removing the pytest_asyncio decorator and its import where unused.",
+    "steps": [
+      {
+        "operation": "Convert async ds_client fixture to use pytest's event_loop fixture",
+        "file_to_modify": "tests/conftest.py",
+        "function_to_modify": "ds_client",
+        "reason": "Remove reliance on pytest-asyncio's @pytest_asyncio.fixture by making the fixture synchronous and explicitly using pytest's event_loop fixture. Inside the new def ds_client(event_loop): run previously awaited coroutines (for example db.execute_write_fn(prepare) and ds.invoke_startup()) via event_loop.run_until_complete(...). Replace the @pytest_asyncio.fixture decorator with @pytest.fixture and remove the pytest_asyncio import if it becomes unused.",
+        "side_effects": "May change lifecycle interactions with the event loop: ds_client currently caches a Datasette instance in a module-global _ds_client and may therefore be reused across tests that get different event_loop instances. Reusing the same Datasette across different event loops could surface lifecycle or runtime errors if underlying objects hold loop references. Running the test suite may reveal loop-lifetime issues; if so, adjust the caching scope or avoid cross-loop reuse. No public API changes; only tests are affected. Dependent test fixtures and async tests that rely on ds_client should continue to work, but ensure they run under the same event loop semantics. Remove of pytest_asyncio import may affect nothing else if it was only used for the decorator."
+      },
+      {
+        "operation": "Convert async datasette fixture to use pytest's event_loop fixture",
+        "file_to_modify": "tests/test_internals_datasette_client.py",
+        "function_to_modify": "datasette",
+        "reason": "Replace @pytest_asyncio.fixture async def datasette(ds_client): with @pytest.fixture def datasette(ds_client, event_loop): and execute the awaited startup coroutine with event_loop.run_until_complete(ds_client.ds.invoke_startup()). This makes event loop usage explicit and avoids pytest-asyncio's async fixture decorator.",
+        "side_effects": "Since datasette calls ds_client.ds.invoke_startup(), moving it to run on an explicitly provided event_loop ensures the startup runs on the same loop as other test coroutines. If ds_client is cached across tests with different loops (see previous step), calling invoke_startup() on a Datasette instance created for another loop may cause errors. Tests relying on this fixture may need to be re-run to detect such issues. No changes to production code or external APIs. If pytest_asyncio was only imported for the decorator, its removal here is safe. Ensure async tests marked with @pytest.mark.asyncio remain unchanged."
+      }
+    ]
+  }
+}

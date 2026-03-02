@@ -1,0 +1,117 @@
+{
+  "pr_number": 8500,
+  "repository": "stanfordnlp/dspy",
+  "title": "feat: add test for nested stream and check value has predict_id",
+  "body": "Adds a test to cover nested streaming where an agent streams its own response and a nested tool path that runs some dspy programs. The test validates that a predict_id (predict_id/predict_name) is present before streaming content is sent to the client and that chunks are correctly attributed to their originating predictions. Updates focus on extending streaming tests to assert identity propagation across nested streams and ensure gating before responding when predict_id is missing. Related issue: https://github.com/stanfordnlp/dspy/issues/8454\n\ncc @chenmoneygithub, @okhat",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T14:33:42.262428",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "dspy/predict/predict.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "_forward_preprocess",
+          "class_name": "Predict",
+          "full_name": "Predict._forward_preprocess",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_should_stream",
+          "class_name": "Predict",
+          "full_name": "Predict._should_stream",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "dspy/primitives/prediction.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "__init__",
+          "class_name": "Prediction",
+          "full_name": "Prediction.__init__",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "from_completions",
+          "class_name": "Prediction",
+          "full_name": "Prediction.from_completions",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "__init__",
+          "class_name": "Completions",
+          "full_name": "Completions.__init__",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "tests/streaming/test_streaming.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    }
+  ],
+  "step_plan": {
+    "summary": "Introduce an optional predict_id propagated through the prediction/streaming pipeline, gate streaming until predict_id is established, and extend the Prediction model and completions to serialize and expose predict_id. This enables a nested streaming test to validate identity propagation and gating behavior before emitting client content.",
+    "steps": [
+      {
+        "operation": "Add predict_id extraction and propagation in preprocessing",
+        "file_to_modify": "dspy/predict/predict.py",
+        "function_to_modify": "Predict._forward_preprocess",
+        "reason": "To enable identity propagation across nested streaming, extract predict_id from inputs, validate its format, and thread it through to LM call payloads and postprocessing so downstream components can reference the originating prediction.",
+        "side_effects": "Tests may need to provide predict_id inputs; downstream LM payloads and postprocessing paths will carry predict_id; potential backward-compatibility considerations if predict_id is optional in existing flows."
+      },
+      {
+        "operation": "Gate streaming on presence of predict_id",
+        "file_to_modify": "dspy/predict/predict.py",
+        "function_to_modify": "Predict._should_stream",
+        "reason": "Ensure streaming does not start before a valid predict_id is established in nested scenarios, preventing content leakage or misattribution before identity is known.",
+        "side_effects": "Streaming latency may increase as identity is established; tests must validate that no content is streamed prior to predict_id; could impact edge cases where predict_id is delayed or optional."
+      },
+      {
+        "operation": "Extend Prediction.__init__ to accept optional predict_id",
+        "file_to_modify": "dspy/primitives/prediction.py",
+        "function_to_modify": "Prediction.__init__",
+        "reason": "Add an optional predict_id attribute to the Prediction model so identity can be carried and serialized with predictions across the pipeline.",
+        "side_effects": "Serialization and __repr__ outputs will include predict_id; existing tests may need updates if they rely on current repr/fields; default None must be preserved for non-predict_id scenarios."
+      },
+      {
+        "operation": "Propagate predict_id through from_completions",
+        "file_to_modify": "dspy/primitives/prediction.py",
+        "function_to_modify": "Prediction.from_completions",
+        "reason": "If completions carry a predict_id, ensure it's reflected in the resulting Prediction instance to maintain identity through streaming completions.",
+        "side_effects": "Tests and code paths that convert completions to Prediction must handle the new field; ensure compatibility with existing completion shapes when predict_id is absent."
+      },
+      {
+        "operation": "Update Completions to surface per-prediction predict_id",
+        "file_to_modify": "dspy/primitives/prediction.py",
+        "function_to_modify": "Completions.__init__",
+        "reason": "Allow passing and surfacing an optional predict_id through streaming completions so downstream predictions can maintain correct identity attribution across nested streams.",
+        "side_effects": "API surface changes; tests referencing Completions fields may need updates; ensure default None for environments without predict_id."
+      }
+    ]
+  }
+}

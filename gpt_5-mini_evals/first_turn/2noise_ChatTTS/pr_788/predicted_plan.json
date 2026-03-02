@@ -1,0 +1,57 @@
+{
+  "pr_number": 788,
+  "repository": "2noise/ChatTTS",
+  "title": "Fix for Ascend NPU when using ChatTTS to sample the voice of a real speaker",
+  "body": "## Overview\n\nThis PR is a bugfix for Ascend NPU when using ChatTTS to sample the voice of a real speaker.\n\n## Problem\n\nComplex dtype used in the process of computing MelSpectrogram is not supported in `torch_npu` now, and we could get an error when sampling the voice of a real speaker.\n\nThe logs/errors show the failure originates from Chat.sample_audio_speaker -> dvae.sample_audio -> DVAE.forward (encode path) -> MelSpectrogram computation.\n\nGoal: explore the source and propose minimal code changes to avoid torchaudio/torch producing complex tensors that torch_npu cannot handle.\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T11:16:51.696666",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "ChatTTS/model/dvae.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "forward",
+          "class_name": "MelSpectrogramFeatures",
+          "full_name": "MelSpectrogramFeatures.forward",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "forward",
+          "class_name": "DVAE",
+          "full_name": "DVAE.forward",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Avoid torchaudio/torch complex-dtype operations on Ascend NPU by running STFT/mel computation on CPU when the model/device is NPU, and replace an in-place division in the DVAE encode path with an out-of-place division to prevent cross-device/in-place errors.",
+    "steps": [
+      {
+        "operation": "Run mel-spectrogram computation on CPU when model/device is NPU, cast audio to float, and safely move result back to model device",
+        "file_to_modify": "ChatTTS/model/dvae.py",
+        "function_to_modify": "MelSpectrogramFeatures.forward",
+        "reason": "torchaudio.transforms.MelSpectrogram (STFT internals) can produce complex-dtype intermediates that torch_npu doesn't support. By forcing the STFT/mel computation to run on CPU when the model is on an Ascend NPU, we prevent creation of complex tensors on the NPU and avoid unsupported operator paths. Casting input audio to float ensures torchaudio does not produce unexpected dtypes and moving the resulting real-valued mel back to the model device preserves the original downstream flow.",
+        "side_effects": "Adds CPU work for mel computation when running on NPU, which may increase latency and consume host memory; slightly higher host<->device transfer cost when moving the mel tensor back to NPU device. Must ensure the mel tensor dtype is float32 (no complex dtype) and no gradients are expected through the CPU STFT path (should be fine for feature extraction). Downstream functions that expect mel on the model device will be unaffected aside from the transfer. Tests: run NPU end-to-end (sample_audio_speaker) to confirm no torch_npu complex-dtype errors; run CPU/GPU tests to confirm no behavioral regressions. Potential dependent modules: any code constructing MelSpectrogramFeatures that relies on its device behavior; ensure any caching of the torchaudio transform instance remains valid (the transform can stay attached to the object but must be invoked on CPU input)."
+      },
+      {
+        "operation": "Replace in-place division into mel with an out-of-place division in the encode path",
+        "file_to_modify": "ChatTTS/model/dvae.py",
+        "function_to_modify": "DVAE.forward",
+        "reason": "After moving mel tensors across devices, in-place operations (e.g., torch.div(..., out=mel)) can lead to cross-device/in-place write errors or unexpected behavior on torch_npu. Using an out-of-place operation (mel = torch.div(...)) ensures the division result is computed safely on the correct device and avoids modifying buffers that may be pinned or transferred between devices.",
+        "side_effects": "Slightly higher memory usage due to allocation of a new tensor for the divided mel instead of writing in-place; avoids potential cross-device runtime errors on NPU. Behaviorally should be identical, but tests should verify there are no code paths relying on mel object identity. Tests: run NPU end-to-end scenario to ensure encode path no longer errors, and run CPU/GPU unit tests to ensure outputs remain unchanged. Downstream impacts: any code expecting the old mel object identity may be affected, but typical model code does not rely on object identity."
+      }
+    ]
+  }
+}

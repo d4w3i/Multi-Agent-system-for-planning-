@@ -1,0 +1,42 @@
+{
+  "pr_number": 104,
+  "repository": "g1879/DrissionPage",
+  "title": "fixed json decoding bug in daemon thread",
+  "body": "fixed bug in daemon thread that is triggered when trying to convert an empty message_json to dict. Still raising the JSONDecodeError in case decoding fails for any other reason",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T12:16:21.475060",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "DrissionPage/chromium_driver.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "_recv_loop",
+          "class_name": "ChromiumDriver",
+          "full_name": "ChromiumDriver._recv_loop",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Catch JSONDecodeError in the receive daemon loop and ignore the error when the received message is empty or whitespace, while still re-raising JSONDecodeError for non-empty invalid JSON. Add JSONDecodeError to the module imports.",
+    "steps": [
+      {
+        "operation": "Handle empty websocket message JSON by catching JSONDecodeError and ignoring empty/whitespace payloads; add JSONDecodeError to imports",
+        "file_to_modify": "DrissionPage/chromium_driver.py",
+        "function_to_modify": "ChromiumDriver._recv_loop",
+        "reason": "The receive daemon currently calls json.loads(message_json) with no handling for json.decoder.JSONDecodeError. When message_json is empty or only whitespace, json.loads raises JSONDecodeError and the daemon thread crashes. Wrapping the loads call in a try/except JSONDecodeError and ignoring the exception only when the raw message is empty/whitespace prevents the thread from stopping while preserving error propagation for genuinely malformed non-empty JSON.",
+        "side_effects": "Behavioral: The recv daemon will no longer raise an exception (and crash) for empty/whitespace messages — it will silently ignore them. For non-empty but invalid JSON payloads, the JSONDecodeError will still be re-raised, preserving existing error signaling. Tests: add/update unit/integration tests simulating empty messages and malformed JSON; existing tests that expect JSONDecodeError on empty messages will need adjustment. Dependents: Any code that relied on the daemon thread terminating on empty messages will observe different behavior (daemon continues). API: no public API changes; internal import modified to include JSONDecodeError (may affect import ordering/linting). Operational: ensure existing websocket exception handling (timeouts, connection errors) remains unchanged and that any logging remains intact so diagnostics for ignored empty messages are still possible."
+      }
+    ]
+  }
+}

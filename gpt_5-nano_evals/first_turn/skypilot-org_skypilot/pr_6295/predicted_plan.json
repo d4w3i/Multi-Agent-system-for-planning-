@@ -1,0 +1,95 @@
+{
+  "pr_number": 6295,
+  "repository": "skypilot-org/skypilot",
+  "title": "Fix hyperbolic unit test",
+  "body": "Summary:\n\n- The unit test for Hyperbolic relies on an instance type string (1x-T4-4-17) that is no longer present in the latest catalog. The test fails because it explicitly expects that type to exist.\n- The fix should ensure the test uses a valid catalog instance type, or add a safe alias/mapping so the test can run against the catalog used by the provider.\n- Additionally, the Hyperbolic provider code paths that translate an InstanceType from node_config into concrete GPU specs should be resilient to missing alias/type names by either mapping to a canonical catalog type or by validating against the catalog at runtime.\n\nWhat I propose changing:\n\n1) Update the Hyperbolic unit test so it no longer depends on a potentially-deprecated alias (1x-T4-4-17). The test should obtain a valid type from the catalog (at test time) or use a small, explicit, and known-good mapping. This makes the test robust against catalog drift.\n\n2) Add an alias-to-catalog-type mapping in the Hyperbolic provisioning path so that if a provided InstanceType is not found in the catalog, it can be gracefully mapped to a valid catalog type. This keeps existing workflows working while ensuring tests stay green until catalog data is refreshed.\n\n3) (Optional, if desired) add a small helper to fetch a valid catalog type in tests so that tests always pick a type that exists in the catalog snapshot used by CI.\n\nImpact:\n- Tests: Minimal changes to the test that references 1x-T4-4-17; introduce a safer way to pick a valid type.\n- Code: Introduce a safe alias/mapping path in the Hyperbolic instance parsing logic to translate unsupported alias types to known-good catalog types.\n- Backwards compatibility: Should be preserved, as mapping is only used when the exact type isn’t found in catalog and is not applied blindly.\n\nSecurity/Quality: No external changes; keeps behavior deterministic in tests and aligns with catalog drift handling.\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T14:28:55.132546",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "tests/unit_tests/test_hyperbolic.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "test_hyperbolic_resource_feasibility",
+          "class_name": "tests",
+          "full_name": "tests.unit_tests.test_hyperbolic.test_hyperbolic_resource_feasibility",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "sky/provision/hyperbolic/instance.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "run_instances",
+          "class_name": "sky",
+          "full_name": "sky.provision.hyperbolic.instance.run_instances",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "sky/provision/hyperbolic/utils.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "launch_instance",
+          "class_name": "sky",
+          "full_name": "sky.provision.hyperbolic.utils.launch_instance",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Fix the Hyperbolic unit test by introducing a catalog-aware type resolution with a safe alias mapping, and refactor the provisioning path to use this resolver. This makes tests robust to catalog drift while preserving backward compatibility through controlled alias handling.",
+    "steps": [
+      {
+        "operation": "Add get_alias_map function to utils.py",
+        "file_to_modify": "sky/provision/hyperbolic/utils.py",
+        "function_to_modify": "get_alias_map",
+        "reason": "Provide a centralized alias-to-catalog mapping used by the resolver to translate deprecated or outdated instance type aliases to valid catalog types",
+        "side_effects": "Introduces a new helper used by the resolver; tests and provisioning code will depend on this mapping; document mapping semantics for maintainability; no external API changes"
+      },
+      {
+        "operation": "Add parse_instance_type_to_gpu helper in utils.py",
+        "file_to_modify": "sky/provision/hyperbolic/utils.py",
+        "function_to_modify": "parse_instance_type_to_gpu",
+        "reason": "Translate instance_type strings into (gpu_model, gpu_count) using the alias map and basic validation against catalog structure",
+        "side_effects": "New function used by provisioning path; tests may need adjustments to expectations based on return shape (e.g., (gpu_model, gpu_count)); keeps alias resolution centralized"
+      },
+      {
+        "operation": "Refactor provisioning path to call the new resolver",
+        "file_to_modify": "sky/provision/hyperbolic/instance.py",
+        "function_to_modify": "run_instances",
+        "reason": "Ensure InstanceType from node_config is resolved via parse_instance_type_to_gpu before creating GPU provisioning specs; enables safe fallback when catalog lacks an alias",
+        "side_effects": "Internal behavior changes in provisioning flow; downstream code that consumes GPU specs should continue to work if return format remains aligned; may require minor tests adjustments"
+      },
+      {
+        "operation": "Update Hyperbolic unit test to be catalog-aware and avoid deprecated alias",
+        "file_to_modify": "tests/unit_tests/test_hyperbolic.py",
+        "function_to_modify": "test_hyperbolic_resource_feasibility",
+        "reason": "Remove hard-coded dependency on deprecated alias (1x-T4-4-17); obtain a valid catalog type at runtime or via alias mapping to ensure test robustness against catalog drift",
+        "side_effects": "Tests become resilient to catalog updates; may require test imports to access new helper or rely on runtime resolution; ensures CI stability"
+      }
+    ]
+  }
+}

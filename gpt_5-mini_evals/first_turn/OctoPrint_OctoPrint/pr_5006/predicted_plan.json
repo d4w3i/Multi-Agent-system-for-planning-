@@ -1,0 +1,42 @@
+{
+  "pr_number": 5006,
+  "repository": "OctoPrint/OctoPrint",
+  "title": "fix netmask",
+  "body": "  * [x] Your changes are not possible to do through a plugin and relevant\n    to a large audience (ideally all users of OctoPrint)\n  * [x] If your changes are large or otherwise disruptive: You have\n    made sure your changes don't interfere with current development by\n    talking it through with the maintainers, e.g. through a\n    Brainstorming ticket\n  * [ ] Your PR targets OctoPrint's `devel` branch if it's a completely\n    new feature, or `maintenance` if it's a bug fix or improvement of\n    existing functionality for the current stable version (no PRs\n    against `master` or anything else please)\n  * [ ] Your PR was opened from a custom branch on your repository\n    (no PRs from your version of `master`, `maintenance`, or `devel`\n    please), e.g. `dev/my_new_feature` or `fix/my_bugfix`\n  * [x] Your PR only contains relevant changes: no unrelated files,\n    no dead code, ideally only one commit - rebase and squash your PR\n    if necessary!\n  * [x] Your changes follow the existing coding style\n  * [ ] If your changes include style sheets: You have modified the\n    `.less` source files, not the `.css` files (those are generated\n    with `lessc`)\n  * [x] You have tested your changes (please state how!) - ideally you\n    have added unit tests\n  * [ ] You have run the existing unit tests against your changes and\n    nothing broke\n  * [x] You have added yourself to the `AUTHORS.md` file :)\n\n\n#### What does this PR do and why is it necessary?\nin netifaces2 netmask was replaced with mask\n#### How was it tested? How can it be tested by the reviewer?\nmanually modified in local deployment and ran OctoPrint\n#### Any background context you want to provide?\n\n#### What are the relevant tickets if any?\n#5005\n#### Screenshots (if appropriate)\n\n#### Further notes\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T11:34:16.057987",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "src/octoprint/util/net.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "get_lan_ranges",
+          "class_name": null,
+          "full_name": "get_lan_ranges",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Make get_lan_ranges robust to netifaces renaming the mask key by accepting either 'netmask' or 'mask' when constructing netaddr.IPNetwork objects, restoring compatibility with netifaces2.",
+    "steps": [
+      {
+        "operation": "Accept both 'netmask' and 'mask' keys when building IPNetwork objects",
+        "file_to_modify": "src/octoprint/util/net.py",
+        "function_to_modify": "get_lan_ranges",
+        "reason": "netifaces historically returned per-interface netmask under the key 'netmask', but netifaces2 (or newer netifaces) uses 'mask'. get_lan_ranges currently only reads 'netmask' and will skip or mis-parse interfaces when the key is 'mask'. Updating the function to try address.get('netmask') and, if absent, address.get('mask') makes OctoPrint compatible with both variants while preserving existing IPv4/IPv6 parsing behavior.",
+        "side_effects": "Behavioral: Should have no API or public-behavior changes beyond restoring correct detection of local networks on systems where netifaces returns 'mask'. Tests: unit tests that assert get_lan_ranges output need to account for both key names; add/adjust tests to simulate address dicts with 'mask' to prevent regression. Dependents: discovery, SSDP, and any code that consumes get_lan_ranges results will regain correct network ranges — may change which interfaces are considered local on affected systems. Backward compatibility: maintains existing behavior for 'netmask' inputs. Risk: minimal, but ensure that parsing of prefix-length vs dotted masks (and IPv6 values that may include '/') remains unchanged; run existing test suite to confirm no regressions."
+      }
+    ]
+  }
+}

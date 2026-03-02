@@ -1,0 +1,72 @@
+{
+  "pr_number": 6752,
+  "repository": "microsoft/autogen",
+  "title": "Fix GraphFlowManager termination to prevent _StopAgent from polluting conversation context",
+  "body": "## Problem\n\nThe `GraphFlowManager` was allowing `_StopAgent` to speak and add termination messages to the conversation context, which polluted the message history that other agents could see. This violated the principle of clean agent interactions.\n\n**Before this fix:**\n```python\n# _StopAgent would produce messages like this in the conversation:\nresult.messages = [\n    TextMessage(source=\"user\", content=\"Task\"),\n    TextMessage(source=\"A\", content=\"Response from A\"),\n    TextMessage(source=\"B\", content=\"Response from B\"), \n    StopMessage(source=\"DiGraphStopAgent\", content=\"Digraph execution is complete\")  # ❌ Pollutes context\n]\n```\n\n**After this fix:**\n```python\n# Clean conversation with no stop agent messages:\nresult.messages = [\n    TextMessage(source=\"user\", content=\"Task\"),\n    TextMessage(source=\"A\", content=\"Response from A\"),\n    TextMessage(source=\"B\", content=\"Response from B\")  # ✅ Clean context\n]\n# Termination still occurs but without polluting conversation\n```\n\n## Solution\n\n1. **Removed `_StopAgent` entirely** - No longer added to participants list\n2. **Updated `GraphFlowManager.select_speaker()`** - Directly signals termination when `self._ready` is empty instead of selecting stop agent\n3. **Simplified `GraphFlow` constructor** - Removed `StopMessageTermination` and stop agent logic\n4. **Preserved all functionality** - Same termination behavior and message content, just without the polluting agent message\n\n## Key Changes\n\n- **`GraphFlowManager.select_speaker()`**: Now handles termination directly when no ready agents remain\n- **`GraphFlow.__init__()`**: No longer adds `_StopAgent` to participants or uses `StopMessageTermination`\n- **Removed unused code**: Deleted `_StopAgent` class and cleaned up imports\n- **Updated tests**: All tests now expect clean conversation history without stop agent messages\n\n## Benefits\n\n✅ **Clean conversation context** - No stop agent messages pollute agent contexts  \n✅ **Same termination behavior** - Graph execution still stops correctly when complete  \n✅ **Preserved functionality** - All existing features work exactly the same  \n✅ **Better performance** - One fewer participant to manage  \n✅ **Cleaner codebase** - Removed unnecessary `_StopAgent` complexity\n\n## Verification\n\nCreated comprehensive tests that verify:\n- No `StopMessage` instances appear in conversation history\n- Agents don't see stop agent messages in their context  \n- Termination still occurs at the correct time\n- All existing functionality preserved (resume, state management, etc.)\n\nFixes #6751.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T12:47:31.008114",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "python/packages/autogen-agentchat/src/autogen_agentchat/teams/_group_chat/_graph/_digraph_group_chat.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "select_speaker",
+          "class_name": "GraphFlowManager",
+          "full_name": "GraphFlowManager.select_speaker",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "__init__",
+          "class_name": "GraphFlow",
+          "full_name": "GraphFlow.__init__",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_StopAgent (class removal)",
+          "class_name": null,
+          "full_name": "_StopAgent (class removal)",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Remove the internal stop-agent and stop-agent-based termination by (1) stopping GraphFlow from adding a _StopAgent and StopMessageTermination in its constructor, (2) changing GraphFlowManager.select_speaker to signal termination directly (without appending a StopMessage to conversation history) and reset internal state, and (3) deleting the unused _StopAgent class and related imports/constants.",
+    "steps": [
+      {
+        "operation": "Remove stop-agent participant and StopMessageTermination composition in GraphFlow.__init__",
+        "file_to_modify": "python/packages/autogen-agentchat/src/autogen_agentchat/teams/_group_chat/_graph/_digraph_group_chat.py",
+        "function_to_modify": "GraphFlow.__init__",
+        "reason": "Stop agent was being prepended to the participants list and StopMessageTermination (combined via OrTerminationCondition) was used so that the stop-agent-produced StopMessage would trigger termination. To avoid any stop-agent messages appearing in conversation history, GraphFlow should not add any internal stop participant nor rely on a stop-agent-produced message for termination. Instead, keep the original participants in _input_participants for serialization and pass the provided termination_condition unchanged to the base constructor.",
+        "side_effects": "Tests that assert the stop agent exists among participants will fail until updated. Serialization/restore (to_config/from_config) must continue using _input_participants; verify no regressions. No runtime API changes for external callers, but internal initialization flow changes; ensure constructors for GraphFlow subclasses or callers aren't expecting the stop-agent to be present. Removing StopMessageTermination means termination is no longer derived from a message appended by a participant—GraphFlowManager will need to signal termination directly (covered in a following step)."
+      },
+      {
+        "operation": "Modify GraphFlowManager.select_speaker to directly signal termination when no ready agents remain",
+        "file_to_modify": "python/packages/autogen-agentchat/src/autogen_agentchat/teams/_group_chat/_graph/_digraph_group_chat.py",
+        "function_to_modify": "GraphFlowManager.select_speaker",
+        "reason": "Previously, when no ready nodes remained, select_speaker returned the special stop-agent name so the manager would request that agent to publish a StopMessage which then got appended to conversation history. To prevent polluting message history while preserving termination behavior, select_speaker should construct the StopMessage (with the same content), call self._signal_termination(stop_message) to emit a GroupChatTermination externally without appending it to the conversation, call self._reset_execution_state() to preserve prior reset semantics, and return an empty list (no participant requested).",
+        "side_effects": "Callers that previously expected select_speaker to return the stop-agent name must be updated; BaseGroupChatManager should handle an empty return (no publish). Tests must be updated to assert termination via the emitted GroupChatTermination payload rather than presence of a StopMessage in the conversation history. Ensure that _DIGRAPH_STOP_AGENT_MESSAGE (or equivalent constant/string) is available for constructing the termination payload. This change preserves save/load/resume semantics but requires verifying that state transitions (including resetting counters when graph completes) remain unchanged."
+      },
+      {
+        "operation": "Remove the internal _StopAgent class and clean up unused imports/constants",
+        "file_to_modify": "python/packages/autogen-agentchat/src/autogen_agentchat/teams/_group_chat/_graph/_digraph_group_chat.py",
+        "function_to_modify": "_StopAgent",
+        "reason": "With GraphFlow no longer prepending or expecting a stop-agent and GraphFlowManager signaling termination directly, the internal _StopAgent class is unused and produces stop messages that polluted conversation history. Deleting the class and removing related imports (StopMessageTermination, OrTerminationCondition, and any other stop-agent-only utilities) removes dead code and avoids accidental future usage.",
+        "side_effects": "Any lingering references to _StopAgent, _DIGRAPH_STOP_AGENT_NAME, StopMessageTermination, or OrTerminationCondition must be removed or updated; otherwise the module will fail to import. Tests and other code that referenced the stop-agent by name must be updated. This simplifies code and reduces runtime overhead, but requires verifying there are no transitive references in other modules; run the full test suite to catch import errors or broken references."
+      }
+    ]
+  }
+}

@@ -1,0 +1,63 @@
+{
+    "repository": "modelscope/FunASR",
+    "pull_request_number": 2332,
+    "title": "fix #2331: solve problems in sensevoice_bin.py related to argmax and unique operations.",
+    "body": "\u5982issue #2331 \u63d0\u53ca\uff0c\u4fee\u590d\u4e24\u4e2a\u95ee\u9898\uff1a\r\n1. yseq = x.argmax(dim=-1) \u6539\u4e3a yseq = np.argmax(x, axis=-1)\uff1a\r\n\r\n    - \u7531\u4e8e np.argmax \u6ca1\u6709 dim \u53c2\u6570\uff0c\u539f\u4ee3\u7801\u4f1a\u5bfc\u81f4 TypeError\u3002\u6539\u4e3a np.argmax(x, axis=-1) \u4ee5\u6b63\u786e\u8ba1\u7b97\u6700\u5927\u503c\u7684\u7d22\u5f15\u3002    \r\n\r\n3. \u539f\u6765yseq = np.unique(yseq) \u8ddftorch.unique_consecutive\u4e0d\u4e00\u81f4\uff08torch.unique_consecutive\u8fd4\u56de\u7684\u7ed3\u679c\u662f\u6b63\u786e\u7684\uff09\uff0c\u67e5\u4e86\u4e0b\uff1atorch.unique_consecutive \u53ea\u53bb\u9664\u8fde\u7eed\u91cd\u590d\u7684\u5143\u7d20\uff0c\u800cnp.unique\uff1a\u53bb\u9664\u6240\u6709\u91cd\u590d\u7684\u5143\u7d20\uff0c\u5e76\u8fd4\u56de\u6392\u5e8f\u540e\u7684\u552f\u4e00\u503c\u6570\u7ec4\u3002\u6240\u4ee5\u9700\u8981\u6539\u4e3a\uff1a\r\n\r\n> mask = np.concatenate(([True], np.diff(yseq) != 0))\r\nyseq = yseq[mask]\r\n\r\n\u8bf4\u660e\u5982\u4e0b\uff1a\r\n- np.diff(yseq) \u8ba1\u7b97\u6570\u7ec4\u4e2d\u76f8\u90bb\u5143\u7d20\u7684\u5dee\u503c\u3002\r\n- np.diff(yseq) != 0 \u751f\u6210\u4e00\u4e2a\u5e03\u5c14\u6570\u7ec4\uff0c\u8868\u793a\u54ea\u4e9b\u4f4d\u7f6e\u7684\u5143\u7d20\u4e0e\u524d\u4e00\u4e2a\u5143\u7d20\u4e0d\u540c\u3002\r\n- np.concatenate(([True], ...)) \u5728\u5e03\u5c14\u6570\u7ec4\u524d\u6dfb\u52a0\u4e00\u4e2a True\uff0c\u4ee5\u4fdd\u7559\u7b2c\u4e00\u4e2a\u5143\u7d20\u3002\r\n- yseq[mask] \u4f7f\u7528\u5e03\u5c14\u63a9\u7801\u63d0\u53d6\u53bb\u91cd\u540e\u7684\u6570\u7ec4\u3002\r\n\r\n\u7ecf\u8fc7\u6d4b\u8bd5\u540e\uff0c\u7ed3\u679c\u7b26\u5408\u9884\u671f\u3002",
+    "pr_date": "2024-12-24T09:46:36Z",
+    "source_branch": "features/fix_sensevoice_bin",
+    "language": "ca",
+    "keywords_detected": {
+        "branch": [
+            "feature",
+            "feat",
+            "fix"
+        ],
+        "requirement": [
+            "fix"
+        ],
+        "body": []
+    },
+    "number_of_links_in_pr": 0,
+    "base_sha": "2e0b2086586212a2c04b5eb612a85796be1494f7",
+    "last_commit_sha": "1b399bd38e8b64b101300ad7ba0df8d15136f0bd",
+    "diff_between_base_and_last": [
+        {
+            "sha": "6a06ed105f60714858e513ac5b823a5ed67b0db5",
+            "filename": "runtime/python/onnxruntime/funasr_onnx/sensevoice_bin.py",
+            "status": "modified",
+            "additions": 4,
+            "deletions": 2,
+            "changes": 6,
+            "blob_url": "https://github.com/modelscope/FunASR/blob/1b399bd38e8b64b101300ad7ba0df8d15136f0bd/runtime%2Fpython%2Fonnxruntime%2Ffunasr_onnx%2Fsensevoice_bin.py",
+            "raw_url": "https://github.com/modelscope/FunASR/raw/1b399bd38e8b64b101300ad7ba0df8d15136f0bd/runtime%2Fpython%2Fonnxruntime%2Ffunasr_onnx%2Fsensevoice_bin.py",
+            "contents_url": "https://api.github.com/repos/modelscope/FunASR/contents/runtime%2Fpython%2Fonnxruntime%2Ffunasr_onnx%2Fsensevoice_bin.py?ref=1b399bd38e8b64b101300ad7ba0df8d15136f0bd",
+            "patch": "@@ -183,8 +183,10 @@ def __call__(self, wav_content: Union[str, np.ndarray, List[str]], **kwargs):\n                 #     ctc_logits = torch.from_numpy(ctc_logits).float()\n                 # support batch_size=1 only currently\n                 x = ctc_logits[b, : encoder_out_lens[b].item(), :]\n-                yseq = x.argmax(dim=-1)\n-                yseq = np.unique(yseq)\n+                yseq = np.argmax(x, axis=-1)\n+                # Use np.diff and np.where instead of torch.unique_consecutive.\n+                mask = np.concatenate(([True], np.diff(yseq) != 0))\n+                yseq = yseq[mask]\n \n                 mask = yseq != self.blank_id\n                 token_int = yseq[mask].tolist()"
+        }
+    ],
+    "commits": [
+        {
+            "sha": "1b399bd38e8b64b101300ad7ba0df8d15136f0bd",
+            "commit_date": "2024-12-24T09:26:22Z",
+            "message": "fix: solve problems in sensevoice_bin.py related to argmax and unique, as mentioned in issue #2331",
+            "number_of_links_in_commit": 0,
+            "files_changed_count": 1,
+            "files": [
+                {
+                    "sha": "6a06ed105f60714858e513ac5b823a5ed67b0db5",
+                    "filename": "runtime/python/onnxruntime/funasr_onnx/sensevoice_bin.py",
+                    "status": "modified",
+                    "additions": 4,
+                    "deletions": 2,
+                    "changes": 6,
+                    "blob_url": "https://github.com/modelscope/FunASR/blob/1b399bd38e8b64b101300ad7ba0df8d15136f0bd/runtime%2Fpython%2Fonnxruntime%2Ffunasr_onnx%2Fsensevoice_bin.py",
+                    "raw_url": "https://github.com/modelscope/FunASR/raw/1b399bd38e8b64b101300ad7ba0df8d15136f0bd/runtime%2Fpython%2Fonnxruntime%2Ffunasr_onnx%2Fsensevoice_bin.py",
+                    "contents_url": "https://api.github.com/repos/modelscope/FunASR/contents/runtime%2Fpython%2Fonnxruntime%2Ffunasr_onnx%2Fsensevoice_bin.py?ref=1b399bd38e8b64b101300ad7ba0df8d15136f0bd",
+                    "patch": "@@ -183,8 +183,10 @@ def __call__(self, wav_content: Union[str, np.ndarray, List[str]], **kwargs):\n                 #     ctc_logits = torch.from_numpy(ctc_logits).float()\n                 # support batch_size=1 only currently\n                 x = ctc_logits[b, : encoder_out_lens[b].item(), :]\n-                yseq = x.argmax(dim=-1)\n-                yseq = np.unique(yseq)\n+                yseq = np.argmax(x, axis=-1)\n+                # Use np.diff and np.where instead of torch.unique_consecutive.\n+                mask = np.concatenate(([True], np.diff(yseq) != 0))\n+                yseq = yseq[mask]\n \n                 mask = yseq != self.blank_id\n                 token_int = yseq[mask].tolist()"
+                }
+            ]
+        }
+    ],
+    "pull_request_url": "https://github.com/modelscope/FunASR/pull/2332",
+    "commits_url": "https://github.com/modelscope/FunASR/pull/2332/commits",
+    "files_url": "https://github.com/modelscope/FunASR/pull/2332/files"
+}

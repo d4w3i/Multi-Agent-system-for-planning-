@@ -1,0 +1,87 @@
+{
+  "pr_number": 2410,
+  "repository": "gunthercox/ChatterBot",
+  "title": "Fix file path resolution",
+  "body": "This pull request makes a few changes:\n\n1. It fixes the single file case where a `yield` should be used instead of a `return` - the difference seems to be that the former results in an empty generator evaluation when a single file is provided.\n2. Absolute path resolution has been added for easier identification of file locations if the specified file is not found.\n3. A more descriptive error message.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T12:21:24.865725",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "chatterbot/corpus.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "get_file_path",
+          "class_name": null,
+          "full_name": "get_file_path",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "list_corpus_files",
+          "class_name": null,
+          "full_name": "list_corpus_files",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "read_corpus",
+          "class_name": null,
+          "full_name": "read_corpus",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "load_corpus",
+          "class_name": null,
+          "full_name": "load_corpus",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Modify chatterbot/corpus.py to normalize filesystem inputs to absolute paths, ensure list_corpus_files returns a list (not a bare string), improve read_corpus error messages and handle empty YAML, and make load_corpus robust for single-file usage by always yielding per-file and guarding against None corpus data.",
+    "steps": [
+      {
+        "operation": "Normalize and return absolute filesystem paths",
+        "file_to_modify": "chatterbot/corpus.py",
+        "function_to_modify": "get_file_path",
+        "reason": "When dotted_path appears to be a filesystem path (contains os.sep or '/'), normalize it using os.path.abspath (or os.path.realpath) so callers and error messages see the full absolute path. Also, when appending the expected extension to check for an existing file, resolve and return the absolute path if the file exists. This improves diagnostics and makes downstream error messages unambiguous.",
+        "side_effects": "Callers that previously received relative paths will now get absolute paths; this should be backward-compatible but may change string comparisons in tests. Resolving to absolute paths could expose different filesystem links (realpath vs abspath); choose abspath unless symlink resolution is required. No API surface change other than path format."
+      },
+      {
+        "operation": "Guarantee list output and include absolute paths for single-file inputs",
+        "file_to_modify": "chatterbot/corpus.py",
+        "function_to_modify": "list_corpus_files",
+        "reason": "Ensure the function always returns a list (iterable) of path strings, even for single-file inputs, to avoid accidental iteration over characters of a bare string (which breaks list.extend and similar callers). Use get_file_path to obtain absolute file paths and, if the resolved path is a directory, glob and return sorted absolute file paths; if it's a file (even if missing), return a single-item list containing the absolute attempted path so downstream logic and error messages include the absolute path.",
+        "side_effects": "Prevents bugs where callers treat the returned value as a list and iterate characters. May alter behavior for code expecting a bare string; update tests accordingly. If the file truly does not exist, downstream code will now see the absolute attempted path and raise clearer errors, which might change error texts previously asserted in tests."
+      },
+      {
+        "operation": "Improve YAML import error message and return a safe default",
+        "file_to_modify": "chatterbot/corpus.py",
+        "function_to_modify": "read_corpus",
+        "reason": "Make the OptionalDependencyImportError message more descriptive and include guidance to install PyYAML. When opening the file, catch FileNotFoundError / OSError and raise a clearer exception that includes the absolute path attempted. After yaml.safe_load, if the result is None (empty YAML), return an empty dict ({}) so callers like load_corpus can safely call .get without raising AttributeError.",
+        "side_effects": "Error messages will be more informative and include absolute paths, improving diagnostics. Tests asserting the previous, shorter dependency message or different exception types may need to be updated. Returning {} instead of None for empty YAML will change behavior only where callers did not guard for None; it avoids AttributeError but could hide files that are semantically empty (this is intended)."
+      },
+      {
+        "operation": "Ensure load_corpus always yields per-file and handles empty/None corpus data",
+        "file_to_modify": "chatterbot/corpus.py",
+        "function_to_modify": "load_corpus",
+        "reason": "Keep load_corpus implemented strictly as a generator that yields exactly one (corpus, categories, file_path) tuple per input file. Remove any code paths that use return in place of yield for single-file cases. After calling read_corpus(file_path), defensively coerce None to {} (or rely on read_corpus to return {}), then safely extract corpus and categories via .get to avoid AttributeError when YAML was empty. This preserves expected iteration behavior for trainers when a single file is supplied.",
+        "side_effects": "Fixes the single-file bug where a return produced an empty generator. Downstream code that iterates load_corpus(...) will now always see one yield per file. If callers depended on earlier (incorrect) behavior, their tests might change. Performance impact is negligible; ensure unit tests verify single-file iteration and empty YAML handling."
+      }
+    ]
+  }
+}

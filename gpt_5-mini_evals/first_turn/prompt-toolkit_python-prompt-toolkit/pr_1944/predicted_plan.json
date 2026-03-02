@@ -1,0 +1,132 @@
+{
+  "pr_number": 1944,
+  "repository": "prompt-toolkit/python-prompt-toolkit",
+  "title": "Fixes bug whereby read_only bool is called as a function",
+  "body": "This is a simple bug fix to remedy the following issue:\n\n```python\n  File \".../site-packages/prompt_toolkit/filters/app.py\", line 374, in emacs_insert_mode\n    or app.current_buffer.read_only()\n       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n\nException 'bool' object is not callable\n```\n\nIt would appear to be a simple typo, calling the boolean `read_only` property as if it were a function.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T12:58:22.968636",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "src/prompt_toolkit/filters/app.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "is_read_only",
+          "class_name": null,
+          "full_name": "is_read_only",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "vi_navigation_mode",
+          "class_name": null,
+          "full_name": "vi_navigation_mode",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "vi_insert_mode",
+          "class_name": null,
+          "full_name": "vi_insert_mode",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "vi_insert_multiple_mode",
+          "class_name": null,
+          "full_name": "vi_insert_multiple_mode",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "vi_replace_mode",
+          "class_name": null,
+          "full_name": "vi_replace_mode",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "vi_replace_single_mode",
+          "class_name": null,
+          "full_name": "vi_replace_single_mode",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "emacs_insert_mode",
+          "class_name": null,
+          "full_name": "emacs_insert_mode",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Make predicates in src/prompt_toolkit/filters/app.py tolerant to both callable and boolean Buffer.read_only by altering is_read_only to handle both cases and updating all mode/predicate functions to use this robust check to avoid 'bool object is not callable' exceptions.",
+    "steps": [
+      {
+        "operation": "Make is_read_only robust to both callable and boolean read_only values",
+        "file_to_modify": "src/prompt_toolkit/filters/app.py",
+        "function_to_modify": "is_read_only",
+        "reason": "Currently is_read_only (and other predicates) call current_buffer.read_only() assuming it is callable. Some Buffer implementations expose read_only as a plain bool/property, causing \"'bool' object is not callable\". Modify is_read_only to inspect buffer.read_only: call it if callable, otherwise coerce to bool. Implement the small helper logic here (either as an internal helper function or inside is_read_only) so that all callers can rely on a single correct behavior.",
+        "side_effects": "Behavior is backward-compatible: callers of is_read_only will receive the same boolean semantics regardless of whether buffer.read_only is a callable filter or a boolean. Tests that exercise mode detection must be run/updated. Any direct callers that expected a callable read_only (rare) should not be affected because we only read/evaluate the value. Minimal API surface change since this is internal logic in a predicate."
+      },
+      {
+        "operation": "Replace direct call to app.current_buffer.read_only() with the robust check in vi_navigation_mode",
+        "file_to_modify": "src/prompt_toolkit/filters/app.py",
+        "function_to_modify": "vi_navigation_mode",
+        "reason": "vi_navigation_mode currently uses app.current_buffer.read_only() in its predicate expression. Replace that call with the robust is_read_only-based check to avoid the 'bool object is not callable' exception when read_only is a boolean.",
+        "side_effects": "Fixes runtime exceptions during mode detection and key-binding selection. Update/execute unit tests for Vi mode detection. No public API change, but behavior now tolerates both callable and boolean read_only; dependent code that relied on an exception will be affected only insofar as it previously crashed."
+      },
+      {
+        "operation": "Replace direct call to app.current_buffer.read_only() with the robust check in vi_insert_mode",
+        "file_to_modify": "src/prompt_toolkit/filters/app.py",
+        "function_to_modify": "vi_insert_mode",
+        "reason": "vi_insert_mode contains guards that call current_buffer.read_only(). Use the centralized robust check (is_read_only/_helper) so the predicate works when read_only is a bool as well as when it is callable.",
+        "side_effects": "Prevents crashes when entering Vi insert mode for buffers where read_only is a boolean. Requires running mode-detection tests. No change to public APIs; downstream key-bindings that depend on vi_insert_mode will benefit from the fix."
+      },
+      {
+        "operation": "Replace direct call to app.current_buffer.read_only() with the robust check in vi_insert_multiple_mode",
+        "file_to_modify": "src/prompt_toolkit/filters/app.py",
+        "function_to_modify": "vi_insert_multiple_mode",
+        "reason": "vi_insert_multiple_mode currently assumes read_only is callable. Updating it to use the robust helper prevents \"'bool' object is not callable\" exceptions for buffers exposing read_only as a boolean.",
+        "side_effects": "Improves stability for multi-cursor/multiple-insert modes when used with buffers that have boolean read_only. Tests covering multi-insert mode should be executed/added. No breaking API changes."
+      },
+      {
+        "operation": "Replace direct call to app.current_buffer.read_only() with the robust check in vi_replace_mode",
+        "file_to_modify": "src/prompt_toolkit/filters/app.py",
+        "function_to_modify": "vi_replace_mode",
+        "reason": "vi_replace_mode uses read_only() in guards. Replace with the helper to support both callable and boolean read_only, preventing the callable-bool exception during replace-mode detection.",
+        "side_effects": "Fixes potential crashes entering Vi replace mode for buffers with boolean read_only. Run/adjust replace-mode tests. No public API change; behavior is preserved while becoming more tolerant."
+      },
+      {
+        "operation": "Replace direct call to app.current_buffer.read_only() with the robust check in vi_replace_single_mode",
+        "file_to_modify": "src/prompt_toolkit/filters/app.py",
+        "function_to_modify": "vi_replace_single_mode",
+        "reason": "vi_replace_single_mode currently calls read_only() and will raise if read_only is a boolean. Use the shared robust check to support both boolean and callable read_only values.",
+        "side_effects": "Prevents runtime exceptions for single-character replace operations on boolean-read-only buffers. Requires running tests that cover single replace mode. No API break; internal predicate behavior becomes more resilient."
+      },
+      {
+        "operation": "Replace direct call to app.current_buffer.read_only() with the robust check in emacs_insert_mode",
+        "file_to_modify": "src/prompt_toolkit/filters/app.py",
+        "function_to_modify": "emacs_insert_mode",
+        "reason": "The reported exception arises from emacs_insert_mode calling app.current_buffer.read_only() when read_only is a boolean. Modify this predicate to use the robust helper/is_read_only so it handles both callable and plain boolean read_only values.",
+        "side_effects": "Fixes the observed \"'bool' object is not callable\" crash when using Emacs insert mode with buffers that expose read_only as a boolean. Mode detection tests should be run; behavior remains functionally equivalent while being tolerant to different Buffer implementations."
+      }
+    ]
+  }
+}

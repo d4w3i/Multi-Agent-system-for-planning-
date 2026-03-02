@@ -1,0 +1,93 @@
+{
+  "pr_number": 2468,
+  "repository": "Netflix/metaflow",
+  "title": "Fixup how commands show up as part of the Runner API",
+  "body": "When injecting commands into the Runner API, the generated stubs were incomplete or inaccurate, causing downstream tooling and users to see partial representations of commands. This PR aims to:\n- Correctly generate full command stubs when injecting commands into the Runner API\n- Ensure the stub includes command name, arguments, environment, and any relevant metadata consistently\n- Update tests and stubs to reflect the corrected representation\n- Preserve backward compatibility where possible while clarifying the API surface for command injection\n\nNo changes to external behavior beyond the corrected Runner API representation are expected, but existing tests should be updated to reflect the new, complete command stub structure.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T13:31:47.563775",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "base_project/metaflow/R.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "inject_commands",
+          "class_name": "R",
+          "full_name": "R.inject_commands",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_format_command_stub",
+          "class_name": "R",
+          "full_name": "R._format_command_stub",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_validate_injected_command",
+          "class_name": "R",
+          "full_name": "R._validate_injected_command",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "base_project/metaflow/__init__.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    },
+    {
+      "filename": "base_project/stubs/runner_stubs.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    },
+    {
+      "filename": "base_project/test_runner/test_runner_injection.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    }
+  ],
+  "step_plan": {
+    "summary": "This PR fixes the Runner API by ensuring injected commands produce complete, consistent stubs (including name, args, environment, and metadata) through validated inputs and a centralized stub formatter, with tests updated accordingly.",
+    "steps": [
+      {
+        "operation": "Add input validation for injected commands",
+        "file_to_modify": "base_project/metaflow/R.py",
+        "function_to_modify": "R._validate_injected_command",
+        "reason": "Ensure the injected command structure is well-formed and provides clear error messages for malformed inputs, preventing partial or inconsistent stubs from being generated.",
+        "side_effects": "Tests will need to cover validation failures (malformed commands); error messages may be relied upon by external integrations; minor API surface changes in error handling may cascade to upstream call sites."
+      },
+      {
+        "operation": "Add/adjust _format_command_stub helper",
+        "file_to_modify": "base_project/metaflow/R.py",
+        "function_to_modify": "R._format_command_stub",
+        "reason": "Centralize rendering of a complete command stub (name, args, env, metadata) to ensure consistency across all injections and to simplify maintenance.",
+        "side_effects": "Serialization/formatting behavior affects all generated stubs; tests must verify formatting consistency; potential internal API changes for consumers expecting the previous stub shape."
+      },
+      {
+        "operation": "Refactor inject_commands to build complete stubs",
+        "file_to_modify": "base_project/metaflow/R.py",
+        "function_to_modify": "R.inject_commands",
+        "reason": "Use the new validation and formatter to emit full command stubs when injecting into the Runner API and attach metadata consistently across commands.",
+        "side_effects": "Tests and stubs generator will need updates to align with the new stub structure; potential minor backward-compatibility considerations mitigated by tests and documentation; external consumers should see complete command representations."
+      }
+    ]
+  }
+}

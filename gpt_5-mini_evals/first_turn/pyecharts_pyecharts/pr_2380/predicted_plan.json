@@ -1,0 +1,95 @@
+{
+  "pr_number": 2380,
+  "repository": "pyecharts/pyecharts",
+  "title": "fix and update",
+  "body": "* 修复 `timeline` 的 bug，关联：https://github.com/pyecharts/pyecharts/issues/2361\n* 更新一些配置的引用位置和方式\n    * `markline`, `markarea` 增加动画配置项：https://github.com/pyecharts/pyecharts/issues/2362 \n",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T13:08:33.066202",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "pyecharts/charts/composite_charts/timeline.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "add",
+          "class_name": "Timeline",
+          "full_name": "Timeline.add",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "__check_components",
+          "class_name": "Timeline",
+          "full_name": "Timeline.__check_components",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "pyecharts/options/series_options.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "__init__",
+          "class_name": "MarkLineOpts",
+          "full_name": "MarkLineOpts.__init__",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "__init__",
+          "class_name": "MarkAreaOpts",
+          "full_name": "MarkAreaOpts.__init__",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Fix timeline series merging and component-merge bugs so Timeline accumulates series correctly across add() calls (issue #2361), and add animation option keys (animation, animationDuration, animationEasing) to MarkLineOpts and MarkAreaOpts so users can control markLine/markArea animations (issue #2362).",
+    "steps": [
+      {
+        "operation": "Tighten component merge logic",
+        "file_to_modify": "pyecharts/charts/composite_charts/timeline.py",
+        "function_to_modify": "Timeline.__check_components",
+        "reason": "Prevent incorrect merging caused by using isinstance(..., Sequence) and truthiness checks. Explicitly handle list/tuple and dict types: extend when both base and incoming components are lists/tuples (even if empty), merge with dict.update when both are dicts, and fall back to overwrite when types differ. Also avoid treating strings as sequences to be extended.",
+        "side_effects": "Changes merging semantics for timeline components (safer, type-aware merging). May alter output where callers previously relied on the buggy behavior (tests that assert merged options must be updated). Should be covered by unit tests for timeline component merging. No public API signature changes, but the runtime structure of baseOption components may change for some inputs; downstream code that relied on the previous incorrect merges may be impacted."
+      },
+      {
+        "operation": "Merge/extend series instead of overwriting in add",
+        "file_to_modify": "pyecharts/charts/composite_charts/timeline.py",
+        "function_to_modify": "Timeline.add",
+        "reason": "Currently baseOption.series is overwritten with the latest chart's series on each add(), discarding previously added series. Change the update to merge series lists: when both baseOption.series and chart.options.get('series') are lists, extend baseOption.series with the new chart's series; if baseOption has no series, set it; if types differ or not list-like, fallback to overwrite.",
+        "side_effects": "Fixes timeline series accumulation bug (issue #2361). This alters how Timeline aggregates series across added charts — charts constructed with the previous buggy behavior may render differently. Unit/integration tests for Timeline must be added/updated to assert correct series accumulation. No external API signature changes, but generated option JSON will differ for some timelines."
+      },
+      {
+        "operation": "Add animation configuration keys to MarkLineOpts",
+        "file_to_modify": "pyecharts/options/series_options.py",
+        "function_to_modify": "MarkLineOpts.__init__",
+        "reason": "Expose animation controls for markLine by adding parameters (is_animation, animation_duration, animation_easing) following existing naming patterns (is_animation -> 'animation', animation_duration -> 'animationDuration', animation_easing -> 'animationEasing'). Include these keys in self.opts so users can configure markLine animation (issue #2362).",
+        "side_effects": "Introduces new optional constructor parameters (with sensible defaults to preserve backward compatibility). Affects the serialized options for markLine when parameters are provided. Requires updating docs and tests for MarkLineOpts; downstream code that builds markLine options will gain additional keys when provided. No breaking API changes if defaults match prior behavior."
+      },
+      {
+        "operation": "Add animation configuration keys to MarkAreaOpts",
+        "file_to_modify": "pyecharts/options/series_options.py",
+        "function_to_modify": "MarkAreaOpts.__init__",
+        "reason": "Expose animation controls for markArea by adding parameters (is_animation, animation_duration, animation_easing) and including 'animation', 'animationDuration', 'animationEasing' in self.opts to allow markArea animation configuration (issue #2362).",
+        "side_effects": "Introduces new optional constructor parameters (defaults should preserve backward compatibility). Affects serialized markArea option output when parameters are used. Requires updating documentation and unit tests for MarkAreaOpts. Downstream consumers of markArea options will see additional keys when provided."
+      }
+    ]
+  }
+}

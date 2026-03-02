@@ -1,0 +1,42 @@
+{
+  "pr_number": 5625,
+  "repository": "pyodide/pyodide",
+  "title": "Fix test_package_index test",
+  "body": "It started to fail a few days ago, because of some extra terminal output.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T13:11:48.564866",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "src/js/installer.ts",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "install",
+          "class_name": "Installer",
+          "full_name": "Installer.install",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Silence a non-essential debug console output in Installer.install (src/js/installer.ts) by removing the console.debug line that logs the number of dynamic libraries found, preventing extraneous terminal output from breaking tests.",
+    "steps": [
+      {
+        "operation": "Remove the debug console output that logs dynamic library count",
+        "file_to_modify": "src/js/installer.ts",
+        "function_to_modify": null,
+        "reason": "The console.debug call inside Installer.install emits non-essential terminal output (e.g. `Found ${dynlibs.length} dynamic libraries inside ${filename}`) which can appear in test logs and cause tests (like test_package_index) that assert on precise console output to fail. Removing this single debug line preserves install behavior while eliminating the stray noise.",
+        "side_effects": "No change to functional behavior of Installer.install or package loading. Tests that inadvertently relied on this debug message will no longer see it (unlikely); developer debug visibility is reduced for this specific message. Should reduce spurious test failures. After change, run the test suite — if failures persist, other console.* calls may need auditing. No API or runtime contract changes expected, but downstream consumers expecting debug logs may see less verbose output."
+      }
+    ]
+  }
+}

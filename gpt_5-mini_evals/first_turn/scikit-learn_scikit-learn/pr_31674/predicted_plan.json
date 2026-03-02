@@ -1,0 +1,125 @@
+{
+  "pr_number": 31674,
+  "repository": "scikit-learn/scikit-learn",
+  "title": "fix(docs): Fix glossary FIXME tags",
+  "body": "<!--\nThanks for contributing a pull request! Please ensure you have taken a look at\nthe contribution guidelines: https://github.com/scikit-learn/scikit-learn/blob/main/CONTRIBUTING.md\n-->\n\n#### Reference Issues/PRs\nFixes #31628 \n\n#### What does this implement/fix? Explain your changes.\n\n\n#### Any other comments?\nWhile working on [#31628](https://github.com/scikit-learn/scikit-learn/issues/31628), I encountered a `ModuleNotFoundError` due to a misnamed Sphinx extension (`sphinx-prompt` instead of `sphinx_prompt`). This PR also fixes that to ensure local doc builds (`make`) work correctly.\n\n#### Setup\n```\nPython 3.13.3\n\n   machine: macOS-15.5-arm64-arm-64bit-Mach-O\n\nPython dependencies:\n      sklearn: 1.8.dev0\n          pip: 25.0.1\n   setuptools: None\n        numpy: 2.3.1\n        scipy: 1.16.0\n       Cython: 3.1.2\n       pandas: 2.3.0\n   matplotlib: 3.10.3\n       joblib: 1.5.1\nthreadpoolctl: 3.6.0\n\nBuilt with OpenMP: False\n```",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T13:16:22.440236",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "doc/glossary.rst",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "rst:meta-estimator paragraph (entry: meta-estimator / cloning)",
+          "class_name": "glossary",
+          "full_name": "glossary.rst:meta-estimator paragraph (entry: meta-estimator / cloning)",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "rst:max_iter entry",
+          "class_name": "glossary",
+          "full_name": "glossary.rst:max_iter entry",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "rst:sample_weight entry (semantics)",
+          "class_name": "glossary",
+          "full_name": "glossary.rst:sample_weight entry (semantics)",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "rst:sample_weight entry (negative weights)",
+          "class_name": "glossary",
+          "full_name": "glossary.rst:sample_weight entry (negative weights)",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "doc/conf.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "extensions (top-level variable)",
+          "class_name": null,
+          "full_name": "extensions (top-level variable)",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "setup",
+          "class_name": null,
+          "full_name": "setup",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Fix four FIXME annotations in doc/glossary.rst by clarifying meta-estimator cloning, max_iter/ConvergenceWarning, and sample_weight semantics (including negative weights), and fix doc/conf.py Sphinx extension name ('sphinx-prompt' -> 'sphinx_prompt') so local and CI doc builds do not raise ModuleNotFoundError.",
+    "steps": [
+      {
+        "operation": "Replace misnamed sphinx extension entry in extensions list",
+        "file_to_modify": "doc/conf.py",
+        "function_to_modify": "extensions",
+        "reason": "The extensions list currently contains 'sphinx-prompt' (dash) which is not the importable Python module name. Sphinx expects the module name 'sphinx_prompt' (underscore). Replacing the string prevents ModuleNotFoundError when importing the extension and allows local and CI doc builds to succeed.",
+        "side_effects": "Docs build: fixes local 'make -C doc html' and CI doc build steps. No runtime API changes. If other project files (e.g., binder/requirements.txt or docs provisioning scripts) reference the misnamed package string, they may need corresponding updates. No unit tests affected, but CI jobs that build docs will stop failing."
+      },
+      {
+        "operation": "Review and adjust conf.py setup hook to ensure extension rename is handled",
+        "file_to_modify": "doc/conf.py",
+        "function_to_modify": "setup",
+        "reason": "The setup() function in conf.py may conditionally register or reference extensions. After renaming the extension entry, verify setup() does not depend on the old name and does not perform runtime imports or conditional logic that would still reference 'sphinx-prompt'. Update any references so hook registration and runtime behavior remain correct.",
+        "side_effects": "Docs build: ensures Sphinx registration and any custom config-time hooks continue to work. If setup() performs imports of extensions by name, the change could require adjusting import paths there as well. No impact on library API, but potential minor effect on doc-time behavior (e.g., added directives) if not updated correctly. Recommend re-running local 'make -C doc html' and CI doc steps."
+      },
+      {
+        "operation": "Clarify meta-estimator / cloning paragraph and remove FIXME tag",
+        "file_to_modify": "doc/glossary.rst",
+        "function_to_modify": null,
+        "reason": "One FIXME questions which estimators are cloned and mentions Pipeline and FeatureUnion as exceptions. Update the paragraph to accurately reflect the current behavior (e.g., that meta-estimators generally clone base estimators except where pipeline-like objects manage nested estimators differently) and add a cross-reference to pipeline.Pipeline and pipeline.FeatureUnion so readers can find implementation details.",
+        "side_effects": "Docs-only change: improves clarity for users and maintainers. If the clarified text highlights a mismatch between docs and code, it may prompt a separate PR to change implementation or tests. No API changes; unit tests unaffected. Reviewers should check for accurate links and phrasing."
+      },
+      {
+        "operation": "Clarify max_iter / ConvergenceWarning paragraph and remove FIXME tag",
+        "file_to_modify": "doc/glossary.rst",
+        "function_to_modify": null,
+        "reason": "A FIXME asks about consistent behavior for raising ConvergenceWarning when max_iter is reached. Update the text to state the current practical policy: estimators that iterate should raise ConvergenceWarning when they stop due to reaching max_iter without convergence where this is meaningful; behavior is estimator-dependent and formal guarantees require adding tests in a follow-up PR. This removes the open question marker while remaining accurate.",
+        "side_effects": "Docs-only change: reduces ambiguity. If maintainers choose to enforce uniform behavior, follow-up tests and code changes will be required. No immediate API effect. CI/unit tests remain unchanged by this docs update, though it may trigger discussion to add tests."
+      },
+      {
+        "operation": "Clarify sample_weight semantics (repeated-sample interpretation) and remove FIXME tag",
+        "file_to_modify": "doc/glossary.rst",
+        "function_to_modify": null,
+        "reason": "One FIXME questions whether sample_weight is always interpreted as repeating samples. Replace it with a clear statement that, in many estimators, sample_weight is treated as an equivalent to repeating observations (a multiplicative weight), but this is estimator-dependent; link to exceptions or note that explicit estimator docs should state precise semantics.",
+        "side_effects": "Docs-only change: improves user understanding. If the statement reveals inconsistencies with implementation, maintainers might open follow-up PRs to align docs, add tests, or update estimator docstrings. No runtime/API change. Recommend adding follow-up tests in a separate PR to codify semantics for core estimators."
+      },
+      {
+        "operation": "Clarify sample_weight negative-weight support and remove FIXME tag",
+        "file_to_modify": "doc/glossary.rst",
+        "function_to_modify": null,
+        "reason": "A FIXME asks whether negative sample weights are supported. Replace it with an explicit, estimator-aware statement: support for negative sample weights is estimator-specific (e.g., some tree-based estimators accept them); encourage per-estimator documentation and tests to state and verify this behavior.",
+        "side_effects": "Docs-only change: avoids ambiguity for users. May prompt maintainers to create follow-up PR(s) listing which estimators accept negative weights or adding tests to enforce behavior. No direct API or runtime changes. CI unaffected aside from doc builds (which are already addressed by conf.py change)."
+      }
+    ]
+  }
+}

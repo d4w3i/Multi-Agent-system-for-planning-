@@ -1,0 +1,42 @@
+{
+  "pr_number": 1270,
+  "repository": "NVIDIA/Megatron-LM",
+  "title": "[ENHANCEMENT] Add z-loss",
+  "body": "Summary:\n- Introduces z-loss regularization for stabilizing training by constraining logits in the final layer.\n- Loss now supports cross-entropy plus an optional z-loss term. A new coefficient controls the contribution of z-loss.\n- Logging is extended to expose the three components: cross-entropy loss, z-loss, and the total loss.\n\nWhat changes:\n- Adds a z_loss_coef knob (default 0.0) and wiring to enable/disable z-loss during training.\n- Computes z-loss from the final-layer logits and adds it to the primary loss when enabled.\n- Logs cross-entropy loss, z-loss, and total loss for easier monitoring and debugging.\n\nHow to enable:\n- Set z_loss_coef > 0 (via config, or environment variable MEGATRON_Z_LOSS_COEF) to activate z-loss regularization.\n- The default behavior remains unchanged (no z-loss) to preserve existing training stability and performance.\n\nNotes:\n- This change is localized to the loss computation path and logging, minimizing impact on other parts of the training loop.\n- Potential follow-ups: add unit tests for z-loss computation, expose z-loss specifics in docs, and verify FP16/TF32 precision stability.\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T13:30:37.394811",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "megatron/inference/gpt/loss_func.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "compute_loss",
+          "class_name": null,
+          "full_name": "compute_loss",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Enhance loss computation with an optional z-loss regularization term and extended logging. Adds a configurable z_loss_coef knob (default 0.0) to activate z-loss and log cross-entropy, z-loss, and total loss while preserving current behavior when disabled.",
+    "steps": [
+      {
+        "operation": "Extend compute_loss to compute and incorporate z-loss with optional logging",
+        "file_to_modify": "megatron/inference/gpt/loss_func.py",
+        "function_to_modify": "compute_loss",
+        "reason": "Introduce a new z_loss_coef knob (default 0.0) to enable z-loss regularization without changing existing behavior; compute z-loss from final-layer logits and add to cross-entropy to form total_loss when enabled; extend logging to expose cross-entropy, z-loss, and total loss for monitoring",
+        "side_effects": "If z_loss_coef > 0, may affect gradients and training stability; requires updates to tests and docs; minor performance/logging overhead; downstream components consuming compute_loss outputs may need to accommodate the additional z_loss term and new logging fields"
+      }
+    ]
+  }
+}

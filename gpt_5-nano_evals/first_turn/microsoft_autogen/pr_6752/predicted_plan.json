@@ -1,0 +1,71 @@
+{
+  "pr_number": 6752,
+  "repository": "microsoft/autogen",
+  "title": "Fix GraphFlow termination to prevent _StopAgent polluting context",
+  "body": "Summary:\n- Remove the StopAgent from the GraphFlow termination path. Stop messages should no longer pollute agent conversation contexts.\n- Change termination signaling to be handled directly by GraphFlowManager when there are no ready speakers, rather than via a dedicated StopAgent.\n- Simplify GraphFlow construction by removing StopMessageTermination usage and the StopAgent from participants.\n- Update related termination logic and tests to expect clean conversation history (no StopMessage instances in the thread).\n\nWhat I changed:\n1) Removed _StopAgent and StopMessageTermination usage\n   - Deleted or deprecated the _StopAgent class and all references to StopMessageTermination across the graph execution flow.\n   - GraphFlow no longer injects a StopAgent as a participant.\n   - Stop termination is now signaled directly by the GraphFlowManager when no ready speakers remain.\n\n2) GraphFlowManager.select_speaker() termination path\n   - Updated select_speaker to terminate gracefully when there are no ready speakers instead of selecting the stop agent.\n   - Maintains the same termination semantics (end of graph execution) but without polluting the message thread with a StopMessage from a StopAgent.\n\n3) GraphFlow constructor simplification\n   - GraphFlow.__init__ no longer adds _StopAgent to participants.\n   - Removed StopMessageTermination from the termination composition; termination still occurs but without StopAgent messages polluting the thread.\n\n4) Updated GraphFlow wiring and related configurations\n   - Adjusted GraphFlow construction and configuration to reflect the removal of the stop agent and StopMessageTermination logic.\n   - Tests updated to expect clean conversation history (no StopMessage occurrences) and termination behavior preserved.\n\n5) Tests and verification\n   - Tests now verify that the conversation history contains no StopMessage instances.\n   - Verified termination still occurs at the correct time and that resume/state management remains intact.\n\nImpact and risk:\n- Risk of test failures if any downstream components relied on StopAgent messages or StopMessageTermination behavior. This PR aligns all tests with clean conversation contexts while preserving termination semantics.\n- Serialization/deserialization paths for termination configurations may require updates if there were serialized StopMessageTermination configs; updated to reflect new termination flow.\n\nVerification steps:\n- Run unit tests for autogen-agentchat focusing on GraphFlow execution and termination paths.\n- Create end-to-end scenarios where the graph completes and ensure no StopMessage is present in any agent context.\n- Confirm termination occurs exactly when expected (no extra messages, same final state).\n\nFixes #6751.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T14:07:12.823168",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "python/packages/autogen-agentchat/src/autogen_agentchat/teams/_group_chat/_graph/_digraph_group_chat.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "select_speaker",
+          "class_name": "GraphFlowManager",
+          "full_name": "GraphFlowManager.select_speaker",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "__init__",
+          "class_name": "GraphFlow",
+          "full_name": "GraphFlow.__init__",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "python/packages/autogen-agentchat/src/autogen_agentchat/conditions/_terminations.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    },
+    {
+      "filename": "python/packages/autogen-agentchat/src/autogen_agentchat/teams/_group_chat/_group_chat.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    }
+  ],
+  "step_plan": {
+    "summary": "This PR removes the StopAgent-based termination path to prevent StopMessage pollution in agent contexts, switching termination signaling to be handled directly by GraphFlowManager when no ready speakers remain, and simplifying GraphFlow construction accordingly. Tests and wiring are updated to expect clean conversation histories and preserved termination semantics.",
+    "steps": [
+      {
+        "operation": "Refactor termination path to terminate directly when no ready speakers",
+        "file_to_modify": "python/packages/autogen-agentchat/src/autogen_agentchat/teams/_group_chat/_graph/_digraph_group_chat.py",
+        "function_to_modify": "GraphFlowManager.select_speaker",
+        "reason": "Remove StopAgent from the termination flow; ensure termination is signaled directly when there are no ready speakers, preserving end-of-graph semantics while avoiding StopMessage pollution in agent contexts.",
+        "side_effects": "Tests and other components may have relied on StopAgent; downstream code must adapt to direct termination signaling. Potential import and wiring changes; termination timing should remain the same."
+      },
+      {
+        "operation": "Simplify GraphFlow constructor to remove StopAgent and StopMessageTermination",
+        "file_to_modify": "python/packages/autogen-agentchat/src/autogen_agentchat/teams/_group_chat/_graph/_digraph_group_chat.py",
+        "function_to_modify": "GraphFlow.__init__",
+        "reason": "GraphFlow no longer injects StopAgent as a participant and termination composition excludes StopMessageTermination; aligns construction with the new termination signaling model.",
+        "side_effects": "Wiring/configuration updates required; tests must reflect absence of StopMessage in conversations. Initialization order and default participants may change; ensure compatibility with existing graph activation patterns."
+      }
+    ]
+  }
+}

@@ -1,0 +1,42 @@
+{
+  "pr_number": 9396,
+  "repository": "statsmodels/statsmodels",
+  "title": "BUG: Remove method setting in summary2 of genmod",
+  "body": "- [X] closes #9315 \n- [X] tests added / passed. \n- [X] code/documentation is well formatted.  \n- [X] properly formatted commit message. See \n      [NumPy's guide](https://docs.scipy.org/doc/numpy-1.15.1/dev/gitwash/development_workflow.html#writing-the-commit-message). \n\n<details>\n\n\n**Notes**:\n\n* It is essential that you add a test when making code changes. Tests are not \n  needed for doc changes.\n* When adding a new function, test values should usually be verified in another package (e.g., R/SAS/Stata).\n* When fixing a bug, you must add a test that would produce the bug in main and\n  then show that it is fixed with the new code.\n* New code additions must be well formatted. Changes should pass flake8. If on Linux or OSX, you can\n  verify your changes are well formatted by running \n  ```\n  git diff upstream/main -u -- \"*.py\" | flake8 --diff --isolated\n  ```\n  assuming `flake8` is installed. This command is also available on Windows \n  using the Windows System for Linux once `flake8` is installed in the \n  local Linux environment. While passing this test is not required, it is good practice and it help \n  improve code quality in `statsmodels`.\n* Docstring additions must render correctly, including escapes and LaTeX.\n\n</details>",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T13:25:08.985944",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "statsmodels/genmod/generalized_linear_model.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "summary2",
+          "class_name": "GLMResults",
+          "full_name": "GLMResults.summary2",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Remove the line in GLMResults.summary2 that unconditionally sets self.method = 'IRLS' so the summary2 output uses the method attribute already set by the fit routines. Run the relevant tests (including a new test that reproduces the bug) to verify the fix and ensure no regressions.",
+    "steps": [
+      {
+        "operation": "Remove unconditional assignment of self.method = 'IRLS' in the GLMResults.summary2 method",
+        "file_to_modify": "statsmodels/genmod/generalized_linear_model.py",
+        "function_to_modify": "GLMResults.summary2",
+        "reason": "GLMResults.summary2 currently overwrites the results.method attribute with the literal 'IRLS' before summary construction. The method attribute is already set correctly by the fit routines (_fit_irls sets 'IRLS', _fit_gradient sets the optimizer name). Removing this assignment ensures summary2 displays the actual method used during fitting.",
+        "side_effects": "Behavioral: summary2 output will now reflect the method recorded by the fit routines (e.g., 'newton', other optimizer names) instead of always showing 'IRLS'. Tests: Requires running and keeping the added unit test that fits a GLM with a non-IRLS optimizer and asserts summary2 reports that optimizer; run the genmod test suite and iolib/summary2 tests to ensure no regressions. Dependents: Any downstream code or tests that (incorrectly) relied on summary2 to set results.method to 'IRLS' will observe the original method value instead; this is a behavioral correction rather than an API change. Documentation/API: No public API changes beyond corrected summary output; consumers parsing summary text should be unaffected except they will see the correct method string. Performance: None. Risk: Low, but validate with the new and existing tests to ensure summary formatting still constructs the 'Method:' entry from results.method as expected."
+      }
+    ]
+  }
+}

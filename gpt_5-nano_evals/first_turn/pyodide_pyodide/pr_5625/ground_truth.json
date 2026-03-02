@@ -1,0 +1,59 @@
+{
+  "pr_number": 5625,
+  "repository": "pyodide/pyodide",
+  "title": "Fix test_package_index test",
+  "body": "It started to fail a few days ago, because of some extra terminal output.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T01:04:28.145576",
+    "extractor_version": "1.0.0",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "src/tests/test_cmdline_runner.py",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 2,
+      "functions_modified": [
+        {
+          "function_name": "test_package_index",
+          "class_name": null,
+          "full_name": "test_package_index",
+          "start_line": 455,
+          "end_line": 500,
+          "lines_changed": [
+            498,
+            499
+          ]
+        }
+      ],
+      "patch": "@@ -495,8 +495,8 @@ def test_package_index(tmp_path):\n     assert result.returncode == 0\n     stdout = re.sub(r\"(?<=[<>=-])([\\d+]\\.?)+\", \"*\", result.stdout)\n     assert (\n-        stdout.strip().rsplit(\"\\n\", 1)[-1]\n-        == \"Successfully installed attrs-* micropip-* numpy-* packaging-* sharedlib-test-py-*\"\n+        \"Successfully installed attrs-* micropip-* numpy-* packaging-* sharedlib-test-py-*\"\n+        in stdout.strip().rsplit(\"\\n\", 1)[-1]\n     )\n \n "
+    }
+  ],
+  "functions_modified": [
+    {
+      "function_name": "test_package_index",
+      "class_name": null,
+      "full_name": "test_package_index",
+      "start_line": 455,
+      "end_line": 500,
+      "lines_changed": [
+        498,
+        499
+      ]
+    }
+  ],
+  "step_plan": {
+    "steps": [
+      {
+        "operation": "Relax the assertion in the package index CLI test to tolerate extra terminal output by checking for substring presence instead of exact line equality",
+        "file_to_modify": "src/tests/test_cmdline_runner.py",
+        "function_to_modify": "test_package_index",
+        "reason": "The test began failing due to additional terminal output appended to the last line; using an `in` check keeps the test focused on verifying the installation success message without being brittle to incidental output changes.",
+        "side_effects": "This reduces test strictness: if the output contains the expected success message alongside unexpected text, the test will still pass, potentially masking certain regressions in the exact formatting of the final output."
+      }
+    ],
+    "summary": "Updates the `test_package_index` assertion to be resilient to extra terminal output by asserting the success message is contained in the last stdout line rather than matching it exactly."
+  }
+}

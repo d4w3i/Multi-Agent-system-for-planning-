@@ -1,0 +1,42 @@
+{
+  "pr_number": 2940,
+  "repository": "EleutherAI/lm-evaluation-harness",
+  "title": "Fix import error for eval_logger in score utils",
+  "body": "Root cause:\n- Some tasks under lm_eval (e.g., score and other lm_eval/tasks) attempt to import eval_logger via from lm_eval.utils import eval_logger or from lm_eval.loggers import eval_logger. In this repository, eval_logger is no longer defined in those modules, leading to ImportError: cannot import name 'eval_logger' and breaking task execution (e.g., score_robustness_agieval).\n\nProposed fix (as described in the PR):\n- Replace the import-based approach with a standard Python logger by defining a local logger instance, e.g., import logging; eval_logger = logging.getLogger(\"lm_eval.score\").\n- This ensures logging works even if the external logger definitions are missing and avoids runtime import errors.\n\nWhat this MASCA analysis identified in this repository:\n- The utils.py module mentions a central eval logger used to log errors (e.g., missing prompt templates). If external modules no longer define eval_logger, imports like from lm_eval.utils import eval_logger fail before any logging can occur.\n- To preserve compatibility within this repository (and prevent ImportError in downstream tasks that rely on eval_logger), introduce a defensive module-level fallback logger in utils.py. This keeps existing code paths functional without changing upstream import statements in external modules.\n\nImpact and guidance:\n- Implement a module-level fallback logger in utils.py so that importing eval_logger from lm_eval.utils does not fail when the external logger is absent.\n- Keep the existing behavior of logging errors (e.g., missing prompt templates) via eval_logger, now backed by the standard Python logger.\n- If other modules still import eval_logger from different sources (lm_eval.loggers), consider applying the same fallback pattern there to harmonize behavior across the codebase.\n\nRecommended verification:\n- Import test: from lm_eval.utils import eval_logger should yield a valid Logger instance.\n- Run a small scenario that triggers a log (e.g., simulate a missing prompt template) to confirm logs are emitted instead of ImportError.\n- Optional: add a lightweight unit/test to verify the fallback logger is used when external definitions are absent.\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T13:23:27.628653",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "utils.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "process_docs_add_prompts",
+          "class_name": null,
+          "full_name": "process_docs_add_prompts",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Fix import-time failures by introducing a defensive module-level logger in utils.py and refactor process_docs_add_prompts to rely on it, ensuring eval_logger imports do not break task execution when external logger definitions are missing.",
+    "steps": [
+      {
+        "operation": "Add a module-level fallback logger in utils.py and update process_docs_add_prompts to use it",
+        "file_to_modify": "utils.py",
+        "function_to_modify": "process_docs_add_prompts",
+        "reason": "Prevent ImportError when external modules import eval_logger from lm_eval.utils by ensuring a local Python logger is always defined and used for logging missing prompts",
+        "side_effects": "Downstream imports like from lm_eval.utils import eval_logger will receive the local logger; existing logging behavior remains, but tests may need to verify the fallback logger is used when external definitions are absent"
+      }
+    ]
+  }
+}

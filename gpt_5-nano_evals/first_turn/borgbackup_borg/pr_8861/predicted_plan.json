@@ -1,0 +1,33 @@
+{
+  "pr_number": 8861,
+  "repository": "borgbackup/borg",
+  "title": "tests: fix diff cmd test on macOS HFS+, fixes #8860",
+  "body": "If we touch too quickly after file creation, it would not noticably update the timestamp.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T13:40:49.233063",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "tests/archiver/test_diff_cmd.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    }
+  ],
+  "step_plan": {
+    "summary": "This PR makes the diff command test deterministic on macOS by accounting for timestamp granularity, without altering core diff logic.",
+    "steps": [
+      {
+        "operation": "Add macOS-aware delay and tolerant timestamp checks in the diff command test",
+        "file_to_modify": "tests/archiver/test_diff_cmd.py",
+        "function_to_modify": "test_diff_cmd",
+        "reason": "macOS filesystems (HFS+/APFS) have coarser timestamp granularity. Touching a file immediately after creation may not update mtime quickly enough, causing flaky diffs in tests. Introducing a platform-aware delay or tolerant timestamp checks ensures deterministic behavior on macOS while preserving coverage on other platforms.",
+        "side_effects": "Adds a conditional sleep or tolerant assertion on macOS which may increase test duration on Darwin; may require updating CI to rely on platform checks; should not affect non-macOS test paths; could require minor adjustments to expected outputs if timing changes are observed"
+      }
+    ]
+  }
+}

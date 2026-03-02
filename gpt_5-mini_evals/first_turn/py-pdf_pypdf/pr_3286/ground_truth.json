@@ -1,0 +1,82 @@
+{
+  "pr_number": 3286,
+  "repository": "py-pdf/pypdf",
+  "title": "BUG: Add delimiters to NameObject.renumber_table",
+  "body": "Per the spec, name objects cannot contain unescaped delimiters, which include angle, curly and square brackets (currently missing).\r\n\r\nI've attached a sample input PDF with a valid, correctly escaped name object. When appending this to a new PdfWriter the output is invalid (incorrectly escaped):\r\n\r\n```\r\n>>> w = PdfWriter()\r\n>>> w.append('nameobj.pdf')\r\n>>> w.write('out.pdf')\r\n```\r\n[out.pdf](https://github.com/user-attachments/files/20173760/out.pdf)\r\n[nameobj.pdf](https://github.com/user-attachments/files/20173761/nameobj.pdf)\r\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-02-26T01:10:10.725541",
+    "extractor_version": "1.0.0",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "pypdf/generic/_base.py",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 5,
+      "functions_modified": [],
+      "patch": "@@ -780,11 +780,7 @@ class NameObject(str, PdfObject):  # noqa: SLOT000\n     delimiter_pattern = re.compile(rb\"\\s+|[\\(\\)<>\\[\\]{}/%]\")\n     surfix = b\"/\"\n     renumber_table: ClassVar[Dict[str, bytes]] = {\n-        \"#\": b\"#23\",\n-        \"(\": b\"#28\",\n-        \")\": b\"#29\",\n-        \"/\": b\"#2F\",\n-        \"%\": b\"#25\",\n+        **{chr(i): f\"#{i:02X}\".encode() for i in b\"#()<>[]{}/%\"},\n         **{chr(i): f\"#{i:02X}\".encode() for i in range(33)},\n     }\n "
+    },
+    {
+      "filename": "tests/test_generic.py",
+      "status": "modified",
+      "additions": 7,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "test_name_object",
+          "class_name": null,
+          "full_name": "test_name_object",
+          "start_line": 192,
+          "end_line": 256,
+          "lines_changed": [
+            246,
+            252,
+            253,
+            254,
+            255,
+            256
+          ]
+        }
+      ],
+      "patch": "@@ -243,11 +243,18 @@ def test_name_object(caplog):\n     assert bytes(b.getbuffer()) == b\"/DIJMAC+Arial#20Black#231\"\n     assert caplog.text == \"\"\n \n+    caplog.clear()\n     b = BytesIO()\n     NameObject(\"/你好世界 (%)\").write_to_stream(b)\n     assert bytes(b.getbuffer()) == b\"/#E4#BD#A0#E5#A5#BD#E4#B8#96#E7#95#8C#20#28#25#29\"\n     assert caplog.text == \"\"\n \n+    caplog.clear()\n+    b = BytesIO()\n+    NameObject(\"/{foo}<bar>(baz)[qux]#/%\").write_to_stream(b)\n+    assert bytes(b.getbuffer()) == b\"/#7Bfoo#7D#3Cbar#3E#28baz#29#5Bqux#5D#23#2F#25\"\n+    assert caplog.text == \"\"\n+\n \n def test_destination_fit_r():\n     d = Destination("
+    }
+  ],
+  "functions_modified": [
+    {
+      "function_name": "test_name_object",
+      "class_name": null,
+      "full_name": "test_name_object",
+      "start_line": 192,
+      "end_line": 256,
+      "lines_changed": [
+        246,
+        252,
+        253,
+        254,
+        255,
+        256
+      ]
+    }
+  ],
+  "step_plan": {
+    "steps": [
+      {
+        "operation": "Refactor NameObject delimiter escaping table to include all PDF delimiter characters (angle, square, curly brackets) by generating the mapping programmatically",
+        "file_to_modify": "pypdf/generic/_base.py",
+        "function_to_modify": null,
+        "reason": "PDF name objects must escape all delimiter characters; the existing renumber_table only covered a subset (#, parentheses, slash, percent) and missed <>[]{} which caused writers to emit invalid/incorrectly escaped output when such characters appear in a NameObject.",
+        "side_effects": "Any code path that serializes NameObject values will now escape additional characters, potentially changing output bytes for PDFs containing these delimiters; this may affect equality comparisons in tests/fixtures that hardcode expected serialized PDFs."
+      },
+      {
+        "operation": "Add a regression unit test asserting correct escaping of all delimiter characters in NameObject.write_to_stream output",
+        "file_to_modify": "tests/test_generic.py",
+        "function_to_modify": "test_name_object",
+        "reason": "Ensure the updated renumber_table correctly escapes {}, <>, [], and other delimiters (#, /, %) to prevent future regressions and to validate behavior against the PDF spec and reported sample input.",
+        "side_effects": "Test suite expectations now enforce stricter escaping; any future changes to NameObject serialization must preserve these exact byte outputs or update the test accordingly."
+      }
+    ],
+    "summary": "Fix NameObject serialization to correctly escape all PDF delimiter characters by expanding the renumber_table mapping, and add a regression test to verify correct escaping for a name containing {}, <>, [], and other delimiters."
+  }
+}

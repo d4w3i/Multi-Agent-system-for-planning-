@@ -1,0 +1,42 @@
+{
+  "pr_number": 5479,
+  "repository": "angr/angr",
+  "title": "arg_session: Ensure created void* types have arch.",
+  "body": "Summary:\n- The failing trace indicates an exception where a void* placeholder is created without an architecture (arch) context, leading to a ValueError when trying to determine the size of a SimTypePointer.\n- Specifically, SimCC.arg_session creates an implicit out-parameter as SimTypePointer(SimTypeBottom()) without propagating the current architecture, which then causes size/lookups to fail later in the calling-convention flow.\n- Proposed fix: when creating the implicit void* argument in SimCC.arg_session, attach the current architecture to the pointer type so size can be determined correctly (i.e., SimTypePointer(SimTypeBottom()).with_arch(self.arch)).\n- This keeps arch-propagation consistent across the SimTypePointer and its pointee, preventing the observed crash while preserving existing behavior for other pointer/arch interactions.\n\nImpact:\n- Localized change to angr/analyses/calling_convention/calling_convention.py\n- No public API changes; behavior becomes more robust for AMD64/SystemV and other arches where implicit void* outparams are used.\n- Should reduce or eliminate the ValueError: Can't tell my size without an arch! traceback in scenarios involving implicit void* arguments.\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T13:38:59.217141",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "angr/analyses/calling_convention/calling_convention.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "arg_session",
+          "class_name": "SimCC",
+          "full_name": "SimCC.arg_session",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Ensure created void* placeholders in SimCC.arg_session carry architecture to prevent size lookups from failing when arch is not propagated. Attach self.arch to the implicit SimTypePointer(SimTypeBottom()) via .with_arch(self.arch).",
+    "steps": [
+      {
+        "operation": "Modify implicit void* argument creation to be arch-aware",
+        "file_to_modify": "angr/analyses/calling_convention/calling_convention.py",
+        "function_to_modify": "SimCC.arg_session",
+        "reason": "Current implicit out-parameter creation uses SimTypePointer(SimTypeBottom()) without arch, causing size resolution to fail when arch is required. Attaching arch ensures consistent arch propagation and prevents ValueError.",
+        "side_effects": "Should fix ValueError: Can't tell my size without an arch!; may affect downstream size/lookups and tests; likely requires unit tests to verify arch propagation for implicit void* outparams and ensure no regressions in AMD64/SystemV paths"
+      }
+    ]
+  }
+}

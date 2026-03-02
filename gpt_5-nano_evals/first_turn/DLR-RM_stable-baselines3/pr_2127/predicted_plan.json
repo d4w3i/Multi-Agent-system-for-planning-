@@ -1,0 +1,94 @@
+{
+  "pr_number": 2127,
+  "repository": "DLR-RM/stable-baselines3",
+  "title": "Feature/batch norm",
+  "body": "Added a boolean `use_batch_norm` flag to the CNN and MLP feature extractors.  \n- In **NatureCNN**, each convolutional block now conditionally inserts an `nn.BatchNorm2d` layer (before the ReLU) when `use_batch_norm=True`.  \n- In **create_mlp**, an initial `nn.BatchNorm1d` may be applied to the inputs, and batch-norm modules can wrap each linear layer.  \nAll defaults remain unchanged (batch norm off), and existing behavior is fully preserved.  \n\n## Motivation and Context\nBatch normalization often improves training stability and speeds up convergence.  \nEnabling `use_batch_norm` yields better PPO performance on benchmark tasks (e.g., faster Breakout learning).  \nBy making it optional, users get the benefit without breaking existing workflows.  \n- [x] I have raised an issue to propose this change ([required](https://github.com/DLR-RM/stable-baselines3/blob/master/CONTRIBUTING.md) for new features and bug fixes)",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T13:24:10.332121",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "stable_baselines3/common/torch_layers.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "__init__",
+          "class_name": "NatureCNN",
+          "full_name": "NatureCNN.__init__",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "forward",
+          "class_name": "NatureCNN",
+          "full_name": "NatureCNN.forward",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "create_mlp",
+          "class_name": null,
+          "full_name": "create_mlp",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "__init__",
+          "class_name": "MlpExtractor",
+          "full_name": "MlpExtractor.__init__",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "tests/test_cnn.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    }
+  ],
+  "step_plan": {
+    "summary": "Introduce an optional use_batch_norm flag to NatureCNN and create_mlp that enables BatchNorm2d for CNN blocks and BatchNorm1d for MLP layers, with MlpExtractor propagating the flag. All defaults remain off to preserve backward compatibility; tests should confirm shapes and BN presence when enabled.",
+    "steps": [
+      {
+        "operation": "Add use_batch_norm parameter to NatureCNN.__init__ and configure CNN blocks to optionally include BatchNorm2d after Conv2d blocks",
+        "file_to_modify": "stable_baselines3/common/torch_layers.py",
+        "function_to_modify": "NatureCNN.__init__",
+        "reason": "Introduce an optional BN path so CNN blocks can normalize activations; default remains off to preserve backward compatibility; lays groundwork for BN-enabled CNNs without changing existing behavior when disabled.",
+        "side_effects": "May require downstream tests to confirm BN presence when enabled; ensures BN modules are properly registered for parameter updates and training/evaluation mode handling."
+      },
+      {
+        "operation": "Modify NatureCNN.forward to apply BatchNorm2d layers in forward pass when present",
+        "file_to_modify": "stable_baselines3/common/torch_layers.py",
+        "function_to_modify": "NatureCNN.forward",
+        "reason": "Ensure that BN layers, when added in __init__, participate correctly in the forward computation and maintain the expected output shape and values.",
+        "side_effects": "BN layers can affect training dynamics; need to verify outputs are unchanged when BN is disabled and shapes match when BN is enabled."
+      },
+      {
+        "operation": "Extend create_mlp to accept use_batch_norm flag and implement optional initial BatchNorm1d and per-layer BatchNorm1d wrapping",
+        "file_to_modify": "stable_baselines3/common/torch_layers.py",
+        "function_to_modify": "create_mlp",
+        "reason": "Provide BN support for MLP feature extractors by optionally normalizing inputs and wrapping Linear layers with BatchNorm1d; preserves pre_linear_modules/post_linear_modules hooks; defaults off for backward compatibility.",
+        "side_effects": "BN changes may affect training behavior; shapes must remain invariant; downstream components consuming MLP outputs should be unaffected when BN is disabled."
+      },
+      {
+        "operation": "Update MlpExtractor.__init__ to propagate use_batch_norm to create_mlp calls",
+        "file_to_modify": "stable_baselines3/common/torch_layers.py",
+        "function_to_modify": "MlpExtractor.__init__",
+        "reason": "Coordinate BN usage across MLP construction by ensuring the extractor passes use_batch_norm to create_mlp so policy/value nets can leverage BN when requested.",
+        "side_effects": "If not propagated, BN capability may be missed; ensure compatibility with existing extractor construction paths and default behavior."
+      }
+    ]
+  }
+}

@@ -1,0 +1,193 @@
+{
+  "pr_number": 1500,
+  "repository": "huggingface/smolagents",
+  "title": "Fix: step callbacks not being triggered for planning steps",
+  "body": "Fixes https://github.com/huggingface/smolagents/issues/1499 \r\n\r\nStep callbacks were previously only executed for ActionStep objects but not for PlanningStep objects, creating inconsistent behavior where callbacks that should be invoked for every step were skipped during planning phases.\r\n\r\n**Changes:**\r\n- Modified `_finalize_step()` to accept both `ActionStep | PlanningStep` types\r\n- Added `_finalize_step(planning_step)` call in planning step flow\r\n\r\n**Backward Compatibility:**\r\n- No breaking changes - existing callbacks continue to work unchanged\r\n- Preserves same execution order of finalizing step & adding to memory as ActionStep flow\r\n\r\n**Testing:**\r\n- Lightweight test using existing `FakeCodeModelPlanning()` verifies both planning and action step callbacks\r\n- All existing tests continue to pass",
+  "extraction_metadata": {
+    "extracted_at": "2026-02-26T01:08:48.230582",
+    "extractor_version": "1.0.0",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "src/smolagents/agents.py",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 1,
+      "functions_modified": [
+        {
+          "function_name": "_run_stream",
+          "class_name": "MultiStepAgent",
+          "full_name": "MultiStepAgent._run_stream",
+          "start_line": 485,
+          "end_line": 554,
+          "lines_changed": [
+            512
+          ]
+        },
+        {
+          "function_name": "_finalize_step",
+          "class_name": "MultiStepAgent",
+          "full_name": "MultiStepAgent._finalize_step",
+          "start_line": 563,
+          "end_line": 569,
+          "lines_changed": [
+            563
+          ]
+        }
+      ],
+      "patch": "@@ -509,6 +509,7 @@ def _run_stream(\n                     start_time=planning_start_time,\n                     end_time=planning_end_time,\n                 )\n+                self._finalize_step(planning_step)\n \n             # Start action step!\n             action_step_start_time = time.time()\n@@ -559,7 +560,7 @@ def _validate_final_answer(self, final_answer: Any):\n             except Exception as e:\n                 raise AgentError(f\"Check {check_function.__name__} failed with error: {e}\", self.logger)\n \n-    def _finalize_step(self, memory_step: ActionStep):\n+    def _finalize_step(self, memory_step: ActionStep | PlanningStep):\n         memory_step.timing.end_time = time.time()\n         for callback in self.step_callbacks:\n             # For compatibility with old callbacks that don't take the agent as an argument"
+    },
+    {
+      "filename": "tests/test_agents.py",
+      "status": "modified",
+      "additions": 22,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "test_interrupt_with_planning",
+          "class_name": "TestMultiStepAgent",
+          "full_name": "TestMultiStepAgent.test_interrupt_with_planning",
+          "start_line": 1086,
+          "end_line": 1106,
+          "lines_changed": [
+            1086,
+            1087,
+            1088,
+            1089,
+            1090,
+            1091,
+            1092,
+            1093,
+            1094,
+            1095,
+            1096,
+            1097,
+            1098,
+            1099,
+            1100,
+            1101,
+            1102,
+            1103,
+            1104,
+            1105,
+            1106
+          ]
+        },
+        {
+          "function_name": "interrupt_and_track_callback",
+          "class_name": "TestMultiStepAgent",
+          "full_name": "TestMultiStepAgent.interrupt_and_track_callback",
+          "start_line": 1090,
+          "end_line": 1093,
+          "lines_changed": [
+            1090,
+            1091,
+            1092,
+            1093
+          ]
+        }
+      ],
+      "patch": "@@ -1083,6 +1083,28 @@ def interrupt_callback(memory_step, agent):\n             agent.run(\"Test task\")\n         assert \"Agent interrupted\" in str(e)\n \n+    def test_interrupt_with_planning(self):\n+        \"\"\"Test that interrupt works with planning steps and verifies callbacks for both step types.\"\"\"\n+        callback_steps = []\n+        \n+        def interrupt_and_track_callback(memory_step, agent):\n+            callback_steps.append(type(memory_step).__name__)\n+            if len(callback_steps) >= 2:  # Interrupt after both planning and action steps\n+                agent.interrupt()\n+\n+        agent = CodeAgent(\n+            tools=[],\n+            model=FakeCodeModelPlanning(),\n+            step_callbacks=[interrupt_and_track_callback],\n+            planning_interval=1,\n+            max_steps=2,\n+        )\n+        with pytest.raises(AgentError) as e:\n+            agent.run(\"Test task\")\n+        assert \"Agent interrupted\" in str(e)\n+        assert \"PlanningStep\" in callback_steps\n+        assert \"ActionStep\" in callback_steps\n+\n     @pytest.mark.parametrize(\n         \"tools, managed_agents, name, expectation\",\n         ["
+    }
+  ],
+  "functions_modified": [
+    {
+      "function_name": "_run_stream",
+      "class_name": "MultiStepAgent",
+      "full_name": "MultiStepAgent._run_stream",
+      "start_line": 485,
+      "end_line": 554,
+      "lines_changed": [
+        512
+      ]
+    },
+    {
+      "function_name": "_finalize_step",
+      "class_name": "MultiStepAgent",
+      "full_name": "MultiStepAgent._finalize_step",
+      "start_line": 563,
+      "end_line": 569,
+      "lines_changed": [
+        563
+      ]
+    },
+    {
+      "function_name": "test_interrupt_with_planning",
+      "class_name": "TestMultiStepAgent",
+      "full_name": "TestMultiStepAgent.test_interrupt_with_planning",
+      "start_line": 1086,
+      "end_line": 1106,
+      "lines_changed": [
+        1086,
+        1087,
+        1088,
+        1089,
+        1090,
+        1091,
+        1092,
+        1093,
+        1094,
+        1095,
+        1096,
+        1097,
+        1098,
+        1099,
+        1100,
+        1101,
+        1102,
+        1103,
+        1104,
+        1105,
+        1106
+      ]
+    },
+    {
+      "function_name": "interrupt_and_track_callback",
+      "class_name": "TestMultiStepAgent",
+      "full_name": "TestMultiStepAgent.interrupt_and_track_callback",
+      "start_line": 1090,
+      "end_line": 1093,
+      "lines_changed": [
+        1090,
+        1091,
+        1092,
+        1093
+      ]
+    }
+  ],
+  "step_plan": {
+    "steps": [
+      {
+        "operation": "Invoke step-finalization for planning steps in the streaming run loop",
+        "file_to_modify": "src/smolagents/agents.py",
+        "function_to_modify": "_run_stream",
+        "reason": "Planning steps were being created and timed but never passed through the same finalization path as action steps, so step callbacks (and any logic tied to finalization) were skipped during planning phases.",
+        "side_effects": "Any registered `step_callbacks` will now fire for `PlanningStep` instances as well, which may change observable callback counts/order for users who assumed callbacks only occurred on `ActionStep`."
+      },
+      {
+        "operation": "Widen the accepted step type for finalization to include planning steps",
+        "file_to_modify": "src/smolagents/agents.py",
+        "function_to_modify": "_finalize_step",
+        "reason": "To support finalizing both `ActionStep` and `PlanningStep` through the same code path (timing end + callback invocation), the method signature/type needed to accept both step classes.",
+        "side_effects": "Static type checking and downstream integrations relying on the narrower annotation may be affected (e.g., mypy expectations), but runtime behavior remains compatible since the implementation already works generically on both step types."
+      },
+      {
+        "operation": "Add a regression test ensuring callbacks (and interrupt behavior) trigger for both planning and action steps",
+        "file_to_modify": "tests/test_agents.py",
+        "function_to_modify": "test_interrupt_with_planning",
+        "reason": "To prevent regressions where planning steps bypass callback execution, the test uses `FakeCodeModelPlanning()` and a callback that records step types and interrupts after observing both step kinds.",
+        "side_effects": "Test suite now depends on the planning flow producing at least one `PlanningStep` and one `ActionStep` under the specified settings (`planning_interval=1`, `max_steps=2`); changes to planning cadence could require updating the test."
+      },
+      {
+        "operation": "Update the test suite file to include the new planning-aware interrupt scenario",
+        "file_to_modify": "tests/test_agents.py",
+        "function_to_modify": null,
+        "reason": "This non-functional file-level change integrates the new test into the existing agent tests so CI validates the fixed callback behavior across step types.",
+        "side_effects": "Slightly increased test runtime and broader coverage of callback invocation order; failures may surface if future refactors alter how/when steps are finalized or interrupted."
+      }
+    ],
+    "summary": "Ensures step callbacks are triggered consistently for both PlanningStep and ActionStep by finalizing planning steps in the run loop and broadening `_finalize_step` to accept both types. Adds a regression test verifying callbacks (and interrupt behavior) fire for planning and action phases."
+  }
+}

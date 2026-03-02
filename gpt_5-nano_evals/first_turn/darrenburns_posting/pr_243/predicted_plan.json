@@ -1,0 +1,42 @@
+{
+  "pr_number": 243,
+  "repository": "darrenburns/posting",
+  "title": "fix(collection): prevent markup parsing",
+  "body": "Prevent the request description trying to parse the content with markup.\n\nFixes #241.\n\nExplore the source code to identify the files and functions to modify.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T13:42:55.176868",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "src/posting/collection.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "apply_template",
+          "class_name": "RequestModel",
+          "full_name": "RequestModel.apply_template",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Limit templating in request descriptions by excluding the description field from string.Template substitutions in RequestModel.apply_template to avoid parsing markup, while preserving existing templating for other fields.",
+    "steps": [
+      {
+        "operation": "Update RequestModel.apply_template to skip description templating",
+        "file_to_modify": "src/posting/collection.py",
+        "function_to_modify": "RequestModel.apply_template",
+        "reason": "Currently applies string.Template substitutions to the description field, which can lead to parsing/interpretation of markup content. By excluding description from template substitutions, descriptions will remain literal and markup will not be parsed. This aligns with the goal to prevent markup parsing while preserving templating for other fields (URL, headers, body). A future opt-in flag could re-enable description templating if needed.",
+        "side_effects": "Description content remains literal (no template substitution). Other fields (URL, headers, body) continue to be templated as before. Tests should be updated or added to ensure descriptions with markup-like content are not altered by apply_template. Potential downstream code relying on description templating should be reviewed, and an optional feature flag could be introduced for toggling this behavior in the future."
+      }
+    ]
+  }
+}

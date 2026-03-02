@@ -1,0 +1,169 @@
+{
+  "pr_number": 5610,
+  "repository": "marimo-team/marimo",
+  "title": "Feat/add force capability on export",
+  "body": "This PR introduces a --force / -f flag to the marimo export subcommands. This allows users to overwrite existing output files, which is essential for automation and scripting use cases.\n\nFixes #5523\n\nCurrently, when marimo export is used with an --output argument that points to an existing file, it interactively prompts the user for confirmation before overwriting. While this is a safe default for manual use, it blocks non-interactive workflows, such as in CI/CD pipelines or automated scripts.\n\nThis PR resolves the issue by:\n- Adding a --force and -f option to all relevant export commands (html, script, md, ipynb, and html_wasm).\n- Updating the watch_and_export function to check for this flag. If force is True, the prompt_to_overwrite confirmation step is skipped, and the file is overwritten directly.\n- Adding a new pytest test case (test_cli_export_html_force_overwrite) to ensure the new functionality works as expected. The test verifies that:\n  - Attempting to export to an existing file without the flag does not overwrite it.\n  - Using --force successfully overwrites the existing file.\n  - Using the short alias -f also works correctly.\n\nThese changes make the export feature more versatile and friendly for automated environments without altering the safe default behavior for interactive users.\n\nI know it is not perfect, please @dmadisetti @mscolnick check this one out!",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T14:06:33.067309",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "marimo/_cli/export/commands.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "watch_and_export",
+          "class_name": "marimo",
+          "full_name": "marimo._cli.export.commands.watch_and_export",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "write_data",
+          "class_name": "marimo",
+          "full_name": "marimo._cli.export.commands.watch_and_export.write_data",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "on_file_changed",
+          "class_name": "marimo",
+          "full_name": "marimo._cli.export.commands.watch_and_export.on_file_changed",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "start",
+          "class_name": "marimo",
+          "full_name": "marimo._cli.export.commands.watch_and_export.start",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "html",
+          "class_name": "marimo",
+          "full_name": "marimo._cli.export.commands.html",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "script",
+          "class_name": "marimo",
+          "full_name": "marimo._cli.export.commands.script",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "md",
+          "class_name": "marimo",
+          "full_name": "marimo._cli.export.commands.md",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "ipynb",
+          "class_name": "marimo",
+          "full_name": "marimo._cli.export.commands.ipynb",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "html_wasm",
+          "class_name": "marimo",
+          "full_name": "marimo._cli.export.commands.html_wasm",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Add a global --force/-f flag across all marimo export subcommands to enable overwriting existing outputs in non-interactive environments, while preserving the safe interactive defaults. Implement force-aware logic in the watch/export pipeline and propagate the flag through all per-format export commands.",
+    "steps": [
+      {
+        "operation": "Extend watch_and_export signature to accept a global force flag",
+        "file_to_modify": "marimo/_cli/export/commands.py",
+        "function_to_modify": "watch_and_export",
+        "reason": "Introduce a global force: bool parameter so all export paths (one-shot and watch) can opt to overwrite existing output files non-interactively.",
+        "side_effects": "Requires updating all call sites and tests; potential API surface changes for external scripts using the export flow."
+      },
+      {
+        "operation": "Add forced overwrite support in the main overwrite flow",
+        "file_to_modify": "marimo/_cli/export/commands.py",
+        "function_to_modify": "watch_and_export",
+        "reason": "Modify the overwrite gate to skip interactive prompts when force is True and proceed to write, enabling non-interactive automation.",
+        "side_effects": "Risk of unintended data loss if force is misused in scripts; update docs and CLI help to clarify usage."
+      },
+      {
+        "operation": "Enable write_data to honor force and perform force-driven overwrites",
+        "file_to_modify": "marimo/_cli/export/commands.py",
+        "function_to_modify": "write_data",
+        "reason": "Centralize file writing behavior under force mode so both initial exports and re-exports in watch mode overwrite as requested.",
+        "side_effects": "Tests relying on write behavior may need updates; ensure file writes are atomic if applicable."
+      },
+      {
+        "operation": "Make on_file_changed respect force for re-exports in watch mode",
+        "file_to_modify": "marimo/_cli/export/commands.py",
+        "function_to_modify": "on_file_changed",
+        "reason": "Ensure file-change events trigger overwrites consistently when force is enabled during watch mode.",
+        "side_effects": "May affect event handling logic; verify no race conditions with concurrent writes."
+      },
+      {
+        "operation": "Propagate force through the startup/watch loop",
+        "file_to_modify": "marimo/_cli/export/commands.py",
+        "function_to_modify": "start",
+        "reason": "Pass the force flag into the asynchronous watch loop so initial export and subsequent re-exports respect non-interactive overwrite semantics.",
+        "side_effects": "Watch lifecycle behavior may interact with filesystem events; ensure shutdown/restart paths remain stable."
+      },
+      {
+        "operation": "Html export: add --force flag and thread it into watch_and_export",
+        "file_to_modify": "marimo/_cli/export/commands.py",
+        "function_to_modify": "html",
+        "reason": "Extend HTML export command to support non-interactive overwrites for automation scripts.",
+        "side_effects": "CLI help/docs updated; consistent behavior across all export targets."
+      },
+      {
+        "operation": "Script export: add --force flag and thread it into watch_and_export",
+        "file_to_modify": "marimo/_cli/export/commands.py",
+        "function_to_modify": "script",
+        "reason": "Extend Script export command to support non-interactive overwrites for automation scripts.",
+        "side_effects": "CLI help/docs updated; ensure no regressions in interactive usage."
+      },
+      {
+        "operation": "Markdown export: add --force flag and thread it into watch_and_export",
+        "file_to_modify": "marimo/_cli/export/commands.py",
+        "function_to_modify": "md",
+        "reason": "Extend MD export command to support non-interactive overwrites for automation scripts.",
+        "side_effects": "Docs and tests may require updates; maintain consistent behavior with other formats."
+      },
+      {
+        "operation": "IPYNB export: add --force flag and thread it into watch_and_export",
+        "file_to_modify": "marimo/_cli/export/commands.py",
+        "function_to_modify": "ipynb",
+        "reason": "Extend IPYNB export command to support non-interactive overwrites for automation scripts.",
+        "side_effects": "Ensure outputs overwrite correctly; verify memory/project notebook generation paths."
+      },
+      {
+        "operation": "HTML_WASM export: add --force flag and thread it into watch_and_export",
+        "file_to_modify": "marimo/_cli/export/commands.py",
+        "function_to_modify": "html_wasm",
+        "reason": "Extend WASM export command to support non-interactive overwrites for automation scripts.",
+        "side_effects": "Ensure consistency with other export targets; update help/docs accordingly."
+      }
+    ]
+  }
+}

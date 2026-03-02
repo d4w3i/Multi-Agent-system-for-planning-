@@ -1,0 +1,102 @@
+{
+  "pr_number": 18463,
+  "repository": "PrefectHQ/prefect",
+  "title": "Fix failing unit tests",
+  "body": "These changes fix the failing tests introduced by https://github.com/PrefectHQ/prefect/pull/18450",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T11:35:44.616681",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "src/prefect/results.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "_exists",
+          "class_name": "ResultStore",
+          "full_name": "ResultStore._exists",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_resolved_key_path",
+          "class_name": "ResultStore",
+          "full_name": "ResultStore._resolved_key_path",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_read",
+          "class_name": "ResultStore",
+          "full_name": "ResultStore._read",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "create_result_record",
+          "class_name": "ResultStore",
+          "full_name": "ResultStore.create_result_record",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_persist_result_record",
+          "class_name": "ResultStore",
+          "full_name": "ResultStore._persist_result_record",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Align ResultStore key handling by introducing and using a single canonical key for metadata reads/writes, cache entries, and lock checks across create_result_record, _persist_result_record, _exists, and _read, and simplify _resolved_key_path to be deterministic. These changes restore consistent behavior so unit tests around ResultRecord/result persistence pass.",
+    "steps": [
+      {
+        "operation": "Simplify and canonicalize key computation",
+        "file_to_modify": "src/prefect/results.py",
+        "function_to_modify": "ResultStore._resolved_key_path",
+        "reason": "Provide a single deterministic canonicalization for storage/cache/lock keys. Avoid double-calling _resolve_path and ensure the method returns the exact canonical path string used by other methods for cache keys and metadata key derivation.",
+        "side_effects": "Alters the canonical form used across ResultStore; tests that depend on previously inconsistent behavior will be fixed. Storage backends that relied on the old multi-call semantics must still be compatible. This is a low-level change that should not change public signatures but may affect stored metadata paths; run result-related tests and any custom StorageBlock integrations."
+      },
+      {
+        "operation": "Ensure created ResultRecord uses the canonical storage key",
+        "file_to_modify": "src/prefect/results.py",
+        "function_to_modify": "ResultStore.create_result_record",
+        "reason": "Assign the ResultRecord.storage_key (or relevant storage-key field) using the canonical path returned by _resolved_key_path (or the new canonicalization helper) so that persisted metadata and in-memory records use the same key format.",
+        "side_effects": "ResultRecord instances will carry the canonical storage key which aligns creation and persist/read flows. Tests that assert exact storage_key strings may be impacted. Keeps public API unchanged but may change persisted metadata key naming for new writes."
+      },
+      {
+        "operation": "Write metadata, cache, and lock logic using canonical key",
+        "file_to_modify": "src/prefect/results.py",
+        "function_to_modify": "ResultStore._persist_result_record",
+        "reason": "Replace uses of the raw input key and self.cache[key] with the single canonical key (from _resolved_key_path) for: metadata writes to metadata_storage, cache insertions, and lock acquisition/validation. This aligns persist behavior with read/existence checks.",
+        "side_effects": "Persists metadata under the canonical key consistent with reads. Existing metadata written previously under different keys may not be found until read-side compatibility is addressed (but read side will be changed too). Cache semantics change to use canonical keys — in-memory cache consumers must also look up by canonical keys. Verify tests for concurrent writes/locks and cache invalidation."
+      },
+      {
+        "operation": "Make existence checks use canonical key and check metadata expiration consistently",
+        "file_to_modify": "src/prefect/results.py",
+        "function_to_modify": "ResultStore._exists",
+        "reason": "Compute and use the same canonical key that persist uses when reading metadata_storage and when checking lock/cache state. Also ensure expiration checks use the metadata read from the canonical location so _exists returns correct results.",
+        "side_effects": "Fixes false negatives in existence checks caused by mismatched metadata keys. May change behavior where previously a key appeared to not exist. Downstream code that relies on the old mismatch behavior could observe different existence responses; run unit tests for result existence and expiration logic."
+      },
+      {
+        "operation": "Read metadata, locks, and cache using canonical key and preserve backup_serializer logic",
+        "file_to_modify": "src/prefect/results.py",
+        "function_to_modify": "ResultStore._read",
+        "reason": "Use the canonical key for metadata reads, lock checks/waiting, and cache lookups so reads find metadata and cached ResultRecords that persist wrote. Preserve the backup_serializer fallback when reading combined payloads so deserialization behavior remains compatible with tests.",
+        "side_effects": "Ensures reads hit the same cache entries and metadata storage paths that persist uses, fixing deserialization/persistence tests. Any code expecting the old raw-key behavior will be affected. Must run result_record and result_store test suites; verify behavior across storage backends and concurrency/lock tests."
+      }
+    ]
+  }
+}

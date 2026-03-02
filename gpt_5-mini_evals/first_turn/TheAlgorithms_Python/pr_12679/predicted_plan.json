@@ -1,0 +1,42 @@
+{
+  "pr_number": 12679,
+  "repository": "TheAlgorithms/Python",
+  "title": "Fix: Correct time-and-a-half pay calculation logic",
+  "body": "### Describe your change:\n\n- [x] Fix a bug or typo in an existing algorithm  \n\nThis pull request fixes the logic for calculating time-and-a-half pay in the `financial/time_and_half_pay.py` file.\n\nPreviously, the overtime calculation was incorrect. The fix correctly applies the time-and-a-half formula:\n```python\novertime_pay = overtime_hours * pay_rate * 1.5\n```\n\n\n### Checklist:\n* [x] I have read [CONTRIBUTING.md](https://github.com/TheAlgorithms/Python/blob/master/CONTRIBUTING.md).\n* [x] This pull request is all my own work -- I have not plagiarized.\n* [x] I know that pull requests will not be merged if they fail the automated tests.\n* [x] This PR only changes one algorithm file.  To ease review, please open separate PRs for separate algorithms.\n* [x] All new Python files are placed inside an existing directory.\n* [x] All filenames are in all lowercase characters with no spaces or dashes.\n* [x] All functions and variable names follow Python naming conventions.\n* [x] All function parameters and return values are annotated with Python [type hints](https://docs.python.org/3/library/typing.html).\n* [x] All functions have [doctests](https://docs.python.org/3/library/doctest.html) that pass the automated testing.\n* [ ] All new algorithms include at least one URL that points to Wikipedia or another similar explanation.\n* [ ] If this pull request resolves one or more open issues then the description above includes the issue number(s) with a [closing keyword](https://docs.github.com/en/issues/tracking-your-work-with-issues/linking-a-pull-request-to-an-issue): \"Fixes #ISSUE-NUMBER\".",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T11:40:21.357858",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "financial/time_and_half_pay.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "pay",
+          "class_name": null,
+          "full_name": "pay",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Make the time-and-a-half calculation explicit by splitting regular and overtime hours in financial/time_and_half_pay.py: compute regular_pay for up-to-threshold hours and overtime_pay as overtime_hours * pay_rate * 1.5, then return their sum.",
+    "steps": [
+      {
+        "operation": "Refactor pay to explicitly compute regular_hours and overtime_hours and apply time-and-a-half formula for overtime",
+        "file_to_modify": "financial/time_and_half_pay.py",
+        "function_to_modify": "pay",
+        "reason": "Current implementation calculates normal_pay = hours_worked * pay_rate and then adds half-rate pay for overtime (over_time_pay = overtime * pay_rate / 2). While numerically equivalent today, that pattern is fragile: replacing only the overtime term with overtime_hours * pay_rate * 1.5 would double-count. Explicitly splitting regular_hours and overtime_hours and computing regular_pay = regular_hours * pay_rate and overtime_pay = overtime_hours * pay_rate * 1.5 makes the logic clear and prevents future accidental overcounting.",
+        "side_effects": "No public API signature changes; doctests and expected outputs should remain the same for valid inputs. Tests should be run (pytest and module doctests) to verify behavior: e.g., pay(41, 1) == 41.5, pay(65, 19) == 1472.5, pay(10, 1) == 10.0. Potential impacts: callers that rely on current (possibly undefined) behavior for negative or non-finite inputs may observe different results — consider adding input validation (assert hours_worked >= 0, pay_rate >= 0) as a follow-up. Downstream code that inspects intermediate variables (if any) is unlikely to be affected because only internal calculation changes; no change to return type or function signature."
+      }
+    ]
+  }
+}

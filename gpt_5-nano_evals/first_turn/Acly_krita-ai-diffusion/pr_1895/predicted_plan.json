@@ -1,0 +1,88 @@
+{
+  "pr_number": 1895,
+  "repository": "Acly/krita-ai-diffusion",
+  "title": "feat: Switch to enum queue mode, add 'replace' mode.",
+  "body": "Follow up to https://github.com/Acly/krita-ai-diffusion/pull/1879\n\nKind of janky because of the fact that job queue tasks are split up before the client- I make clear-queue a property of the first job.\n\nNot sure if the enum is in the right place.\n\nTentatively planning to implement ctrl-click as \"Alternate queue mode\".\n\nExplore the source code to identify the files and functions to modify.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T13:22:51.286815",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "ai_diffusion/client.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "enqueue",
+          "class_name": "Client",
+          "full_name": "Client.enqueue",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "ai_diffusion/cloud_client.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "enqueue",
+          "class_name": "CloudClient",
+          "full_name": "CloudClient.enqueue",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "ai_diffusion/comfy_client.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "enqueue",
+          "class_name": "ComfyClient",
+          "full_name": "ComfyClient.enqueue",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Introduce an explicit QueueMode enum and switch enqueue from a boolean flag to mode-based handling, propagating the new mode through cloud and comfy client implementations while preserving NORMAL as the default to maintain backward compatibility.",
+    "steps": [
+      {
+        "operation": "Add QueueMode enum and replace boolean front flag with mode in core API",
+        "file_to_modify": "ai_diffusion/client.py",
+        "function_to_modify": "Client.enqueue",
+        "reason": "Introduce explicit queue semantics (NORMAL, FRONT, REPLACE) and preserve backward compatibility by defaulting to NORMAL; refactor enqueue to accept mode instead of a boolean flag and update internal queue handling accordingly.",
+        "side_effects": "BREAKING-CHANGE surface area for callers; existing callers must adopt the new mode parameter; potential impacts on RPC/transport and any clients or tests that rely on the previous boolean flag; may require updating unit/integration tests to cover new modes."
+      },
+      {
+        "operation": "Update cloud backend path to support QueueMode and forward mode through the cloud client",
+        "file_to_modify": "ai_diffusion/cloud_client.py",
+        "function_to_modify": "CloudClient.enqueue",
+        "reason": "Adapt the cloud enqueue path to accept and propagate the new QueueMode (NORMAL, FRONT, REPLACE) and implement mode-based semantics when enqueuing on the cloud backend.",
+        "side_effects": "API changes may necessitate updates to tests and any server-side handling of enqueue requests; ensure default NORMAL preserves existing behavior; potential RPC contract updates."
+      },
+      {
+        "operation": "Update local comfy client path to support QueueMode and forward mode through the comfy client",
+        "file_to_modify": "ai_diffusion/comfy_client.py",
+        "function_to_modify": "ComfyClient.enqueue",
+        "reason": "Adapt the local comfy/client path to accept the new QueueMode and implement corresponding behavior to align with core queue semantics (NORMAL, FRONT, REPLACE) for local execution.",
+        "side_effects": "Tests and UI expectations may need adjustment; ensure performance characteristics are preserved; coordinate with any UI hints for modes if applicable."
+      }
+    ]
+  }
+}

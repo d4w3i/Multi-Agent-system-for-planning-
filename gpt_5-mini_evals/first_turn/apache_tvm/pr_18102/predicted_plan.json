@@ -1,0 +1,42 @@
+{
+  "pr_number": 18102,
+  "repository": "apache/tvm",
+  "title": "[RELAX] Fix rotary embedding buffer size calculation",
+  "body": "- Change head_dim//2 to rotary_dim//2 in LongRope scaling\n- Fixes buffer size when rotary_dim differs from head_dim when partial_rotary_factor < 1.0",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T11:56:22.861727",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "python/tvm/relax/frontend/nn/llm/position_embedding.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "fused_rope_longrope_scaling",
+          "class_name": "llama_rope_with_position_map",
+          "full_name": "llama_rope_with_position_map.fused_rope_longrope_scaling",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Fix ext_factors buffer sizing in fused_rope_longrope_scaling by using rotary_dim // 2 instead of head_dim // 2 so the declared buffer length matches the d_range used by rope_freq_longrope and avoids indexing mismatches when rotary_dim differs from head_dim.",
+    "steps": [
+      {
+        "operation": "Adjust ext_factors T.Buffer declaration in LongRope primfunc",
+        "file_to_modify": "python/tvm/relax/frontend/nn/llm/position_embedding.py",
+        "function_to_modify": "llama_rope_with_position_map.fused_rope_longrope_scaling",
+        "reason": "The fused_rope_longrope_scaling T.prim_func currently declares ext_factors with length head_dim // 2, but rope_freq_longrope indexes ext_factors using d % (d_range // 2) where d_range is the rotary_dim passed by the caller. When rotary_dim != head_dim (e.g., partial_rotary_factor < 1.0) this causes buffer size and indexing mismatches. Changing the declaration to T.Buffer((rotary_dim // 2,), ...) aligns the buffer shape with the actual rotation dimension used by LongRope frequency computation.",
+        "side_effects": "This is a TIR primfunc signature-level change: callers that construct or pass ext_factors must provide a buffer of length rotary_dim // 2 instead of head_dim // 2. Tests covering LongRope and partial_rotary_factor scenarios should be run and updated where callers allocate ext_factors. Downstream code that assumed the old size may break and must be updated; however, the algorithmic math is unchanged so runtime semantics aside from buffer-sizing/indexing should remain the same. Compiled modules or caches that rely on the previous signature may need to be rebuilt."
+      }
+    ]
+  }
+}

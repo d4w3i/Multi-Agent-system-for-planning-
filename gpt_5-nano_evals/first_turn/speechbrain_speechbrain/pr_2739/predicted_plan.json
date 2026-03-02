@@ -1,0 +1,57 @@
+{
+  "pr_number": 2739,
+  "repository": "speechbrain/speechbrain",
+  "title": "Allow importing model params with convs_intermedite typo in PostNet",
+  "body": "This minor compatibility fix adds a remapping entry so that legacy model checkpoints containing the typo key convs_intermedite can be loaded correctly by the current codebase. The remapping is implemented via the existing state_dict key-patching system used during loading (KEYS_MAPPING and map_old_state_dict_weights). By mapping convs_intermedite to convs_intermediate, older weights used in PostNet can be imported without changing runtime behavior for correctly named keys.\n\nNo functional changes to model execution are introduced; this only broadens compatibility for importing older models.\n\nSuggested follow-ups (optional):\n- Add a small unit test to verify that a toy state_dict containing a key with convs_intermedite is correctly loaded into a model whose corresponding key is convs_intermediate.\n- Consider scanning for other known legacy key typos and expanding KEYS_MAPPING accordingly if more historical weights exist.\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T14:32:38.584524",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "speechbrain/utils/checkpoints.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "map_old_state_dict_weights",
+          "class_name": "speechbrain",
+          "full_name": "speechbrain.utils.checkpoints.map_old_state_dict_weights",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "hook_on_loading_state_dict_checkpoint",
+          "class_name": "speechbrain",
+          "full_name": "speechbrain.utils.checkpoints.hook_on_loading_state_dict_checkpoint",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "This PR adds a small compatibility fix to allow loading older PostNet checkpoints by remapping the convs_intermedite typo to convs_intermediate via the existing state_dict patching flow.",
+    "steps": [
+      {
+        "operation": "Extend KEYS_MAPPING in map_old_state_dict_weights to include the convs_intermedite -> convs_intermediate remapping",
+        "file_to_modify": "speechbrain/utils/checkpoints.py",
+        "function_to_modify": "map_old_state_dict_weights",
+        "reason": "To support loading legacy checkpoints that used the typo convs_intermedite by remapping the key to convs_intermediate during state_dict loading",
+        "side_effects": "Affects only the model weight loading path; should be non-breaking for runtime inference/training. May require a minimal unit test in a follow-up PR to verify correct remapping during load."
+      },
+      {
+        "operation": "Ensure hook_on_loading_state_dict_checkpoint applies the updated KEYS_MAPPING during state_dict loading",
+        "file_to_modify": "speechbrain/utils/checkpoints.py",
+        "function_to_modify": "hook_on_loading_state_dict_checkpoint",
+        "reason": "Hook uses KEYS_MAPPING during loading; with the new mapping added, old keys like convs_intermedite will be automatically patched to convs_intermediate when importing older models",
+        "side_effects": "Load pathway will patch legacy keys transparently. No runtime behavior changes expected; potential impact on load-time error messages if misalignment occurs elsewhere, mitigated by existing tests and the new mapping."
+      }
+    ]
+  }
+}

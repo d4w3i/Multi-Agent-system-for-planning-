@@ -1,0 +1,64 @@
+{
+    "repository": "facebookresearch/vggt",
+    "pull_request_number": 228,
+    "title": "Fix a typo in batch_np_matrix_to_pycolmap",
+    "body": "The current implementation can cause `reproj_mask` to be undefined in `batch_np_matrix_to_pycolmap()` if `max_reproj_error = None` causing the following: \r\n\r\n```\r\nif masks is not None and reproj_mask is not None:\r\nUnboundLocalError: local variable 'reproj_mask' referenced before assignment\r\n``` \r\n\r\nInitializing `reproj_mask` beforehand fix that error.",
+    "pr_date": "2025-07-03T10:46:25Z",
+    "source_branch": "fix_typo",
+    "language": "en",
+    "keywords_detected": {
+        "branch": [
+            "fix"
+        ],
+        "requirement": [
+            "fix"
+        ],
+        "body": [
+            "implement",
+            "fix"
+        ]
+    },
+    "number_of_links_in_pr": 0,
+    "base_sha": "3a040c0af1a9feef0e850cb83494c149aaccd11a",
+    "last_commit_sha": "b5c588c165077ba2a06c1354591918d06823e445",
+    "diff_between_base_and_last": [
+        {
+            "sha": "61ea578692d2b5a5cd5b6fd15836373a94351489",
+            "filename": "vggt/dependency/np_to_pycolmap.py",
+            "status": "modified",
+            "additions": 2,
+            "deletions": 0,
+            "changes": 2,
+            "blob_url": "https://github.com/facebookresearch/vggt/blob/b5c588c165077ba2a06c1354591918d06823e445/vggt%2Fdependency%2Fnp_to_pycolmap.py",
+            "raw_url": "https://github.com/facebookresearch/vggt/raw/b5c588c165077ba2a06c1354591918d06823e445/vggt%2Fdependency%2Fnp_to_pycolmap.py",
+            "contents_url": "https://api.github.com/repos/facebookresearch/vggt/contents/vggt%2Fdependency%2Fnp_to_pycolmap.py?ref=b5c588c165077ba2a06c1354591918d06823e445",
+            "patch": "@@ -51,6 +51,8 @@ def batch_np_matrix_to_pycolmap(\n     assert len(points3d) == P\n     assert image_size.shape[0] == 2\n \n+    reproj_mask = None\n+\n     if max_reproj_error is not None:\n         projected_points_2d, projected_points_cam = project_3D_points_np(points3d, extrinsics, intrinsics)\n         projected_diff = np.linalg.norm(projected_points_2d - tracks, axis=-1)"
+        }
+    ],
+    "commits": [
+        {
+            "sha": "b5c588c165077ba2a06c1354591918d06823e445",
+            "commit_date": "2025-07-03T10:37:38Z",
+            "message": "Fix a typo in batch_np_matrix_to_pycolmap",
+            "number_of_links_in_commit": 0,
+            "files_changed_count": 1,
+            "files": [
+                {
+                    "sha": "61ea578692d2b5a5cd5b6fd15836373a94351489",
+                    "filename": "vggt/dependency/np_to_pycolmap.py",
+                    "status": "modified",
+                    "additions": 2,
+                    "deletions": 0,
+                    "changes": 2,
+                    "blob_url": "https://github.com/facebookresearch/vggt/blob/b5c588c165077ba2a06c1354591918d06823e445/vggt%2Fdependency%2Fnp_to_pycolmap.py",
+                    "raw_url": "https://github.com/facebookresearch/vggt/raw/b5c588c165077ba2a06c1354591918d06823e445/vggt%2Fdependency%2Fnp_to_pycolmap.py",
+                    "contents_url": "https://api.github.com/repos/facebookresearch/vggt/contents/vggt%2Fdependency%2Fnp_to_pycolmap.py?ref=b5c588c165077ba2a06c1354591918d06823e445",
+                    "patch": "@@ -51,6 +51,8 @@ def batch_np_matrix_to_pycolmap(\n     assert len(points3d) == P\n     assert image_size.shape[0] == 2\n \n+    reproj_mask = None\n+\n     if max_reproj_error is not None:\n         projected_points_2d, projected_points_cam = project_3D_points_np(points3d, extrinsics, intrinsics)\n         projected_diff = np.linalg.norm(projected_points_2d - tracks, axis=-1)"
+                }
+            ]
+        }
+    ],
+    "pull_request_url": "https://github.com/facebookresearch/vggt/pull/228",
+    "commits_url": "https://github.com/facebookresearch/vggt/pull/228/commits",
+    "files_url": "https://github.com/facebookresearch/vggt/pull/228/files"
+}

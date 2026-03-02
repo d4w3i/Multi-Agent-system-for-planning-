@@ -1,0 +1,42 @@
+{
+  "pr_number": 383,
+  "repository": "THUDM/CogVideo",
+  "title": "fix deprecation of clear_objs_and_retain_memory by replacing with free_memory in train_cogvideox_lora.py",
+  "body": "The diffusers API clear_objs_and_retain_memory has been deprecated in favor of free_memory. This PR updates the LoRA training script to use the new API and maintain memory hygiene after validation.\n\nWhat this changes:\n- Replaces clear_objs_and_retain_memory([pipe]) with the new free_memory usage in the validation path.\n- Updates imports to use the new API (diffusers.training_utils.free_memory).\n- Adds a small compatibility approach (try free_memory with a list, fallback to a single object) to guard against minor API version differences.\n\nWhy this is safe:\n- The change is isolated to memory cleanup after validation; it does not modify the training loop, model loading, or data processing semantics.\n- Memory management is important for large video models; aligning with the latest diffusers API reduces future breakage and improves compatibility with newer Diffusers versions.\n\nSuggested checks:\n- Run a quick validation sampling cycle to ensure that generated pipelines are freed without errors.\n- Verify that no references to clear_objs_and_retain_memory remain in the file after the change.\n- Confirm compatibility across at least two diffusers versions (old and new) if target environments vary.\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T13:34:32.351515",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "train_cogvideox_lora.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "log_validation",
+          "class_name": null,
+          "full_name": "log_validation",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "This PR updates the log_validation memory cleanup in train_cogvideox_lora.py to use the new diffusers.free_memory API and adds a compatibility wrapper to handle version differences, ensuring memory hygiene after validation.",
+    "steps": [
+      {
+        "operation": "Refactor memory cleanup in log_validation to use diffusers.training_utils.free_memory with a compatibility wrapper",
+        "file_to_modify": "train_cogvideox_lora/train_cogvideox_lora.py",
+        "function_to_modify": "log_validation",
+        "reason": "The DIFFUSERS API clear_objs_and_retain_memory has been deprecated in favor of free_memory. Update imports to use the new API and guard against signature differences across versions by attempting a list input first and falling back to a single object if needed.",
+        "side_effects": "Memory cleanup behavior will be delegated to diffusers' free_memory; requires CI smoke tests to confirm no memory leaks and that no references to clear_objs_and_retain_memory remain; downstream code should not rely on the old API signature. May necessitate updating or validating tests that assume the old call signature."
+      }
+    ]
+  }
+}

@@ -1,0 +1,61 @@
+{
+    "repository": "babysor/MockingBird",
+    "pull_request_number": 988,
+    "title": "fix-issues-963:preprocess_audio.py--The .npy file failed to save",
+    "body": "https://github.com/babysor/MockingBird/issues/963\r\n![image](https://github.com/babysor/MockingBird/assets/55903432/a7544cd3-8242-4008-9dbd-3b7badeaed1d)\r\n",
+    "pr_date": "2024-02-28T03:03:00Z",
+    "source_branch": "fix-npy",
+    "language": "en",
+    "keywords_detected": {
+        "branch": [
+            "fix"
+        ],
+        "requirement": [
+            "fix"
+        ],
+        "body": []
+    },
+    "number_of_links_in_pr": 3,
+    "base_sha": "156723e37cfd3a82b276bad8606d6166e7ee2982",
+    "last_commit_sha": "4a0f5b0c5784749c2660b9167b31069655cbc69b",
+    "diff_between_base_and_last": [
+        {
+            "sha": "75e41ab96a2169be53bd7f8c2ba845abcf90ed90",
+            "filename": "models/synthesizer/preprocess_audio.py",
+            "status": "modified",
+            "additions": 4,
+            "deletions": 5,
+            "changes": 9,
+            "blob_url": "https://github.com/babysor/MockingBird/blob/4a0f5b0c5784749c2660b9167b31069655cbc69b/models%2Fsynthesizer%2Fpreprocess_audio.py",
+            "raw_url": "https://github.com/babysor/MockingBird/raw/4a0f5b0c5784749c2660b9167b31069655cbc69b/models%2Fsynthesizer%2Fpreprocess_audio.py",
+            "contents_url": "https://api.github.com/repos/babysor/MockingBird/contents/models%2Fsynthesizer%2Fpreprocess_audio.py?ref=4a0f5b0c5784749c2660b9167b31069655cbc69b",
+            "patch": "@@ -116,14 +116,13 @@ def preprocess_general(speaker_dir, out_dir: Path, skip_existing: bool, hparams,\n                     print(f\"No word found in dict_info for {wav_fpath.name}, skip it\")\n                     continue\n             sub_basename = \"%s_%02d\" % (wav_fpath.name, 0)\n-            mel_fpath = out_dir.joinpath(\"mels\", f\"mel-{sub_basename}.npy\")\n-            wav_fpath = out_dir.joinpath(\"audio\", f\"audio-{sub_basename}.npy\")\n+            mel_fpath_out = out_dir.joinpath(\"mels\", f\"mel-{sub_basename}.npy\")\n+            wav_fpath_out = out_dir.joinpath(\"audio\", f\"audio-{sub_basename}.npy\")\n             \n-            if skip_existing and mel_fpath.exists() and wav_fpath.exists():\n+            if skip_existing and mel_fpath_out.exists() and wav_fpath_out.exists():\n                 continue\n             wav, text = _split_on_silences(wav_fpath, words, hparams)\n-            result = _process_utterance(wav, text, out_dir, sub_basename, \n-                                                False, hparams, encoder_model_fpath) # accelarate\n+            result = _process_utterance(wav, text, out_dir, sub_basename, mel_fpath_out, wav_fpath_out, hparams, encoder_model_fpath)\n             if result is None:\n                 continue\n             wav_fpath_name, mel_fpath_name, embed_fpath_name, wav, mel_frames, text = result"
+        }
+    ],
+    "commits": [
+        {
+            "sha": "4a0f5b0c5784749c2660b9167b31069655cbc69b",
+            "commit_date": "2024-02-28T02:57:58Z",
+            "message": "fix:preprocess_audio.py--The .npy file failed to save",
+            "number_of_links_in_commit": 0,
+            "files_changed_count": 1,
+            "files": [
+                {
+                    "sha": "75e41ab96a2169be53bd7f8c2ba845abcf90ed90",
+                    "filename": "models/synthesizer/preprocess_audio.py",
+                    "status": "modified",
+                    "additions": 4,
+                    "deletions": 5,
+                    "changes": 9,
+                    "blob_url": "https://github.com/babysor/MockingBird/blob/4a0f5b0c5784749c2660b9167b31069655cbc69b/models%2Fsynthesizer%2Fpreprocess_audio.py",
+                    "raw_url": "https://github.com/babysor/MockingBird/raw/4a0f5b0c5784749c2660b9167b31069655cbc69b/models%2Fsynthesizer%2Fpreprocess_audio.py",
+                    "contents_url": "https://api.github.com/repos/babysor/MockingBird/contents/models%2Fsynthesizer%2Fpreprocess_audio.py?ref=4a0f5b0c5784749c2660b9167b31069655cbc69b",
+                    "patch": "@@ -116,14 +116,13 @@ def preprocess_general(speaker_dir, out_dir: Path, skip_existing: bool, hparams,\n                     print(f\"No word found in dict_info for {wav_fpath.name}, skip it\")\n                     continue\n             sub_basename = \"%s_%02d\" % (wav_fpath.name, 0)\n-            mel_fpath = out_dir.joinpath(\"mels\", f\"mel-{sub_basename}.npy\")\n-            wav_fpath = out_dir.joinpath(\"audio\", f\"audio-{sub_basename}.npy\")\n+            mel_fpath_out = out_dir.joinpath(\"mels\", f\"mel-{sub_basename}.npy\")\n+            wav_fpath_out = out_dir.joinpath(\"audio\", f\"audio-{sub_basename}.npy\")\n             \n-            if skip_existing and mel_fpath.exists() and wav_fpath.exists():\n+            if skip_existing and mel_fpath_out.exists() and wav_fpath_out.exists():\n                 continue\n             wav, text = _split_on_silences(wav_fpath, words, hparams)\n-            result = _process_utterance(wav, text, out_dir, sub_basename, \n-                                                False, hparams, encoder_model_fpath) # accelarate\n+            result = _process_utterance(wav, text, out_dir, sub_basename, mel_fpath_out, wav_fpath_out, hparams, encoder_model_fpath)\n             if result is None:\n                 continue\n             wav_fpath_name, mel_fpath_name, embed_fpath_name, wav, mel_frames, text = result"
+                }
+            ]
+        }
+    ],
+    "pull_request_url": "https://github.com/babysor/MockingBird/pull/988",
+    "commits_url": "https://github.com/babysor/MockingBird/pull/988/commits",
+    "files_url": "https://github.com/babysor/MockingBird/pull/988/files"
+}

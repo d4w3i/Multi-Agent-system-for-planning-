@@ -1,0 +1,105 @@
+{
+  "evaluated_at": "2026-03-02T12:32:24.539997",
+  "pr_dir": "/Users/davidecroatto/code/planningtest0/gpt_5-mini_evals/first_turn/huggingface_text-generation-inference/pr_3237",
+  "pr_number": 3237,
+  "repository": "huggingface/text-generation-inference",
+  "files": {
+    "precision": 0.0,
+    "recall": 0.0,
+    "f1": 0.0,
+    "predicted_count": 6,
+    "actual_count": 4,
+    "correct_count": 0
+  },
+  "functions": {
+    "precision": 0.2222,
+    "recall": 0.2222,
+    "f1": 0.2222,
+    "predicted_count": 9,
+    "actual_count": 9,
+    "correct_count": 2
+  },
+  "steps": {
+    "predicted_steps": 11,
+    "actual_steps": 9,
+    "step_diff": 2,
+    "target_coverage": 0.2727,
+    "targets_matched": 3,
+    "targets_total": 11
+  },
+  "semantic": {
+    "summary_similarity": 0.6606,
+    "avg_step_similarity": 0.4742,
+    "step_matches": [
+      {
+        "pred_idx": 0,
+        "pred_text": "Operation: Stop disposing adapter metadata and ensure returned objects are intact | Function: load_m...",
+        "gt_idx": 2,
+        "gt_text": "Operation: Gate concatenation-time adapter index aggregation behind adapter availability and adjust ...",
+        "similarity": 0.4933
+      },
+      {
+        "pred_idx": 3,
+        "pred_text": "Operation: Keep adapter metadata available when constructing batch-level Lora weights | Function: Ba...",
+        "gt_idx": 7,
+        "gt_text": "Operation: Only build adapter batch data when adapter metadata exists (and handle speculative expans...",
+        "similarity": 0.563
+      },
+      {
+        "pred_idx": 4,
+        "pred_text": "Operation: Avoid clearing adapter metadata while collecting per-layer adapter data | Function: Layer...",
+        "gt_idx": 1,
+        "gt_text": "Operation: Make adapter metadata handling optional when filtering a batch (avoid unconditional acces...",
+        "similarity": 0.6135
+      },
+      {
+        "pred_idx": 5,
+        "pred_text": "Operation: Make KVCache.store device-aware and validate/move keys/values to cache device or fail wit...",
+        "gt_idx": 5,
+        "gt_text": "Operation: Pass `input_ids` directly into the model forward (remove async CPU→HPU copy for `input_id...",
+        "similarity": 0.4253
+      },
+      {
+        "pred_idx": 6,
+        "pred_text": "Operation: Move input tensors to model device in batch creation and compute position tensors on-devi...",
+        "gt_idx": 8,
+        "gt_text": "Operation: Align other Gaudi model variants to stop copying `input_ids` and fix slots padding device...",
+        "similarity": 0.589
+      },
+      {
+        "pred_idx": 7,
+        "pred_text": "Operation: Ensure Gaudi HPU backend moves inputs to HPU in batch construction | Function: CausalLMBa...",
+        "gt_idx": 3,
+        "gt_text": "Operation: Ensure prefill padding creates `input_ids` on the same device as existing batch tensors a...",
+        "similarity": 0.6966
+      },
+      {
+        "pred_idx": 8,
+        "pred_text": "Operation: Create small indexing/control tensors on the model device in generate_token (non-Gaudi) |...",
+        "gt_idx": 6,
+        "gt_text": "Operation: Refactor token generation state updates to avoid unnecessary CPU transfers and make adapt...",
+        "similarity": 0.6115
+      },
+      {
+        "pred_idx": 9,
+        "pred_text": "Operation: Create control tensors on HPU in generate_token and ensure device-consistent ops (Gaudi) ...",
+        "gt_idx": 0,
+        "gt_text": "Operation: Add an early-return guard to avoid copying tensors that are already on HPU | Function: _a...",
+        "similarity": 0.5619
+      },
+      {
+        "pred_idx": 10,
+        "pred_text": "Operation: Add guard/assumption and avoid implicit large tensor device moves in Gaudi forward | Func...",
+        "gt_idx": 4,
+        "gt_text": "Operation: Fix slots padding tensor device placement to match the `slots` tensor during forward pass...",
+        "similarity": 0.6625
+      }
+    ],
+    "overall_semantic_score": 0.5301,
+    "computed": true,
+    "error": null
+  },
+  "has_prediction": true,
+  "has_ground_truth": true,
+  "error": null
+}

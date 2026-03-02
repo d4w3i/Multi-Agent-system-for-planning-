@@ -1,0 +1,132 @@
+{
+  "pr_number": 277,
+  "repository": "vikhyat/moondream",
+  "title": "finetune_region.py fixed. Added waste_detection eval",
+  "body": "This PR fixes a bug in finetune_region.py that was introduced when log2-based scaling was added. The issue was identified in the region finetuning flow and is addressed by correcting the log2 mapping and associated indexing in the region loss calculation. Additionally, an evaluation script for waste detection has been added to enable tracking the new evaluation metric (F1) and to validate improvements observed after one epoch of finetuning (F1 improved from 65.67 to 66.23). The changes focus on the region module's fine-tuning pipeline and the integration of a waste-detection evaluation path.\n\nKey points:\n- Fixes in finetune_region.py related to log2-based size binning and region indexing (to ensure correct alignment between predicted region tokens and labels).\n- Added a waste_detection evaluation script to support objective measurement of the new eval path.\n- The PR aims to stabilize training and provide evidence of small but consistent gains in F1 after a short fine-tuning run.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T14:37:11.119883",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "moondream/finetune/finetune_region.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "region_loss",
+          "class_name": "moondream/finetune/finetune_region",
+          "full_name": "moondream/finetune/finetune_region.py.region_loss",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "main",
+          "class_name": "moondream/finetune/finetune_region",
+          "full_name": "moondream/finetune/finetune_region.py.main",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "moondream/torch/region.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "encode_coordinate",
+          "class_name": "moondream/torch/region",
+          "full_name": "moondream/torch/region.py.encode_coordinate",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "encode_size",
+          "class_name": "moondream/torch/region",
+          "full_name": "moondream/torch/region.py.encode_size",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "decode_coordinate",
+          "class_name": "moondream/torch/region",
+          "full_name": "moondream/torch/region.py.decode_coordinate",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "decode_size",
+          "class_name": "moondream/torch/region",
+          "full_name": "moondream/torch/region.py.decode_size",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "moondream/eval/waste_detection.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    }
+  ],
+  "step_plan": {
+    "summary": "Fixes for a log2-based region binning bug in finetune_region.py, alignment between region loss and encoding/decoding paths, and introduction of a waste_detection evaluation flow. The plan focuses on correcting indexing, bin mapping, and ensuring consistency across the region module's encoding/decoding and the finetuning pipeline.",
+    "steps": [
+      {
+        "operation": "Tighten region_loss indexing to ensure correct alignment between c_idx/s_idx and hidden states and labels, including boundary guards and -1 offset corrections",
+        "file_to_modify": "moondream/finetune/finetune_region.py",
+        "function_to_modify": "region_loss",
+        "reason": "The log2-based binning changes can misalign hidden-state slices with the corresponding region labels. Ensuring correct c_idx/s_idx calculation and robust boundary checks prevents mislabeling and unstable gradients during training.",
+        "side_effects": "May require updated tests for indexing edge cases; potential ripple effects on WasteDetection dataflow and downstream loss components; possible need to adjust input/output shapes for region_loss."
+      },
+      {
+        "operation": "Review and fix log2-bin mapping and boundary handling in the main data preparation and per-sample encoding flow",
+        "file_to_modify": "moondream/finetune/finetune_region.py",
+        "function_to_modify": "main",
+        "reason": "Data preparation and per-class encoding rely on the correct s_log2_bins mapping. Fixing the mapping and boundary handling ensures labels and tokens stay aligned after log2 changes.",
+        "side_effects": "Requires unit tests for the mapping; may necessitate minor changes to configuration or data pipeline; ensure compatibility with existing weights and saved states."
+      },
+      {
+        "operation": "Validate and adjust encode_coordinate to support the corrected 1024-bin log2 mapping",
+        "file_to_modify": "moondream/torch/region.py",
+        "function_to_modify": "encode_coordinate",
+        "reason": "Coordinate encoding must be consistent with the region loss expectations after log2 corrections to maintain stable gradients and correct logits.",
+        "side_effects": "Impact on forward pass and logits shapes; may require updates to tests and possibly to decode_coordinate for consistency."
+      },
+      {
+        "operation": "Validate and adjust encode_size to ensure robust 1024-bin log2 mapping and scaling",
+        "file_to_modify": "moondream/torch/region.py",
+        "function_to_modify": "encode_size",
+        "reason": "Ensure the 1024-bin log2 mapping, clamping behavior, and the scaling (s_log2 + 10.0) / 10.0 produce consistent 0..1023 targets aligned with region_loss.",
+        "side_effects": "Downstream region decoding and loss computations may need updates; unit tests should cover edge sizes (very small/very large)."
+      },
+      {
+        "operation": "Validate and adjust decode_coordinate to be consistent with encode_coordinate and bin mapping",
+        "file_to_modify": "moondream/torch/region.py",
+        "function_to_modify": "decode_coordinate",
+        "reason": "Decoder outputs must align with the encoder outputs and the region_loss expectations after encoding changes.",
+        "side_effects": "Output shapes and logits alignment must remain consistent; may require regression tests for decoding pathways."
+      },
+      {
+        "operation": "Validate and adjust decode_size to ensure consistency with encode_size and 1024-bin mapping",
+        "file_to_modify": "moondream/torch/region.py",
+        "function_to_modify": "decode_size",
+        "reason": "Decoder should produce 1024-bin logits consistent with the encoded sizes; ensure bin-to-size conversion remains monotonic and properly clamped.",
+        "side_effects": "Tests to verify decoding remains in sync with encoding; potential minor API implications for downstream modules."
+      }
+    ]
+  }
+}

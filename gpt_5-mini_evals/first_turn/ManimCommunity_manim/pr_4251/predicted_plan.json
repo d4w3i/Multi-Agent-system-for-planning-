@@ -1,0 +1,102 @@
+{
+  "pr_number": 4251,
+  "repository": "ManimCommunity/manim",
+  "title": "Fix(graph): Allow any Line subclass as edge_type in Graph/DiGraph",
+  "body": "## Overview: What does this pull request change?\n<!--changelog-start-->\nFix #4250 \n<!--changelog-end-->\n**More broadly, this fix allows any subclass of `Line` to be used as an `edge_type`** in the `Graph` and `DiGraph`, making the implementation more flexible and extensible.\n\n## Motivation and Explanation: Why and how do your changes improve the library?\nPreviously, the `Graph` and `DiGraph` classes assumed that the `edge_type`  will always have its first two arguments as start and end point.\nBut, such is not true for subclasses of `Line`. This change lets user use any subclass of `Line` in `Graph` and `DiGraph`.\n\n## Changes\n\n- **Refactored Graph and DiGraph:**\n  - Fixed edge handling logic to support all subclasses of `Line`, not just `LabeledLine`.\n  - Modified `_add_edge` accordingly.\n- **Testing:**\n  - Added/updated tests for `LabeledLine` as edge types in `test_graph.py`.\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T11:25:55.135038",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "manim/mobject/graph.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "_add_edge",
+          "class_name": "GenericGraph",
+          "full_name": "GenericGraph._add_edge",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_populate_edge_dict",
+          "class_name": "Graph",
+          "full_name": "Graph._populate_edge_dict",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "update_edges",
+          "class_name": "Graph",
+          "full_name": "Graph.update_edges",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_populate_edge_dict",
+          "class_name": "DiGraph",
+          "full_name": "DiGraph._populate_edge_dict",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "update_edges",
+          "class_name": "DiGraph",
+          "full_name": "DiGraph.update_edges",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Change Graph/DiGraph edge construction and update logic to allow any Line subclass as edge_type by creating edges with explicit start= and end= keyword args, passing vertex Mobjects to set_points_by_ends, and fixing per-edge config lookups for buff/path_arc. These changes remove positional-argument assumptions and ensure per-edge options are respected while preserving DiGraph tip behavior.",
+    "steps": [
+      {
+        "operation": "Construct edges using explicit keyword args and edge_config kwargs",
+        "file_to_modify": "manim/mobject/graph.py",
+        "function_to_modify": "GenericGraph._add_edge",
+        "reason": "Replace positional construction of edge_type(start, end, ...) with a robust keyword-based instantiation: edge_type(start=..., end=..., z_index=-1, **edge_config). This removes the assumption that the first two positional parameters are start and end, allowing any Line subclass (e.g., LabeledLine) to be used as edge_type when subclass-specific params are provided in edge_config.",
+        "side_effects": "Tests that construct edges without per-edge edge_config should continue to work for Line-like classes that accept start/end positionally or by keywords. Subclasses that require extra positional args will now require the user to provide those via edge_config (TypeError will surface otherwise). Downstream code that introspects edge construction args should be unaffected if it uses public APIs. Update/add tests to cover LabeledLine usage. Minor rendering differences possible if previously code relied on passing raw points vs. Mobjects in later updates."
+      },
+      {
+        "operation": "Populate initial Graph.edges using keyword-based edge construction and per-edge config",
+        "file_to_modify": "manim/mobject/graph.py",
+        "function_to_modify": "Graph._populate_edge_dict",
+        "reason": "Change initial population of self.edges from positional (using centers) to keyword-based instantiation: edge_type(start=self[u].get_center(), end=self[v].get_center(), z_index=-1, **edge_config_for_edge). This ensures Graph can create any Line subclass as the edge_type while still allowing edge-specific configs to supply subclass-required params.",
+        "side_effects": "Existing behavior for default Line edges is preserved. Users employing subclasses that require extra constructor params must pass them via edge_config when creating the Graph. Tests should be updated/added to assert that LabeledLine (and similar) works when provided via edge_config. Any code depending on exact constructor call signature should be audited but public Graph API is unchanged."
+      },
+      {
+        "operation": "Populate initial DiGraph.edges using keyword-based edge construction, preserving tip setup",
+        "file_to_modify": "manim/mobject/graph.py",
+        "function_to_modify": "DiGraph._populate_edge_dict",
+        "reason": "Standardize DiGraph edge creation to use keyword args: edge_type(start=self[u], end=self[v], z_index=-1, **edge_config_for_edge). Keep pop_tips/add_tip behavior surrounding construction and tip placement to avoid tip deformation while enabling arbitrary Line subclasses as edge_type.",
+        "side_effects": "Directed-graph-specific tip handling remains intact. Users must supply subclass-specific constructor params via edge_config. Tests for directed edges (including tip presence/placement) should be run/updated. Minor changes possible in how tips attach if subclass behavior differs when given Mobjects vs. points, but pop_tips/add_tip flow preserves the prior workaround."
+      },
+      {
+        "operation": "Update Graph.update_edges to pass vertex Mobjects to set_points_by_ends and fix per-edge config lookups",
+        "file_to_modify": "manim/mobject/graph.py",
+        "function_to_modify": "Graph.update_edges",
+        "reason": "Use graph[u] and graph[v] (vertex Mobjects) as arguments to set_points_by_ends so edges attach to vertex bounding boxes and to support Line subclasses that accept Mobjects. Also fix per-edge config lookups to read self._edge_config.get((u, v), {}) and then get('buff', fallback) and get('path_arc', fallback) from that dict or from self.default_edge_config when absent, instead of incorrectly calling self._edge_config.get('buff', 0).",
+        "side_effects": "Edge re-positioning will be more robust (attached to vertex surfaces). Per-edge buff/path_arc settings will now be honored; previously they could have been ignored or misread. Tests relying on previous (incorrect) buff behavior must be updated. Passing Mobjects rather than centers might slightly change edge geometry for some custom edge types; downstream code that assumes numeric points returned by set_points_by_ends should be reviewed. No public API change, but behavior change is intentional and desirable."
+      },
+      {
+        "operation": "Update DiGraph.update_edges to pass vertex Mobjects, fix per-edge config lookups, and preserve tip pop/add lifecycle",
+        "file_to_modify": "manim/mobject/graph.py",
+        "function_to_modify": "DiGraph.update_edges",
+        "reason": "Mirror Graph.update_edges fixes: pass graph[u] and graph[v] Mobjects into set_points_by_ends, and read per-edge options via self._edge_config.get((u, v), {}).get(..., fallback). Preserve pop_tips before re-positioning and add_tip after to avoid tip deformation while ensuring per-edge parameters are applied correctly.",
+        "side_effects": "Directed edges will respect per-edge configs and attach to vertex boundaries correctly. Tip handling remains as before, minimizing visual regressions. Tests for directed edges, tips, and per-edge config behavior should be updated to verify correct placement. Edge cases: subclasses that require additional constructor args still require edge_config entries; failing to provide them will raise errors."
+      }
+    ]
+  }
+}

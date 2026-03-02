@@ -1,0 +1,92 @@
+{
+  "pr_number": 1706,
+  "repository": "confident-ai/deepeval",
+  "title": "Fixing IndexError list index out of range in Synthesizer.generate_goldens_from_docs()",
+  "body": "This fixes https://github.com/confident-ai/deepeval/issues/1682",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T09:45:22.785683",
+    "extractor_version": "1.0.0",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "deepeval/synthesizer/synthesizer.py",
+      "status": "modified",
+      "additions": 3,
+      "deletions": 1,
+      "functions_modified": [
+        {
+          "function_name": "_a_generate_from_context",
+          "class_name": "Synthesizer",
+          "full_name": "Synthesizer._a_generate_from_context",
+          "start_line": 572,
+          "end_line": 727,
+          "lines_changed": [
+            695,
+            696,
+            697
+          ]
+        },
+        {
+          "function_name": "process_input",
+          "class_name": "Synthesizer",
+          "full_name": "Synthesizer.process_input",
+          "start_line": 643,
+          "end_line": 710,
+          "lines_changed": [
+            695,
+            696,
+            697
+          ]
+        }
+      ],
+      "patch": "@@ -692,7 +692,9 @@ async def process_input(\n                 context=context,\n                 expected_output=expected_output,\n                 source_file=(\n-                    source_files[index] if source_files is not None else None\n+                    source_files[index]\n+                    if source_files is not None and index < len(source_files)\n+                    else None\n                 ),\n                 additional_metadata={\n                     \"evolutions\": evolutions_used,"
+    }
+  ],
+  "functions_modified": [
+    {
+      "function_name": "_a_generate_from_context",
+      "class_name": "Synthesizer",
+      "full_name": "Synthesizer._a_generate_from_context",
+      "start_line": 572,
+      "end_line": 727,
+      "lines_changed": [
+        695,
+        696,
+        697
+      ]
+    },
+    {
+      "function_name": "process_input",
+      "class_name": "Synthesizer",
+      "full_name": "Synthesizer.process_input",
+      "start_line": 643,
+      "end_line": 710,
+      "lines_changed": [
+        695,
+        696,
+        697
+      ]
+    }
+  ],
+  "step_plan": {
+    "steps": [
+      {
+        "operation": "Add bounds-checking when selecting a source_file entry to avoid IndexError",
+        "file_to_modify": "deepeval/synthesizer/synthesizer.py",
+        "function_to_modify": "process_input",
+        "reason": "When generating goldens from docs, the code indexed into source_files using the current loop index without ensuring the list was long enough; if fewer source_files were provided than inputs processed, this raised `IndexError: list index out of range` (issue #1682).",
+        "side_effects": "For indices beyond the provided source_files length, `source_file` will now be `None`, which may affect downstream logging, metadata, or tracing that previously expected a non-null source reference; any consumers that assume `source_file` is always set should handle nulls."
+      },
+      {
+        "operation": "Reformat the updated conditional expression to match Black formatting",
+        "file_to_modify": "deepeval/synthesizer/synthesizer.py",
+        "function_to_modify": null,
+        "reason": "After adding the multi-condition ternary expression, formatting was adjusted to comply with the project's Black style to keep diffs consistent and avoid CI/lint failures.",
+        "side_effects": "No functional behavior change; only line wrapping/formatting changes. May cause minor merge conflicts for nearby edits due to changed line breaks."
+      }
+    ],
+    "summary": "This PR prevents an `IndexError` in `Synthesizer.generate_goldens_from_docs()` flow by guarding access to `source_files[index]` in the async input processing logic, and formats the change according to Black."
+  }
+}

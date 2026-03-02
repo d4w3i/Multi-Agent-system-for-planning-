@@ -1,0 +1,163 @@
+{
+  "pr_number": 10335,
+  "repository": "pyg-team/pytorch_geometric",
+  "title": "Fixes to WebQSP Indexer and GRetriever so that unnecessary disk writes are reduced.",
+  "body": "Quick fix to webqsp and gretriever to help with unnecessary cruft on disk and out of date api in examples.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T13:05:50.557375",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "torch_geometric/data/large_graph_indexer.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "save",
+          "class_name": "LargeGraphIndexer",
+          "full_name": "LargeGraphIndexer.save",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "from_disk",
+          "class_name": "LargeGraphIndexer",
+          "full_name": "LargeGraphIndexer.from_disk",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "examples/llm/g_retriever.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "save_params_dict",
+          "class_name": null,
+          "full_name": "save_params_dict",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "load_params_dict",
+          "class_name": null,
+          "full_name": "load_params_dict",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "get_loss",
+          "class_name": null,
+          "full_name": "get_loss",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "inference_step",
+          "class_name": null,
+          "full_name": "inference_step",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "train",
+          "class_name": null,
+          "full_name": "train",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "torch_geometric/nn/models/g_retriever.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "inference",
+          "class_name": "GRetriever",
+          "full_name": "GRetriever.inference",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Make LargeGraphIndexer save/load tolerant and non-destructive to reduce unnecessary disk writes, and update the g_retriever example (and small GRetriever inference defensive behavior) so the example uses the current API and only writes checkpoints/eval outputs when explicitly requested.",
+    "steps": [
+      {
+        "operation": "Make save() non-destructive and skip empty mapped/attribute files",
+        "file_to_modify": "torch_geometric/data/large_graph_indexer.py",
+        "function_to_modify": "LargeGraphIndexer.save",
+        "reason": "Avoid wholesale removal of the index directory (shutil.rmtree) and unnecessary writes of empty or missing mapped_* pickles and attribute .pt files. Creating/ensuring directories and only writing required files reduces disk churn and cruft.",
+        "side_effects": "May leave stale files from older saves (no destructive cleanup). Tests that relied on a full clean state must be adjusted; unit tests for LargeGraphIndexer.save/load should be run. Backwards-compat clients that expect an exact directory rewrite may see older files remain; consider documenting behavior or adding an optional force_overwrite parameter later."
+      },
+      {
+        "operation": "Make from_disk() tolerant to missing files and partial indexes",
+        "file_to_modify": "torch_geometric/data/large_graph_indexer.py",
+        "function_to_modify": "LargeGraphIndexer.from_disk",
+        "reason": "If save() no longer writes empty mapped_* files or attribute files, loader must handle their absence. Loading only existing files and warning (not raising) prevents forcing re-creation and avoids errors when partial index stores exist.",
+        "side_effects": "Partial loads will succeed but may produce indexers missing attributes; code that assumed all attributes are present must handle None/missing values. Tests need to verify roundtrip when only subset files present. API remains backward compatible for fully-populated directories."
+      },
+      {
+        "operation": "Add small defensive/clarifying behavior for inference to avoid forcing cache-specific effects",
+        "file_to_modify": "torch_geometric/nn/models/g_retriever.py",
+        "function_to_modify": "GRetriever.inference",
+        "reason": "Though GRetriever doesn't directly write to disk, example usage and some LLM/tokenizer backends may create large cache artifacts when generate() is called with certain defaults. Make the generate call use explicit kwargs (e.g., use_cache controlled via an argument) and document that some backends may create caches.",
+        "side_effects": "Inference behavior may change if callers relied on implicit kwargs; add tests to ensure outputs unchanged for expected inputs. No direct disk writes are introduced, but behavior with downstream LLMs may differ (smaller or controlled caches). Update docstring to reduce surprises for example users."
+      },
+      {
+        "operation": "Replace destructive state_dict filtering with a safe filter and make saving conditional",
+        "file_to_modify": "examples/llm/g_retriever.py",
+        "function_to_modify": "save_params_dict",
+        "reason": "The current helper removes keys from a state_dict in-place which can inadvertently remove buffers or nested parameters. Build a new filtered dict that contains only intended trainable keys and only write to disk when an explicit checkpointing flag is set to avoid unconditional file creation.",
+        "side_effects": "Saved checkpoints will be smaller and deterministic. Example behavior will change (no unconditional writes). Loading code must tolerate filtered/partial state dicts. Update example docs and tests to reflect conditional saving."
+      },
+      {
+        "operation": "Load state dicts robustly and avoid overwriting unrelated pretrained weights",
+        "file_to_modify": "examples/llm/g_retriever.py",
+        "function_to_modify": "load_params_dict",
+        "reason": "When checkpoints are filtered, loading should tolerate missing keys and avoid strict mismatches. Use model.load_state_dict(filtered_state, strict=False) and only map matching keys to avoid unintentional overwrites of LLM pretrained weights.",
+        "side_effects": "Partial loads will succeed without error but may silently skip absent params—tests must verify expected params are loaded. Example runs that expected full restores must be adjusted; overall robustness is improved and disk churn reduced."
+      },
+      {
+        "operation": "Make get_loss use explicit keyword args and avoid positional ambiguity",
+        "file_to_modify": "examples/llm/g_retriever.py",
+        "function_to_modify": "get_loss",
+        "reason": "Positional arguments across different model types (LLM vs GRetriever) are brittle and can lead to incorrect calls that may trigger unexpected caching or side-effects. Switching to explicit keyword arguments makes the example resilient to API reorderings and clearer about what is passed.",
+        "side_effects": "Calling conventions in the example change to keyword-based; tests must check get_loss behavior. This change reduces the risk of accidental large intermediate state creation or wrong-forward behavior due to argument reordering."
+      },
+      {
+        "operation": "Make inference_step use keyword args and make eval output saving conditional",
+        "file_to_modify": "examples/llm/g_retriever.py",
+        "function_to_modify": "inference_step",
+        "reason": "Use explicit keyword args when invoking model.inference/generation to prevent API mismatch problems, and avoid unconditional saving of eval outputs to prevent creating files when running examples. Add a flag to save eval outputs only when requested.",
+        "side_effects": "Example will no longer write evaluation artifacts by default. Downstream scripts expecting those files must opt-in. Tests for example behavior need to confirm both save/no-save modes. Reduced disk writes during example runs."
+      },
+      {
+        "operation": "Fix GRetriever constructor usage and conditionally checkpoint in training flow",
+        "file_to_modify": "examples/llm/g_retriever.py",
+        "function_to_modify": "train",
+        "reason": "Replace the outdated keyword mlp_out_channels with the correct API (mlp_out_tokens) or omit it to use defaults. Ensure training only calls save_params_dict when checkpointing flag is enabled and uses the safe filter function to write checkpoints deterministically. This prevents incorrect instantiation errors and avoids unconditional checkpoint files.",
+        "side_effects": "Example train runs will not produce checkpoint files unless explicitly requested; instantiation errors from wrong kwargs are eliminated. Tests (including integration with GRetriever defaults) should be run; if callers relied on the old keyword, they must update their code."
+      }
+    ]
+  }
+}

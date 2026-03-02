@@ -1,0 +1,125 @@
+{
+  "pr_number": 788,
+  "repository": "2noise/ChatTTS",
+  "title": "Fix for Ascend NPU when using ChatTTS to sample the voice of a real speaker",
+  "body": "Bugfix to ensure stable Mel-spectrogram computation and sample_audio path on Ascend NPU by avoiding complex dtype usage and dtype/motion issues in the sampling pipeline. The change aims to prevent runtime errors when sampling a real speaker by enforcing real-valued, device-consistent inputs to the DVAE sampling path and by safeguarding prompt encoding compatibility.\n\nKey context from PR description:\n- Problem: Complex dtype used in MelSpectrogram path is not supported by torch_npu (Ascend NPU), causing errors during sampling of real speakers.\n- Environment specifics: Ascend Atlas 300T A2, CAN 8.0.RC2, torch-npu 2.1.0.post6, torch 2.1.0.\n- Observed log trace points to sample_audio_speaker path through DVAE.sample_audio and Speaker.encode_prompt, indicating the sampling path is the critical hotspot for dtype-related failures.\n\nProposed scope of changes (inferred from codebase):\n- Strengthen dtype handling and casting in the sampling path to ensure compatibility with Ascend NPU (prefer float32, guard against complex tensors).\n- Tighten MelSpectrogramFeatures and related sampling components to guarantee inputs/outputs are real-valued tensors of expected dtype/shape.\n- Fix or clarify potential code-path bugs in DVAE/GFSQ components that could produce unexpected dtypes or shapes during sampling (e.g., ensure outputs from DVAE.sample_audio are suitable for Speaker.encode_prompt).\n- Improve robustness of the integration path (core.sample_audio_speaker) by ensuring input wav is properly cast to the model’s device/dtype prior to mel-spectrogram computation, and that downstream prompt encoding receives 2D int16/int-compatible tensors.\n\nRationale for changes:\n- The crash occurs in the sampling route when DVAE.sample_audio returns something that, after Speaker.encode_prompt, leads to a dtype/shape mismatch on Ascend. By standardizing to real-valued, device-consistent tensors and ensuring the prompt encoding path receives valid tensors, we reduce the risk of runtime errors on Ascend.\n- The current code paths (MelSpectrogramFeatures, DVAE.sample_audio, and Speaker.encode_prompt) are the most likely culprits for dtype/complex-number-related issues in the sampling path. Guardrails here will unblock real-speaker sampling on Ascend hardware.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T13:26:34.096302",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "ChatTTS/core.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "sample_audio_speaker",
+          "class_name": "ChatTTS/core",
+          "full_name": "ChatTTS/core.py.sample_audio_speaker",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "ChatTTS/model/dvae.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "forward",
+          "class_name": "ChatTTS/model/dvae",
+          "full_name": "ChatTTS/model/dvae.py.MelSpectrogramFeatures.forward",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "forward",
+          "class_name": "ChatTTS/model/dvae",
+          "full_name": "ChatTTS/model/dvae.py.GFSQ.forward",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "ChatTTS/model/speaker.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "encode_prompt",
+          "class_name": "ChatTTS/model/speaker",
+          "full_name": "ChatTTS/model/speaker.py.encode_prompt",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "decode_prompt",
+          "class_name": "ChatTTS/model/speaker",
+          "full_name": "ChatTTS/model/speaker.py.decode_prompt",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "ChatTTS/examples/web/funcs.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    }
+  ],
+  "step_plan": {
+    "summary": "This PR implements a robust, dtype-safe sampling path for real-speaker sampling on Ascend NPU by enforcing real-valued, device-consistent tensors through Mel-spectrogram, DVAE sampling, and prompt-encoding stages. It tightens input casting, output real-valued guarantees, and resilient encoding/decoding of prompts to prevent runtime errors on Ascend hardware.",
+    "steps": [
+      {
+        "operation": "Cast input wav to torch.float32 and move to model device before DVAE.sample_audio in the sampling path",
+        "file_to_modify": "ChatTTS/core.py",
+        "function_to_modify": "sample_audio_speaker",
+        "reason": "Ensure input dtype and device alignment to avoid Ascend NPU dtype/motion errors in the sampling path; prevents downstream type issues with DVAE.sample_audio",
+        "side_effects": "Adds explicit casting/moving tensors; may require tests to cover CPU and Ascend paths; ensures downstream components receive consistently typed tensors"
+      },
+      {
+        "operation": "Guard MelSpectrogramFeatures.forward to enforce real-valued, float32 input/output; cast inputs and outputs as needed",
+        "file_to_modify": "ChatTTS/model/dvae.py",
+        "function_to_modify": "MelSpectrogramFeatures.forward",
+        "reason": "Mel-spectrogram on Ascend may emit complex or mismatched dtypes; ensure compatibility with downstream DVAE sampling by producing real-valued tensors of expected dtype/shape",
+        "side_effects": "May require adjustments to downstream assumptions about mel feature dtype/shape; add tests to verify real-valued output and correct dimensions"
+      },
+      {
+        "operation": "Fix deterministic output and dtype handling in GFSQ.forward",
+        "file_to_modify": "ChatTTS/model/dvae.py",
+        "function_to_modify": "GFSQ.forward",
+        "reason": "Prevent stray/ambiguous returns that could yield unexpected dtypes/shapes; ensures stable downstream usage in the sampling path",
+        "side_effects": "Tests needed for output dtype/shape invariants; potential minor changes to downstream type checks and serialization paths"
+      },
+      {
+        "operation": "Guard Speaker.encode_prompt input dtype/shape; enforce 2D int16-compatible tensors",
+        "file_to_modify": "ChatTTS/model/speaker.py",
+        "function_to_modify": "Speaker.encode_prompt",
+        "reason": "Prompt encoding must serialize reliably on Ascend; invalid dtype/shape could crash the sampling path or prompt serialization",
+        "side_effects": "Updates to tests around prompt encoding; ensure compatibility with existing prompts; potential need to adapt downstream decode tests"
+      },
+      {
+        "operation": "Guard Speaker.decode_prompt input/output and robustly serialize/deserialize prompts",
+        "file_to_modify": "ChatTTS/model/speaker.py",
+        "function_to_modify": "Speaker.decode_prompt",
+        "reason": "Ensure symmetrical deserialization from encoded prompts and handle dtype/shape changes from the sampling path; prevents runtime errors during prompt reconstruction on Ascend",
+        "side_effects": "Add tests for prompt round-trips; ensure serializer compatibility across platforms; potential minor API impact on prompt handling"
+      }
+    ]
+  }
+}

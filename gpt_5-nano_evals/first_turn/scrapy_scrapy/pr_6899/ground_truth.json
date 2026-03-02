@@ -1,0 +1,63 @@
+{
+  "pr_number": 6899,
+  "repository": "scrapy/scrapy",
+  "title": "Fix typing of dynamic `request` attribute on `Failure` with a cast subclass",
+  "body": "This PR addresses a longstanding `TODO` in the `call_spider_async` method regarding the typing of the dynamically added `request` attribute on `twisted.python.failure.Failure` objects.\r\n\r\nSince `Failure` does not originally define the `request` attribute, adding it dynamically causes static type checkers (e.g., mypy) to raise errors.\r\n\r\nTo resolve this without changing runtime behavior or introducing new `Failure` instances, this PR introduces a lightweight subclass `FailureWithRequest` used solely for static typing purposes via `cast()`. This approach:\r\n\r\n- Provides type safety and clarity for static analysis tools  \r\n- Avoids creating new `Failure` instances, preserving error context and traceback  \r\n- Keeps runtime behavior unchanged  \r\n- Offers a balanced solution (middle ground) between ignoring type checks and a full refactor of `Failure` usage\r\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T01:04:58.251945",
+    "extractor_version": "1.0.0",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "scrapy/core/scraper.py",
+      "status": "modified",
+      "additions": 9,
+      "deletions": 3,
+      "functions_modified": [
+        {
+          "function_name": "call_spider_async",
+          "class_name": "Scraper",
+          "full_name": "Scraper.call_spider_async",
+          "start_line": 240,
+          "end_line": 268,
+          "lines_changed": [
+            254,
+            255,
+            256,
+            257
+          ]
+        }
+      ],
+      "patch": "@@ -7,7 +7,7 @@\n import warnings\n from collections import deque\n from collections.abc import AsyncIterator\n-from typing import TYPE_CHECKING, Any, TypeVar, Union\n+from typing import TYPE_CHECKING, Any, TypeVar, Union, cast\n \n from twisted.internet.defer import Deferred, inlineCallbacks, maybeDeferred\n from twisted.python.failure import Failure\n@@ -52,6 +52,10 @@\n QueueTuple = tuple[Union[Response, Failure], Request, Deferred[None]]\n \n \n+class FailureWithRequest(Failure):\n+    request: Request\n+\n+\n class Slot:\n     \"\"\"Scraper slot (one per running spider)\"\"\"\n \n@@ -247,8 +251,10 @@ async def call_spider_async(\n             warn_on_generator_with_return_value(self.crawler.spider, callback)\n             output = callback(result, **result.request.cb_kwargs)\n         else:  # result is a Failure\n-            # TODO: properly type adding this attribute to a Failure\n-            result.request = request  # type: ignore[attr-defined]\n+            # this cast allows static type checkers to recognize the dynamically\n+            # added `request` attribute without altering the runtime behavior.\n+            result = cast(FailureWithRequest, result)\n+            result.request = request\n             if not request.errback:\n                 result.raiseException()\n             warn_on_generator_with_return_value(self.crawler.spider, request.errback)"
+    }
+  ],
+  "functions_modified": [
+    {
+      "function_name": "call_spider_async",
+      "class_name": "Scraper",
+      "full_name": "Scraper.call_spider_async",
+      "start_line": 240,
+      "end_line": 268,
+      "lines_changed": [
+        254,
+        255,
+        256,
+        257
+      ]
+    }
+  ],
+  "step_plan": {
+    "steps": [
+      {
+        "operation": "Introduce a typed `FailureWithRequest` subclass and use `typing.cast()` in `call_spider_async` so static type checkers understand the dynamically added `request` attribute on `Failure` without changing runtime behavior",
+        "file_to_modify": "scrapy/core/scraper.py",
+        "function_to_modify": "call_spider_async",
+        "reason": "`twisted.python.failure.Failure` does not declare a `request` attribute, but `call_spider_async` dynamically attaches one; this triggers mypy/typing errors. Casting to a lightweight subclass that declares `request: Request` makes the assignment type-safe while preserving the original `Failure` instance (traceback/context) and runtime semantics.",
+        "side_effects": "Only affects static typing and readability; runtime behavior should be unchanged. The dynamic attribute assignment remains, so any code that relies on `Failure` lacking arbitrary attributes may still be surprised, but no new `Failure` instances are created and error propagation/tracebacks should remain identical."
+      }
+    ],
+    "summary": "Adds a typing-only `FailureWithRequest` and casts `Failure` instances in `call_spider_async` before setting `result.request`, eliminating type checker errors while keeping runtime behavior and traceback context unchanged."
+  }
+}

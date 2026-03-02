@@ -1,0 +1,210 @@
+{
+  "pr_number": 1270,
+  "repository": "NVIDIA/Megatron-LM",
+  "title": "[ENHANCEMENT] Add z-loss",
+  "body": "z-loss regularization was shown to stabilize training by preventing logits in the last layer to explode: https://arxiv.org/abs/2309.14322\n\nThis PR: \n- allows one to add zloss regularization\n- since the total loss is not cross entropy anymore but cross entropy + zloss, this PR also allows one to additionally log the original cross-entropy and the z-loss",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T12:05:44.651965",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "megatron/training/arguments.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "_add_regularization_args",
+          "class_name": null,
+          "full_name": "_add_regularization_args",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "megatron/core/models/common/language_module/language_module.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "compute_language_model_loss",
+          "class_name": "LanguageModule",
+          "full_name": "LanguageModule.compute_language_model_loss",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "megatron/core/tensor_parallel/cross_entropy.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "forward",
+          "class_name": "_VocabParallelCrossEntropy",
+          "full_name": "_VocabParallelCrossEntropy.forward",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "vocab_parallel_cross_entropy",
+          "class_name": null,
+          "full_name": "vocab_parallel_cross_entropy",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "megatron/core/fusions/fused_cross_entropy.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "forward",
+          "class_name": "_VocabParallelCrossEntropy",
+          "full_name": "_VocabParallelCrossEntropy.forward",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "fused_vocab_parallel_cross_entropy",
+          "class_name": null,
+          "full_name": "fused_vocab_parallel_cross_entropy",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "megatron/legacy/model/gpt_model.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "post_language_model_processing",
+          "class_name": null,
+          "full_name": "post_language_model_processing",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "pretrain_gpt.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "loss_func",
+          "class_name": null,
+          "full_name": "loss_func",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "pretrain_bert.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "loss_func",
+          "class_name": null,
+          "full_name": "loss_func",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Add z-loss regularization by exposing per-token log-partition (logZ) from fused and non-fused tensor-parallel cross-entropy implementations, compute per-token z-loss in core and legacy model loss paths, add a CLI flag to configure the z-loss weight, and update GPT/BERT pretraining loss functions to combine and log both LM loss and z-loss.",
+    "steps": [
+      {
+        "operation": "Add z-loss CLI flag and validation",
+        "file_to_modify": "megatron/training/arguments.py",
+        "function_to_modify": "_add_regularization_args",
+        "reason": "Expose a user-configurable coefficient for z-loss (e.g. --z-loss-weight float, default 0.0) so z-loss can be enabled/disabled and tuned without code changes. Validate non-negativity in the existing validate_args path.",
+        "side_effects": "API: Adds a new CLI argument that training scripts and CI configs may need to set. Tests: update any unit/integration tests that parse training args. No runtime perf impact. Backwards compatibility: default weight 0.0 preserves existing behavior."
+      },
+      {
+        "operation": "Expose per-token log-partition (logZ) and save intermediates in non-fused CE forward",
+        "file_to_modify": "megatron/core/tensor_parallel/cross_entropy.py",
+        "function_to_modify": "_VocabParallelCrossEntropy.forward",
+        "reason": "This autograd forward already computes logits_max and sum_exp_logits; modify it to return (or otherwise expose) per-token logZ and to save the necessary tensors in ctx.save_for_backward so z-loss can be computed and backpropagated without extra all-reduces.",
+        "side_effects": "Performance: avoids extra communication by reusing intermediates; must ensure saved tensors do not increase memory disproportionately. Backprop: must preserve correct gradients for CE and add z-loss gradient; tests should cover backward correctness. API: internal autograd function signature may change, so wrappers must be updated accordingly."
+      },
+      {
+        "operation": "Update user-facing non-fused wrapper to return or expose logZ",
+        "file_to_modify": "megatron/core/tensor_parallel/cross_entropy.py",
+        "function_to_modify": "vocab_parallel_cross_entropy",
+        "reason": "The wrapper used by higher-level code must provide access to both per-token CE and per-token logZ (or provide a helper) so higher layers (language module / loss functions) can compute z-loss without recomputing global sums.",
+        "side_effects": "API: changes return value/contract of the wrapper — callers must be updated to handle either (loss,) or (loss, logZ). Backwards compatibility: design wrapper to return logZ only when z-loss weight > 0 or return a consistent tuple (loss, logZ) but update all callers. Tests & dependents: update unit tests and callers (language_module and legacy GPT) to unpack new outputs."
+      },
+      {
+        "operation": "Expose per-token logZ and save intermediates in fused CE forward",
+        "file_to_modify": "megatron/core/fusions/fused_cross_entropy.py",
+        "function_to_modify": "_VocabParallelCrossEntropy.forward",
+        "reason": "Fused CE performs fused all-reduces and is commonly used for perf-critical paths. Modify its forward to compute/expose logZ and save needed intermediates in ctx so z-loss can be computed and backpropagated without breaking fused communication patterns.",
+        "side_effects": "Performance: must preserve fused communication and avoid extra all-reduces; risk of regressing performance if fusion is broken. Memory: saving extra tensors for backward may increase memory usage. Backward correctness and dtype handling (fp16/bf16) must be tested. Callers of fused wrapper must be updated to accept logZ."
+      },
+      {
+        "operation": "Update fused wrapper to return or expose logZ",
+        "file_to_modify": "megatron/core/fusions/fused_cross_entropy.py",
+        "function_to_modify": "fused_vocab_parallel_cross_entropy",
+        "reason": "Higher-level code that uses the fused wrapper needs access to per-token logZ analogous to the non-fused wrapper; provide consistent API so language_module and legacy code can compute z-loss without extra comms.",
+        "side_effects": "API: change to wrapper return contract; callers must be adjusted similarly to non-fused wrapper. Performance/regression risk if fusion semantics changed. Tests must cover fused path producing identical CE and logZ as non-fused path."
+      },
+      {
+        "operation": "Compute per-token z-loss in core language module and expose both CE and z-loss",
+        "file_to_modify": "megatron/core/models/common/language_module/language_module.py",
+        "function_to_modify": "LanguageModule.compute_language_model_loss",
+        "reason": "This function centrally computes CE in the core model path. Update it to call the updated CE wrapper (fused/non-fused) to obtain per-token logZ, compute per-token z-loss (e.g., z^2 or chosen formula) and return both per-token CE and per-token z-loss so the training loss aggregation can combine and log them separately.",
+        "side_effects": "API: output shape/contract changes — callers must accept either single CE tensor (when z-loss disabled) or a tuple (lm_loss, z_loss). Backwards compatibility: detect args.z_loss_weight and preserve single-return when weight==0 to minimize changes, or update all callers. Tests: cover dtype/shape and fused vs non-fused code paths; ensure gradients flow correctly for both loss components. Logging: training_log will pick up new metric keys once callers emit them."
+      },
+      {
+        "operation": "Compute/expose z-loss in legacy GPT post-processing and return alongside CE",
+        "file_to_modify": "megatron/legacy/model/gpt_model.py",
+        "function_to_modify": "post_language_model_processing",
+        "reason": "Legacy GPT call-site computes per-token CE from logits and returns losses; update it to obtain per-token logZ (via TP-aware helpers or the updated CE wrapper) and compute per-token z-loss so legacy training path can include z-loss and log it.",
+        "side_effects": "API: return tuple shape used by legacy code will change; update all legacy callers (pretrain_gpt) to handle tuple. Backwards compatibility: ensure behavior when z-loss disabled remains identical. Performance: reuse CE intermediates to avoid extra comms. Tests & dependents: update legacy-model unit tests and training scripts."
+      },
+      {
+        "operation": "Update GPT pretrain loss function to accept optional z-loss and produce combined/backprop loss + metrics",
+        "file_to_modify": "pretrain_gpt.py",
+        "function_to_modify": "loss_func",
+        "reason": "Pretrain training loop expects a per-token CE tensor; modify loss construction to accept either the legacy CE-only output or a tuple (lm_loss, z_loss). If z-loss present and args.z_loss_weight > 0, compute scalar loss for backward as sum((lm_loss + z_weight * z_loss) * loss_mask) reduced as before. Add both 'lm loss' and 'z loss' entries to the returned metrics dict in the (numerator, denominator) format used by training_log.",
+        "side_effects": "API: loss_func input contract expanded; training configs must set args.z_loss_weight when using z-loss. Logging: new 'z loss' metric will appear in logs and validation; ensure PPL printing still references only 'lm loss' (may require guarding in print code). Tests: update pretraining tests to cover both modes and ensure gradients/backward behave identically when z-loss weight==0. Backwards compatibility: maintain CE-only code path when z-weight==0."
+      },
+      {
+        "operation": "Update BERT pretrain loss function to accept optional z-loss while preserving SOP handling",
+        "file_to_modify": "pretrain_bert.py",
+        "function_to_modify": "loss_func",
+        "reason": "BERT loss_func currently unpacks outputs as (lm_loss_, sop_logits). Update unpacking logic to accept an optional z-loss output (e.g., (lm_loss_, z_loss, sop_logits)) and, when present and weight>0, include z-loss in total scalar loss and add 'z loss' to metrics while preserving SOP loss handling.",
+        "side_effects": "API: change to expected model outputs requires updating the call-sites or robust unpacking to support both old and new formats. Tests: update BERT training/unit tests to validate z-loss inclusion, ensure SOP loss and gradient paths unchanged. Logging: new metric shows up; ensure PPL printing and other reporting still use lm loss. Backwards compatibility: detect if z-loss missing and keep existing behavior."
+      }
+    ]
+  }
+}

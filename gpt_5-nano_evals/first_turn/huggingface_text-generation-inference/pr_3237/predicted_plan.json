@@ -1,0 +1,72 @@
+{
+  "pr_number": 3237,
+  "repository": "huggingface/text-generation-inference",
+  "title": "move input_ids to hpu and remove disposal of adapter_meta",
+  "body": "PR description (summarized): Move input_ids handling to the Gaudi/HHPU path so inputs are moved onto the HPU for attention computations, and remove disposal of adapter_meta. The change focuses on ensuring input data (input_ids) is correctly moved to the HPU device prior to FP8/attention kernels, improving data locality and potentially throughput. Regarding adapter_meta disposal, the codebase currently does not expose an explicit disposal API for adapter_meta; adapter-related metadata structures exist (AdapterBatchMetadata and AdapterBatchData) but no dispose/cleanup methods are implemented in the adapter stack.\n\nWhat this implies in practice:\n- Core attention path handling inputs lives in the HPU layer (HPU attention utilities). The change targets the path where input_ids are prepared and moved to the HPU before quantization and attention math.\n- There is no explicit adapter_meta disposal logic found in the codebase (AdapterBatchData/AdapterBatchMetadata are data containers with loading/batching semantics but no disposal hooks). This PR’s second point would therefore be a no-op in the current codebase unless disposal hooks are added elsewhere. See AdapterBatchData/AdapterBatchMetadata in backends/gaudi/server/text_generation_server/adapters/weights.py for reference; there are no dispose methods.\n\nScope of changes (inferred):\n- Likely modification of the HPU attention path to ensure input_ids (or their TF/torch tensors produced from input_ids) are moved to the HPU device prior to FP8 quantization and attention kernels.\n- Validation: ensure that moving input_ids to HPU does not regress correctness and that subsequent KV-cache interactions continue to work with the moved data.\n- Adapter_meta disposal: no explicit disposal logic is present in the observed code; therefore, no functional changes are required in the adapter meta lifecycle with the current codebase.\n\nReferences in code (where to look):\n- Core HPU attention path: backends/gaudi/server/text_generation_server/layers/attention/hpu.py\n- Adapter metadata structures: backends/gaudi/server/text_generation_server/adapters/weights.py\n- Adapter lifecycle glue (imports/exports): backends/gaudi/server/text_generation_server/adapters/__init__.py\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T13:57:44.955879",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "backends/gaudi/server/text_generation_server/layers/attention/hpu.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "quant_input",
+          "class_name": "FP8Matmul",
+          "full_name": "FP8Matmul.quant_input",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "matmul_fp8",
+          "class_name": "FP8Matmul",
+          "full_name": "FP8Matmul.matmul_fp8",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "attention",
+          "class_name": null,
+          "full_name": "attention",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Refactor the Gaudi/HPU input path to ensure input_ids are moved onto the HPU before FP8/attention kernels, and acknowledge that adapter_meta disposal has no explicit API in the current codebase (no functional changes required).",
+    "steps": [
+      {
+        "operation": "Move input_ids to the HPU prior to FP8 quantization by updating the FP8Matmul.quant_input path to ensure inputs are on the HPU device",
+        "file_to_modify": "backends/gaudi/server/text_generation_server/layers/attention/hpu.py",
+        "function_to_modify": "FP8Matmul.quant_input",
+        "reason": "Ensure input data (input_ids) are placed on the Gaudi/HHPU device before FP8 quantization, improving data locality for attention computations",
+        "side_effects": "Tests should verify device placement of inputs on HPU; potential minor performance implications due to synchronization or device checks; downstream FP8 path may require no changes if tensors are already on HPU"
+      },
+      {
+        "operation": "Ensure FP8 GEMM uses HPU-resident inputs by updating FP8Matmul.matmul_fp8 to assume inputs are already on the HPU and handle any necessary device-specific wiring",
+        "file_to_modify": "backends/gaudi/server/text_generation_server/layers/attention/hpu.py",
+        "function_to_modify": "FP8Matmul.matmul_fp8",
+        "reason": "Maintain data locality in the FP8 path; ensure quantized inputs used by matmul are on the HPU to avoid unnecessary transfers and preserve performance",
+        "side_effects": "May require tests to validate correctness with HPU-resident inputs; potential changes in timing or synchronization for FP8 path; ensure compatibility with KV-cache handling"
+      },
+      {
+        "operation": "Adjust the core attention path to operate under the assumption that inputs are already on the HPU (or move them there prior to invoking the fused SDPA operator), ensuring consistent data locality with FP8 paths",
+        "file_to_modify": "backends/gaudi/server/text_generation_server/layers/attention/hpu.py",
+        "function_to_modify": "attention",
+        "reason": "Align the attention computation path with the FP8 data path by guaranteeing input tensors (including input_ids) reside on the HPU before attention operations",
+        "side_effects": "Downstream callers of attention may need validation for device placement; add/update tests to confirm input tensors are on HPU and that attention outputs remain correct across device boundaries"
+      }
+    ]
+  }
+}

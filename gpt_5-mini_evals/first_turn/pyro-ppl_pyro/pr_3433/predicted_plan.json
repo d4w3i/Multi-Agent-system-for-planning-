@@ -1,0 +1,42 @@
+{
+  "pr_number": 3433,
+  "repository": "pyro-ppl/pyro",
+  "title": "Fixes #3430 (serializing an easyguide corrupts it).",
+  "body": "- The issue is that on Python 3.12 the `super()` object of `easyguide.Group` started having the `__getstate__` attribute (this doesn't happen in python 3.9), which is then called to return the state object, which is then modified without making a copy before modification, which causes the corruption.\n- The solution is to ensure that we always make a copy of the state object before modifying it.\n- This was tested on both python 3.9 and 3.12.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T13:08:49.654156",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "pyro/contrib/easyguide/easyguide.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "__getstate__",
+          "class_name": "Group",
+          "full_name": "Group.__getstate__",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Make Group.__getstate__ defensive by shallow-copying the state mapping returned from super().__getstate__ (if present) before mutating it, preventing shared-state corruption observed on Python 3.12.",
+    "steps": [
+      {
+        "operation": "Defensively shallow-copy the state mapping returned from super() before mutating it",
+        "file_to_modify": "pyro/contrib/easyguide/easyguide.py",
+        "function_to_modify": "Group.__getstate__",
+        "reason": "On Python 3.12 super().__getstate__ can exist and return a shared mapping. Mutating that returned mapping in-place (replacing the '_guide' weakref with the strong referent) can corrupt other objects that share the mapping. Making a shallow copy (state.copy() with a dict(state) fallback) ensures we only mutate our local copy and preserves the original mapping.",
+        "side_effects": "Behavioral: prevents in-place modification of any shared mapping returned by super(), avoiding cross-object corruption. Memory: small transient memory increase due to the shallow copy during pickling. Compatibility: preserves the intended returned state for pickling/unpickling, but if any code unexpectedly relied on the original mapping object being mutated in-place, that code will no longer observe those mutations (this is unlikely and is a safer behavior). Testing: add/ensure unit tests that pickle/unpickle Group (and containing EasyGuide) and assert that the original Group and guide are not corrupted after pickling, and that unpickled Group._guide is restored as a weakref. CI: run full test-suite across targeted Python versions (e.g., 3.9 and 3.12) to confirm no regressions. API: no public API changes."
+      }
+    ]
+  }
+}

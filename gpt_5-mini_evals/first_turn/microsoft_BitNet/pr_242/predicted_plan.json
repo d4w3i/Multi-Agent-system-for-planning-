@@ -1,0 +1,57 @@
+{
+  "pr_number": 242,
+  "repository": "microsoft/BitNet",
+  "title": "Fix build error with GCC by forcing Clang in CMake on android/aarch64",
+  "body": "GCC does not recognize Clang-specific warning flags like -Wunreachable-code-break and -Wunreachable-code-return, which are passed by upstream submodules (e.g., ggml). This patch forces CMake to use Clang via command-line arguments, avoiding the need to patch nested submodules.\n\nThis resolves compiler errors without modifying submodule source code.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T12:44:56.695167",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "CMakeLists.txt",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "CMakeLists (pre-project compiler-forcing block)",
+          "class_name": null,
+          "full_name": "CMakeLists (pre-project compiler-forcing block)",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "CMakeLists (compiler detection conditional)",
+          "class_name": null,
+          "full_name": "CMakeLists (compiler detection conditional)",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Force clang/clang++ as the C/C++ compilers in top-level CMake before project() when building for Android aarch64 (unless the user explicitly set compilers). Add a clarifying comment to the later compiler-ID conditional so it remains aligned with the pre-project forcing logic.",
+    "steps": [
+      {
+        "operation": "Add pre-project compiler forcing block",
+        "file_to_modify": "CMakeLists.txt",
+        "function_to_modify": null,
+        "reason": "CMake chooses compilers when project() is processed. To ensure all subdirectories and upstream submodules (e.g., ggml) get Clang on Android aarch64, set CMAKE_C_COMPILER and CMAKE_CXX_COMPILER (via CACHE FILEPATH ... FORCE) before project() runs, but only when the user has not explicitly provided compilers. This prevents GCC from being used and failing on Clang-only flags.",
+        "side_effects": "Changes which compiler CMake will probe and use for the entire build when targeting Android/aarch64. If clang/clang++ are not available on PATH, configuration may fail; cross-toolchain files that already set compilers may interact (the block must avoid overriding explicit -DCMAKE_C_COMPILER/-DCMAKE_CXX_COMPILER). Requires running Android/aarch64 builds in CI and local testing; non-Android builds should be unaffected."
+      },
+      {
+        "operation": "Leave/validate post-project compiler-detection conditional (no functional change) and add a clarifying comment",
+        "file_to_modify": "CMakeLists.txt",
+        "function_to_modify": null,
+        "reason": "The existing conditional that inspects CMAKE_C_COMPILER_ID / CMAKE_CXX_COMPILER_ID (e.g., to add -fpermissive for GNU) must still execute after project() and reflect the compilers that were forced earlier. Add a short comment referencing the pre-project forcing block to make the dependency explicit and avoid future regressions.",
+        "side_effects": "No behavioral change intended; ensures existing logic continues to only add GCC-specific flags when compilers are actually GNU. Tests: ensure the conditional yields the expected result for Android/aarch64 (should not detect GNU if Clang was forced) and for systems with GCC. Downstream modules that rely on CMAKE_C_COMPILER_ID will be evaluated based on the forced compiler."
+      }
+    ]
+  }
+}

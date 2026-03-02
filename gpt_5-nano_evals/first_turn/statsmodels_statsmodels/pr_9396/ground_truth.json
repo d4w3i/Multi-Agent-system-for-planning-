@@ -1,0 +1,50 @@
+{
+  "pr_number": 9396,
+  "repository": "statsmodels/statsmodels",
+  "title": "BUG: Remove method setting in summary2 of genmod",
+  "body": "- [X] closes #9315 \r\n- [X] tests added / passed. \r\n- [X] code/documentation is well formatted.  \r\n- [X] properly formatted commit message. See \r\n      [NumPy's guide](https://docs.scipy.org/doc/numpy-1.15.1/dev/gitwash/development_workflow.html#writing-the-commit-message). \r\n\r\n<details>\r\n\r\n\r\n**Notes**:\r\n\r\n* It is essential that you add a test when making code changes. Tests are not \r\n  needed for doc changes.\r\n* When adding a new function, test values should usually be verified in another package (e.g., R/SAS/Stata).\r\n* When fixing a bug, you must add a test that would produce the bug in main and\r\n  then show that it is fixed with the new code.\r\n* New code additions must be well formatted. Changes should pass flake8. If on Linux or OSX, you can\r\n  verify you changes are well formatted by running \r\n  ```\r\n  git diff upstream/main -u -- \"*.py\" | flake8 --diff --isolated\r\n  ```\r\n  assuming `flake8` is installed. This command is also available on Windows \r\n  using the Windows System for Linux once `flake8` is installed in the \r\n  local Linux environment. While passing this test is not required, it is good practice and it help \r\n  improve code quality in `statsmodels`.\r\n* Docstring additions must render correctly, including escapes and LaTeX.\r\n\r\n</details>\r\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T01:05:41.325394",
+    "extractor_version": "1.0.0",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "statsmodels/genmod/generalized_linear_model.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 1,
+      "functions_modified": [],
+      "patch": "@@ -2567,7 +2567,6 @@ def summary2(self, yname=None, xname=None, title=None, alpha=.05,\n         --------\n         statsmodels.iolib.summary2.Summary : class to hold summary results\n         \"\"\"\n-        self.method = 'IRLS'\n         from statsmodels.iolib import summary2\n         smry = summary2.Summary()\n         with warnings.catch_warnings():"
+    },
+    {
+      "filename": "statsmodels/genmod/tests/test_glm.py",
+      "status": "modified",
+      "additions": 1073,
+      "deletions": 667,
+      "functions_modified": [],
+      "patch": null
+    }
+  ],
+  "functions_modified": [],
+  "step_plan": {
+    "steps": [
+      {
+        "operation": "Remove the side-effect assignment that sets the fitting method during summary generation",
+        "file_to_modify": "statsmodels/genmod/generalized_linear_model.py",
+        "function_to_modify": "GLMResults.summary2",
+        "reason": "`summary2()` should be a pure reporting method; setting `self.method = 'IRLS'` mutates the results object and can incorrectly overwrite the actual estimation method used (or other downstream logic relying on `res.method`). Removing this line fixes the bug where calling `summary2()` changes state.",
+        "side_effects": "Any code/tests that implicitly relied on `summary2()` forcing `res.method` to `'IRLS'` will change behavior. Summary output itself may differ only in fields that display `method`, and objects inspected after calling `summary2()` will now retain the original `method` value."
+      },
+      {
+        "operation": "Update and expand GLM test coverage to ensure calling `summary2()` does not mutate `res.method` and to align golden/expected summary-related assertions with the corrected behavior",
+        "file_to_modify": "statsmodels/genmod/tests/test_glm.py",
+        "function_to_modify": null,
+        "reason": "A regression test is required to reproduce the bug on main (calling `summary2()` changes `res.method`) and verify the fix. The large diff indicates adjustments/additions to tests/fixtures/expected outputs so the test suite passes with the new non-mutating behavior.",
+        "side_effects": "Test expectations around summary formatting/content may change, and any brittle string-based comparisons could need updates. This can also affect CI runtime due to added/expanded test cases."
+      }
+    ],
+    "summary": "Fixes a GLM reporting bug where `GLMResults.summary2()` incorrectly mutated the fitted results by forcing `res.method = 'IRLS'`, and adds/updates GLM tests to prevent regressions and align expectations with the corrected non-mutating behavior."
+  }
+}

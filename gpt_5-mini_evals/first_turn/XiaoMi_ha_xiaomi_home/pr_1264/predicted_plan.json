@@ -1,0 +1,57 @@
+{
+  "pr_number": 1264,
+  "repository": "XiaoMi/ha_xiaomi_home",
+  "title": "feat: do not subscribe BLE device online/offline state message",
+  "body": "## Title\nfeat: do not subscribe BLE device online/offline state message\n\n## Description\n# Why\nIn the issue #1251, MIoT cloud published an offline state message when the device became offline, but did not publish an online state message when the device became online. So, even xiaomi_home got properties_changed and event_occured message, the device entities was still shown unavailable.\nMIoT cloud can not accurately determine the BLE device's online/offline state. Also see #1207. \n\n# Changed\n- Do not subscribe BLE device online/offline state message. Assume that all BLE devices are online.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T11:46:53.007977",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "custom_components/xiaomi_home/miot/miot_client.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "__on_mips_cloud_state_changed",
+          "class_name": "MIoTClient",
+          "full_name": "MIoTClient.__on_mips_cloud_state_changed",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "__on_cloud_device_state_changed",
+          "class_name": "MIoTClient",
+          "full_name": "MIoTClient.__on_cloud_device_state_changed",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Stop subscribing to and acting on MIoT cloud per-device online/offline state messages for BLE devices (dids starting with 'blt.'), ensuring BLE devices are assumed online and are not flipped offline by imperfect cloud messages.",
+    "steps": [
+      {
+        "operation": "Skip BLE devices when (un)subscribing and when clearing cloud-online flags on cloud connect/disconnect",
+        "file_to_modify": "custom_components/xiaomi_home/miot/miot_client.py",
+        "function_to_modify": "MIoTClient.__on_mips_cloud_state_changed",
+        "reason": "This function currently subscribes to per-device cloud device-state messages for every cached device when the cloud (MIPS) connects and clears/sets cloud-online flags for devices on disconnect. To stop BLE devices from being driven by imperfect cloud state messages, do not create subscriptions for BLE devices (dids starting with 'blt.') and skip BLE devices when clearing their cloud-online flag on cloud disconnect. This prevents BLE devices from being incorrectly flipped offline and avoids creating unnecessary subscriptions.",
+        "side_effects": "Unit/integration tests that assert subscriptions are created for all devices must be updated to exclude BLE devices. Any downstream logic that relied on cloud device-state messages for BLE devices will no longer receive them (they should instead rely on property/event messages or existing BLE-specific logic). Non-BLE devices remain unchanged. No external API changes. Logging should be preserved or augmented to indicate when subscriptions/clears are skipped for traceability."
+      },
+      {
+        "operation": "Ignore cloud device-state messages for BLE devices by early-return",
+        "file_to_modify": "custom_components/xiaomi_home/miot/miot_client.py",
+        "function_to_modify": "MIoTClient.__on_cloud_device_state_changed",
+        "reason": "Even with subscriptions disabled, stray cloud device-state messages might still be received for BLE device IDs. Add a guard that returns early if the did starts with 'blt.' so BLE device cloud-state messages are ignored and cannot flip the assumed online state.",
+        "side_effects": "Tests asserting that cloud device-state messages affect BLE devices must be updated. Non-BLE device handling is unchanged. This change reduces risk of BLE devices becoming unavailable due to missing 'online' events from the cloud. Add or retain a debug/log entry when ignoring BLE device-state messages to aid future debugging. No change to external APIs."
+      }
+    ]
+  }
+}

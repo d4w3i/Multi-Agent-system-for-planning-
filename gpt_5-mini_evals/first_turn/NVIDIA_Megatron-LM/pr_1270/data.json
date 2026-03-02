@@ -1,0 +1,181 @@
+{
+    "repository": "NVIDIA/Megatron-LM",
+    "pull_request_number": 1270,
+    "title": "[ENHANCEMENT] Add z-loss",
+    "body": "z-loss regularization was shown to stabilize training by preventing logits in the last layer to explode: https://arxiv.org/abs/2309.14322\r\n\r\nThis PR: \r\n- allows one to add zloss regularization\r\n- since the total loss is not cross entropy anymore but cross entropy + zloss, this PR also allows one to additionally log the original cross-entropy and the z-loss",
+    "pr_date": "2024-11-01T11:01:07Z",
+    "source_branch": "feat/z-loss",
+    "language": "en",
+    "keywords_detected": {
+        "branch": [
+            "feat"
+        ],
+        "requirement": [
+            "add",
+            "enhance"
+        ],
+        "body": [
+            "add"
+        ]
+    },
+    "number_of_links_in_pr": 1,
+    "base_sha": "2e2bdf62382f3a77f5bd020cde51ed833ee62ead",
+    "last_commit_sha": "cd650d1b892a0b9845cff1461c9afd68e8821997",
+    "diff_between_base_and_last": [
+        {
+            "sha": "d8174021bf119e2d059d0ec5003d49b35dfc6ae1",
+            "filename": "megatron/core/models/common/language_module/language_module.py",
+            "status": "modified",
+            "additions": 14,
+            "deletions": 2,
+            "changes": 16,
+            "blob_url": "https://github.com/NVIDIA/Megatron-LM/blob/cd650d1b892a0b9845cff1461c9afd68e8821997/megatron%2Fcore%2Fmodels%2Fcommon%2Flanguage_module%2Flanguage_module.py",
+            "raw_url": "https://github.com/NVIDIA/Megatron-LM/raw/cd650d1b892a0b9845cff1461c9afd68e8821997/megatron%2Fcore%2Fmodels%2Fcommon%2Flanguage_module%2Flanguage_module.py",
+            "contents_url": "https://api.github.com/repos/NVIDIA/Megatron-LM/contents/megatron%2Fcore%2Fmodels%2Fcommon%2Flanguage_module%2Flanguage_module.py?ref=cd650d1b892a0b9845cff1461c9afd68e8821997",
+            "patch": "@@ -36,13 +36,25 @@ def compute_language_model_loss(self, labels: Tensor, logits: Tensor) -> Tensor:\n         # [b s] => [s b]\n         labels = labels.transpose(0, 1).contiguous()\n         if self.config.cross_entropy_loss_fusion:\n+            if self.config.z_loss_weight > 0.0:\n+                raise NotImplementedError(\n+                    \"z-loss is not yet implemented when enabling cross_entropy_loss_fusion, so \"\n+                    \"it cannot be computed and/or logged. Use z-loss-weight: 0.0, or remove the flag.\"\n+                    )\n             loss = fused_vocab_parallel_cross_entropy(logits, labels)\n+            losses = (loss, {'ce_loss': None, 'z_loss': None})\n         else:\n-            loss = tensor_parallel.vocab_parallel_cross_entropy(logits, labels)\n+            losses = tensor_parallel.vocab_parallel_cross_entropy(\n+                logits, labels, z_loss_weight=self.config.z_loss_weight)\n \n         # [s b] => [b, s]\n+        loss, extra_logs = losses\n         loss = loss.transpose(0, 1).contiguous()\n-        return loss\n+        extra_logs['ce_loss'] = extra_logs['ce_loss'].transpose(0, 1).contiguous() \\\n+            if extra_logs['ce_loss'] is not None else None\n+        extra_logs['z_loss'] = extra_logs['z_loss'].transpose(0, 1).contiguous() \\\n+            if extra_logs['z_loss'] is not None else None\n+        return loss, extra_logs\n \n     def setup_embeddings_and_output_layer(self) -> None:\n         \"\"\"Sets up embedding layer in first stage and output layer in last stage."
+        },
+        {
+            "sha": "a6b39163ae8b505ffa3b5adece11b692bf13d96f",
+            "filename": "megatron/core/tensor_parallel/cross_entropy.py",
+            "status": "modified",
+            "additions": 43,
+            "deletions": 14,
+            "changes": 57,
+            "blob_url": "https://github.com/NVIDIA/Megatron-LM/blob/cd650d1b892a0b9845cff1461c9afd68e8821997/megatron%2Fcore%2Ftensor_parallel%2Fcross_entropy.py",
+            "raw_url": "https://github.com/NVIDIA/Megatron-LM/raw/cd650d1b892a0b9845cff1461c9afd68e8821997/megatron%2Fcore%2Ftensor_parallel%2Fcross_entropy.py",
+            "contents_url": "https://api.github.com/repos/NVIDIA/Megatron-LM/contents/megatron%2Fcore%2Ftensor_parallel%2Fcross_entropy.py?ref=cd650d1b892a0b9845cff1461c9afd68e8821997",
+            "patch": "@@ -16,7 +16,15 @@\n class VocabParallelCrossEntropy:\n     \"\"\"\n     Computes the Cross Entropy Loss splitting the Vocab size across tensor parallel\n-    ranks. This implementation is used in both fused and unfused cross entropy implementations\n+    ranks. This implementation is used in both fused and unfused cross entropy implementations.\n+    From T5X (https://github.com/google-research/t5x/blob/main/t5x/losses.py):\n+    If z_loss_factor > 0, then an auxiliary loss equal to z_loss_factor*log(z)^2\n+    will be added to the cross entropy loss (z = softmax normalization constant).\n+    This z loss is also encouraged in https://arxiv.org/abs/2309.14322.\n+    The two uses of z_loss are:\n+    1. To keep the logits from drifting too far from zero, which can cause\n+        unacceptable roundoff errors in bfloat16.\n+    2. To encourage the logits to be normalized log-probabilities.\n     \"\"\"\n \n     @staticmethod\n@@ -121,7 +129,7 @@ def calculate_gradients(\n \n class _VocabParallelCrossEntropy(torch.autograd.Function):\n     @staticmethod\n-    def forward(ctx, vocab_parallel_logits, target, label_smoothing=0.0):\n+    def forward(ctx, vocab_parallel_logits, target, label_smoothing=0.0, z_loss_weight=0.0):\n         \"\"\"Vocab parallel cross entropy forward function.\"\"\"\n \n         vocab_parallel_logits, logits_max = VocabParallelCrossEntropy.calculate_logits_max(\n@@ -157,9 +165,12 @@ def forward(ctx, vocab_parallel_logits, target, label_smoothing=0.0):\n             group=get_tensor_model_parallel_group(),\n         )\n \n-        exp_logits, loss = VocabParallelCrossEntropy.calculate_cross_entropy_loss(\n-            exp_logits, predicted_logits, sum_exp_logits\n-        )\n+        log_sum_exp_logits = torch.log(sum_exp_logits)\n+        loss = log_sum_exp_logits - predicted_logits\n+\n+        # Normalize and optionally smooth logits\n+        exp_logits.div_(sum_exp_logits.unsqueeze(dim=-1))\n+\n \n         vocab_size = exp_logits.size(-1)\n         if label_smoothing > 0:\n@@ -181,20 +192,37 @@ def forward(ctx, vocab_parallel_logits, target, label_smoothing=0.0):\n             mean_log_probs = log_probs.mean(dim=-1)\n             loss = (1.0 - smoothing) * loss - smoothing * mean_log_probs\n \n-        ctx.label_smoothing, ctx.vocab_size = label_smoothing, vocab_size\n+        cloned_z_loss, cloned_ce_loss, log_z = None, None, None\n+        if z_loss_weight > 0.0:\n+            # before computing the actual loss for backprop (with added zloss),\n+            # we store the original cross-entropy loss for logging purposes\n+            cloned_ce_loss = loss.clone().detach()\n+            # z_loss = 10^(-4) * log(Z)^2\n+            log_z = log_sum_exp_logits + logits_max\n+            z_loss = torch.square(log_z)\n+            cloned_z_loss = z_loss.clone().detach()\n+            loss = loss + z_loss_weight * z_loss\n+\n+        ctx.label_smoothing, ctx.vocab_size, ctx.z_loss_weight = (\n+            label_smoothing, vocab_size, z_loss_weight)\n \n         # Store softmax, target-mask and masked-target for backward pass.\n-        ctx.save_for_backward(exp_logits, target_mask, masked_target_1d)\n+        ctx.save_for_backward(exp_logits, target_mask, masked_target_1d, log_z)\n \n-        return loss\n+        return loss, {'ce_loss': cloned_ce_loss, 'z_loss': cloned_z_loss}\n \n     @staticmethod\n-    def backward(ctx, grad_output):\n+    def backward(ctx, grad_output, etra_logs_grad=None):\n         \"\"\"Vocab parallel cross entropy backward function.\"\"\"\n \n         # Retreive tensors from the forward path.\n-        softmax, target_mask, masked_target_1d = ctx.saved_tensors\n-        label_smoothing, vocab_size = ctx.label_smoothing, ctx.vocab_size\n+        softmax, target_mask, masked_target_1d, log_z = ctx.saved_tensors\n+        label_smoothing, vocab_size, z_loss_weight = (\n+            ctx.label_smoothing, ctx.vocab_size, ctx.z_loss_weight)\n+\n+        if z_loss_weight > 0.0:\n+            # z-loss term adds the (2 * z_loss * log_z) factor.\n+            softmax *= (1.0 + 2.0 * z_loss_weight * log_z).unsqueeze(-1)\n \n         (grad_2d, arange_1d, softmax_update, grad_input) = (\n             VocabParallelCrossEntropy.prepare_gradient_calculation_operands(softmax, target_mask)\n@@ -213,10 +241,10 @@ def backward(ctx, grad_output):\n                 grad_2d, arange_1d, masked_target_1d, softmax_update, grad_input, grad_output\n             )\n \n-        return grad_input, None, None\n+        return grad_input, None, None, None\n \n \n-def vocab_parallel_cross_entropy(vocab_parallel_logits, target, label_smoothing=0.0):\n+def vocab_parallel_cross_entropy(vocab_parallel_logits, target, label_smoothing=0.0, z_loss_weight=0.0):\n     \"\"\"\n     Performs cross entropy loss when logits are split across tensor parallel ranks\n \n@@ -228,5 +256,6 @@ def vocab_parallel_cross_entropy(vocab_parallel_logits, target, label_smoothing=\n \n         label_smoothing: smoothing factor, must be in range [0.0, 1.0)\n                          default is no smoothing (=0.0)\n+        z_loss_weight: weight of the z_loss term\n     \"\"\"\n-    return _VocabParallelCrossEntropy.apply(vocab_parallel_logits, target, label_smoothing)\n+    return _VocabParallelCrossEntropy.apply(vocab_parallel_logits, target, label_smoothing, z_loss_weight)"
+        },
+        {
+            "sha": "16520ad85ecc36f3a4f897e0240f8f3b38b0f5e6",
+            "filename": "megatron/core/transformer/transformer_config.py",
+            "status": "modified",
+            "additions": 6,
+            "deletions": 0,
+            "changes": 6,
+            "blob_url": "https://github.com/NVIDIA/Megatron-LM/blob/cd650d1b892a0b9845cff1461c9afd68e8821997/megatron%2Fcore%2Ftransformer%2Ftransformer_config.py",
+            "raw_url": "https://github.com/NVIDIA/Megatron-LM/raw/cd650d1b892a0b9845cff1461c9afd68e8821997/megatron%2Fcore%2Ftransformer%2Ftransformer_config.py",
+            "contents_url": "https://api.github.com/repos/NVIDIA/Megatron-LM/contents/megatron%2Fcore%2Ftransformer%2Ftransformer_config.py?ref=cd650d1b892a0b9845cff1461c9afd68e8821997",
+            "patch": "@@ -110,6 +110,12 @@ class TransformerConfig(ModelParallelConfig):\n     \"\"\"Whether cross entropy loss is calculated over the actual number of non-padded tokens in the\n     global batch, versus the default behavior of assuming all tokens are non-padded.\"\"\"\n \n+    z_loss_weight: float = 0.0\n+    \"\"\"Weight for the z-loss in the loss function.\"\"\"\n+\n+    z_loss_weight: float = 0.0\n+    \"\"\"Weight for the z-loss in the loss function.\"\"\"\n+\n     multi_latent_attention: bool = False\n     \"\"\"Whether to use multi-latent attention.\"\"\"\n "
+        },
+        {
+            "sha": "ab4e85cfb48de694d096822fdfe331212c1cd7c2",
+            "filename": "megatron/training/arguments.py",
+            "status": "modified",
+            "additions": 5,
+            "deletions": 0,
+            "changes": 5,
+            "blob_url": "https://github.com/NVIDIA/Megatron-LM/blob/cd650d1b892a0b9845cff1461c9afd68e8821997/megatron%2Ftraining%2Farguments.py",
+            "raw_url": "https://github.com/NVIDIA/Megatron-LM/raw/cd650d1b892a0b9845cff1461c9afd68e8821997/megatron%2Ftraining%2Farguments.py",
+            "contents_url": "https://api.github.com/repos/NVIDIA/Megatron-LM/contents/megatron%2Ftraining%2Farguments.py?ref=cd650d1b892a0b9845cff1461c9afd68e8821997",
+            "patch": "@@ -953,6 +953,9 @@ def _add_config_logger_args(parser):\n def _add_logging_args(parser):\n     group = parser.add_argument_group(title='logging')\n \n+    group.add_argument('--log-z-loss', action='store_true',\n+                        help='Log z and c.e losses, in addition to total loss. '\n+                        'Only if z-loss-weight > 0.')\n     group.add_argument('--log-params-norm', action='store_true',\n                        help='If set, calculate and log parameters norm.')\n     group.add_argument('--log-num-zeros-in-grad', action='store_true',\n@@ -1051,6 +1054,8 @@ def _add_regularization_args(parser):\n                        'numerical stability')\n     group.add_argument('--sgd-momentum', type=float, default=0.9,\n                        help='Momentum factor for sgd')\n+    group.add_argument('--z-loss-weight', type=float, default=0.0,\n+                       help='Weight for z-loss applied to output logits.')\n     return parser\n \n "
+        },
+        {
+            "sha": "24ecdc87908ef318e5526c2116273449dc72e1d7",
+            "filename": "pretrain_gpt.py",
+            "status": "modified",
+            "additions": 21,
+            "deletions": 4,
+            "changes": 25,
+            "blob_url": "https://github.com/NVIDIA/Megatron-LM/blob/cd650d1b892a0b9845cff1461c9afd68e8821997/pretrain_gpt.py",
+            "raw_url": "https://github.com/NVIDIA/Megatron-LM/raw/cd650d1b892a0b9845cff1461c9afd68e8821997/pretrain_gpt.py",
+            "contents_url": "https://api.github.com/repos/NVIDIA/Megatron-LM/contents/pretrain_gpt.py?ref=cd650d1b892a0b9845cff1461c9afd68e8821997",
+            "patch": "@@ -142,8 +142,10 @@ def loss_func(loss_mask: torch.Tensor, output_tensor: torch.Tensor):\n             the data parallel ranks\n     \"\"\"\n     args = get_args()\n-\n-    losses = output_tensor.float()\n+    \n+    total_losses, losses_for_logging = output_tensor\n+    ce_losses, z_losses = losses_for_logging['ce_loss'], losses_for_logging['z_loss']\n+    losses = total_losses.float()        \n     loss_mask = loss_mask.view(-1).float()\n     total_tokens = loss_mask.sum()\n     loss = torch.cat([torch.sum(losses.view(-1) * loss_mask).view(1), total_tokens.view(1)])\n@@ -162,12 +164,27 @@ def loss_func(loss_mask: torch.Tensor, output_tensor: torch.Tensor):\n     # Reduce loss for logging.\n     reporting_loss = loss.clone().detach()\n     torch.distributed.all_reduce(reporting_loss, group=mpu.get_data_parallel_group())\n-\n     local_num_tokens = loss[1].clone().detach().to(torch.int)\n+\n+    log_dict = {'lm loss': (reporting_loss[0], reporting_loss[1])}\n+    if args.log_z_loss and (z_losses is not None):\n+        # ce_loss and z_loss are already detached in cross_entropy.py. No need to detach\n+        # them here like reporting_loss.\n+        z_losses, ce_losses = z_losses.float(), ce_losses.float()\n+        z_loss = torch.cat([torch.sum(z_losses.view(-1) * loss_mask).view(1), total_tokens.view(1)])\n+        ce_loss = torch.cat([torch.sum(ce_losses.view(-1) * loss_mask).view(1), total_tokens.view(1)])\n+        if args.context_parallel_size > 1:\n+            torch.distributed.all_reduce(z_loss, group=mpu.get_context_parallel_group())\n+            torch.distributed.all_reduce(ce_loss, group=mpu.get_context_parallel_group())\n+        torch.distributed.all_reduce(z_loss, group=mpu.get_data_parallel_group())\n+        torch.distributed.all_reduce(ce_loss, group=mpu.get_data_parallel_group())\n+        log_dict['ce-loss'] = (ce_loss[0], ce_loss[1])\n+        log_dict['z-loss'] = (z_loss[0], z_loss[1])\n+\n     return (\n         loss[0] * args.context_parallel_size,\n         local_num_tokens,\n-        {'lm loss': (reporting_loss[0], reporting_loss[1])},\n+        log_dict\n     )\n \n "
+        }
+    ],
+    "commits": [
+        {
+            "sha": "1e81fee1057e484579ed4d2a75e3180bf4c3008f",
+            "commit_date": "2024-11-01T05:59:10Z",
+            "message": "add zloss",
+            "number_of_links_in_commit": 0,
+            "files_changed_count": 5,
+            "files": [
+                {
+                    "sha": "d8174021bf119e2d059d0ec5003d49b35dfc6ae1",
+                    "filename": "megatron/core/models/common/language_module/language_module.py",
+                    "status": "modified",
+                    "additions": 14,
+                    "deletions": 2,
+                    "changes": 16,
+                    "blob_url": "https://github.com/NVIDIA/Megatron-LM/blob/1e81fee1057e484579ed4d2a75e3180bf4c3008f/megatron%2Fcore%2Fmodels%2Fcommon%2Flanguage_module%2Flanguage_module.py",
+                    "raw_url": "https://github.com/NVIDIA/Megatron-LM/raw/1e81fee1057e484579ed4d2a75e3180bf4c3008f/megatron%2Fcore%2Fmodels%2Fcommon%2Flanguage_module%2Flanguage_module.py",
+                    "contents_url": "https://api.github.com/repos/NVIDIA/Megatron-LM/contents/megatron%2Fcore%2Fmodels%2Fcommon%2Flanguage_module%2Flanguage_module.py?ref=1e81fee1057e484579ed4d2a75e3180bf4c3008f",
+                    "patch": "@@ -36,13 +36,25 @@ def compute_language_model_loss(self, labels: Tensor, logits: Tensor) -> Tensor:\n         # [b s] => [s b]\n         labels = labels.transpose(0, 1).contiguous()\n         if self.config.cross_entropy_loss_fusion:\n+            if self.config.z_loss_weight > 0.0:\n+                raise NotImplementedError(\n+                    \"z-loss is not yet implemented when enabling cross_entropy_loss_fusion, so \"\n+                    \"it cannot be computed and/or logged. Use z-loss-weight: 0.0, or remove the flag.\"\n+                    )\n             loss = fused_vocab_parallel_cross_entropy(logits, labels)\n+            losses = (loss, {'ce_loss': None, 'z_loss': None})\n         else:\n-            loss = tensor_parallel.vocab_parallel_cross_entropy(logits, labels)\n+            losses = tensor_parallel.vocab_parallel_cross_entropy(\n+                logits, labels, z_loss_weight=self.config.z_loss_weight)\n \n         # [s b] => [b, s]\n+        loss, extra_logs = losses\n         loss = loss.transpose(0, 1).contiguous()\n-        return loss\n+        extra_logs['ce_loss'] = extra_logs['ce_loss'].transpose(0, 1).contiguous() \\\n+            if extra_logs['ce_loss'] is not None else None\n+        extra_logs['z_loss'] = extra_logs['z_loss'].transpose(0, 1).contiguous() \\\n+            if extra_logs['z_loss'] is not None else None\n+        return loss, extra_logs\n \n     def setup_embeddings_and_output_layer(self) -> None:\n         \"\"\"Sets up embedding layer in first stage and output layer in last stage."
+                },
+                {
+                    "sha": "a6b39163ae8b505ffa3b5adece11b692bf13d96f",
+                    "filename": "megatron/core/tensor_parallel/cross_entropy.py",
+                    "status": "modified",
+                    "additions": 43,
+                    "deletions": 14,
+                    "changes": 57,
+                    "blob_url": "https://github.com/NVIDIA/Megatron-LM/blob/1e81fee1057e484579ed4d2a75e3180bf4c3008f/megatron%2Fcore%2Ftensor_parallel%2Fcross_entropy.py",
+                    "raw_url": "https://github.com/NVIDIA/Megatron-LM/raw/1e81fee1057e484579ed4d2a75e3180bf4c3008f/megatron%2Fcore%2Ftensor_parallel%2Fcross_entropy.py",
+                    "contents_url": "https://api.github.com/repos/NVIDIA/Megatron-LM/contents/megatron%2Fcore%2Ftensor_parallel%2Fcross_entropy.py?ref=1e81fee1057e484579ed4d2a75e3180bf4c3008f",
+                    "patch": "@@ -16,7 +16,15 @@\n class VocabParallelCrossEntropy:\n     \"\"\"\n     Computes the Cross Entropy Loss splitting the Vocab size across tensor parallel\n-    ranks. This implementation is used in both fused and unfused cross entropy implementations\n+    ranks. This implementation is used in both fused and unfused cross entropy implementations.\n+    From T5X (https://github.com/google-research/t5x/blob/main/t5x/losses.py):\n+    If z_loss_factor > 0, then an auxiliary loss equal to z_loss_factor*log(z)^2\n+    will be added to the cross entropy loss (z = softmax normalization constant).\n+    This z loss is also encouraged in https://arxiv.org/abs/2309.14322.\n+    The two uses of z_loss are:\n+    1. To keep the logits from drifting too far from zero, which can cause\n+        unacceptable roundoff errors in bfloat16.\n+    2. To encourage the logits to be normalized log-probabilities.\n     \"\"\"\n \n     @staticmethod\n@@ -121,7 +129,7 @@ def calculate_gradients(\n \n class _VocabParallelCrossEntropy(torch.autograd.Function):\n     @staticmethod\n-    def forward(ctx, vocab_parallel_logits, target, label_smoothing=0.0):\n+    def forward(ctx, vocab_parallel_logits, target, label_smoothing=0.0, z_loss_weight=0.0):\n         \"\"\"Vocab parallel cross entropy forward function.\"\"\"\n \n         vocab_parallel_logits, logits_max = VocabParallelCrossEntropy.calculate_logits_max(\n@@ -157,9 +165,12 @@ def forward(ctx, vocab_parallel_logits, target, label_smoothing=0.0):\n             group=get_tensor_model_parallel_group(),\n         )\n \n-        exp_logits, loss = VocabParallelCrossEntropy.calculate_cross_entropy_loss(\n-            exp_logits, predicted_logits, sum_exp_logits\n-        )\n+        log_sum_exp_logits = torch.log(sum_exp_logits)\n+        loss = log_sum_exp_logits - predicted_logits\n+\n+        # Normalize and optionally smooth logits\n+        exp_logits.div_(sum_exp_logits.unsqueeze(dim=-1))\n+\n \n         vocab_size = exp_logits.size(-1)\n         if label_smoothing > 0:\n@@ -181,20 +192,37 @@ def forward(ctx, vocab_parallel_logits, target, label_smoothing=0.0):\n             mean_log_probs = log_probs.mean(dim=-1)\n             loss = (1.0 - smoothing) * loss - smoothing * mean_log_probs\n \n-        ctx.label_smoothing, ctx.vocab_size = label_smoothing, vocab_size\n+        cloned_z_loss, cloned_ce_loss, log_z = None, None, None\n+        if z_loss_weight > 0.0:\n+            # before computing the actual loss for backprop (with added zloss),\n+            # we store the original cross-entropy loss for logging purposes\n+            cloned_ce_loss = loss.clone().detach()\n+            # z_loss = 10^(-4) * log(Z)^2\n+            log_z = log_sum_exp_logits + logits_max\n+            z_loss = torch.square(log_z)\n+            cloned_z_loss = z_loss.clone().detach()\n+            loss = loss + z_loss_weight * z_loss\n+\n+        ctx.label_smoothing, ctx.vocab_size, ctx.z_loss_weight = (\n+            label_smoothing, vocab_size, z_loss_weight)\n \n         # Store softmax, target-mask and masked-target for backward pass.\n-        ctx.save_for_backward(exp_logits, target_mask, masked_target_1d)\n+        ctx.save_for_backward(exp_logits, target_mask, masked_target_1d, log_z)\n \n-        return loss\n+        return loss, {'ce_loss': cloned_ce_loss, 'z_loss': cloned_z_loss}\n \n     @staticmethod\n-    def backward(ctx, grad_output):\n+    def backward(ctx, grad_output, etra_logs_grad=None):\n         \"\"\"Vocab parallel cross entropy backward function.\"\"\"\n \n         # Retreive tensors from the forward path.\n-        softmax, target_mask, masked_target_1d = ctx.saved_tensors\n-        label_smoothing, vocab_size = ctx.label_smoothing, ctx.vocab_size\n+        softmax, target_mask, masked_target_1d, log_z = ctx.saved_tensors\n+        label_smoothing, vocab_size, z_loss_weight = (\n+            ctx.label_smoothing, ctx.vocab_size, ctx.z_loss_weight)\n+\n+        if z_loss_weight > 0.0:\n+            # z-loss term adds the (2 * z_loss * log_z) factor.\n+            softmax *= (1.0 + 2.0 * z_loss_weight * log_z).unsqueeze(-1)\n \n         (grad_2d, arange_1d, softmax_update, grad_input) = (\n             VocabParallelCrossEntropy.prepare_gradient_calculation_operands(softmax, target_mask)\n@@ -213,10 +241,10 @@ def backward(ctx, grad_output):\n                 grad_2d, arange_1d, masked_target_1d, softmax_update, grad_input, grad_output\n             )\n \n-        return grad_input, None, None\n+        return grad_input, None, None, None\n \n \n-def vocab_parallel_cross_entropy(vocab_parallel_logits, target, label_smoothing=0.0):\n+def vocab_parallel_cross_entropy(vocab_parallel_logits, target, label_smoothing=0.0, z_loss_weight=0.0):\n     \"\"\"\n     Performs cross entropy loss when logits are split across tensor parallel ranks\n \n@@ -228,5 +256,6 @@ def vocab_parallel_cross_entropy(vocab_parallel_logits, target, label_smoothing=\n \n         label_smoothing: smoothing factor, must be in range [0.0, 1.0)\n                          default is no smoothing (=0.0)\n+        z_loss_weight: weight of the z_loss term\n     \"\"\"\n-    return _VocabParallelCrossEntropy.apply(vocab_parallel_logits, target, label_smoothing)\n+    return _VocabParallelCrossEntropy.apply(vocab_parallel_logits, target, label_smoothing, z_loss_weight)"
+                },
+                {
+                    "sha": "16520ad85ecc36f3a4f897e0240f8f3b38b0f5e6",
+                    "filename": "megatron/core/transformer/transformer_config.py",
+                    "status": "modified",
+                    "additions": 6,
+                    "deletions": 0,
+                    "changes": 6,
+                    "blob_url": "https://github.com/NVIDIA/Megatron-LM/blob/1e81fee1057e484579ed4d2a75e3180bf4c3008f/megatron%2Fcore%2Ftransformer%2Ftransformer_config.py",
+                    "raw_url": "https://github.com/NVIDIA/Megatron-LM/raw/1e81fee1057e484579ed4d2a75e3180bf4c3008f/megatron%2Fcore%2Ftransformer%2Ftransformer_config.py",
+                    "contents_url": "https://api.github.com/repos/NVIDIA/Megatron-LM/contents/megatron%2Fcore%2Ftransformer%2Ftransformer_config.py?ref=1e81fee1057e484579ed4d2a75e3180bf4c3008f",
+                    "patch": "@@ -110,6 +110,12 @@ class TransformerConfig(ModelParallelConfig):\n     \"\"\"Whether cross entropy loss is calculated over the actual number of non-padded tokens in the\n     global batch, versus the default behavior of assuming all tokens are non-padded.\"\"\"\n \n+    z_loss_weight: float = 0.0\n+    \"\"\"Weight for the z-loss in the loss function.\"\"\"\n+\n+    z_loss_weight: float = 0.0\n+    \"\"\"Weight for the z-loss in the loss function.\"\"\"\n+\n     multi_latent_attention: bool = False\n     \"\"\"Whether to use multi-latent attention.\"\"\"\n "
+                },
+                {
+                    "sha": "ab4e85cfb48de694d096822fdfe331212c1cd7c2",
+                    "filename": "megatron/training/arguments.py",
+                    "status": "modified",
+                    "additions": 5,
+                    "deletions": 0,
+                    "changes": 5,
+                    "blob_url": "https://github.com/NVIDIA/Megatron-LM/blob/1e81fee1057e484579ed4d2a75e3180bf4c3008f/megatron%2Ftraining%2Farguments.py",
+                    "raw_url": "https://github.com/NVIDIA/Megatron-LM/raw/1e81fee1057e484579ed4d2a75e3180bf4c3008f/megatron%2Ftraining%2Farguments.py",
+                    "contents_url": "https://api.github.com/repos/NVIDIA/Megatron-LM/contents/megatron%2Ftraining%2Farguments.py?ref=1e81fee1057e484579ed4d2a75e3180bf4c3008f",
+                    "patch": "@@ -953,6 +953,9 @@ def _add_config_logger_args(parser):\n def _add_logging_args(parser):\n     group = parser.add_argument_group(title='logging')\n \n+    group.add_argument('--log-z-loss', action='store_true',\n+                        help='Log z and c.e losses, in addition to total loss. '\n+                        'Only if z-loss-weight > 0.')\n     group.add_argument('--log-params-norm', action='store_true',\n                        help='If set, calculate and log parameters norm.')\n     group.add_argument('--log-num-zeros-in-grad', action='store_true',\n@@ -1051,6 +1054,8 @@ def _add_regularization_args(parser):\n                        'numerical stability')\n     group.add_argument('--sgd-momentum', type=float, default=0.9,\n                        help='Momentum factor for sgd')\n+    group.add_argument('--z-loss-weight', type=float, default=0.0,\n+                       help='Weight for z-loss applied to output logits.')\n     return parser\n \n "
+                },
+                {
+                    "sha": "61e6676cf9cf81d33fc13d7fc9a3fec3937d55e5",
+                    "filename": "pretrain_gpt.py",
+                    "status": "modified",
+                    "additions": 21,
+                    "deletions": 4,
+                    "changes": 25,
+                    "blob_url": "https://github.com/NVIDIA/Megatron-LM/blob/1e81fee1057e484579ed4d2a75e3180bf4c3008f/pretrain_gpt.py",
+                    "raw_url": "https://github.com/NVIDIA/Megatron-LM/raw/1e81fee1057e484579ed4d2a75e3180bf4c3008f/pretrain_gpt.py",
+                    "contents_url": "https://api.github.com/repos/NVIDIA/Megatron-LM/contents/pretrain_gpt.py?ref=1e81fee1057e484579ed4d2a75e3180bf4c3008f",
+                    "patch": "@@ -142,8 +142,10 @@ def loss_func(loss_mask: torch.Tensor, output_tensor: torch.Tensor):\n             the data parallel ranks\n     \"\"\"\n     args = get_args()\n-\n-    losses = output_tensor.float()\n+    \n+    total_losses, losses_for_logging = output_tensor\n+    ce_losses, z_losses = losses_for_logging['ce_loss'], losses_for_logging['z_loss']\n+    losses = total_losses.float()        \n     loss_mask = loss_mask.view(-1).float()\n     total_tokens = loss_mask.sum()\n     loss = torch.cat([torch.sum(losses.view(-1) * loss_mask).view(1), total_tokens.view(1)])\n@@ -162,12 +164,27 @@ def loss_func(loss_mask: torch.Tensor, output_tensor: torch.Tensor):\n     # Reduce loss for logging.\n     reporting_loss = loss.clone().detach()\n     torch.distributed.all_reduce(reporting_loss, group=mpu.get_data_parallel_group())\n-\n     local_num_tokens = loss[1].clone().detach().to(torch.int)\n+\n+    log_dict = {'lm loss': (loss[0], loss[1])}\n+    if args.log_z_loss and (z_losses is not None):\n+        # ce_loss and z_loss are already detached in cross_entropy.py. No need to detach\n+        # them here like reporting_loss.\n+        z_losses, ce_losses = z_losses.float(), ce_losses.float()\n+        z_loss = torch.cat([torch.sum(z_losses.view(-1) * loss_mask).view(1), total_tokens.view(1)])\n+        ce_loss = torch.cat([torch.sum(ce_losses.view(-1) * loss_mask).view(1), total_tokens.view(1)])\n+        if args.context_parallel_size > 1:\n+            torch.distributed.all_reduce(z_loss, group=mpu.get_context_parallel_group())\n+            torch.distributed.all_reduce(ce_loss, group=mpu.get_context_parallel_group())\n+        torch.distributed.all_reduce(z_loss, group=mpu.get_data_parallel_group())\n+        torch.distributed.all_reduce(ce_loss, group=mpu.get_data_parallel_group())\n+        log_dict['ce-loss'] = (ce_loss[0], ce_loss[1])\n+        log_dict['z-loss'] = (z_loss[0], z_loss[1])\n+\n     return (\n         loss[0] * args.context_parallel_size,\n         local_num_tokens,\n-        {'lm loss': (reporting_loss[0], reporting_loss[1])},\n+        log_dict\n     )\n \n "
+                }
+            ]
+        },
+        {
+            "sha": "cd650d1b892a0b9845cff1461c9afd68e8821997",
+            "commit_date": "2024-11-15T05:47:25Z",
+            "message": "fix typo",
+            "number_of_links_in_commit": 0,
+            "files_changed_count": 1,
+            "files": [
+                {
+                    "sha": "24ecdc87908ef318e5526c2116273449dc72e1d7",
+                    "filename": "pretrain_gpt.py",
+                    "status": "modified",
+                    "additions": 1,
+                    "deletions": 1,
+                    "changes": 2,
+                    "blob_url": "https://github.com/NVIDIA/Megatron-LM/blob/cd650d1b892a0b9845cff1461c9afd68e8821997/pretrain_gpt.py",
+                    "raw_url": "https://github.com/NVIDIA/Megatron-LM/raw/cd650d1b892a0b9845cff1461c9afd68e8821997/pretrain_gpt.py",
+                    "contents_url": "https://api.github.com/repos/NVIDIA/Megatron-LM/contents/pretrain_gpt.py?ref=cd650d1b892a0b9845cff1461c9afd68e8821997",
+                    "patch": "@@ -166,7 +166,7 @@ def loss_func(loss_mask: torch.Tensor, output_tensor: torch.Tensor):\n     torch.distributed.all_reduce(reporting_loss, group=mpu.get_data_parallel_group())\n     local_num_tokens = loss[1].clone().detach().to(torch.int)\n \n-    log_dict = {'lm loss': (loss[0], loss[1])}\n+    log_dict = {'lm loss': (reporting_loss[0], reporting_loss[1])}\n     if args.log_z_loss and (z_losses is not None):\n         # ce_loss and z_loss are already detached in cross_entropy.py. No need to detach\n         # them here like reporting_loss."
+                }
+            ]
+        }
+    ],
+    "pull_request_url": "https://github.com/NVIDIA/Megatron-LM/pull/1270",
+    "commits_url": "https://github.com/NVIDIA/Megatron-LM/pull/1270/commits",
+    "files_url": "https://github.com/NVIDIA/Megatron-LM/pull/1270/files"
+}

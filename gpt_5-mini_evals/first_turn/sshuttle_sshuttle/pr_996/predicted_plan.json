@@ -1,0 +1,156 @@
+{
+  "pr_number": 996,
+  "repository": "sshuttle/sshuttle",
+  "title": "Revert \"Support Windows11 As A sshuttle Server\"",
+  "body": "Reverts sshuttle/sshuttle#993\n\nThis change was made in error. See discussion in #993.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T13:26:17.524291",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "sshuttle/server.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "main",
+          "class_name": "sshuttle",
+          "full_name": "sshuttle.server.main",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "list_routes",
+          "class_name": "sshuttle",
+          "full_name": "sshuttle.server.list_routes",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "start_hostwatch",
+          "class_name": "sshuttle",
+          "full_name": "sshuttle.server.start_hostwatch",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "sshuttle/firewall.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "_setup_daemon_for_windows",
+          "class_name": "sshuttle",
+          "full_name": "sshuttle.firewall._setup_daemon_for_windows",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "setup_daemon",
+          "class_name": "sshuttle",
+          "full_name": "sshuttle.firewall.setup_daemon",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "sshuttle/methods/__init__.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "get_auto_method",
+          "class_name": "sshuttle",
+          "full_name": "sshuttle.methods.__init__.get_auto_method",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "sshuttle/methods/windivert.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "is_supported",
+          "class_name": "sshuttle",
+          "full_name": "sshuttle.methods.windivert.Method.is_supported",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Revert the mistaken addition of Windows (Win32) server support by preventing server startup on Windows, disabling Windows-specific firewall daemon setup, and auditing method auto-selection and windivert support so Windows-only methods are not inadvertently used for server-mode.",
+    "steps": [
+      {
+        "operation": "Add early platform guard to refuse server startup on Windows",
+        "file_to_modify": "sshuttle/server.py",
+        "function_to_modify": "main",
+        "reason": "Prevent the SSHuttle server process from running on Windows (sys.platform == 'win32') so Windows-specific server code paths (SocketRWShim, Windows route parsing, hostwatch alternatives) are never exercised. This is the minimal, explicit revert: fail fast and produce a clear message when someone attempts to run the server on Windows.",
+        "side_effects": "All attempts to launch the server on Windows will raise a Fatal (or exit) with a clear message. Client-only Windows use (e.g., running sshuttle on Windows as a client) remains unaffected. Tests that previously expected server startup on Windows must be updated/removed. Any tooling or docs that advertised Windows server support must be reverted."
+      },
+      {
+        "operation": "Make start_hostwatch explicitly POSIX-only (fail on Windows)",
+        "file_to_modify": "sshuttle/server.py",
+        "function_to_modify": "start_hostwatch",
+        "reason": "start_hostwatch uses os.fork() and other POSIX-only behavior. Although server.main will now refuse to run on Windows, add a defensive check in start_hostwatch so that calling it on win32 fails predictably instead of failing in an OS-specific way later.",
+        "side_effects": "Calling start_hostwatch on Windows will raise a clear Fatal error. This is defensive: it doesn't change client behavior, but any code paths that incorrectly call start_hostwatch on Windows will now fail earlier and more clearly. Unit tests that call start_hostwatch directly on Windows will need adjustment."
+      },
+      {
+        "operation": "Prevent Windows route parsing from being used in server mode",
+        "file_to_modify": "sshuttle/server.py",
+        "function_to_modify": "list_routes",
+        "reason": "If server-mode is disabled on Windows, the Windows-specific route-detection codepath should not run. Make list_routes no-op / return an empty list (or log a warning) on sys.platform == 'win32' to avoid accidental use of Windows route detection for a server.",
+        "side_effects": "If any code expects list_routes to return routes on Windows in server contexts, that expectation will break; however, since server startup is blocked on Windows, this is a low-risk change. Tests that assert route discovery on Windows in server contexts must be updated."
+      },
+      {
+        "operation": "Disable or make Windows firewall daemon setup fail with a clear message",
+        "file_to_modify": "sshuttle/firewall.py",
+        "function_to_modify": "_setup_daemon_for_windows",
+        "reason": "Reverting Windows-server support requires disabling the firewall daemon setup that was added for Windows servers. Change _setup_daemon_for_windows to raise Fatal (or otherwise refuse to run) so Windows-specific daemon plumbing is not used.",
+        "side_effects": "Attempts to start the firewall daemon on Windows will now fail with a clear error. Unix firewall daemon mode remains unchanged. Tests and docs that described running the firewall daemon on Windows must be updated. This reduces the attack surface/maintenance burden by removing a rarely tested Windows server codepath."
+      },
+      {
+        "operation": "Rebind setup_daemon so Windows does not expose a working daemon setup",
+        "file_to_modify": "sshuttle/firewall.py",
+        "function_to_modify": "setup_daemon",
+        "reason": "At module load the code binds setup_daemon to the platform-specific implementation. Update the binding so that on sys.platform == 'win32' setup_daemon either points to a function that raises Fatal or is otherwise disabled. This prevents higher-level code from attempting to start a firewall daemon on Windows even if it tries to call setup_daemon.",
+        "side_effects": "Any code path that calls firewall.setup_daemon on Windows will now receive a consistent Fatal error. On Unix, setup_daemon behavior is unchanged. Tests that mock or call setup_daemon on Windows must be updated. API shape is preserved (function exists) but behavior on Windows is restricted."
+      },
+      {
+        "operation": "Audit and make get_auto_method explicitly avoid selecting Windows-only server methods",
+        "file_to_modify": "sshuttle/methods/__init__.py",
+        "function_to_modify": "get_auto_method",
+        "reason": "Ensure method auto-selection does not inadvertently choose Windows-only methods (e.g., windivert) for server-mode usage. Add an explicit, backward-compatible guard (for example, an optional server_mode=False parameter) and filter out Windows-only methods when server_mode is True or when running on sys.platform == 'win32' and server behavior would be inappropriate.",
+        "side_effects": "This is a conservative, backward-compatible change: the added optional parameter has a default so existing callers continue to work. Tests that rely on selecting windivert for server contexts will need to be adjusted. Client-side method selection on Windows remains supported. The change reduces risk of accidentally enabling a Windows server method."
+      },
+      {
+        "operation": "Restore/ensure conservative support check for Windivert method",
+        "file_to_modify": "sshuttle/methods/windivert.py",
+        "function_to_modify": "Method.is_supported",
+        "reason": "Ensure the windivert Method advertises support only for Windows clients (sys.platform == 'win32') and does not broaden support to imply Windows server capability. Revert any expansion that would allow windivert to be used in server-side contexts.",
+        "side_effects": "Windivert will continue to be selectable on Windows clients only. Any previous changes that advertised server-side windivert support will be undone, preventing server-mode selection of this method. Tests that relied on a widened is_supported behavior for server use must be updated; client tests remain valid."
+      }
+    ]
+  }
+}

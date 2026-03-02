@@ -1,0 +1,42 @@
+{
+  "pr_number": 31,
+  "repository": "KwaiVGI/LivePortrait",
+  "title": "Fix: add sound in generated video",
+  "body": "Amazing project!!!\nI found a small bug where the generated video does not have the sound of the original video.\n\nExplore the source code to identify the files and functions to modify.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T11:24:21.559692",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "src/live_portrait_pipeline.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "execute",
+          "class_name": "LivePortraitPipeline",
+          "full_name": "LivePortraitPipeline.execute",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "After images2video writes the generated MP4 files, call utils.video.merge_audio_video to mux the driving video's audio into the generated videos (concatenated visualization and the main output) when the driving input is a video; on failure, log a warning and fall back to the original video files.",
+    "steps": [
+      {
+        "operation": "Add post-processing audio muxing to generated videos",
+        "file_to_modify": "src/live_portrait_pipeline.py",
+        "function_to_modify": "LivePortraitPipeline.execute",
+        "reason": "images2video writes video-only MP4s. Reuse existing utils.video.merge_audio_video to mux the driving video's audio into the generated videos so downstream UI (Gradio) receives videos with sound. This must be done after the pipeline writes the concatenated visualization (wfp_concat) and after the primary generated video (wfp). Use is_video(args.driving_info) as the guard so template runs (no driving video) remain unchanged. Wrap the merge in a try/except to keep behavior robust if ffmpeg/merge fails.",
+        "side_effects": "Behavioral/API: The function will still return (wfp, wfp_concat) tuples as before, but the returned paths may now point to new files (e.g., original.mp4 -> original_with_audio.mp4). Downstream code (GradioPipeline.execute_video, UI) will receive videos with audio without further changes. Tests: unit/integration tests that assert exact filenames or file contents may need updates. CI: ffmpeg must be present on hosts to actually produce merged files; however no crash will occur because merges are guarded with try/except and failures will be logged and the original video path returned. Performance: small additional latency for calling ffmpeg to mux audio and small extra disk usage for additional files (unless overwriting). Dependencies: adds a runtime dependency on ffmpeg binary availability (already assumed by merge_audio_video). Potential edge cases: if multiple processes write/replace the same filenames concurrently, name collisions may occur if merged filename naming is not unique; consider using deterministic '_with_audio' suffix as a conservative choice. No public API signature changes, but tests that inspect file names or check videos for absence/presence of audio must be updated. Ensure log messages/warning use existing logging utility (rlog/log) to surface failures without throwing."
+      }
+    ]
+  }
+}

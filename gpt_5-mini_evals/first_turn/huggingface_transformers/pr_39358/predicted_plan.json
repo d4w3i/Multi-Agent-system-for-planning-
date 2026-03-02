@@ -1,0 +1,102 @@
+{
+  "pr_number": 39358,
+  "repository": "huggingface/transformers",
+  "title": "fix(siglip2): improve pooled output logic in modular file",
+  "body": "Fix pooled output behaviour in the modular Siglip2 implementation so pooled outputs are consistent, projected, normalized, and device/dtype-safe across APIs (get_image_features, multimodal forward, vision transformer pooling head and image-classification path).",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T12:26:11.132086",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "modular_siglip2.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "get_image_features",
+          "class_name": "Siglip2Model",
+          "full_name": "Siglip2Model.get_image_features",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "forward",
+          "class_name": "Siglip2Model",
+          "full_name": "Siglip2Model.forward",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "forward",
+          "class_name": "Siglip2VisionTransformer",
+          "full_name": "Siglip2VisionTransformer.forward",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "forward",
+          "class_name": "Siglip2MultiheadAttentionPoolingHead",
+          "full_name": "Siglip2MultiheadAttentionPoolingHead.forward",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "forward",
+          "class_name": "Siglip2ForImageClassification",
+          "full_name": "Siglip2ForImageClassification.forward",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Make pooled outputs consistent across the Siglip2 modular implementation: ensure pooling head and vision transformer handle attention masks with correct device/dtype/shape, prefer probe-based pooling for image classification, apply projections and normalization consistently in multimodal forward and get_image_features, and compute logit scaling safely in fp32 with clamping.",
+    "steps": [
+      {
+        "operation": "Make pooling head attention-mask device/dtype-safe and shape-correct",
+        "file_to_modify": "modular_siglip2.py",
+        "function_to_modify": "Siglip2MultiheadAttentionPoolingHead.forward",
+        "reason": "The pooling head builds/reshapes an attention_mask and then calls self.attention. If the mask is not moved to the same device/dtype as hidden_state (and shaped correctly for the attention implementation), this causes CPU/GPU/dtype mismatches or wrong masking under mixed precision or flash-attention backends.",
+        "side_effects": "Changes are internal to the pooling head but affect any codepath that uses the head (vision forward, get_image_features, multimodal forward). Tests should cover mixed precision (fp16) and CPU/GPU runs. Behavioural outputs should be unchanged for correct inputs but this avoids dtype/device exceptions. Downstream code expecting to catch previous dtype errors will no longer encounter them. No public API signature changes."
+      },
+      {
+        "operation": "Ensure VisionTransformer prepares attention masks on correct device/dtype and passes aligned masks to the pooling head",
+        "file_to_modify": "modular_siglip2.py",
+        "function_to_modify": "Siglip2VisionTransformer.forward",
+        "reason": "VisionTransformer constructs encoder_attention_mask via _prepare_4d_attention_mask or passes attention_mask directly (flash vs standard). The mask must be converted to the same device/dtype as hidden_states before calling the encoder and before passing it to the pooling head. Also ensure the pooling head receives a mask that matches hidden_state dtype/device.",
+        "side_effects": "Fixes device/dtype mismatch errors when using the vision encoder or pooling head on GPU/with mixed precision. Downstream modules that rely on pooler_output will now receive correctly masked pooled vectors. Tests should include runs with and without flash attention, and with pixel_attention_mask present. No change to public API."
+      },
+      {
+        "operation": "Prefer probe-based pooler_output for image-classification path; make masked-average fallback device/dtype-safe",
+        "file_to_modify": "modular_siglip2.py",
+        "function_to_modify": "Siglip2ForImageClassification.forward",
+        "reason": "Classification path currently always uses token-average pooling even when the vision transformer has a pooling head (probe). For consistency with other API paths, prefer outputs.pooler_output (the head) if available; otherwise keep masked-average but ensure mask is moved to sequence_output.device, cast to sequence_output.dtype and avoid divide-by-zero by clamping the denominator.",
+        "side_effects": "Classification outputs will be consistent with the probe-based pooled embeddings when the head is present, which changes numeric outputs for models where the head is available (intended). Masking/dtype bug fixes avoid runtime errors on GPU/mixed-precision. Tests comparing old vs new outputs should be updated (expected differences when head used). No API signature change, but callers relying on previous average-pooling semantics may observe different logits."
+      },
+      {
+        "operation": "Apply image/text projection (if present) and compute logit scaling in fp32 safely in multimodal forward",
+        "file_to_modify": "modular_siglip2.py",
+        "function_to_modify": "Siglip2Model.forward",
+        "reason": "forward currently uses raw pooler_output and normalizes it but does not apply image_projection/text_projection if present. Also logit_scale.exp() is computed in the embeddings dtype which can overflow in low precision. Apply projections (if attributes exist), normalize projected embeddings, ensure embeddings and logit parameters are on the same device/dtype for matmul, compute logit_scale.exp() in fp32 and clamp to a safe maximum (e.g., 100) before casting to target dtype.",
+        "side_effects": "Logit values and downstream loss gradients can change slightly due to projection application and clamping, which is intended. This makes training/inference robust under mixed precision and multi-device. Unit tests should validate shapes, device/dtype alignment, and numerics (finite values). External behavior: users who previously relied on unprojected pooler_output for similarity may see different results. No function signature change."
+      },
+      {
+        "operation": "Make get_image_features mirror forward: apply image_projection when present, normalize, and document behavior",
+        "file_to_modify": "modular_siglip2.py",
+        "function_to_modify": "Siglip2Model.get_image_features",
+        "reason": "get_image_features currently returns vision_outputs.pooler_output directly (contradicting docstring that suggests returned features are projected). For API consistency, get_image_features should apply self.image_projection (if available), L2-normalize the resulting embeddings and return them. Also ensure device/dtype safety when applying projection and normalizing (avoid zero-norm via clamp). Update docstring to explicitly state returned vector is projected and normalized.",
+        "side_effects": "This changes the public observable output of get_image_features (now projected + normalized), which is intended for consistency but may break callers expecting raw pooler_output. Tests must be updated to expect the projected+normalized output and to validate shapes, dtype/device, and absence of NaNs/infs. No signature change."
+      }
+    ]
+  }
+}

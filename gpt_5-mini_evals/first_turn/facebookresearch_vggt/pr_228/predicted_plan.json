@@ -1,0 +1,42 @@
+{
+  "pr_number": 228,
+  "repository": "facebookresearch/vggt",
+  "title": "Fix a typo in batch_np_matrix_to_pycolmap",
+  "body": "The current implementation can cause `reproj_mask` to be undefined in `batch_np_matrix_to_pycolmap()` if `max_reproj_error = None` causing the following: \n\n```\nif masks is not None and reproj_mask is not None:\nUnboundLocalError: local variable 'reproj_mask' referenced before assignment\n```\n\nInitializing `reproj_mask` beforehand fix that error.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T12:13:41.340920",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "np_to_pycolmap.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "batch_np_matrix_to_pycolmap",
+          "class_name": null,
+          "full_name": "batch_np_matrix_to_pycolmap",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Initialize reproj_mask to None at the start of batch_np_matrix_to_pycolmap to avoid an UnboundLocalError when max_reproj_error is None, preserving existing mask-combining logic and preventing crashes.",
+    "steps": [
+      {
+        "operation": "Initialize reproj_mask before conditional computation",
+        "file_to_modify": "np_to_pycolmap.py",
+        "function_to_modify": "batch_np_matrix_to_pycolmap",
+        "reason": "Prevent UnboundLocalError when max_reproj_error is None: reproj_mask is only assigned inside the if block, but later code references it unconditionally. Initializing reproj_mask = None immediately before the `if max_reproj_error is not None:` preserves the current boolean checks (reproj_mask is not None) and avoids referencing an unbound local variable.",
+        "side_effects": "Low risk. No public API changes or behavioral changes except avoiding a crash when max_reproj_error is None. Downstream callers will see identical mask-combining behavior because reproj_mask remains None when not computed. Recommended to add unit tests exercising combinations of masks (None / not None) and max_reproj_error (None / float) to ensure no regressions. No changes to other functions are required, but tests or code that relied on the UnboundLocalError (unlikely) would be affected."
+      }
+    ]
+  }
+}

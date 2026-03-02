@@ -1,0 +1,65 @@
+{
+  "pr_number": 563,
+  "repository": "netease-youdao/QAnything",
+  "title": "修复错误将chunk_size更新为chunks_number的问题",
+  "body": "KnowledgeBaseManager类中，更新File表的chunk_number字段使用的方法update_chunks_number存在sql语句错误。\n实际为\"UPDATE File SET chunk_size = %s WHERE file_id = %s\"。这会错误地修改chunk_size，导致chunk_size和chunks_number值相同。\n\n同时，在文件插入向量数据库结束后，原代码会有针对chunks_number等信息的统一修改。\n\n所以可以将insert_files_server.py中，process_data中对chunks_number做的更新语句：mysql_client.update_chunks_number(local_file.file_id, chunks_number)进行删除。\n修改后，文件上传成功后chunks_number和chunk_size的值完全正确。",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T12:52:03.293109",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "qanything_kernel/connector/database/mysql/mysql_client.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "update_chunks_number",
+          "class_name": "KnowledgeBaseManager",
+          "full_name": "KnowledgeBaseManager.update_chunks_number",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "qanything_kernel/dependent_server/insert_files_serve/insert_files_server.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "process_data",
+          "class_name": null,
+          "full_name": "process_data",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Fix the SQL bug in KnowledgeBaseManager.update_chunks_number so it updates File.chunks_number (not chunk_size), and remove the redundant mysql_client.update_chunks_number(...) call from process_data to avoid duplicate/incorrect intermediate writes.",
+    "steps": [
+      {
+        "operation": "Fix SQL in update_chunks_number to update correct column",
+        "file_to_modify": "qanything_kernel/connector/database/mysql/mysql_client.py",
+        "function_to_modify": "KnowledgeBaseManager.update_chunks_number",
+        "reason": "The current SQL mistakenly updates the chunk_size column (\"UPDATE File SET chunk_size = %s WHERE file_id = %s\") causing chunk_size to be overwritten with the chunks count. Change the SQL to update the chunks_number column (\"UPDATE File SET chunks_number = %s WHERE file_id = %s\") so the method behaves according to its name and the schema.",
+        "side_effects": "Corrects the underlying bug for any callers of update_chunks_number. Tests should verify that chunk_size (set at file creation) remains unchanged and chunks_number is stored correctly. If any other code incorrectly relied on the old buggy behavior (writing chunks_count into chunk_size), that code will now observe the correct columns and may need adjustment. No DB schema changes required; API (method signature) remains the same."
+      },
+      {
+        "operation": "Remove redundant intermediate DB update of chunks_number",
+        "file_to_modify": "qanything_kernel/dependent_server/insert_files_serve/insert_files_server.py",
+        "function_to_modify": "process_data",
+        "reason": "process_data currently calls mysql_client.update_chunks_number(local_file.file_id, chunks_number) immediately after vector insertion, but check_and_process later persists chunks_number in a single final UPDATE. Removing this redundant call avoids an extra write (and avoided dependency on the buggy method prior to the fix) and centralizes persistence of chunks_number in check_and_process.",
+        "side_effects": "Reduces redundant DB writes and potential race conditions; ensure that the final check_and_process still always executes to persist chunks_number on success. Tests should confirm that after a successful upload the File row contains the correct chunks_number and chunk_size values. If any other logic expects chunks_number to be available immediately after process_data returns (before check_and_process runs), that expectation must be updated. No API or schema changes."
+      }
+    ]
+  }
+}

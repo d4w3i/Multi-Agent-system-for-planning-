@@ -1,0 +1,39 @@
+{
+  "pr_number": 18102,
+  "repository": "apache/tvm",
+  "title": "[RELAX] Fix rotary embedding buffer size calculation",
+  "body": "- Change head_dim//2 to rotary_dim//2 in LongRope scaling\n- Fixes buffer size when rotary_dim differs from head_dim when partial_rotary_factor < 1.0",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T13:41:26.052987",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [],
+  "step_plan": {
+    "summary": "This plan introduces a new rotary scaling utility to fix the LongRope buffer sizing logic and integrates it into the Relax rotary embedding pathway, accompanied by unit tests to cover critical edge cases.",
+    "steps": [
+      {
+        "operation": "Add new rotary scaling utility module implementing corrected buffer size computation",
+        "file_to_modify": "relax/longrope/rotary_scaling.py",
+        "function_to_modify": "LongRopeScaling.compute_buffer_size",
+        "reason": "Implement the fixed calculation: use rotary_dim//2 for the scaling and robust buffer-size computation when rotary_dim != head_dim and partial_rotary_factor < 1.0, matching PR intent.",
+        "side_effects": "Introduces a new API surface; downstream Relax modules must import and call this utility; may require updates to build/tests to recognize the new module"
+      },
+      {
+        "operation": "Refactor LongRope scaling to consume the new utility and apply corrected buffer configuration",
+        "file_to_modify": "relax/longrope/scaling.py",
+        "function_to_modify": "LongRopeScaling.update_buffer_config",
+        "reason": "Replace internal buffer-size calculation with the new.compute_buffer_size to ensure consistent behavior across head_dim/rotary_dim scenarios and partial_rotary_factor bounds.",
+        "side_effects": "Potential behavioral changes if old logic differed; necessitates updates to unit tests and any downstream callers relying on buffer sizing"
+      },
+      {
+        "operation": "Add unit tests validating the new buffer-size calculation and edge cases",
+        "file_to_modify": "tests/relax/test_longrope_scaling.py",
+        "function_to_modify": "test_compute_buffer_size_variants",
+        "reason": "Verify correctness when rotary_dim == head_dim, when rotary_dim != head_dim, and for partial_rotary_factor values including 0.0, 1.0, and <1.0; ensure no div-by-zero or negative sizes",
+        "side_effects": "Tests will increase coverage; may require minor test framework or fixture adjustments; ensures API reliability for future changes"
+      }
+    ]
+  }
+}

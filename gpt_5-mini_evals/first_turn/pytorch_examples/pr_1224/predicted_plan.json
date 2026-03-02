@@ -1,0 +1,72 @@
+{
+  "pr_number": 1224,
+  "repository": "pytorch/examples",
+  "title": "Fixes in Imagenet training script",
+  "body": "* ngpus_per_node variable count fix\n* dist_backend assertion added for nccl issue",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T13:10:20.901163",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "imagenet/main.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "main",
+          "class_name": null,
+          "full_name": "main",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "main_worker",
+          "class_name": null,
+          "full_name": "main_worker",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "all_reduce",
+          "class_name": "AverageMeter",
+          "full_name": "AverageMeter.all_reduce",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Make imagenet/main.py robust to missing or miscomputed GPU counts and incompatible distributed backends: (1) compute and validate ngpus_per_node so it never yields 0, (2) assert NCCL backend compatibility and rank/world_size sanity before initializing the process group, and (3) guard AverageMeter.all_reduce to skip distributed ops when no process group exists.",
+    "steps": [
+      {
+        "operation": "Make ngpus_per_node computation robust and validate before use",
+        "file_to_modify": "imagenet/main.py",
+        "function_to_modify": "main",
+        "reason": "Ensure downstream logic that scales args.world_size, spawns processes with mp.spawn, and computes per-process batch sizes never receives a zero or invalid ngpus_per_node. Compute ngpus_per_node using CUDA availability (torch.cuda.is_available()) and torch.cuda.device_count(), coerce to int and enforce a minimum of 1, and assert validity before mutating args.world_size or calling mp.spawn.",
+        "side_effects": "Changes how world_size is computed when CUDA is unavailable (will avoid multiplying by 0). Tests that assume previous behaviour when no GPUs are present must be updated. Downstream code that expects args.world_size to be unchanged in some edge cases may be affected. This reduces risk of runtime failures due to spawning 0 processes or creating an invalid world_size; distributed training behavior should be validated in CI for both GPU and CPU-only environments."
+      },
+      {
+        "operation": "Add dist-backend compatibility and rank/world_size sanity checks before initializing the process group",
+        "file_to_modify": "imagenet/main.py",
+        "function_to_modify": "main_worker",
+        "reason": "Prevent cryptic runtime errors that occur if the NCCL backend is requested on systems without CUDA or if an invalid rank/world_size is passed to dist.init_process_group. Add a guard that raises/aborts early (or prints a clear error) when args.dist_backend == 'nccl' but torch.cuda.is_available() is False, ensure ngpus_per_node > 0 before using it in rank math, and assert 0 <= args.rank < args.world_size to catch misconfigurations before calling dist.init_process_group.",
+        "side_effects": "Will cause early failure with a clear error message instead of a lower-level NCCL/initialization error on CPU-only environments; may require callers or documentation to set --dist-backend to 'gloo' for CPU runs. Tests for distributed initialization should be updated to expect the new assertion/RuntimeError message. Any automation that relied on previous silent behavior may need changes."
+      },
+      {
+        "operation": "Guard distributed metric aggregation to only run when a process group is available",
+        "file_to_modify": "imagenet/main.py",
+        "function_to_modify": "AverageMeter.all_reduce",
+        "reason": "Avoid attempting torch.distributed.all_reduce when torch.distributed is not available or not initialized; this prevents crashes when AverageMeter.all_reduce is invoked in non-distributed runs or before process-group initialization. Add an early-return guard: if not (dist.is_available() and dist.is_initialized()): return.",
+        "side_effects": "Prevents metric aggregation in non-distributed runs (which is intended). Tests for metric aggregation under non-distributed setups will no longer attempt all_reduce and should be updated accordingly. If any callers expect all_reduce to always perform normalization or produce side effects, they must handle the no-op case. Overall increases robustness across mixed environments and reduces false errors during startup or misconfiguration."
+      }
+    ]
+  }
+}

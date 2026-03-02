@@ -1,0 +1,57 @@
+{
+  "pr_number": 429,
+  "repository": "yihong0618/bilingual_book_maker",
+  "title": "fix: Fix parameter mismatch in EPUBBookLoaderHelper.translate_with_ba…",
+  "body": "## Problem\nThe `translate_with_backoff` method in `EPUBBookLoaderHelper` class was raising TypeError because of parameter mismatch between the method signature and actual calls through the backoff decorator.\n\nError message:\nTypeError: EPUBBookLoaderHelper.translate_with_backoff() takes 1 positional argument but 3 were given\n\n## Solution\n1. Modified the method signature to properly handle parameters:\n   - Added explicit parameters for text and context_flag\n   - Added jitter=None to backoff decorator\n   \n2. Improved error handling and logging\n#bug",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T13:36:50.605621",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "book_maker/loader/helper.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "translate_with_backoff",
+          "class_name": "EPUBBookLoaderHelper",
+          "full_name": "EPUBBookLoaderHelper.translate_with_backoff",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "deal_new",
+          "class_name": "EPUBBookLoaderHelper",
+          "full_name": "EPUBBookLoaderHelper.deal_new",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Fix the TypeError by giving EPUBBookLoaderHelper.translate_with_backoff explicit parameters (text, context_flag=False), add jitter=None to its backoff decorator, and improve logging; then make the caller deal_new invoke the helper clearly with keyword args and handle None translation results for robustness.",
+    "steps": [
+      {
+        "operation": "Change signature and error handling of backoff-wrapped translator",
+        "file_to_modify": "book_maker/loader/helper.py",
+        "function_to_modify": "EPUBBookLoaderHelper.translate_with_backoff",
+        "reason": "Fix TypeError caused by positional args passed from callers (deal_new) to a method that accepted only **kwargs; make the function accept explicit positional args (text, context_flag) so calls using positional parameters work. Also add jitter=None to the backoff decorator and improve logging so retries are diagnosable.",
+        "side_effects": "May change the observable logging output and stack traces for translation errors; tests that asserted on old exception messages/log contents may need update. Other callers that previously relied on a **kwargs-only signature should be checked (unlikely per analysis). The retry/backoff behavior is preserved but jitter added may slightly change timing of retries. No public API change beyond internal helper method signature; however, third-party code that directly called this internal helper with different kwargs could break and must be updated."
+      },
+      {
+        "operation": "Harden caller to use clearer invocation and handle None translation results",
+        "file_to_modify": "book_maker/loader/helper.py",
+        "function_to_modify": "EPUBBookLoaderHelper.deal_new",
+        "reason": "After changing the translate_with_backoff signature, ensure the caller remains correct and clearer: call translate_with_backoff with keyword args (translate_with_backoff(text=p.text, context_flag=self.context_flag)) to remove ambiguity and guard against None returns by substituting an empty string or raising a controlled error. This improves readability and robustness if translators return None or translator exceptions bubble through even after retries.",
+        "side_effects": "Behavioral change if previously None translations were used as-is; tests that expect None must be updated. Using keyword args reduces chance of future parameter-mismatch bugs. If deal_new previously relied on exceptions bubbling differently, test expectations for error handling may need adjustment. No external API change (internal method only), but downstream code consuming deal_new's outputs may see empty strings instead of None and should be verified."
+      }
+    ]
+  }
+}

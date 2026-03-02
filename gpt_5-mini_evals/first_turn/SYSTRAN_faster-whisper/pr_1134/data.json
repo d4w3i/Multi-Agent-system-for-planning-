@@ -1,0 +1,82 @@
+{
+    "repository": "SYSTRAN/faster-whisper",
+    "pull_request_number": 1134,
+    "title": "change `language_detection_threshold` default value",
+    "body": "the current value of `language_detection_threshold` means that `language_detection_segments` will be 1 regardless of the user set value, the new value will ensure that `language_detection_segments` is respected",
+    "pr_date": "2024-11-13T14:01:00Z",
+    "source_branch": "MahmoudAshraf97-fix_lang_threshold",
+    "language": "en",
+    "keywords_detected": {
+        "branch": [
+            "fix"
+        ],
+        "requirement": [
+            "change"
+        ],
+        "body": []
+    },
+    "number_of_links_in_pr": 0,
+    "base_sha": "fb65cd387f4941e1bf2381b88b0f6b9957e56e03",
+    "last_commit_sha": "bc28d46e438e5fbed6ecd5697070c4f4f72a10ce",
+    "diff_between_base_and_last": [
+        {
+            "sha": "0918328d8f8912531b97162e21986d9b4d39586f",
+            "filename": "faster_whisper/transcribe.py",
+            "status": "modified",
+            "additions": 2,
+            "deletions": 5,
+            "changes": 7,
+            "blob_url": "https://github.com/SYSTRAN/faster-whisper/blob/bc28d46e438e5fbed6ecd5697070c4f4f72a10ce/faster_whisper%2Ftranscribe.py",
+            "raw_url": "https://github.com/SYSTRAN/faster-whisper/raw/bc28d46e438e5fbed6ecd5697070c4f4f72a10ce/faster_whisper%2Ftranscribe.py",
+            "contents_url": "https://api.github.com/repos/SYSTRAN/faster-whisper/contents/faster_whisper%2Ftranscribe.py?ref=bc28d46e438e5fbed6ecd5697070c4f4f72a10ce",
+            "patch": "@@ -692,7 +692,7 @@ def transcribe(\n         clip_timestamps: Union[str, List[float]] = \"0\",\n         hallucination_silence_threshold: Optional[float] = None,\n         hotwords: Optional[str] = None,\n-        language_detection_threshold: Optional[float] = None,\n+        language_detection_threshold: Optional[float] = 0.5,\n         language_detection_segments: int = 1,\n     ) -> Tuple[Iterable[Segment], TranscriptionInfo]:\n         \"\"\"Transcribes an input file.\n@@ -882,10 +882,7 @@ def transcribe(\n                     ]\n                     # Get top language token and probability\n                     language, language_probability = all_language_probs[0]\n-                    if (\n-                        language_detection_threshold is None\n-                        or language_probability > language_detection_threshold\n-                    ):\n+                    if language_probability > language_detection_threshold:\n                         break\n                     detected_language_info.setdefault(language, []).append(\n                         language_probability"
+        }
+    ],
+    "commits": [
+        {
+            "sha": "8757c0113e286cf8d4d63d7e21c6e1f5bba5ef75",
+            "commit_date": "2024-11-13T13:59:22Z",
+            "message": "Update transcribe.py",
+            "number_of_links_in_commit": 0,
+            "files_changed_count": 1,
+            "files": [
+                {
+                    "sha": "b0c129053b13249795417bc9ebb54a211d2d4898",
+                    "filename": "faster_whisper/transcribe.py",
+                    "status": "modified",
+                    "additions": 1,
+                    "deletions": 1,
+                    "changes": 2,
+                    "blob_url": "https://github.com/SYSTRAN/faster-whisper/blob/8757c0113e286cf8d4d63d7e21c6e1f5bba5ef75/faster_whisper%2Ftranscribe.py",
+                    "raw_url": "https://github.com/SYSTRAN/faster-whisper/raw/8757c0113e286cf8d4d63d7e21c6e1f5bba5ef75/faster_whisper%2Ftranscribe.py",
+                    "contents_url": "https://api.github.com/repos/SYSTRAN/faster-whisper/contents/faster_whisper%2Ftranscribe.py?ref=8757c0113e286cf8d4d63d7e21c6e1f5bba5ef75",
+                    "patch": "@@ -692,7 +692,7 @@ def transcribe(\n         clip_timestamps: Union[str, List[float]] = \"0\",\n         hallucination_silence_threshold: Optional[float] = None,\n         hotwords: Optional[str] = None,\n-        language_detection_threshold: Optional[float] = None,\n+        language_detection_threshold: Optional[float] = 0.5,\n         language_detection_segments: int = 1,\n     ) -> Tuple[Iterable[Segment], TranscriptionInfo]:\n         \"\"\"Transcribes an input file."
+                }
+            ]
+        },
+        {
+            "sha": "bc28d46e438e5fbed6ecd5697070c4f4f72a10ce",
+            "commit_date": "2024-11-13T14:04:21Z",
+            "message": "..",
+            "number_of_links_in_commit": 0,
+            "files_changed_count": 1,
+            "files": [
+                {
+                    "sha": "0918328d8f8912531b97162e21986d9b4d39586f",
+                    "filename": "faster_whisper/transcribe.py",
+                    "status": "modified",
+                    "additions": 1,
+                    "deletions": 4,
+                    "changes": 5,
+                    "blob_url": "https://github.com/SYSTRAN/faster-whisper/blob/bc28d46e438e5fbed6ecd5697070c4f4f72a10ce/faster_whisper%2Ftranscribe.py",
+                    "raw_url": "https://github.com/SYSTRAN/faster-whisper/raw/bc28d46e438e5fbed6ecd5697070c4f4f72a10ce/faster_whisper%2Ftranscribe.py",
+                    "contents_url": "https://api.github.com/repos/SYSTRAN/faster-whisper/contents/faster_whisper%2Ftranscribe.py?ref=bc28d46e438e5fbed6ecd5697070c4f4f72a10ce",
+                    "patch": "@@ -882,10 +882,7 @@ def transcribe(\n                     ]\n                     # Get top language token and probability\n                     language, language_probability = all_language_probs[0]\n-                    if (\n-                        language_detection_threshold is None\n-                        or language_probability > language_detection_threshold\n-                    ):\n+                    if language_probability > language_detection_threshold:\n                         break\n                     detected_language_info.setdefault(language, []).append(\n                         language_probability"
+                }
+            ]
+        }
+    ],
+    "pull_request_url": "https://github.com/SYSTRAN/faster-whisper/pull/1134",
+    "commits_url": "https://github.com/SYSTRAN/faster-whisper/pull/1134/commits",
+    "files_url": "https://github.com/SYSTRAN/faster-whisper/pull/1134/files"
+}

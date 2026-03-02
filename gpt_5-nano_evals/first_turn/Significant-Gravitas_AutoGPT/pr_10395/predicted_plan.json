@@ -1,0 +1,42 @@
+{
+  "pr_number": 10395,
+  "repository": "Significant-Gravitas/AutoGPT",
+  "title": "feat(block;backend):  Truncate execution update payload on large data & Improve ReadSpreadsheetBlock performance",
+  "body": "### Changes 🏗️\n\nThis PR introduces several key improvements to message handling, block functionality, and execution reliability:\n\n- **Renamed CSV block to Spreadsheet block** with enhanced CSV/Excel processing capabilities\n- **Added message size limiting and truncation** for Redis communication to prevent connection issues\n- **Optimized FileReadBlock** to yield content chunks instead of duplicated outputs for better performance\n- **Improved execution termination handling** with better timeout management and event publishing\n- **Enhanced continuous retry decorator** with async function support\n- **Implemented payload truncation** to prevent Redis connection issues from oversized messages\n\n### Checklist 📋\n\n#### For code changes:\n- [x] I have clearly listed my changes in the PR description\n- [x] I have made a test plan\n- [x] I have tested my changes according to the test plan:\n  - [x] Verified backend starts without errors\n  - [x] Confirmed message truncation works for large payloads\n  - [x] Tested spreadsheet block functionality with CSV and Excel files\n  - [x] Validated execution termination improvements\n  - [x] Checked FileReadBlock chunk processing\n\n#### For configuration changes:\n- [x] `.env.example` is updated or already compatible with my changes\n- [x] `docker-compose.yml` is updated or already compatible with my changes\n- [x] I have included a list of my configuration changes in the PR description (under **Changes**)\n\n🤖 Generated with Claude Code\n\nExplore the source code to identify the files and functions to modify.\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T13:35:39.834718",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "autogpt_platform/backend/backend/blocks/csv.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "run",
+          "class_name": "ReadSpreadsheetBlock",
+          "full_name": "ReadSpreadsheetBlock.run",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "This PR primarily updates the SpreadsheetBlock (formerly ReadSpreadsheetBlock) to support chunked emission and payload truncation, enabling large spreadsheets to be processed without overloading Redis messages, while preserving backward compatibility through an alias. The change focuses on ReadSpreadsheetBlock.run to emit in chunks when configured and to respect max_payload_chars, with an alias to maintain existing integrations.",
+    "steps": [
+      {
+        "operation": "Enhance ReadSpreadsheetBlock.run with chunked emission and payload truncation, and add a backward-compatible module-level alias SpreadsheetBlock = ReadSpreadsheetBlock to preserve compatibility",
+        "file_to_modify": "autogpt_platform/backend/backend/blocks/csv.py",
+        "function_to_modify": "ReadSpreadsheetBlock.run",
+        "reason": "To support large datasets by emitting in chunks and truncating payloads to stay within Redis message size limits, while keeping backward compatibility with existing consumers via an alias",
+        "side_effects": "Downstream blocks may receive multiple chunks of rows; existing tests may need updates to handle chunked outputs; requires adding tests for small vs large datasets and for max_rows_per_batch and max_payload_chars settings; potential minor performance changes due to chunking logic and serialization size checks"
+      }
+    ]
+  }
+}

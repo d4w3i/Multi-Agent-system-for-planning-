@@ -1,0 +1,133 @@
+{
+  "pr_number": 17947,
+  "repository": "saleor/saleor",
+  "title": "Fix incorrect multipler for limit field",
+  "body": "I want to merge this change because we recently introduced the `values` field with input limit. By accident the query cost was added to incorrect place. This PR fixes this. \n\n> [!IMPORTANT]  \n> The changes on `SelectedAttribute` is expected. We don't have `limit` there, and it is not paginated.  (The query cost for this field will be handled separatly)\n\n<!-- Please mention all relevant issue numbers. -->\n<!-- GitHub issue number is required for external contributions. -->\n\n# Impact\n\n- [ ] New migrations\n- [ ] New/Updated API fields or mutations\n- [ ] Deprecated API fields or mutations\n- [ ] Removed API types, fields, or mutations\n\n# Docs\n\n<!-- Docs are stored in a separate repository: https://github.com/saleor/saleor-docs/. -->\n<!-- Please provide a link to the PR that updates documentation for your changes. -->\n<!-- If changes in docs are not required, please mention that in the description. -->\n\n- [ ] Link to documentation:\n\n# Pull Request Checklist\n\n<!-- Please keep this section. It helps maintainers. -->\n\n- [ ] Privileged queries and mutations are either absent or guarded by proper permission checks\n- [ ] Database queries are optimized and the number of queries is constant\n- [ ] Database migrations are either absent or optimized for zero downtime\n- [ ] The changes are covered by test cases\n- [ ] All new fields/inputs/mutations have proper labels added (`ADDED_IN_X`, `PREVIEW_FEATURE`, etc.)\n- [ ] All migrations have proper dependencies\n- [ ] All indexes are added concurrently in migrations\n- [ ] All RunSql and RunPython migrations have revert option defined",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T14:28:59.035665",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "saleor/graphql/account/filters.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "filter_number_of_orders",
+          "class_name": "saleor",
+          "full_name": "saleor.graphql.account.filters.filter_number_of_orders",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "filter_placed_orders",
+          "class_name": "saleor",
+          "full_name": "saleor.graphql.account.filters.filter_placed_orders",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "saleor/graphql/product/dataloaders/attributes.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "batch_load",
+          "class_name": "SelectedAttributesAllByProductIdLoader",
+          "full_name": "SelectedAttributesAllByProductIdLoader.batch_load",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "batch_load",
+          "class_name": "SelectedAttributesVisibleInStorefrontByProductIdLoader",
+          "full_name": "SelectedAttributesVisibleInStorefrontByProductIdLoader.batch_load",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "batch_load",
+          "class_name": "SelectedAttributesByProductVariantIdLoader",
+          "full_name": "SelectedAttributesByProductVariantIdLoader.batch_load",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "saleor/graphql/product/mutations/attributes.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "perform_mutation",
+          "class_name": "ProductAttributeAssign",
+          "full_name": "ProductAttributeAssign.perform_mutation",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "The PR fixes an incorrect multiplier applied to the limit field by targeting the exact cost-sensitive paths (account filters and SelectedAttributes data loading). It introduces targeted Python-level changes in limit handling, batch-loading optimizations for attributes, and validation for attribute mutations to prevent inflated query costs while preserving correctness.",
+    "steps": [
+      {
+        "operation": "Review and fix limit multiplier application in filter_number_of_orders",
+        "file_to_modify": "saleor/graphql/account/filters.py",
+        "function_to_modify": "filter_number_of_orders",
+        "reason": "Limit-like behavior is implemented via annotation and range; ensure multiplier targets the intended field and does not inflate query costs when combined with other filters, aligning with the PR note about SelectedAttribute changes.",
+        "side_effects": "Regression risk in existing number_of_orders queries; add regression tests for limit behavior; potential need for query cost monitoring adjustments."
+      },
+      {
+        "operation": "Review and adjust limit/cost handling in filter_placed_orders",
+        "file_to_modify": "saleor/graphql/account/filters.py",
+        "function_to_modify": "filter_placed_orders",
+        "reason": "Costly subquery path; validate multiplier usage to avoid duplicative or misplaced costs and consider indexing hints to keep query cost predictable.",
+        "side_effects": "Tests for edge-case placed_orders filtering; possible index recommendations and minor query plan changes."
+      },
+      {
+        "operation": "Optimize batch loading for all-selected attributes per product",
+        "file_to_modify": "saleor/graphql/product/dataloaders/attributes.py",
+        "function_to_modify": "SelectedAttributesAllByProductIdLoader.batch_load",
+        "reason": "SelectedAttributes loading path is central to query cost; ensure efficient batching, reduce N+1 patterns, and apply correct limit semantics without inflating counts.",
+        "side_effects": "Potential data shape adjustments and performance improvements; add tests for bulk product attribute loading."
+      },
+      {
+        "operation": "Optimize batch loading of storefront-visible attributes per product",
+        "file_to_modify": "saleor/graphql/product/dataloaders/attributes.py",
+        "function_to_modify": "SelectedAttributesVisibleInStorefrontByProductIdLoader.batch_load",
+        "reason": "Storefront visibility path must be efficient and correct; ensure batch loading respects visibility rules without unnecessary counting or expensive subqueries.",
+        "side_effects": "Tests for storefront attribute visibility; potential minor changes to data returned for storefront queries."
+      },
+      {
+        "operation": "Optimize batch loading of selected attributes by product variant",
+        "file_to_modify": "saleor/graphql/product/dataloaders/attributes.py",
+        "function_to_modify": "SelectedAttributesByProductVariantIdLoader.batch_load",
+        "reason": "Variant-level attribute loading is a critical hot path; improve batching to minimize DB hits and ensure the final payload matches expectations without extra counting overhead.",
+        "side_effects": "Performance improvements; add tests around variant-level attribute loading and verify data structure compatibility."
+      },
+      {
+        "operation": "Validate and adjust ProductAttributeAssign mutation for values payload",
+        "file_to_modify": "saleor/graphql/product/mutations/attributes.py",
+        "function_to_modify": "ProductAttributeAssign.perform_mutation",
+        "reason": "If the patch touches how values are passed or limited in mutation payloads, enforce input validation and transactional safety to prevent costly or incorrect reordering/assignment operations.",
+        "side_effects": "Mutation API behavior changes if validation or ordering logic is adjusted; add tests for concurrent reordering scenarios and ensure backward compatibility where appropriate."
+      }
+    ]
+  }
+}

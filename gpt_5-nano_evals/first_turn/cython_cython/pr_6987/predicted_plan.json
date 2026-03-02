@@ -1,0 +1,87 @@
+{
+  "pr_number": 6987,
+  "repository": "cython/cython",
+  "title": "Fix return type of bytes.join()",
+  "body": "Summary of the issue:\n- The MASCA/type-inference path occasionally infers a PyObject return type for bytes.join(), instead of the expected bytes. This aligns with tests noting that some cases (e.g., tests/run/bytesmethods.pyx) don't yield the correct non-PyObject return type.\n\nProposed approach:\n- Adjust the type spanning / return-type resolution logic so that, in join-like scenarios involving the built-in bytes type, the inferred return type is bytes rather than PyObject whenever possible.\n- Target the core type inference machinery that combines candidate types (i.e., where multiple type possibilities are merged into a single result). This is primarily handled in the TypeInference module, including find_spanning_type and the surrounding spanning helpers.\n- Propagate anyBytes-specific preference through the inference passes so that a bytes.join expression yields bytes, not PyObject, without broadly breaking other type-inference behaviors.\n\nWhat to modify (high level):\n- Introduce a targeted special-case in the spanning logic for bytes-related operations (particularly join) to prefer bytes_type when a join-like computation is detected on a bytes receiver.\n- Ensure safe and aggressive spanning modes (safe_spanning_type and aggressive_spanning_type) consistently honor this special-case.\n- Update the SimpleAssignmentTypeInferer.infer_types path so that a join expression on a bytes receiver is explicitly resolved to bytes_type when appropriate.\n\nTesting notes:\n- Re-run existing tests around bytes.join (e.g., tests/run/bytesmethods.pyx).\n- Add or extend tests to cover scenarios where the join operates on a bytes sequence and verify the return type is bytes in MASCA-enabled paths.\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T13:43:32.644069",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "Cython/Compiler/TypeInference.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "find_spanning_type",
+          "class_name": "TypeInference",
+          "full_name": "TypeInference.find_spanning_type",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "aggressive_spanning_type",
+          "class_name": "TypeInference",
+          "full_name": "TypeInference.aggressive_spanning_type",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "safe_spanning_type",
+          "class_name": "TypeInference",
+          "full_name": "TypeInference.safe_spanning_type",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "infer_types",
+          "class_name": "TypeInference",
+          "full_name": "TypeInference.SimpleAssignmentTypeInferer.infer_types",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Implement a targeted bytes-context bias in MASCA's type inference so that bytes.join returns bytes rather than PyObject by adjusting the spanning logic (find_spanning_type) and propagating the change through aggressive and safe spanning paths, plus refining the SimpleAssignmentTypeInferer.infer_types path.",
+    "steps": [
+      {
+        "operation": "Add bytes-specific special-case in find_spanning_type to prefer bytes_type when inputs involve a bytes receiver in join-like operations",
+        "file_to_modify": "Cython/Compiler/TypeInference.py",
+        "function_to_modify": "TypeInference.find_spanning_type",
+        "reason": "To bias the spanning logic toward bytes_type in bytes.join scenarios, ensuring the inferred return type is bytes rather than PyObject when feasible.",
+        "side_effects": "May slightly affect other join-like inferences; requires updating tests; potential downstream impacts on tests that rely on PyObject fallback; ensure no regressions in non-bytes code."
+      },
+      {
+        "operation": "Propagate new bytes-type preference through aggressive_spanning_type",
+        "file_to_modify": "Cython/Compiler/TypeInference.py",
+        "function_to_modify": "TypeInference.aggressive_spanning_type",
+        "reason": "Ensure the bytes preference is not lost in aggressive spanning path and consistently yields bytes in bytes.join contexts.",
+        "side_effects": "Could affect performance slightly; ensure other paths still work; require tests."
+      },
+      {
+        "operation": "Propagate new bytes-type preference through safe_spanning_type",
+        "file_to_modify": "Cython/Compiler/TypeInference.py",
+        "function_to_modify": "TypeInference.safe_spanning_type",
+        "reason": "Ensure the bytes preference is honored in safe spanning path too, covering different inference modes.",
+        "side_effects": "Potential interactions with safe mode constraints; verify tests."
+      },
+      {
+        "operation": "Adjust SimpleAssignmentTypeInferer.infer_types to bias join-on-bytes assignments toward bytes_type",
+        "file_to_modify": "Cython/Compiler/TypeInference.py",
+        "function_to_modify": "SimpleAssignmentTypeInferer.infer_types",
+        "reason": "Directly biases the inference result for join expressions on a bytes receiver to return bytes_type when applicable, aligning with Python semantics and MASCA expectations.",
+        "side_effects": "Affects a broader set of assignment inferences; update tests for edge cases with mixed types; ensure no regression in non-bytes cases."
+      }
+    ]
+  }
+}

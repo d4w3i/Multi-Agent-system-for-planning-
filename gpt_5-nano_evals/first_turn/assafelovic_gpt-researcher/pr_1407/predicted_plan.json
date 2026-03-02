@@ -1,0 +1,42 @@
+{
+  "pr_number": 1407,
+  "repository": "assafelovic/gpt-researcher",
+  "title": "Fix return statements in PyMuPDFScraper",
+  "body": "Two small but important bug fixes for PyMuPDFScraper:\n\n1) Exception handling paths were not returning any value, which means None could be returned. Downstream code expects a tuple and attempts to unpack it, leading to errors. The fix is to return empty/default values (empty string, empty list, empty string) in except blocks, mirroring the patterns used by other scrapers.\n\n2) The scraper method scrape() is declared to return a str, but it actually returns a tuple of (str, list[str], str). Align the type annotation with the actual return type to avoid type-mismatch issues and improve clarity.\n\nThese changes should make error cases predictable and keep downstream consumers from failing due to None or incorrect typing.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T13:39:44.886481",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "pymupdf.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "scrape",
+          "class_name": "PyMuPDFScraper",
+          "full_name": "PyMuPDFScraper.scrape",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "This PR fixes the PyMuPDFScraper.scrape return semantics by ensuring all code paths return a consistent tuple (content, images, title) and by updating the type annotation to tuple[str, list[str], str].",
+    "steps": [
+      {
+        "operation": "Update PyMuPDFScraper.scrape to return a stable triple and adjust the type annotation",
+        "file_to_modify": "pymupdf.py",
+        "function_to_modify": "PyMuPDFScraper.scrape",
+        "reason": "Currently scrape is annotated to return a str but actually returns a tuple (str, list[str], str). In error paths, it returns None due to missing return statements. Align the annotation with the actual return type and ensure error paths return a stable default value.",
+        "side_effects": "Public API surface changes; downstream callers unpacking the return must be updated or verified to handle a tuple. Tests need to assert the new return shape. Potential need for minor updates to any external integrations relying on the old signature."
+      }
+    ]
+  }
+}

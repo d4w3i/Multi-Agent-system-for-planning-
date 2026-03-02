@@ -1,0 +1,49 @@
+{
+  "pr_number": 15574,
+  "repository": "goauthentik/authentik",
+  "title": "enterprise/audit: fix diff with update_fields",
+  "body": "Summary: Align diff generation with update_fields in EnterpriseAuditMiddleware.\n\nWhat this fixes:\n- When saving with update_fields, the previous-state snapshot (captured at post_init) could diverge from the fields serialized for the diff, potentially producing inconsistent or overly broad diffs.\n- A potential bug around FileField type handling that could affect how file-related fields are serialized.\n\nWhat I’m changing:\n- Serialize only the fields specified by update_fields when provided, ensuring the diff only reflects those updated fields.\n- Correct FileField handling by properly detecting FileField instances and serializing safely (prefer filename/path representation and avoid extra queries).\n- Keep existing behavior when update_fields is None (full snapshot and diff as before).\n\nImpact:\n- The diff payload logged by EnterpriseAuditMiddleware.post_save_handler will reliably reflect only the updated fields when update_fields is used, improving accuracy of audit diffs.\n- Minor improvement to field serialization resilience and correctness, particularly for file fields.\n\nTests:\n- Update tests to cover: saving with update_fields results in a diff that only contains the updated fields; ensure FileField serialization is stable and does not trigger unintended queries.\n\nNotes:\n- The changes are isolated to the enterprise audit middleware and should remain backward compatible when update_fields is not used.\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T13:53:10.063116",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "middleware.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "serialize_simple",
+          "class_name": "EnterpriseAuditMiddleware",
+          "full_name": "EnterpriseAuditMiddleware.serialize_simple",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Align EnterpriseAuditMiddleware's diff generation with update_fields semantics by tightening field serialization and diff computation, including robust FileField handling and consistent before/after state keys.",
+    "steps": [
+      {
+        "operation": "Refine serialize_simple to honor update_fields and robustly handle FileField",
+        "file_to_modify": "base_project/middleware.py",
+        "function_to_modify": "EnterpriseAuditMiddleware.serialize_simple",
+        "reason": "Filter serialized output to include only fields specified by update_fields when provided, and correctly serialize FileField values by using the field's filename/path representation (avoid unnecessary queries). Also fix the incorrect File handling that referenced a non-existent variable.",
+        "side_effects": "Tests expecting full-field diffs under update_fields may need adjustment; ensures more deterministic diffs for file fields; slight performance overhead from extra type checks."
+      },
+      {
+        "operation": "Align pre-change snapshot with update_fields by filtering prev_state in post_save_handler",
+        "file_to_modify": "base_project/middleware.py",
+        "function_to_modify": "EnterpriseAuditMiddleware.post_save_handler",
+        "reason": "When update_fields is provided, the previously captured snapshot (_previous_state) may include fields outside update_fields. Filter prev_state to only include update_fields before diffing to ensure the diff reflects only updated fields.",
+        "side_effects": "Diff content for update_fields scenarios will align with updated fields; tests expecting prior behavior may require updates; potential minor changes in diff payload shapes for update_paths."
+      }
+    ]
+  }
+}

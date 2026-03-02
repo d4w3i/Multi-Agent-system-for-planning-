@@ -1,0 +1,181 @@
+{
+  "pr_number": 15574,
+  "repository": "goauthentik/authentik",
+  "title": "enterprise/audit: fix diff with update_fields",
+  "body": "<!--\r\n👋 Hi there! Welcome.\r\n\r\nPlease check the Contributing guidelines: https://docs.goauthentik.io/docs/developer-docs/#how-can-i-contribute\r\n-->\r\n\r\n## Details\r\n\r\n<!--\r\nExplain what this PR changes, what the rationale behind the change is, if any new requirements are introduced or any breaking changes caused by this PR.\r\n\r\nIdeally also link an Issue for context that this PR will close using `closes #`\r\n-->\r\nREPLACE ME\r\n\r\n---\r\n\r\n## Checklist\r\n\r\n-   [ ] Local tests pass (`ak test authentik/`)\r\n-   [ ] The code has been formatted (`make lint-fix`)\r\n\r\nIf an API change has been made\r\n\r\n-   [ ] The API schema has been updated (`make gen-build`)\r\n\r\nIf changes to the frontend have been made\r\n\r\n-   [ ] The code has been formatted (`make web`)\r\n\r\nIf applicable\r\n\r\n-   [ ] The documentation has been updated\r\n-   [ ] The documentation has been formatted (`make docs`)\r\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-02-25T15:51:13.674567",
+    "extractor_version": "1.0.0",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "authentik/enterprise/audit/middleware.py",
+      "status": "modified",
+      "additions": 8,
+      "deletions": 6,
+      "functions_modified": [
+        {
+          "function_name": "serialize_simple",
+          "class_name": "EnterpriseAuditMiddleware",
+          "full_name": "EnterpriseAuditMiddleware.serialize_simple",
+          "start_line": 47,
+          "end_line": 66,
+          "lines_changed": [
+            47
+          ]
+        },
+        {
+          "function_name": "diff",
+          "class_name": "EnterpriseAuditMiddleware",
+          "full_name": "EnterpriseAuditMiddleware.diff",
+          "start_line": 68,
+          "end_line": 81,
+          "lines_changed": [
+            68,
+            72,
+            73,
+            77,
+            78
+          ]
+        },
+        {
+          "function_name": "post_save_handler",
+          "class_name": "EnterpriseAuditMiddleware",
+          "full_name": "EnterpriseAuditMiddleware.post_save_handler",
+          "start_line": 95,
+          "end_line": 118,
+          "lines_changed": [
+            115,
+            116
+          ]
+        }
+      ],
+      "patch": "@@ -44,7 +44,7 @@ def disconnect(self, request: HttpRequest):\n             return\n         post_init.disconnect(dispatch_uid=request.request_id)\n \n-    def serialize_simple(self, model: Model, update_fields: list[str] | None = None) -> dict:\n+    def serialize_simple(self, model: Model) -> dict:\n         \"\"\"Serialize a model in a very simple way. No ForeignKeys or other relationships are\n         resolved\"\"\"\n         data = {}\n@@ -53,8 +53,6 @@ def serialize_simple(self, model: Model, update_fields: list[str] | None = None)\n             value = None\n             if field.get_attname() in deferred_fields:\n                 continue\n-            if update_fields and field.name not in update_fields:\n-                continue\n \n             field_value = getattr(model, field.attname)\n             if isinstance(value, File):\n@@ -67,13 +65,17 @@ def serialize_simple(self, model: Model, update_fields: list[str] | None = None)\n             data[field.name] = deepcopy(field_value)\n         return cleanse_dict(data)\n \n-    def diff(self, before: dict, after: dict) -> dict:\n+    def diff(self, before: dict, after: dict, update_fields: list[str] | None = None) -> dict:\n         \"\"\"Generate diff between dicts\"\"\"\n         diff = {}\n         for key, value in before.items():\n+            if update_fields and key not in update_fields:\n+                continue\n             if after.get(key) != value:\n                 diff[key] = {\"previous_value\": value, \"new_value\": after.get(key)}\n         for key, value in after.items():\n+            if update_fields and key not in update_fields:\n+                continue\n             if key not in before and key not in diff and before.get(key) != value:\n                 diff[key] = {\"previous_value\": before.get(key), \"new_value\": value}\n         return sanitize_item(diff)\n@@ -110,8 +112,8 @@ def post_save_handler(\n             if created:\n                 prev_state = {}\n             # Get current state\n-            new_state = self.serialize_simple(instance, update_fields)\n-            diff = self.diff(prev_state, new_state)\n+            new_state = self.serialize_simple(instance)\n+            diff = self.diff(prev_state, new_state, update_fields)\n             thread_kwargs[\"diff\"] = diff\n         return super().post_save_handler(request, sender, instance, created, thread_kwargs, **_)\n "
+    },
+    {
+      "filename": "authentik/enterprise/audit/tests.py",
+      "status": "modified",
+      "additions": 13,
+      "deletions": 4,
+      "functions_modified": [
+        {
+          "function_name": "test_diff_update_fields",
+          "class_name": "TestEnterpriseAudit",
+          "full_name": "TestEnterpriseAudit.test_diff_update_fields",
+          "start_line": 217,
+          "end_line": 231,
+          "lines_changed": [
+            217,
+            220,
+            221,
+            222,
+            223,
+            224,
+            225,
+            226,
+            227,
+            228,
+            229,
+            230,
+            231
+          ]
+        }
+      ],
+      "patch": "@@ -214,9 +214,18 @@ def test_m2m_remove(self):\n         \"authentik.enterprise.audit.middleware.EnterpriseAuditMiddleware.enabled\",\n         PropertyMock(return_value=True),\n     )\n-    def test_serialize_fields(self):\n+    def test_diff_update_fields(self):\n         \"\"\"Test update audit log\"\"\"\n         self.client.force_login(self.user)\n-        user = create_test_admin_user()\n-        state = EnterpriseAuditMiddleware(None).serialize_simple(user, update_fields=[\"is_active\"])\n-        self.assertEqual(state, {\"is_active\": True})\n+        diff = EnterpriseAuditMiddleware(None).diff(\n+            {\n+                \"foo\": \"bar\",\n+                \"is_active\": False,\n+            },\n+            {\n+                \"foo\": \"baz\",\n+                \"is_active\": True,\n+            },\n+            update_fields=[\"is_active\"],\n+        )\n+        self.assertEqual(diff, {\"is_active\": {\"new_value\": True, \"previous_value\": False}})"
+    }
+  ],
+  "functions_modified": [
+    {
+      "function_name": "serialize_simple",
+      "class_name": "EnterpriseAuditMiddleware",
+      "full_name": "EnterpriseAuditMiddleware.serialize_simple",
+      "start_line": 47,
+      "end_line": 66,
+      "lines_changed": [
+        47
+      ]
+    },
+    {
+      "function_name": "diff",
+      "class_name": "EnterpriseAuditMiddleware",
+      "full_name": "EnterpriseAuditMiddleware.diff",
+      "start_line": 68,
+      "end_line": 81,
+      "lines_changed": [
+        68,
+        72,
+        73,
+        77,
+        78
+      ]
+    },
+    {
+      "function_name": "post_save_handler",
+      "class_name": "EnterpriseAuditMiddleware",
+      "full_name": "EnterpriseAuditMiddleware.post_save_handler",
+      "start_line": 95,
+      "end_line": 118,
+      "lines_changed": [
+        115,
+        116
+      ]
+    },
+    {
+      "function_name": "test_diff_update_fields",
+      "class_name": "TestEnterpriseAudit",
+      "full_name": "TestEnterpriseAudit.test_diff_update_fields",
+      "start_line": 217,
+      "end_line": 231,
+      "lines_changed": [
+        217,
+        220,
+        221,
+        222,
+        223,
+        224,
+        225,
+        226,
+        227,
+        228,
+        229,
+        230,
+        231
+      ]
+    }
+  ],
+  "step_plan": {
+    "steps": [
+      {
+        "operation": "Refactor model serialization to always include all non-deferred fields (remove update_fields filtering)",
+        "file_to_modify": "authentik/enterprise/audit/middleware.py",
+        "function_to_modify": "EnterpriseAuditMiddleware.serialize_simple",
+        "reason": "Filtering in serialize_simple based on update_fields caused incorrect/partial state snapshots; the audit system needs a consistent full-model snapshot (excluding deferred fields) so that diffing logic can correctly decide what to log.",
+        "side_effects": "Serialized payloads for audit processing may include more keys than before, which can slightly increase memory/CPU usage and could change expectations in any callers/tests that relied on partial serialization."
+      },
+      {
+        "operation": "Add update_fields-aware filtering to diff generation",
+        "file_to_modify": "authentik/enterprise/audit/middleware.py",
+        "function_to_modify": "EnterpriseAuditMiddleware.diff",
+        "reason": "update_fields should constrain which fields are considered changed in an audit entry; applying filtering in diff ensures only the intended updated fields are logged even when the serialized state includes the full model.",
+        "side_effects": "Audit diffs will now omit changes for fields not listed in update_fields; if any caller expected unrelated changes to appear in diffs for partial updates, those entries will become narrower."
+      },
+      {
+        "operation": "Update post-save audit pipeline to use full serialization and pass update_fields only to diff computation",
+        "file_to_modify": "authentik/enterprise/audit/middleware.py",
+        "function_to_modify": "EnterpriseAuditMiddleware.post_save_handler",
+        "reason": "With serialize_simple no longer taking update_fields, post_save_handler must serialize the complete current state and then apply update_fields at the diff stage to preserve correct semantics for partial updates.",
+        "side_effects": "Changes the shape of intermediate thread_kwargs['diff'] generation; could affect downstream audit log formatting if it depended on serialize_simple filtering behavior."
+      },
+      {
+        "operation": "Rewrite the unit test to validate diff behavior when update_fields is provided",
+        "file_to_modify": "authentik/enterprise/audit/tests.py",
+        "function_to_modify": null,
+        "reason": "The prior test asserted serialization filtering; after moving update_fields handling into diff, the test must instead ensure diff only reports changes for fields listed in update_fields and ignores other changed keys.",
+        "side_effects": "Test suite coverage shifts from serialization behavior to diff behavior; any future refactors that alter diff filtering semantics will now be caught by this test."
+      }
+    ],
+    "summary": "Fix enterprise audit diff generation for partial updates by moving update_fields filtering from serialization into the diff computation, and update tests to assert the new behavior."
+  }
+}

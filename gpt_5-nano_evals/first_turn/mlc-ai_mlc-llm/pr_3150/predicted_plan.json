@@ -1,0 +1,120 @@
+{
+  "pr_number": 3150,
+  "repository": "mlc-ai/mlc-llm",
+  "title": "Fixed log prob result generation",
+  "body": "This PR addresses the generation of log probabilities (logprobs) in the text completion pipeline, specifically tightening how logprobs are computed, merged, and surfaced for each generated token (and per-token top-k options). The goal is to ensure logprobs for each token in a given choice are merged and emitted consistently across the generation flow, matching examples like the provided New response where per-token token_logprobs and top_logprobs are aligned with the actual generated sequence.\n\nWhat this implies in practice:\n- Correct per-token logprob values (log of the chosen token's probability) are produced and attached to the logprobs structure for the API response.\n- top_logprobs per token reflect the correct distribution around the chosen token, without mixing across positions.\n- The changes touch the logit processing layer (how logits are updated and converted to probabilities) and the sampling path (how the chosen token’s probability is surfaced as logprob), and ensure the same behavior is preserved in batch decoding and speculative decoding paths.\n\nKey areas touched by the PR (high level):\n- Ensure in-place logit updates (bias, penalties, masking) produce consistent per-token probability distributions used to derive logprobs.\n- Surface logprobs for the actual chosen token at each generation step (log(prob(token))) and propagate them through the sampling path to the API layer.\n- Align top-logprobs generation with the per-token choices so top_k probabilities correspond to the same time step and token positions.\n\nFiles touched (at a glance):\n- cpp/serve/logit_processor.{h,cc} – refine the in-place updates and probability extraction to guarantee correct per-token logprob values.\n- cpp/serve/engine_actions/batch_decode.cc – ensure the logprobs computed by the logit processor are propagated to the sampling/results path for each step.\n- cpp/serve/sampler/sampler.h – extend the SampleResult type to carry logprob values (and optionally top-probability info).\n- cpp/serve/sampler/gpu_sampler.cc – populate logprob values in the sampling results by taking log of the chosen token’s probability and propagate them to the API surface (token_logprobs).\n\nRationale for changes:\n- The “logprobs” field in API responses requires the log of the actual probabilities used to select tokens at each step, not just raw probabilities. By wiring the logprob calculation into the logit processing and sampling results, the API can faithfully represent per-token logprobs and per-token top-logprobs as shown in the New response example.\n- A consistent merging logic across tokens for the same choice helps prevent mismatches between token selection and the reported logprobs, which is critical for debuggability and correctness of the evaluation workflow.\n\nImpact assessment:\n- Minimal surface area changes to the public API; primarily internal consistency and data flow changes.\n- Potential minor performance impact due to additional logprob calculations and extra fields, but expected to be negligible relative to GPU-side softmax/kernels.\n- Greater correctness in logprob reporting and debugging capabilities for developers and users relying on token-level logprob data.\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T14:12:39.380549",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "cpp/serve/logit_processor.h",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    },
+    {
+      "filename": "cpp/serve/logit_processor.cc",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "InplaceUpdateLogits",
+          "class_name": "LogitProcessorImpl",
+          "full_name": "LogitProcessorImpl.InplaceUpdateLogits",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "ComputeProbsFromLogits",
+          "class_name": "LogitProcessorImpl",
+          "full_name": "LogitProcessorImpl.ComputeProbsFromLogits",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "UpdateWithLogitBias",
+          "class_name": "LogitProcessorImpl",
+          "full_name": "LogitProcessorImpl.UpdateWithLogitBias",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "UpdateWithPenalty",
+          "class_name": "LogitProcessorImpl",
+          "full_name": "LogitProcessorImpl.UpdateWithPenalty",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "UpdateWithMask",
+          "class_name": "LogitProcessorImpl",
+          "full_name": "LogitProcessorImpl.UpdateWithMask",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "cpp/serve/engine_actions/batch_decode.cc",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "Step",
+          "class_name": "BatchDecodeActionObj",
+          "full_name": "BatchDecodeActionObj.Step",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "cpp/serve/sampler/sampler.h",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    },
+    {
+      "filename": "cpp/serve/sampler/gpu_sampler.cc",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "CollectSampleResult",
+          "class_name": "GPUSampler",
+          "full_name": "GPUSampler.CollectSampleResult",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "This PR fixes the generation and surfacing of log probabilities (logprobs) for each generated token by tightening the logit processing and sampling paths and ensuring per-token logprobs/top-logprobs align with the actual generated sequence.",
+    "steps": [
+      {
+        "operation": "No Python changes required in this PR",
+        "file_to_modify": "N/A",
+        "function_to_modify": null,
+        "reason": "PR targets C++ logit processing and sampling paths; no Python source files are modified in this change set",
+        "side_effects": "No Python API surface changes; results depend on C++ decoding and API layer consistency"
+      }
+    ]
+  }
+}

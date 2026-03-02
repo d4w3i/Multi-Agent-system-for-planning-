@@ -1,0 +1,58 @@
+{
+  "pr_number": 242,
+  "repository": "microsoft/BitNet",
+  "title": "Fix build error with GCC by forcing Clang in CMake on android/aarch64",
+  "body": "GCC does not recognize Clang-specific warning flags like -Wunreachable-code-break and -Wunreachable-code-return, which are passed by upstream submodules (e.g., ggml). This patch forces CMake to use Clang via command-line arguments, avoiding the need to patch nested submodules. This resolves compiler errors without modifying submodule source code. The change is scoped to Android on aarch64 to minimize impact on other platforms.\n\nWhat this PR changes:\n- Adds a conditional in the CMake configuration to force the Clang toolchain when building for Android on aarch64 (i.e., set CMAKE_C_COMPILER and CMAKE_CXX_COMPILER to clang/clang++ before further configuration).\n- Keeps existing GCC/Clang acceptance logic intact for non-Android/aarch64 builds.\n- Avoids patching submodules by ensuring the upstream Clang-specific flags are only applied to the Clang toolchain.\n\nTesting suggestions:\n- Build for Android/aarch64 with an NDK toolchain and verify that compilation succeeds with clang, and that GCC does not attempt to resolve Clang-only flags.\n- Build for other platforms to ensure no regressions occur due to the new conditional forcing behavior.\n- Confirm that no changes are required in nested submodules.\n\nIf desired, CI can be extended to exercise an Android/aarch64 cross-compile to validate the behavior in a real workflow.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T14:06:45.276945",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "CMakeLists.txt",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "force_clang_android_aarch64",
+          "class_name": "CMakeLists",
+          "full_name": "CMakeLists.txt.force_clang_android_aarch64",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "src/CMakeLists.txt",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "compiler_enforcement_review",
+          "class_name": "src/CMakeLists",
+          "full_name": "src/CMakeLists.txt.compiler_enforcement_review",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "This PR introduces a platform-specific pre-configuration in the top-level CMake to force the Clang toolchain when building for Android on aarch64, ensuring upstream Clang-specific flags do not cause GCC build errors, while preserving existing behavior on other platforms.",
+    "steps": [
+      {
+        "operation": "N/A",
+        "file_to_modify": "N/A",
+        "function_to_modify": null,
+        "reason": "No Python functions are being modified in this PR; changes are in CMake configuration files (.txt) which are not Python files.",
+        "side_effects": "N/A"
+      }
+    ]
+  }
+}

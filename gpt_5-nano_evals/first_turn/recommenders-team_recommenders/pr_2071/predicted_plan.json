@@ -1,0 +1,191 @@
+{
+  "pr_number": 2071,
+  "repository": "recommenders-team/recommenders",
+  "title": "Fixing TF to < 2.16",
+  "body": "This PR targets TensorFlow compatibility for TF versions strictly below 2.16. The DeepRec/DKN codebase currently relies on TensorFlow 1.x style graph/session usage (via tf.compat.v1) and may encounter issues when running under newer TF 2.x environments. The change aims to ensure stable operation in TF < 2.16 by introducing compatibility shims and version guards, prioritizing graph-mode execution and minimizing reliance on eager execution paths.\n\nRelated issue: #2073\n\nPlanned scope (high level):\n- Introduce/centralize TF version checks and compatibility behavior so the DKN model can run in TF < 2.16 without forcing users to migrate to TF 2.x APIs.\n- Ensure eager execution is disabled where necessary and that graph-based code paths continue to function under TF 2.x (up to 2.15). \n- Gate or adapt TF-1.x style constructs (placeholders, tf.compat.v1.variable_scope, etc.) to preserve semantics across supported TF versions.\n- Add lightweight tests or test hooks to validate model construction and a forward/inference path under TF 2.x environments up to 2.15.\n\nNotes:\n- The changes focus on the DKN model and related DeepRec utilities where TF usage is explicit and version-sensitive.\n- Documentation may need a short note indicating TF compatibility constraints and how to enable TF 1.x compatibility mode if needed.\n\nIf approved, this PR will pave the way for smoother TF migration in the future while preserving support for TF < 2.16 in our current stack.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T14:23:10.394003",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "recommenders/models/deeprec/models/dkn.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "__init__",
+          "class_name": "DKN",
+          "full_name": "DKN.__init__",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_init_embedding",
+          "class_name": "DKN",
+          "full_name": "DKN._init_embedding",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_l2_loss",
+          "class_name": "DKN",
+          "full_name": "DKN._l2_loss",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_l1_loss",
+          "class_name": "DKN",
+          "full_name": "DKN._l1_loss",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_build_graph",
+          "class_name": "DKN",
+          "full_name": "DKN._build_graph",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_build_dkn",
+          "class_name": "DKN",
+          "full_name": "DKN._build_dkn",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_build_pair_attention",
+          "class_name": "DKN",
+          "full_name": "DKN._build_pair_attention",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_kims_cnn",
+          "class_name": "DKN",
+          "full_name": "DKN._kims_cnn",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "infer_embedding",
+          "class_name": "DKN",
+          "full_name": "DKN.infer_embedding",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "run_get_embedding",
+          "class_name": "DKN",
+          "full_name": "DKN.run_get_embedding",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "recommenders/models/deeprec/deeprec_utils.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    }
+  ],
+  "step_plan": {
+    "summary": "Implement a centralized TensorFlow compatibility strategy for TF versions below 2.16 by introducing a TF version helper and updating the DKN model to operate in graph mode with tf.compat.v1 semantics. This plan ensures stable operation across TF 1.x and TF 2.x (up to 2.15) with minimal behavioral drift and prepares the codebase for smoother migrations in the future.",
+    "steps": [
+      {
+        "operation": "Add tf_version_compat helper function to centralize TF version checks and provide a compatibility flag/path",
+        "file_to_modify": "recommenders/models/deeprec/deeprec_utils.py",
+        "function_to_modify": "tf_version_compat",
+        "reason": "Centralize TensorFlow version detection and policy decisions to steer compatibility logic across DKN and related utilities, reducing scattered TF-version checks.",
+        "side_effects": "Introduces a small new API surface; downstream code will import and use this helper; unit tests should cover version detection and gating behavior."
+      },
+      {
+        "operation": "Update DKN.__init__ to determine TF compatibility mode and disable eager execution if running TF 2.x",
+        "file_to_modify": "recommenders/models/deeprec/models/dkn.py",
+        "function_to_modify": "DKN.__init__",
+        "reason": "Establish a consistent compatibility path early, enabling graph-mode execution and tf.compat.v1 usage even under TF 2.x environments up to 2.15.",
+        "side_effects": "May require adjusting session initialization paths; tests will validate initialization in both TF 1.x and TF 2.x compatibility contexts."
+      },
+      {
+        "operation": "Guard/adjust graph construction for TF compatibility mode",
+        "file_to_modify": "recommenders/models/deeprec/models/dkn.py",
+        "function_to_modify": "DKN._build_graph",
+        "reason": "Ensure that graph-building uses the TF 1.x style graph/session flow under TF 2.x compatibility mode, avoiding eager execution paths.",
+        "side_effects": "Could affect timing of graph construction and require test coverage for graph creation across TF versions."
+      },
+      {
+        "operation": "Make embedding initialization robust to TF version differences (TF1-style handling under TF2.x compatibility)",
+        "file_to_modify": "recommenders/models/deeprec/models/dkn.py",
+        "function_to_modify": "DKN._init_embedding",
+        "reason": "Preserve embedding semantics when running under TF 2.x compatibility mode, handling constants/variables appropriately within a graph-based path.",
+        "side_effects": "Tests should verify embeddings initialize with correct shapes across TF versions."
+      },
+      {
+        "operation": "Adapt L2 loss computation to TF version compatibility",
+        "file_to_modify": "recommenders/models/deeprec/models/dkn.py",
+        "function_to_modify": "DKN._l2_loss",
+        "reason": "Avoid usage of APIs that changed semantics in TF 2.x while preserving TF1.x-style regularization behavior.",
+        "side_effects": "Numerical consistency tests may need to be added or adjusted."
+      },
+      {
+        "operation": "Adapt L1 loss computation to TF version compatibility",
+        "file_to_modify": "recommenders/models/deeprec/models/dkn.py",
+        "function_to_modify": "DKN._l1_loss",
+        "reason": "Maintain TF1.x-like regularization semantics under TF compatibility mode, avoiding deprecated constructs.",
+        "side_effects": "Tests may require updating expected regularization values."
+      },
+      {
+        "operation": "Ensure forward path (build_dkn) uses compatibility mode and TF1.x constructs",
+        "file_to_modify": "recommenders/models/deeprec/models/dkn.py",
+        "function_to_modify": "DKN._build_dkn",
+        "reason": "Preserve forward computation graph semantics across TF versions up to 2.15, relying on compatibility APIs.",
+        "side_effects": "Attention to potential API drift; tests should validate forward pass outputs."
+      },
+      {
+        "operation": "Guard/generate attention and KCNN code to be TF-version aware",
+        "file_to_modify": "recommenders/models/deeprec/models/dkn.py",
+        "function_to_modify": "DKN._build_pair_attention",
+        "reason": "Maintain correct behavior of attention and KCNN components when TF is in compatibility mode.",
+        "side_effects": "Need tests covering attention outputs and KCNN features under different TF versions."
+      },
+      {
+        "operation": "Guard KCNN feature extractor to TF compatibility mode",
+        "file_to_modify": "recommenders/models/deeprec/models/dkn.py",
+        "function_to_modify": "DKN._kims_cnn",
+        "reason": "Ensure KCNN components operate identically under TF 2.x compatibility mode and TF1.x semantics.",
+        "side_effects": "Tests for KCNN feature extractor shape and values across versions."
+      },
+      {
+        "operation": "Ensure inference path uses graph-mode compatibility semantics (infer_embedding)",
+        "file_to_modify": "recommenders/models/deeprec/models/dkn.py",
+        "function_to_modify": "DKN.infer_embedding",
+        "reason": "Guarantee session-based inference remains valid under TF compatibility mode with eager execution disabled.",
+        "side_effects": "Tests to confirm numeric inference results under simulated TF 2.x environment."
+      },
+      {
+        "operation": "Update batch embedding extraction to work under TF compatibility mode (run_get_embedding)",
+        "file_to_modify": "recommenders/models/deeprec/models/dkn.py",
+        "function_to_modify": "DKN.run_get_embedding",
+        "reason": "Maintain stable embedding extraction for batches when TF version changes, relying on graph/session semantics.",
+        "side_effects": "Tests to verify batch shapes and embedding outputs across TF versions."
+      }
+    ]
+  }
+}

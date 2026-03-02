@@ -1,0 +1,42 @@
+{
+  "pr_number": 558,
+  "repository": "mvt-project/mvt",
+  "title": "Fix crash when handling empty adb key list",
+  "body": "This commit fixes a crash in the ADB module when no keys were parsed. We should return an empty list by default.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T12:50:39.207510",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "src/mvt/android/artifacts/dumpsys_adb.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "parse",
+          "class_name": "DumpsysADBArtifact",
+          "full_name": "DumpsysADBArtifact.parse",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Prevent a crash in DumpsysADBArtifact.parse when 'user_keys' is missing by initializing key_info and iterating parsed.get('user_keys', []) so the parser returns an empty list by default instead of raising.",
+    "steps": [
+      {
+        "operation": "Make DumpsysADBArtifact.parse robust to missing 'user_keys' by initializing key_info and iterating a default empty list",
+        "file_to_modify": "src/mvt/android/artifacts/dumpsys_adb.py",
+        "function_to_modify": "DumpsysADBArtifact.parse",
+        "reason": "The parse method currently does 'for user_key in parsed.get(\"user_keys\")', which raises a TypeError when 'user_keys' is missing because parsed.get(...) returns None. Initializing key_info = [] and iterating parsed.get(\"user_keys\", []) ensures the loop is safe when the key is absent and that parsed[\"user_keys\"] is set to an empty list, matching the intended behavior and patterns used elsewhere in the module.",
+        "side_effects": "Tests: Add or update unit tests to cover the case where debugging_manager lacks 'user_keys' (or where it's empty) and assert that parse does not raise and that results contain 'user_keys' == []. Dependents: Downstream code that reads DumpsysADBArtifact.results will now receive an empty list instead of raising or receiving None; code that expected None to signal absence would need adjustment (likely low risk, as existing patterns use empty lists). API: No external API change (the artifact still sets parsed['user_keys'] and self.results), but behavior is more robust. Regression risk is low; ensure existing parsing tests (non-empty keys) still pass."
+      }
+    ]
+  }
+}

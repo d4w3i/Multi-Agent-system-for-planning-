@@ -1,0 +1,57 @@
+{
+  "pr_number": 249,
+  "repository": "labmlai/annotated_deep_learning_paper_implementations",
+  "title": "fix dim error in rope",
+  "body": "fix the following error when running _test_rotary():\n\n\"\"\"\n...\n    x_rope = (x_rope * self.cos_cached[:x.shape[0]]) + (neg_half_x * self.sin_cached[:x.shape[0]])\nRuntimeError: The size of tensor a (3) must match the size of tensor b (4) at non-singleton dimension 3\n\"\"\"",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T12:32:12.347548",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "labml_nn/transformers/rope/__init__.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "_build_cache",
+          "class_name": "RotaryPositionalEmbeddings",
+          "full_name": "RotaryPositionalEmbeddings._build_cache",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "forward",
+          "class_name": "RotaryPositionalEmbeddings",
+          "full_name": "RotaryPositionalEmbeddings.forward",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Fixes a dimension-mismatch bug in RotaryPositionalEmbeddings by ensuring the cached cos/sin tables have last dimension exactly self.d (handles odd d), and adds a defensive check in forward to detect cache shape mismatches.",
+    "steps": [
+      {
+        "operation": "Slice cached cos/sin tables to self.d when building cache",
+        "file_to_modify": "labml_nn/transformers/rope/__init__.py",
+        "function_to_modify": "RotaryPositionalEmbeddings._build_cache",
+        "reason": "The cache currently uses idx_theta2 (width 2 * ceil(d/2)), which can exceed self.d when self.d is odd, causing tensor size mismatches during forward. Slicing the last dimension to :self.d ensures cos_cached and sin_cached have exactly self.d elements and match x_rope's last dimension.",
+        "side_effects": "Fixes the RuntimeError in _test_rotary() for odd self.d. Downstream code that (incorrectly) assumes the cache has length 2 * ceil(d/2) will break — but such code is unlikely and would have been accessing out-of-range RoPE dims. Tests should be updated/added to cover odd and even d (e.g., d=3 and d=4). No API change; performance impact is negligible. Consider also checking multi-device/dtype cache rebuilds separately."
+      },
+      {
+        "operation": "Add an assertion/comment in forward to ensure cache width matches self.d (and optionally rebuild if mismatch)",
+        "file_to_modify": "labml_nn/transformers/rope/__init__.py",
+        "function_to_modify": "RotaryPositionalEmbeddings.forward",
+        "reason": "After changing _build_cache to produce caches of width self.d, add a defensive check in forward to catch future regressions (e.g., if cache is stale or built with a different d/device/dtype). This makes debugging easier and prevents obscure runtime errors.",
+        "side_effects": "Adds a safety check that will raise early if the cache shape is wrong, improving debuggability. If you choose to instead trigger a cache rebuild when mismatch is detected, that will change behavior slightly by making forward tolerant of stale caches (small runtime cost on first mismatch). Tests should assert that forward no longer raises the previous size-mismatch error for odd d. No public API change."
+      }
+    ]
+  }
+}

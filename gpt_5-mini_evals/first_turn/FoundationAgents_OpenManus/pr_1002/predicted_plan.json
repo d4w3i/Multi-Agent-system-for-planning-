@@ -1,0 +1,57 @@
+{
+  "pr_number": 1002,
+  "repository": "FoundationAgents/OpenManus",
+  "title": "remove unnecessary actions while ensuring required tool calls",
+  "body": "**Features**\n- remove unnecessary actions while ensuring required tool calls\n\n**Feature Docs**\nI am struggling to understand the rationale behind handing over the decision to continue processing to the act method and throwing an exception when `tool_choices` is set to `required` and `tool_calls` is empty. In my opinion, it would be more appropriate to simply return `False` in this scenario, as the current approach seems unnecessary and could potentially be removed.\n\n**Influence**\nno influence",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T11:17:22.232973",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "base_project/toolcall.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "think",
+          "class_name": "ToolCallAgent",
+          "full_name": "ToolCallAgent.think",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "act",
+          "class_name": "ToolCallAgent",
+          "full_name": "ToolCallAgent.act",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "When tool choices are REQUIRED but the model returns no tool calls, make the agent conservative: have think() return False to avoid calling act(), and make act() defensive by returning False instead of raising ValueError. This prevents unnecessary actions and removes surprising exceptions.",
+    "steps": [
+      {
+        "operation": "Return False early when required tools are missing",
+        "file_to_modify": "base_project/toolcall.py",
+        "function_to_modify": "ToolCallAgent.think",
+        "reason": "Avoid progressing to act() and performing unnecessary work (and avoid deferring enforcement) when tool_choices == ToolChoice.REQUIRED but the LLM returned no tool_calls. An early return of False makes the agent decision consistent and conservative.",
+        "side_effects": "Prevents ToolCallAgent.act from being invoked in the missing-tool scenario. Callers that relied on think() returning True to reach act() (or that expected an exception from act()) will observe different behavior; tests that expected an exception must be updated. No change to act()'s public signature here, but the control flow and behavior observed by upstream callers (e.g., run() or orchestration code) will change — verify callers treat False as 'no action'. Update logging/docs to reflect the early-return."
+      },
+      {
+        "operation": "Make act() return False instead of raising when required tools are missing",
+        "file_to_modify": "base_project/toolcall.py",
+        "function_to_modify": "ToolCallAgent.act",
+        "reason": "Defensive change so act() is safe to call in isolation or by other callers: if tool_choices == ToolChoice.REQUIRED and no tool_calls are present, return False rather than raising ValueError(TOOL_CALL_REQUIRED). This aligns act()'s behavior with think() and the PR goal of signaling 'no action' instead of throwing.",
+        "side_effects": "Changes act()'s observable behavior and return-type contract in the error case (previously raised an exception, now returns False). Any code or tests that expect a ValueError must be updated. This may also affect higher-level control flow that depends on exceptions to trigger retries/alerts. Consider leaving the TOOL_CALL_REQUIRED constant for backward compatibility or emitting a log/warning instead of an exception. Ensure other act() return paths remain unchanged and that callers properly handle a boolean False result."
+      }
+    ]
+  }
+}

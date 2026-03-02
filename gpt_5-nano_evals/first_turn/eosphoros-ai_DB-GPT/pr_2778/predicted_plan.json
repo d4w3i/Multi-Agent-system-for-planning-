@@ -1,0 +1,42 @@
+{
+  "pr_number": 2778,
+  "repository": "eosphoros-ai/DB-GPT",
+  "title": "fix: Change plan manager prompt in order to avoid calling tools directly",
+  "body": "Related to #2777. The default plan manager prompt has been updated to strictly restrict direct tool calls from the plan. This PR introduces changes to the plan prompt to ensure that any tool usage must go through the plan-manager orchestration layer rather than being invoked directly by the model. The changes are intended to prevent bypassing the planner and to standardize how tools are requested and executed. Documentation and snapshots were updated to reflect the new expected behavior. The changes are tested via dialogue tests showing that the plan manager avoids direct tool invocation.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T13:50:42.604675",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "packages/dbgpt-app/src/dbgpt_app/scene/chat_dashboard/prompt.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "prompt",
+          "class_name": null,
+          "full_name": "prompt",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "This PR updates the plan manager prompt to disallow direct tool calls by the LLM and route all tool usage through the plan/orchestrator via a structured tool_request pathway.",
+    "steps": [
+      {
+        "operation": "Update plan manager prompt to disallow direct tool invocation and introduce a structured tool_request pathway",
+        "file_to_modify": "packages/dbgpt-app/src/dbgpt_app/scene/chat_dashboard/prompt.py",
+        "function_to_modify": "prompt",
+        "reason": "To enforce a mediated tool-call flow, prevent the model from invoking tools directly, and prepare for a structured tool_request pathway in the prompt output. This ensures tool usage is centralized in the planner/orchestrator and maintains compatibility with existing parsers by allowing additive, optional tooling fields.",
+        "side_effects": "Potential need to update ChatDashboardOutputParser and related adapters to recognize a new tool_request structure; existing tests/snapshots may need updates; downstream documentation and developer notes should reflect the new tool-invocation policy; may require adding or adjusting dialogue tests to validate the absence of direct tool calls and the presence of tool_requests instead."
+      }
+    ]
+  }
+}

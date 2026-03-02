@@ -1,0 +1,33 @@
+{
+  "pr_number": 3597,
+  "repository": "piskvorky/gensim",
+  "title": "Clarify BM25 Documentation in Gensim Core Tutorials (Document Fix)",
+  "body": "This PR corrects the documentation for the BM25 algorithm within the core tutorials of the Gensim library. The previous documentation misleadingly implied that BM25 transforms vectors into other vectors while altering their values based on feature rarity. This update provides an accurate description of BM25, highlighting its actual function as a scoring algorithm that does not manipulate the dimensionality of its input data.\n\nFile Modified\n- gensim/docs/src/gallery/core/run_topics_and_transformations.py",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T14:14:15.013991",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "docs/src/gallery/core/run_topics_and_transformations.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    }
+  ],
+  "step_plan": {
+    "summary": "This change corrects the BM25 description in the core tutorials to state that BM25 is a scoring/ranking function and does not alter vector dimensionality.",
+    "steps": [
+      {
+        "operation": "Update BM25 documentation text to reflect BM25 as a scoring/ranking function (not a vector-space transformation)",
+        "file_to_modify": "docs/src/gallery/core/run_topics_and_transformations.py",
+        "function_to_modify": "BM25_description",
+        "reason": "To fix the inaccurate claim that BM25 transforms vectors; align documentation with BM25's true purpose as a scoring function and ensure it doesn't alter vector dimensionality.",
+        "side_effects": "Docs rendering/tests may need updates; no runtime code changes; potential follow-up to harmonize other BM25 mentions in the docs across tutorials"
+      }
+    ]
+  }
+}

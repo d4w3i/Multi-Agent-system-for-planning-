@@ -1,0 +1,49 @@
+{
+  "pr_number": 3286,
+  "repository": "py-pdf/pypdf",
+  "title": "BUG: Add delimiters to NameObject.renumber_table",
+  "body": "Per the PDF specification, name objects cannot contain unescaped delimiters. The current escaping mapping (NameObject.renumber_table) handles several special characters, but it does not include angle brackets, square brackets, or curly braces, which are also delimiters. As a result, names containing these characters could be serialized without proper escaping, potentially producing invalid PDFs when appending/merging content.\n\nProposed change:\n- Extend NameObject.renumber_table to escape the characters: <, >, [, ], {, }\n  - Mappings would be: '<' -> '#3C', '>' -> '#3E', '[' -> '#5B', ']' -> '#5D', '{' -> '#7B', '}' -> '#7D'\n  - This aligns with the existing escaping approach for other characters (e.g., '#', '(', ')', '/', '%') and ensures any name containing these delimiters is safely serialized.\n\nImpact:\n- Serialization of Name objects will consistently escape these additional delimiters, preventing creation of invalid PDFs in edge cases where names contain such characters.\n- No public API changes; behavior is more broadly correct and spec-compliant.\n\nNotes:\n- A minimal patch should only add the six key-value pairs to NameObject.renumber_table in pypdf/generic/_base.py.\n- Consider adding/adjusting unit tests to cover renumbering of names containing these delimiters (e.g., \"/Name<\", \"/Name[abc]\", etc.).\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T14:18:42.894302",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "pypdf/generic/_base.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "renumber",
+          "class_name": "pypdf",
+          "full_name": "pypdf.generic._base.NameObject.renumber",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Bug fix: Extend NameObject escaping to cover additional delimiter characters in PDF name tokens and add tests to verify escaping and parsing behavior.",
+    "steps": [
+      {
+        "operation": "Extend NameObject.renumber to escape six additional delimiter characters by updating the renumber_table dictionary",
+        "file_to_modify": "pypdf/generic/_base.py",
+        "function_to_modify": "NameObject.renumber",
+        "reason": "Add mappings: '<'->'#3C', '>'->'#3E', '['->'#5B', ']'->'#5D', '{'->'#7B', '}'->'#7D' so that all PDF name delimiters are properly escaped per spec; aligns with existing escaping approach for other characters",
+        "side_effects": "Low risk; internal escaping change; may require updates to existing tests that assert specific renumber outputs; no public API change"
+      },
+      {
+        "operation": "Add unit tests to cover renumber escaping for new delimiters and parsing back from escaped sequences",
+        "file_to_modify": "tests/test_nameobject_delimiters.py",
+        "function_to_modify": "test_nameobject_renumber_delimiters_escaping_and_parsing",
+        "reason": "Verify escaping for each new delimiter and round-trip parsing; ensures correctness and spec compliance",
+        "side_effects": "Introduces new tests; ensures compatibility with parsing of escaped sequences; may require updates if internal parsing API changes"
+      }
+    ]
+  }
+}

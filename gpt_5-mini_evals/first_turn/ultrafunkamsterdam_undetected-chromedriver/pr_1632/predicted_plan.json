@@ -1,0 +1,42 @@
+{
+  "pr_number": 1632,
+  "repository": "ultrafunkamsterdam/undetected-chromedriver",
+  "title": "fixed options not having headless attribute",
+  "body": "Fixes errors:\n\nline 398, in __init__\n    if headless or options.headless:\n                   ^^^^^^^^^^^^^^^^\nAttributeError: 'ChromeOptions' object has no attribute 'headless'\n\n\nline 488, in __init__\n    if options.headless:\n       ^^^^^^^^^^^^^^^^\nAttributeError: 'ChromeOptions' object has no attribute 'headless'\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T13:31:17.225198",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "undetected_chromedriver/__init__.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "__init__",
+          "class_name": "Chrome",
+          "full_name": "Chrome.__init__",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Prevent AttributeError by avoiding direct reads of options.headless and by not mutating options.arguments while iterating. Use getattr for reads, setattr for writes with a safe fallback to a local flag, and iterate over a copy of options.arguments.",
+    "steps": [
+      {
+        "operation": "Make Chrome.__init__ robust to missing options.headless and avoid mutating options.arguments while iterating",
+        "file_to_modify": "undetected_chromedriver/__init__.py",
+        "function_to_modify": "Chrome.__init__",
+        "reason": "The constructor currently reads and writes options.headless directly and iterates options.arguments while removing items. Some Selenium Options-like objects (e.g., ChromeOptions from certain versions) do not define a headless attribute, so options.headless raises AttributeError. Also mutating options.arguments while iterating can cause skipped elements or runtime errors. Using getattr(options, 'headless', False) for reads and setattr(options, 'headless', True) for writes prevents AttributeError in the common case, and iterating over list(options.arguments) avoids mutation-during-iteration bugs. Additionally, use the local headless flag fallback if setattr raises (e.g., when options uses __slots__). Finally, replace any later checks of options.headless with getattr(options, 'headless', False) or the local fallback variable.",
+        "side_effects": "Behavioral: Downstream code that previously relied on options.headless not existing may now observe the attribute if setattr succeeds; this is generally harmless but should be noted. Compatibility: If the passed options object prohibits new attributes (e.g., __slots__), setattr(options, 'headless', True) can raise; implement a safe fallback by catching AttributeError and recording headless in a local variable (e.g., headless_from_args) so later logic uses that. Tests: Add/adjust unit and integration tests to cover passing an Options object without a headless attribute (both mutable and __slots__-restricted cases) and ensure headless behavior is preserved. API: No external API change is intended — only more robust handling — but consumers that inspect options after construction may see a new attribute on some objects. Deployment: Run full test suite and browser integration tests to validate no regressions when launching browsers in headless and non-headless modes."
+      }
+    ]
+  }
+}

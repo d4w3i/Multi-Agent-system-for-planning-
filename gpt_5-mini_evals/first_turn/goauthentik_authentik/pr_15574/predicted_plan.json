@@ -1,0 +1,42 @@
+{
+  "pr_number": 15574,
+  "repository": "goauthentik/authentik",
+  "title": "enterprise/audit: fix diff with update_fields",
+  "body": "REPLACE ME",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T12:16:05.115348",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "middleware.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "post_save_handler",
+          "class_name": "EnterpriseAuditMiddleware",
+          "full_name": "EnterpriseAuditMiddleware.post_save_handler",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "When update_fields is passed to post_save_handler, restrict the previous serialized state to only the fields present in the new serialized state before calling diff so that non-updated fields are not reported as changed.",
+    "steps": [
+      {
+        "operation": "Filter previous serialized state when update_fields is provided before computing diff",
+        "file_to_modify": "middleware.py",
+        "function_to_modify": "EnterpriseAuditMiddleware.post_save_handler",
+        "reason": "post_save_handler previously computed prev_state from instance._previous_state (full state) and new_state via serialize_simple(instance, update_fields) (partial state). The diff(before, after) iterates over all keys in before, so keys missing from after were treated as changed (new_value=None). By restricting prev_state to only the keys present in new_state (or the requested update_fields) before calling diff, we ensure only actually-updated fields are compared and returned in the diff.",
+        "side_effects": "Behavior: The diff returned in thread_kwargs will now only include fields that were serialized into new_state (i.e., updated fields). Tests: fixes test_update and preserves test_serialize_fields. Dependents: code that consumes the generated diff will now no longer see spurious 'field -> null' changes for non-updated fields; any consumer relying on previously buggy diffs will see different (correct) results. API: no external API changes, only correctness of audit diffs. Edge cases: update_fields entries that are not serialized (deferred fields or expressions) will simply be absent from new_state and thus not present in the filtered prev_state — no exception is raised. Created=True behavior is unchanged (prev_state remains empty). M2M handling is unaffected because m2m diffs are handled in a separate handler."
+      }
+    ]
+  }
+}

@@ -1,0 +1,33 @@
+{
+  "pr_number": 6987,
+  "repository": "cython/cython",
+  "title": "Fix return type of bytes.join()",
+  "body": "This was already tested in `tests/run/bytesmethods.pyx`, but there were apparently (non-trivial?) cases where the return type wasn't correctly inferred.\n\nExplore the source code to identify the files and functions to modify.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T12:05:47.831542",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "Cython/Compiler/Builtin.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    }
+  ],
+  "step_plan": {
+    "summary": "Make the declared return type of bytes.join in the builtin methods table consistent with the compiler's inferred return-type mapping by changing its BuiltinMethod entry return code from 'O' to 'T', ensuring bytes.join is treated as returning a concrete bytes object at compile time.",
+    "steps": [
+      {
+        "operation": "Change BuiltinMethod declaration for bytes.join to use return code 'T' instead of 'O'",
+        "file_to_modify": "Cython/Compiler/Builtin.py",
+        "function_to_modify": "init_builtins",
+        "reason": "The inferred_method_return_types mapping already specifies that 'bytes.join' returns the same builtin type as the receiver ('T'), but the builtin_types_table entry for bytes.join currently declares an 'O' (PyObject) return code. Updating the BuiltinMethod entry to use 'T' ensures the compiler's declared C-level signature matches the inference logic so the return type is preserved as a concrete 'bytes' at compile time.",
+        "side_effects": "Should be minimal: improves type inference for bytes.join and prevents loss of concrete 'bytes' return types. May affect code paths that relied on the declared 'O' signature (unlikely). Requires running the bytesmethods tests (tests/run/bytesmethods.pyx) — especially bytes_join and literal_join — and the full test suite to catch any regressions. Downstream compiler components that inspect builtin declarations will now treat bytes.join as returning the same builtin type, which could change lowered IR in places; no public API changes expected."
+      }
+    ]
+  }
+}

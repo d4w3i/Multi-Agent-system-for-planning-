@@ -1,0 +1,88 @@
+{
+  "pr_number": 1362,
+  "repository": "maurosoria/dirsearch",
+  "title": "python cleanup",
+  "body": "Description\n---------------\n\n`lib/core/dictionary.py` -> fix typo, remove redundant parenthesis since you are returning a tuple anyway\n`lib/core/structures.py` -> remove redundant class parenthesis (not needed in python3)\n`lib/reports/html_report.py` -> simplify comparison statements",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T12:40:11.454320",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "lib/core/dictionary.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "__getstate__",
+          "class_name": "Dictionary",
+          "full_name": "Dictionary.__getstate__",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "lib/core/structures.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "OrderedSet (class declaration)",
+          "class_name": null,
+          "full_name": "OrderedSet (class declaration)",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "lib/reports/html_report.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "generate",
+          "class_name": "HTMLReport",
+          "full_name": "HTMLReport.generate",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Apply small stylistic Python cleanups: remove redundant parentheses in a tuple return, drop empty class parentheses, and simplify status-range comparisons to chained comparisons. All changes are behavior-preserving and intended to improve readability.",
+    "steps": [
+      {
+        "operation": "Remove redundant parentheses in return tuple",
+        "file_to_modify": "lib/core/dictionary.py",
+        "function_to_modify": "Dictionary.__getstate__",
+        "reason": "Parentheses are unnecessary when returning a tuple in Python; replacing 'return (self._items, self._index)' with 'return self._items, self._index' is a purely stylistic cleanup that preserves the 2-tuple return value.",
+        "side_effects": "Behavior should be identical. Verify __setstate__ still unpacks a 2-tuple (no change expected). Run unit tests and a pickle/unpickle smoke test for Dictionary to catch any serialization/unpacking regressions. Linters (flake8/pylint) should accept the change; no public API change or downstream caller changes are required."
+      },
+      {
+        "operation": "Remove empty parentheses from class declaration",
+        "file_to_modify": "lib/core/structures.py",
+        "function_to_modify": "OrderedSet",
+        "reason": "In Python 3, empty parentheses on a class declaration are redundant. Converting 'class OrderedSet():' to 'class OrderedSet:' is a stylistic cleanup with no change in semantics.",
+        "side_effects": "No change to runtime behavior or API. Run tests and import-time smoke tests to ensure no syntax or style regressions occur. Note: this PR intentionally does not modify other issues such as a mutable default argument in OrderedSet.__init__ (items=[]), which is a separate concern and should be handled in a follow-up."
+      },
+      {
+        "operation": "Use chained comparisons for status ranges",
+        "file_to_modify": "lib/reports/html_report.py",
+        "function_to_modify": "HTMLReport.generate",
+        "reason": "Replace expressions like 'entry.status >= 200 and entry.status <= 299' with the idiomatic chained comparison '200 <= entry.status <= 299' for clarity and brevity while preserving inclusive bounds and behavior.",
+        "side_effects": "No functional change expected; ensure the comparisons remain inclusive of endpoints (200, 299, etc.). Run unit tests or a minimal runtime smoke test that exercises HTMLReport.generate with entries across the three ranges (200-299, 300-399, 400-599) to confirm CSS class mapping remains identical. Linters may mark the new form as preferred; no API changes or dependent-call changes required."
+      }
+    ]
+  }
+}

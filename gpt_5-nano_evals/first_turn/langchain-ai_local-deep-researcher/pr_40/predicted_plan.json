@@ -1,0 +1,72 @@
+{
+  "pr_number": 40,
+  "repository": "langchain-ai/local-deep-researcher",
+  "title": "convert max_web_research_loops to int to make sure comparison works",
+  "body": "Summary of the PR goal: ensure max_web_research_loops, loaded from environment, is treated as an int when compared against the running research_loop_count. The bug likely stems from max_web_research_loops arriving as a string, causing a TypeError or incorrect behavior during the comparison in the web-research loop routing. The fix involves casting to int around the comparison (and ideally ensuring the configuration loader always yields an int). This analysis identifies where in the code this value is read and used, and which targets are safe to modify without altering overall behavior beyond the intended cast.\n\nKey context:\n- The loop control is governed by a comparison of state.research_loop_count with configurable.max_web_research_loops in the graph/workflow logic.\n- There are two related touchpoints: loading the value from the environment (configuration) and the routing decision that uses the value during the loop condition.\n\nProposed changes focus on making the type explicit and robust, reducing the risk of similar issues in different environments or when overrides via RunnableConfig are used.\n\nImpact and testing notes:\n- Minimal surface area changes; primarily type handling and a small safety cast.\n- Add a quick runtime test or assertion that max_web_research_loops is an int and that the comparison operates as intended when provided as a string or int.\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T14:01:38.584344",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "src/assistant/configuration.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "from_runnable_config",
+          "class_name": "Configuration",
+          "full_name": "Configuration.from_runnable_config",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "src/assistant/graph.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "route_research",
+          "class_name": "StateGraph",
+          "full_name": "StateGraph.route_research",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "src/assistant/state.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    }
+  ],
+  "step_plan": {
+    "summary": "This PR ensures max_web_research_loops is consistently treated as an int when loaded and used for loop control, preventing type-related errors and making behavior robust across environments.",
+    "steps": [
+      {
+        "operation": "Cast max_web_research_loops to int during configuration loading",
+        "file_to_modify": "src/assistant/configuration.py",
+        "function_to_modify": "Configuration.from_runnable_config",
+        "reason": "Guarantee that max_web_research_loops is an int regardless of environment input or overrides, preventing TypeError when comparing to state.research_loop_count.",
+        "side_effects": "Requires tests to account for int value; ensures downstream code expecting int continues to function; minimal surface area changes; could affect config parsing tests that mock string values."
+      },
+      {
+        "operation": "Guard and cast max_web_research_loops in routing check",
+        "file_to_modify": "src/assistant/graph.py",
+        "function_to_modify": "StateGraph.route_research",
+        "reason": "Ensure the loop boundary comparison uses an int by casting the configured max_web_research_loops to int, avoiding TypeError in string cases and ensuring consistent behavior.",
+        "side_effects": "Minimal; may require minor tests; ensure downstream code is unaffected; ensures safety in edge cases where configuration isn't pre-cast."
+      }
+    ]
+  }
+}

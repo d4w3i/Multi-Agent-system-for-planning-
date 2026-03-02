@@ -1,0 +1,49 @@
+{
+  "pr_number": 9710,
+  "repository": "encode/django-rest-framework",
+  "title": "Fix serializer method field hidden unique together (#9700)",
+  "body": "Fix: SerializerMethodField as HiddenField in unique_together\n\nCorrects an issue where a `SerializerMethodField` that shares its name\nwith a model field involved in a `unique_together` constraint (or\n`UniqueConstraint`) could be incorrectly treated as a `HiddenField`.\n\nThis typically occurred if the underlying model field was nullable or had\na default value, and the `SerializerMethodField` was not being correctly\nprioritized during the uniqueness metadata processing.\n\nThe `ModelSerializer.get_uniqueness_extra_kwargs` method has been updated\nto ensure that if a field name corresponding to a model field in a\nuniqueness constraint is explicitly declared as a `SerializerMethodField`\non the serializer, it is not converted into a `HiddenField`.\n\nA test case has been added to `tests/test_model_serializer.py`\n(`TestSerializerMethodFieldInUniqueTogether`) to verify this behavior.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T12:12:54.423291",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "rest_framework/serializers.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "get_uniqueness_extra_kwargs",
+          "class_name": "ModelSerializer",
+          "full_name": "ModelSerializer.get_uniqueness_extra_kwargs",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "tests/test_model_serializer.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    }
+  ],
+  "step_plan": {
+    "summary": "Modify ModelSerializer.get_uniqueness_extra_kwargs to avoid creating HiddenField entries for field names explicitly declared on the serializer (such as SerializerMethodField with source='*'), preventing those declared fields from being overridden; add a regression test to verify the behavior.",
+    "steps": [
+      {
+        "operation": "Prevent injection of HiddenField for names explicitly declared on the serializer",
+        "file_to_modify": "rest_framework/serializers.py",
+        "function_to_modify": "ModelSerializer.get_uniqueness_extra_kwargs",
+        "reason": "When get_uniqueness_extra_kwargs constructs HiddenField instances for model fields that appear to be \"missing\" from the serializer (e.g., due to SerializerMethodField using source='*'), it currently will create a HiddenField for the field name and return it to be appended to the serializer fields — thereby overriding any serializer-declared field with the same name. Add a guard so that before creating and returning a HiddenField for a uniqueness-related model field name, the function checks whether that name is present in declared_fields. If declared_fields contains the name (meaning the user explicitly declared a serializer field, e.g., SerializerMethodField), skip creating the HiddenField. This keeps explicitly-declared serializer fields from being silently replaced while preserving the rest of the uniqueness-handling logic.",
+        "side_effects": "Tests: Add or update tests (tests/test_model_serializer.py) to include the new regression test (TestSerializerMethodFieldInUniqueTogether) that asserts a declared SerializerMethodField sharing a name with a model unique-together field is not replaced by a HiddenField. Backwards compatibility: Users who intentionally relied on an injected HiddenField to override a declared serializer field with the same name will no longer see that behavior (but this is desirable since silently overriding user-declared fields is surprising). Dependent code: Any code that relied on the previous behavior (HiddenField injection taking precedence over declared fields) may need to be updated. API: No public API signature changes; behavior change is limited to how ModelSerializer builds its fields in uniqueness scenarios. Implementation detail: Ensure the check is applied to all code paths within get_uniqueness_extra_kwargs that create HiddenField instances for unique_together and UniqueConstraint processing so the regression is fully covered."
+      }
+    ]
+  }
+}

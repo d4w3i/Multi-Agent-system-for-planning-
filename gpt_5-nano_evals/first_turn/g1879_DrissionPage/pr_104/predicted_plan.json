@@ -1,0 +1,42 @@
+{
+  "pr_number": 104,
+  "repository": "g1879/DrissionPage",
+  "title": "fixed json decoding bug in daemon thread",
+  "body": "Summary of intended change:\n- The PR aims to fix a JSON decoding bug when decoding an empty message_json within a daemon-thread context.\n- Behavior change: when message_json is empty, decoding should not raise JSONDecodeError. Instead, return an empty dict (or a safe default) for empty content. If the content is non-empty but invalid JSON, JSONDecodeError should still be raised as before.\n- This change focuses on making the json decoding path robust against empty inputs while preserving the existing error signaling for other invalid JSON cases.\n\nRationale and impact:\n- Location: The json decoding logic is centralized in the DriverPage.json property (in the mixpage driver path). This is the primary path where a page’s JSON payload is located and decoded.\n- Risk: Minimal if implemented with a guarded empty-input check; downstream code that consumes json output should receive a dict (even when empty) rather than an exception for empty payloads.\n- Compatibility: If callers expect a dict, returning {} for empty input maintains a consistent type contract.\n- Testing suggestions: add a test that exercises json on a page where t:pre is present but contains an empty string, ensuring it returns {} without raising. Also ensure non-empty invalid JSON continues to raise json.JSONDecodeError.\n\nNo other files should be affected by this change beyond the json decoding path in the driver page integration.\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T13:53:13.032887",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "DrissionPage/mixpage/driver_page.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "json",
+          "class_name": "DriverPage",
+          "full_name": "DriverPage.json",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Fix JSON decoding to gracefully handle empty message_json in the driver/page layer by returning an empty dict instead of raising JSONDecodeError, while preserving existing behavior for non-empty invalid JSON.",
+    "steps": [
+      {
+        "operation": "Guard empty payload in DriverPage.json and return {} when content is empty",
+        "file_to_modify": "DrissionPage/mixpage/driver_page.py",
+        "function_to_modify": "DriverPage.json",
+        "reason": "To prevent JSONDecodeError when decoding an empty payload in daemon-thread contexts and maintain a consistent dict return type for empty content; non-empty invalid JSON must continue to raise JSONDecodeError",
+        "side_effects": "Downstream code consuming DriverPage.json will receive {} for empty payloads; ensure tests cover empty vs non-empty invalid JSON; may require downstream code to handle empty dict as a neutral payload; no changes to the public API beyond the json decoding behavior"
+      }
+    ]
+  }
+}

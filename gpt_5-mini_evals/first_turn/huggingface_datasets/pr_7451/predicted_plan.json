@@ -1,0 +1,57 @@
+{
+  "pr_number": 7451,
+  "repository": "huggingface/datasets",
+  "title": "Fix resuming after `ds.set_epoch(new_epoch)`",
+  "body": "close https://github.com/huggingface/datasets/issues/7447\n\nExplore the source code to identify the files and functions to modify.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T12:40:36.974013",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "src/datasets/iterable_dataset.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "load_state_dict",
+          "class_name": "IterableDataset",
+          "full_name": "IterableDataset.load_state_dict",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "set_epoch",
+          "class_name": "IterableDataset",
+          "full_name": "IterableDataset.set_epoch",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Stop mutating the pre-prepared internal iterable when loading iterator state and ensure that when the epoch is changed, the internal iterable is rebuilt and the stored starting state is applied to the iterable prepared with the new epoch so resuming behaves correctly after ds.set_epoch(new_epoch).",
+    "steps": [
+      {
+        "operation": "Modify load_state_dict to store starting state without mutating the pre-prepared iterable",
+        "file_to_modify": "src/datasets/iterable_dataset.py",
+        "function_to_modify": "IterableDataset.load_state_dict",
+        "reason": "Currently load_state_dict immediately applies the provided state to self._prepared_ex_iterable (an object prepared at __init__), which may have been constructed using a different epoch. Mutating that pre-prepared iterable causes RNG/ordering inconsistencies if set_epoch(new_epoch) is called afterwards. By only storing a deepcopy of the provided state in a starting-state placeholder and updating the dataset-level self._state_dict, we avoid corrupting an iterable configured with the wrong epoch; the saved state will be applied later to an iterable freshly prepared with the current epoch.",
+        "side_effects": "Behavioral: load_state_dict will no longer immediately change the currently prepared iterable instance. Any external code that relied on immediate mutation of the prepared iterable by load_state_dict will observe the change is deferred until the stored starting state is applied. Testing: resume/checkpoint tests that previously assumed immediate application might need to verify that state is reflected at dataset-level (ds.state_dict()) and that iteration after set_epoch applies the stored state correctly. API: no signature changes. Implementation: requires importing copy.deepcopy (or equivalent) to store a safe copy of the provided state. No additional public API is introduced."
+      },
+      {
+        "operation": "Modify set_epoch to re-prepare the internal prepared iterable and apply stored starting state if present",
+        "file_to_modify": "src/datasets/iterable_dataset.py",
+        "function_to_modify": "IterableDataset.set_epoch",
+        "reason": "set_epoch updates the epoch in-place for persistent-worker semantics but currently does not rebuild the pre-prepared examples iterable. If a starting state was previously loaded (via the modified load_state_dict), the prepared iterable must be reconstructed with the new epoch's RNGs before applying the stored state so that resumed RNGs and ordering are consistent with the new epoch. Re-preparing and then loading the stored starting state onto the new iterable ensures correct resume behavior after set_epoch.",
+        "side_effects": "Behavioral: calling set_epoch after load_state_dict will now trigger a re-creation of self._prepared_ex_iterable and immediate application of the stored starting state (if any). This may invalidate any external references to the previous prepared iterable instance. Performance: small extra cost when set_epoch is called (rebuilding the pipeline). Persistence/torch workers: the in-place epoch update (shared tensor) must remain, and rebuilding the prepared iterable should not break persistent worker semantics — tests with persistent_workers should be validated. Tests: resume and set_epoch interaction tests should be added/updated to assert correct ordering/RNG behavior after calling load_state_dict then set_epoch. API: no signature changes."
+      }
+    ]
+  }
+}

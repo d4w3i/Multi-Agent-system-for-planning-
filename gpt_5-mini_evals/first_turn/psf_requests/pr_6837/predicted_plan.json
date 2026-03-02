@@ -1,0 +1,80 @@
+{
+  "pr_number": 6837,
+  "repository": "psf/requests",
+  "title": "Fix handling of non-latin credentials in HTTPDigestAuth",
+  "body": "Fixes #6102\n\nUpdate `HTTPDigestAuth` to handle non-latin credentials correctly.\n\n* Change `_basic_auth_str` in `src/requests/auth.py` to encode `username` and `password` using `utf-8` instead of `latin1`.\n* Update `build_digest_header` in `src/requests/auth.py` to correctly format the string for the header with non-latin characters.\n* Add tests in `tests/test_requests.py` to verify correct handling of non-latin credentials in `HTTPDigestAuth`.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T12:58:01.606151",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "src/requests/auth.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "_basic_auth_str",
+          "class_name": null,
+          "full_name": "_basic_auth_str",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "build_digest_header",
+          "class_name": "HTTPDigestAuth",
+          "full_name": "HTTPDigestAuth.build_digest_header",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "tests/test_requests.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "test_DIGEST_NON_LATIN_CREDENTIALS (new)",
+          "class_name": "TestRequests",
+          "full_name": "TestRequests.test_DIGEST_NON_LATIN_CREDENTIALS (new)",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Switch Basic auth encoding to UTF-8 and ensure HTTPDigestAuth builds Authorization headers with non-Latin credentials correctly (decoded to native str), and add tests verifying Digest auth works with non-Latin usernames/passwords.",
+    "steps": [
+      {
+        "operation": "Change encoding in basic auth helper",
+        "file_to_modify": "src/requests/auth.py",
+        "function_to_modify": "_basic_auth_str",
+        "reason": "RFC 7617 and modern servers expect UTF-8 for Basic credentials. Replace latin1 encoding with utf-8 when username/password are Python str so the base64 Basic auth header encodes non-Latin characters correctly. Preserve existing behavior for bytes inputs and non-string types.",
+        "side_effects": "Changes Basic Authorization header bytes for any credentials containing characters outside latin1; tests that assert exact Base64 outputs for non-ASCII inputs may need updates. No API surface change beyond header bytes, but servers that expected latin1-encoded credentials may see different credentials. Ensure tests for basic auth still pass; run full auth-related test subset."
+      },
+      {
+        "operation": "Ensure Digest auth header builds with UTF-8-native username/realm/password",
+        "file_to_modify": "src/requests/auth.py",
+        "function_to_modify": "HTTPDigestAuth.build_digest_header",
+        "reason": "Digest hashing helpers already use utf-8 for str inputs, but the final Authorization header string construction can accidentally embed raw bytes or mis-encoded text. Coerce bytes (username/realm/password) to text via utf-8 before interpolation and ensure the returned header is a native str containing correct non-Latin characters. Keep digest computation (HA1/HA2/KD) behavior intact.",
+        "side_effects": "Changes how non-ASCII usernames/realms/passwords are represented in the Authorization header; the returned header will be builtin_str with UTF-8-decoded values. May affect any code that previously relied on bytes or latin1 behavior. Tests referencing exact header formatting or string type should be verified. No change to digest algorithms or server-facing digest hashes if hashing already used UTF-8; still run digest-related tests."
+      },
+      {
+        "operation": "Add end-to-end and/or unit test(s) for non-Latin Digest credentials",
+        "file_to_modify": "tests/test_requests.py",
+        "function_to_modify": "TestRequests.test_DIGEST_NON_LATIN_CREDENTIALS",
+        "reason": "Provide coverage and regression protection: verify HTTPDigestAuth works end-to-end with non-Latin credentials (e.g., Cyrillic username/password) against httpbin digest-auth endpoints and assert HTTP 200. Optionally assert the Authorization header is a native str and contains the username correctly formatted.",
+        "side_effects": "Adds test coverage that depends on the httpbin fixture/environment used in existing tests (network/fixture requirements). Test failures will surface regressions in encoding behavior; tests may need to be included in CI and run alongside other auth tests. If CI disallows network tests, consider marking as integration or using recorded fixtures."
+      }
+    ]
+  }
+}

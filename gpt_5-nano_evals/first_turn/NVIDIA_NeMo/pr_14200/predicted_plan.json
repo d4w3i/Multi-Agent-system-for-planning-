@@ -1,0 +1,42 @@
+{
+  "pr_number": 14200,
+  "repository": "NVIDIA/NeMo",
+  "title": "Change RerankerSpecter Dataset question key",
+  "body": "This PR aligns the Reranker Specter dataset keys to ensure the question field used by the dataset matches what Specter preprocessing outputs.\n\nWhat is changing:\n- Specter preprocessing outputs jsonl records with keys: query (the anchor), pos_doc (the positive document), and neg_doc (list with negatives).\n- The SpecterRerankerDataModule previously passed question_key=\"question\" when creating the dataset, which led to a mismatch between the dataset's expected key and the preprocessed data.\n\nWhy this is needed:\n- Ensures the RerankerDataset loads examples correctly for Specter data without requiring downstream changes.\n- Keeps key naming consistent across the Specter data path and the generic reranker dataset loader (which defaults to query/pos_doc/neg_doc).\n\nWhat remains the same:\n- No changes to the underlying model or training loop.\n- No new dependencies; only key-mapping logic is touched.\n\nImpact:\n- Localized change to nemo/collections/llm/gpt/data/reranker.py, specifically SpecterReRankerDataModule._create_dataset.\n- Minimal risk; aligns with the data format produced by SpecterDataModule.\n\nTests and documentation:\n- No behavioral change expected; consider updating any tests that reference the old key name if present.\n- Update changelog/docs if applicable in your process.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T13:30:45.695739",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "nemo/collections/llm/gpt/data/reranker.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "_create_dataset",
+          "class_name": "SpecterReRankerDataModule",
+          "full_name": "SpecterReRankerDataModule._create_dataset",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "This change fixes a key mismatch by updating the Specter reranker dataset to use the 'query' key that Specter outputs, ensuring consistent data loading without altering models or training logic.",
+    "steps": [
+      {
+        "operation": "Update dataset construction to pass question_key='query'",
+        "file_to_modify": "nemo/collections/llm/gpt/data/reranker.py",
+        "function_to_modify": "SpecterReRankerDataModule._create_dataset",
+        "reason": "Specter preprocessing outputs records with keys 'query', 'pos_doc', and 'neg_doc'. The current implementation passes question_key='question', which leads to a key mismatch and potential runtime errors when loading Specter data. Aligning to 'query' ensures the dataset loader uses the correct field produced by SpecterDataModule.",
+        "side_effects": "Low risk change; downstream data loading paths remain unchanged aside from the key name. Potential tests or test references to the old key ('question') may need updates; consider updating changelog/docs accordingly."
+      }
+    ]
+  }
+}

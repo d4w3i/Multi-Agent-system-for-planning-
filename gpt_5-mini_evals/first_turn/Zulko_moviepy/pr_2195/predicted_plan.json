@@ -1,0 +1,126 @@
+{
+  "pr_number": 2195,
+  "repository": "Zulko/moviepy",
+  "title": "fixes for tests",
+  "body": "- set requred version of pillow to 9.5.0\n- test-ffmpeg-reader - change duration number to match video\n- ffmpeg-reader - add displaymatrix to be read as video rotation\n- config set binary to autodetect\n\n<!--\nPlease tick when you have done these. They don't need to all be completed before the PR is submitted.\nDelete them if they are not appropriate for this pull request.\n-->\n- [x] I have provided code that clearly demonstrates the bug and that only works correctly when applying this fix\n- [x] I have added suitable tests demonstrating a fixed bug or new/changed feature to the test suite in `tests/`\naddresses issue #2183",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T11:56:52.142941",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "moviepy/video/io/ffmpeg_reader.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "video_metadata_type_casting",
+          "class_name": "FFmpegInfosParser",
+          "full_name": "FFmpegInfosParser.video_metadata_type_casting",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "parse",
+          "class_name": "FFmpegInfosParser",
+          "full_name": "FFmpegInfosParser.parse",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "moviepy/config.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "module-level FFMPEG_BINARY assignment",
+          "class_name": null,
+          "full_name": "module-level FFMPEG_BINARY assignment",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "setup.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "py: requires list modification",
+          "class_name": "setup",
+          "full_name": "setup.py: requires list modification",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "tests/test_ffmpeg_reader.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "py::test_ffmpeg_parse_infos_decode_file",
+          "class_name": "tests/test_ffmpeg_reader",
+          "full_name": "tests/test_ffmpeg_reader.py::test_ffmpeg_parse_infos_decode_file",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Map ffmpeg 'displaymatrix' side-data to the parser's rotation field so rotation is correctly applied, change the default ffmpeg binary setting to 'auto-detect', pin Pillow to 9.5.0, and update ffmpeg reader test duration expectations to match actual files.",
+    "steps": [
+      {
+        "operation": "Extend metadata type casting to parse displaymatrix rotation",
+        "file_to_modify": "moviepy/video/io/ffmpeg_reader.py",
+        "function_to_modify": "FFmpegInfosParser.video_metadata_type_casting",
+        "reason": "ffmpeg can report rotation in side-data lines labeled 'displaymatrix' (e.g. 'displaymatrix: rotation of -90.00'). Converting displaymatrix values into the same normalized 'rotate' numeric value lets the existing parser logic set result['video_rotation'] and reuse FFMPEG_VideoReader's rotation handling without additional branching.",
+        "side_effects": "Alters how rotation metadata is recognized; tests that assert video_rotation or size-swapping must be run. If displaymatrix formats differ, the tolerant numeric-extraction should handle most cases but could miss exotic strings. No API surface change beyond making video_rotation available for files that only report rotation via displaymatrix; consumers that rely on previous absence of rotation may observe changed behavior (width/height swapping)."
+      },
+      {
+        "operation": "Add a robust fallback in parse to accept displaymatrix or nonstandard rotate fields",
+        "file_to_modify": "moviepy/video/io/ffmpeg_reader.py",
+        "function_to_modify": "FFmpegInfosParser.parse",
+        "reason": "Even after improving type casting, some ffmpeg outputs may present rotation metadata in slightly different keys or formats. Adding a fallback in parse to set result['video_rotation'] when encountering a 'displaymatrix' key (or when a metadata value clearly contains a rotation angle) ensures the parser is resilient across ffmpeg versions and builds.",
+        "side_effects": "May override existing rotate-derived values if multiple rotation indicators appear; careful ordering (prefer explicit 'rotate' metadata, then displaymatrix) avoids surprising overrides. Run ffmpeg-related tests to ensure no regressions. No external API changes, but parsing results may change for some files."
+      },
+      {
+        "operation": "Change default ffmpeg binary selection to autodetect",
+        "file_to_modify": "moviepy/config.py",
+        "function_to_modify": "FFMPEG_BINARY",
+        "reason": "PR requests that the default ffmpeg binary be set to 'auto-detect' instead of a hardcoded default ('ffmpeg-imageio'). Using an autodetect sentinel causes startup logic to probe PATH (or platform-appropriate locations) and pick the system ffmpeg, avoiding reliance on a particular packaged binary name.",
+        "side_effects": "All code reading moviepy.config.FFMPEG_BINARY may end up using a different executable (system ffmpeg) compared to previous default; this can affect behavior of ffmpeg-based operations and tests depending on a specific ffmpeg build. CI environments may need ffmpeg present in PATH or tests adjusted. No public API change other than configuration default behavior."
+      },
+      {
+        "operation": "Pin Pillow dependency to 9.5.0 in packaging requirements",
+        "file_to_modify": "setup.py",
+        "function_to_modify": "setup",
+        "reason": "The PR requests requiring Pillow==9.5.0 to ensure tests and runtime behavior are consistent with the expected imaging library features and APIs used by the project.",
+        "side_effects": "Installing the package will constrain Pillow to version 9.5.0; this may conflict with other packages in the consuming environment. CI and contributors must reinstall dependencies after the change. No runtime API changes in the project itself, but users may be forced to downgrade/upgrade their Pillow installation to match."
+      },
+      {
+        "operation": "Update test expected duration(s) to match actual video durations",
+        "file_to_modify": "tests/test_ffmpeg_reader.py",
+        "function_to_modify": "test_ffmpeg_parse_infos_decode_file",
+        "reason": "The PR notes that the test expected duration number was changed to match the actual video file. Adjusting the assertion(s) prevents false negatives caused by mismatched expectations (ffmpeg may report a slightly different duration than previously assumed).",
+        "side_effects": "Test assertions will change, so any other tests that depended on the previous duration values may need review. This is a test-only change (no production API change), but it must be validated against all CI platforms because ffmpeg reporting may differ slightly by build; consider using tolerant comparisons (approx equality) if platform variance is observed."
+      }
+    ]
+  }
+}

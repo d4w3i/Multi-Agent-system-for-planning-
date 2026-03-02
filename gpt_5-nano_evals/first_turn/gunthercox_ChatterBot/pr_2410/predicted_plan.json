@@ -1,0 +1,87 @@
+{
+  "pr_number": 2410,
+  "repository": "gunthercox/ChatterBot",
+  "title": "Fix file path resolution",
+  "body": "This change improves the corpus file path resolution and loading flow:\n- Fix single-file path handling: ensure the corpus loader uses a generator path (yield) consistently so even a single file yields a result, avoiding empty generators when a single path is provided.\n- Absolute path resolution: when a file path cannot be resolved directly, attempt to construct and report an absolute path to help users identify where the file should be located.\n- Descriptive error messages: enhance errors to include the file being loaded and actionable guidance (e.g., install PyYAML when missing, or where the file was looked for).\n- Preserve and strengthen existing directory-wide corpus loading: still supports recursive discovery of corpus files when a directory path is provided, but with clearer error signaling when nothing is found.\n\nNote: These changes focus on the corpus loading logic (path resolution, per-file loading, and error messaging) and do not alter other subsystems of the chatbot.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T13:58:00.777079",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "chatterbot/corpus.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "get_file_path",
+          "class_name": "corpus",
+          "full_name": "corpus.get_file_path",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "list_corpus_files",
+          "class_name": "corpus",
+          "full_name": "corpus.list_corpus_files",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "read_corpus",
+          "class_name": "corpus",
+          "full_name": "corpus.read_corpus",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "load_corpus",
+          "class_name": "corpus",
+          "full_name": "corpus.load_corpus",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "This PR strengthens corpus file path resolution and loading flow by enhancing absolute path reporting, robust single-file vs directory handling, clearer error messages (including dependency guidance), and guaranteed generator semantics for all inputs.",
+    "steps": [
+      {
+        "operation": "Enhance get_file_path to support robust absolute-path reporting and improved path handling",
+        "file_to_modify": "chatterbot/corpus.py",
+        "function_to_modify": "get_file_path",
+        "reason": "To provide clearer, actionable errors when a specified corpus path cannot be located. Add absolute-path reporting, handle extension appending gracefully, and provide guidance on where the file was looked for or how to locate it.",
+        "side_effects": "May require tests to assert new error messages contain the absolute path attempted; could affect any callers that depend on exact error wording. No API changes beyond error content."
+      },
+      {
+        "operation": "Improve handling of single-file vs directory inputs in list_corpus_files and preserve stable file ordering",
+        "file_to_modify": "chatterbot/corpus.py",
+        "function_to_modify": "list_corpus_files",
+        "reason": "Ensure both single-file and directory paths are discovered correctly, with a consistent ordering, and raise informative errors when nothing matches. This aligns with generator semantics and prevents empty results for single inputs.",
+        "side_effects": "Downstream code may rely on the list order; tests should verify stable ordering and proper exception types/messages when no files are found."
+      },
+      {
+        "operation": "Improve error messaging in read_corpus to handle missing PyYAML with file context and actionable guidance",
+        "file_to_modify": "chatterbot/corpus.py",
+        "function_to_modify": "read_corpus",
+        "reason": "When PyYAML is not installed or import fails, provide a clear message that includes the target file and guidance (e.g., how to install PyYAML). This helps users diagnose loading issues quickly.",
+        "side_effects": "Tests may need updates to reflect new error wording; optional dependency handling paths may be exercised more explicitly."
+      },
+      {
+        "operation": "Guarantee generator semantics in load_corpus by using yield for all inputs, including a single file path",
+        "file_to_modify": "chatterbot/corpus.py",
+        "function_to_modify": "load_corpus",
+        "reason": "Avoid cases where a single input yields an empty generator. Ensure the function always yields results to support streaming usage and consistent API behavior.",
+        "side_effects": "Consumers expecting list returns may need adjustments to handle generators; update tests and any dependent code to iterate over the generator correctly."
+      }
+    ]
+  }
+}

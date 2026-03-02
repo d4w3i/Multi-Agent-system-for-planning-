@@ -1,0 +1,105 @@
+{
+    "repository": "pydantic/pydantic-ai",
+    "pull_request_number": 2210,
+    "title": "[openai] Remove incorrect tool call id from tool call delta",
+    "body": "For OpenAI responses API, the `response.function_call_arguments.delta` returns an `item_id` [(docs)](https://platform.openai.com/docs/api-reference/responses-streaming/response/function_call_arguments/delta) . This item_id is actually the `id` of the tool_call, rather than the `tool_call_id`. \r\n\r\nThe problem is that when using agent_stream or more generally the parts_manager, these deltas are accumulated and the `tool_call_id` for the ToolCallNode ends up being set to the incorrect `id`. This is particularly problematic because the `id` is a longer string than is supported by some gpt models (for example, an id is `fc_6876aca7db8c8192af95414c6cf92796035a7a219e794395`, whereas the tool call id for the same request is `call_YHzL9zYTlauY9bw9dEoE4uA4`. \r\n\r\n`gpt-4o-mini` only allows tool call ids that are 40 characters or less, so using the longer id breaks things (and is incorrect from a tool call id perspective).",
+    "pr_date": "2025-07-15T19:56:50Z",
+    "source_branch": "nav/fix-openai-streamed-tool-call-ids",
+    "language": "en",
+    "keywords_detected": {
+        "branch": [
+            "fix"
+        ],
+        "requirement": [
+            "remove"
+        ],
+        "body": [
+            "support"
+        ]
+    },
+    "number_of_links_in_pr": 2,
+    "base_sha": "46aa248729506dc44db4daa31494cb7105b6a264",
+    "last_commit_sha": "b13bf69f0c502b02295324a867e42b92ed2c7f8d",
+    "diff_between_base_and_last": [
+        {
+            "sha": "92d79c63400ae74e827f14c61835f44f02b4b3f4",
+            "filename": "pydantic_ai_slim/pydantic_ai/models/openai.py",
+            "status": "modified",
+            "additions": 1,
+            "deletions": 1,
+            "changes": 2,
+            "blob_url": "https://github.com/pydantic/pydantic-ai/blob/b13bf69f0c502b02295324a867e42b92ed2c7f8d/pydantic_ai_slim%2Fpydantic_ai%2Fmodels%2Fopenai.py",
+            "raw_url": "https://github.com/pydantic/pydantic-ai/raw/b13bf69f0c502b02295324a867e42b92ed2c7f8d/pydantic_ai_slim%2Fpydantic_ai%2Fmodels%2Fopenai.py",
+            "contents_url": "https://api.github.com/repos/pydantic/pydantic-ai/contents/pydantic_ai_slim%2Fpydantic_ai%2Fmodels%2Fopenai.py?ref=b13bf69f0c502b02295324a867e42b92ed2c7f8d",
+            "patch": "@@ -1051,7 +1051,7 @@ async def _get_event_iterator(self) -> AsyncIterator[ModelResponseStreamEvent]:\n                     vendor_part_id=chunk.item_id,\n                     tool_name=None,\n                     args=chunk.delta,\n-                    tool_call_id=chunk.item_id,\n+                    tool_call_id=None,\n                 )\n                 if maybe_event is not None:  # pragma: no branch\n                     yield maybe_event"
+        }
+    ],
+    "commits": [
+        {
+            "sha": "2ccfae4484258db6686a6739e7af17e257b98349",
+            "commit_date": "2025-07-15T19:52:30Z",
+            "message": "Remove incorrect tool call id from tool call delta",
+            "number_of_links_in_commit": 0,
+            "files_changed_count": 1,
+            "files": [
+                {
+                    "sha": "92d79c63400ae74e827f14c61835f44f02b4b3f4",
+                    "filename": "pydantic_ai_slim/pydantic_ai/models/openai.py",
+                    "status": "modified",
+                    "additions": 1,
+                    "deletions": 1,
+                    "changes": 2,
+                    "blob_url": "https://github.com/pydantic/pydantic-ai/blob/2ccfae4484258db6686a6739e7af17e257b98349/pydantic_ai_slim%2Fpydantic_ai%2Fmodels%2Fopenai.py",
+                    "raw_url": "https://github.com/pydantic/pydantic-ai/raw/2ccfae4484258db6686a6739e7af17e257b98349/pydantic_ai_slim%2Fpydantic_ai%2Fmodels%2Fopenai.py",
+                    "contents_url": "https://api.github.com/repos/pydantic/pydantic-ai/contents/pydantic_ai_slim%2Fpydantic_ai%2Fmodels%2Fopenai.py?ref=2ccfae4484258db6686a6739e7af17e257b98349",
+                    "patch": "@@ -1051,7 +1051,7 @@ async def _get_event_iterator(self) -> AsyncIterator[ModelResponseStreamEvent]:\n                     vendor_part_id=chunk.item_id,\n                     tool_name=None,\n                     args=chunk.delta,\n-                    tool_call_id=chunk.item_id,\n+                    tool_call_id=None,\n                 )\n                 if maybe_event is not None:  # pragma: no branch\n                     yield maybe_event"
+                }
+            ]
+        },
+        {
+            "sha": "7d1ca241717771b9bc5fb0290f2e8b593f67dd33",
+            "commit_date": "2025-07-15T20:06:17Z",
+            "message": "one more",
+            "number_of_links_in_commit": 0,
+            "files_changed_count": 1,
+            "files": [
+                {
+                    "sha": "11d3146aa4f2b30386b0361d982ef93a58c6c54f",
+                    "filename": "pydantic_ai_slim/pydantic_ai/models/openai.py",
+                    "status": "modified",
+                    "additions": 1,
+                    "deletions": 1,
+                    "changes": 2,
+                    "blob_url": "https://github.com/pydantic/pydantic-ai/blob/7d1ca241717771b9bc5fb0290f2e8b593f67dd33/pydantic_ai_slim%2Fpydantic_ai%2Fmodels%2Fopenai.py",
+                    "raw_url": "https://github.com/pydantic/pydantic-ai/raw/7d1ca241717771b9bc5fb0290f2e8b593f67dd33/pydantic_ai_slim%2Fpydantic_ai%2Fmodels%2Fopenai.py",
+                    "contents_url": "https://api.github.com/repos/pydantic/pydantic-ai/contents/pydantic_ai_slim%2Fpydantic_ai%2Fmodels%2Fopenai.py?ref=7d1ca241717771b9bc5fb0290f2e8b593f67dd33",
+                    "patch": "@@ -1051,7 +1051,7 @@ async def _get_event_iterator(self) -> AsyncIterator[ModelResponseStreamEvent]:\n                     vendor_part_id=chunk.item_id,\n                     tool_name=None,\n                     args=chunk.delta,\n-                    tool_call_id=None,\n+                    tool_call_id=None,  # NOTE: The item_id is not the final tool_call_id\n                 )\n                 if maybe_event is not None:  # pragma: no branch\n                     yield maybe_event"
+                }
+            ]
+        },
+        {
+            "sha": "b13bf69f0c502b02295324a867e42b92ed2c7f8d",
+            "commit_date": "2025-07-16T18:54:26Z",
+            "message": "Remove unnecessary comment",
+            "number_of_links_in_commit": 0,
+            "files_changed_count": 1,
+            "files": [
+                {
+                    "sha": "92d79c63400ae74e827f14c61835f44f02b4b3f4",
+                    "filename": "pydantic_ai_slim/pydantic_ai/models/openai.py",
+                    "status": "modified",
+                    "additions": 1,
+                    "deletions": 1,
+                    "changes": 2,
+                    "blob_url": "https://github.com/pydantic/pydantic-ai/blob/b13bf69f0c502b02295324a867e42b92ed2c7f8d/pydantic_ai_slim%2Fpydantic_ai%2Fmodels%2Fopenai.py",
+                    "raw_url": "https://github.com/pydantic/pydantic-ai/raw/b13bf69f0c502b02295324a867e42b92ed2c7f8d/pydantic_ai_slim%2Fpydantic_ai%2Fmodels%2Fopenai.py",
+                    "contents_url": "https://api.github.com/repos/pydantic/pydantic-ai/contents/pydantic_ai_slim%2Fpydantic_ai%2Fmodels%2Fopenai.py?ref=b13bf69f0c502b02295324a867e42b92ed2c7f8d",
+                    "patch": "@@ -1051,7 +1051,7 @@ async def _get_event_iterator(self) -> AsyncIterator[ModelResponseStreamEvent]:\n                     vendor_part_id=chunk.item_id,\n                     tool_name=None,\n                     args=chunk.delta,\n-                    tool_call_id=None,  # NOTE: The item_id is not the final tool_call_id\n+                    tool_call_id=None,\n                 )\n                 if maybe_event is not None:  # pragma: no branch\n                     yield maybe_event"
+                }
+            ]
+        }
+    ],
+    "pull_request_url": "https://github.com/pydantic/pydantic-ai/pull/2210",
+    "commits_url": "https://github.com/pydantic/pydantic-ai/pull/2210/commits",
+    "files_url": "https://github.com/pydantic/pydantic-ai/pull/2210/files"
+}

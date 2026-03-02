@@ -1,0 +1,97 @@
+{
+    "repository": "PrefectHQ/prefect",
+    "pull_request_number": 18463,
+    "title": "Fix failing unit tests",
+    "body": "These changes fix the failing tests introduced by https://github.com/PrefectHQ/prefect/pull/18450\n",
+    "pr_date": "2025-07-08T21:13:52Z",
+    "source_branch": "fix-flow-reference",
+    "language": "en",
+    "keywords_detected": {
+        "branch": [
+            "fix"
+        ],
+        "requirement": [
+            "fix"
+        ],
+        "body": [
+            "change",
+            "fix"
+        ]
+    },
+    "number_of_links_in_pr": 1,
+    "base_sha": "4d22aa3c1e6c5edcd7ccb06846911d9fcf7dfe32",
+    "last_commit_sha": "7214ff7a08bc096c6a7b42db56182bd252a8b08c",
+    "diff_between_base_and_last": [
+        {
+            "sha": "81ef47078319505a1ffe47583d548e64dc15beb9",
+            "filename": "tests/cli/test_flow.py",
+            "status": "modified",
+            "additions": 22,
+            "deletions": 7,
+            "changes": 29,
+            "blob_url": "https://github.com/PrefectHQ/prefect/blob/7214ff7a08bc096c6a7b42db56182bd252a8b08c/tests%2Fcli%2Ftest_flow.py",
+            "raw_url": "https://github.com/PrefectHQ/prefect/raw/7214ff7a08bc096c6a7b42db56182bd252a8b08c/tests%2Fcli%2Ftest_flow.py",
+            "contents_url": "https://api.github.com/repos/PrefectHQ/prefect/contents/tests%2Fcli%2Ftest_flow.py?ref=7214ff7a08bc096c6a7b42db56182bd252a8b08c",
+            "patch": "@@ -3,13 +3,19 @@\n \n import pytest\n \n+from prefect import __development_base_path__, flow\n from prefect.client.orchestration import PrefectClient\n from prefect.runner import Runner\n from prefect.testing.cli import invoke_and_assert\n from prefect.testing.utilities import AsyncMock\n from prefect.utilities.asyncutils import run_sync_in_worker_thread\n \n \n+@flow(retries=2)\n+def hello():\n+    print(\"hello\")\n+\n+\n class TestFlowServe:\n     \"\"\"\n     These tests ensure that the `prefect flow serve` interacts with Runner\n@@ -37,7 +43,13 @@ async def test_flow_serve_cli_creates_deployment(\n     ):\n         await run_sync_in_worker_thread(\n             invoke_and_assert,\n-            command=[\"flow\", \"serve\", \"flows/hello_world.py:hello\", \"--name\", \"test\"],\n+            command=[\n+                \"flow\",\n+                \"serve\",\n+                f\"{__development_base_path__}/tests/cli/test_flow.py:hello\",\n+                \"--name\",\n+                \"test\",\n+            ],\n             expected_code=0,\n             expected_output_contains=[\n                 \"Your flow 'hello' is being served and polling for scheduled runs!\",\n@@ -50,7 +62,10 @@ async def test_flow_serve_cli_creates_deployment(\n \n         assert deployment is not None\n         assert deployment.name == \"test\"\n-        assert deployment.entrypoint == \"flows/hello_world.py:hello\"\n+        assert (\n+            deployment.entrypoint\n+            == f\"{__development_base_path__}/tests/cli/test_flow.py:hello\"\n+        )\n \n         mock_runner_start.assert_called_once()\n \n@@ -62,7 +77,7 @@ async def test_flow_serve_cli_accepts_interval(\n             command=[\n                 \"flow\",\n                 \"serve\",\n-                \"flows/hello_world.py:hello\",\n+                f\"{__development_base_path__}/tests/cli/test_flow.py:hello\",\n                 \"--name\",\n                 \"test\",\n                 \"--interval\",\n@@ -85,7 +100,7 @@ async def test_flow_serve_cli_accepts_cron(\n             command=[\n                 \"flow\",\n                 \"serve\",\n-                \"flows/hello_world.py:hello\",\n+                f\"{__development_base_path__}/tests/cli/test_flow.py:hello\",\n                 \"--name\",\n                 \"test\",\n                 \"--cron\",\n@@ -106,7 +121,7 @@ async def test_flow_serve_cli_accepts_rrule(\n             command=[\n                 \"flow\",\n                 \"serve\",\n-                \"flows/hello_world.py:hello\",\n+                f\"{__development_base_path__}/tests/cli/test_flow.py:hello\",\n                 \"--name\",\n                 \"test\",\n                 \"--rrule\",\n@@ -140,7 +155,7 @@ def runner_spy_init(self: Runner, *args: Any, **kwargs: Any):\n             command=[\n                 \"flow\",\n                 \"serve\",\n-                \"flows/hello_world.py:hello\",\n+                f\"{__development_base_path__}/tests/cli/test_flow.py:hello\",\n                 \"--name\",\n                 \"test\",\n                 \"--limit\",\n@@ -164,7 +179,7 @@ async def test_flow_serve_cli_accepts_metadata_fields(\n             command=[\n                 \"flow\",\n                 \"serve\",\n-                \"flows/hello_world.py:hello\",\n+                f\"{__development_base_path__}/tests/cli/test_flow.py:hello\",\n                 \"--name\",\n                 \"test\",\n                 \"--description\","
+        },
+        {
+            "sha": "2afedaa2ff4f4e31db557037aa398600067c4dc1",
+            "filename": "tests/cli/test_flow_run.py",
+            "status": "modified",
+            "additions": 5,
+            "deletions": 5,
+            "changes": 10,
+            "blob_url": "https://github.com/PrefectHQ/prefect/blob/7214ff7a08bc096c6a7b42db56182bd252a8b08c/tests%2Fcli%2Ftest_flow_run.py",
+            "raw_url": "https://github.com/PrefectHQ/prefect/raw/7214ff7a08bc096c6a7b42db56182bd252a8b08c/tests%2Fcli%2Ftest_flow_run.py",
+            "contents_url": "https://api.github.com/repos/PrefectHQ/prefect/contents/tests%2Fcli%2Ftest_flow_run.py?ref=7214ff7a08bc096c6a7b42db56182bd252a8b08c",
+            "patch": "@@ -12,7 +12,7 @@\n import pytest\n \n import prefect.exceptions\n-from prefect import flow\n+from prefect import __development_base_path__, flow\n from prefect.cli.flow_run import LOGS_WITH_LIMIT_FLAG_DEFAULT_NUM_LOGS\n from prefect.client.orchestration import PrefectClient, SyncPrefectClient\n from prefect.client.schemas.actions import LogCreate\n@@ -842,10 +842,10 @@ async def test_when_num_logs_greater_than_page_size_with_tail_outputs_correct_nu\n \n \n class TestFlowRunExecute:\n-    @pytest.mark.usefixtures(\"use_hosted_api_server\")\n     async def test_execute_flow_run_via_argument(self, prefect_client: PrefectClient):\n         deployment_id = await RunnerDeployment.from_entrypoint(\n-            entrypoint=\"flows/hello_world.py:hello\", name=\"test\"\n+            entrypoint=f\"{__development_base_path__}/tests/cli/test_flow_run.py:hello_flow\",\n+            name=\"test\",\n         ).apply()\n \n         flow_run = await prefect_client.create_flow_run_from_deployment(\n@@ -861,12 +861,12 @@ async def test_execute_flow_run_via_argument(self, prefect_client: PrefectClient\n         flow_run = await prefect_client.read_flow_run(flow_run.id)\n         assert flow_run.state.is_completed()\n \n-    @pytest.mark.usefixtures(\"use_hosted_api_server\")\n     async def test_execute_flow_run_via_environment_variable(\n         self, prefect_client: PrefectClient, monkeypatch\n     ):\n         deployment = RunnerDeployment.from_entrypoint(\n-            entrypoint=\"flows/hello_world.py:hello\", name=\"test\"\n+            entrypoint=f\"{__development_base_path__}/tests/cli/test_flow_run.py:hello_flow\",\n+            name=\"test\",\n         )\n         deployment_id = await deployment.apply()\n "
+        }
+    ],
+    "commits": [
+        {
+            "sha": "2d56eae83a99acb033637eaeb47bbb22121e101b",
+            "commit_date": "2025-07-08T21:12:58Z",
+            "message": "Fix failing unit tests\n\nThese changes fix the failing tests introduced by https://github.com/PrefectHQ/prefect/pull/18450",
+            "number_of_links_in_commit": 1,
+            "files_changed_count": 1,
+            "files": [
+                {
+                    "sha": "81ef47078319505a1ffe47583d548e64dc15beb9",
+                    "filename": "tests/cli/test_flow.py",
+                    "status": "modified",
+                    "additions": 22,
+                    "deletions": 7,
+                    "changes": 29,
+                    "blob_url": "https://github.com/PrefectHQ/prefect/blob/2d56eae83a99acb033637eaeb47bbb22121e101b/tests%2Fcli%2Ftest_flow.py",
+                    "raw_url": "https://github.com/PrefectHQ/prefect/raw/2d56eae83a99acb033637eaeb47bbb22121e101b/tests%2Fcli%2Ftest_flow.py",
+                    "contents_url": "https://api.github.com/repos/PrefectHQ/prefect/contents/tests%2Fcli%2Ftest_flow.py?ref=2d56eae83a99acb033637eaeb47bbb22121e101b",
+                    "patch": "@@ -3,13 +3,19 @@\n \n import pytest\n \n+from prefect import __development_base_path__, flow\n from prefect.client.orchestration import PrefectClient\n from prefect.runner import Runner\n from prefect.testing.cli import invoke_and_assert\n from prefect.testing.utilities import AsyncMock\n from prefect.utilities.asyncutils import run_sync_in_worker_thread\n \n \n+@flow(retries=2)\n+def hello():\n+    print(\"hello\")\n+\n+\n class TestFlowServe:\n     \"\"\"\n     These tests ensure that the `prefect flow serve` interacts with Runner\n@@ -37,7 +43,13 @@ async def test_flow_serve_cli_creates_deployment(\n     ):\n         await run_sync_in_worker_thread(\n             invoke_and_assert,\n-            command=[\"flow\", \"serve\", \"flows/hello_world.py:hello\", \"--name\", \"test\"],\n+            command=[\n+                \"flow\",\n+                \"serve\",\n+                f\"{__development_base_path__}/tests/cli/test_flow.py:hello\",\n+                \"--name\",\n+                \"test\",\n+            ],\n             expected_code=0,\n             expected_output_contains=[\n                 \"Your flow 'hello' is being served and polling for scheduled runs!\",\n@@ -50,7 +62,10 @@ async def test_flow_serve_cli_creates_deployment(\n \n         assert deployment is not None\n         assert deployment.name == \"test\"\n-        assert deployment.entrypoint == \"flows/hello_world.py:hello\"\n+        assert (\n+            deployment.entrypoint\n+            == f\"{__development_base_path__}/tests/cli/test_flow.py:hello\"\n+        )\n \n         mock_runner_start.assert_called_once()\n \n@@ -62,7 +77,7 @@ async def test_flow_serve_cli_accepts_interval(\n             command=[\n                 \"flow\",\n                 \"serve\",\n-                \"flows/hello_world.py:hello\",\n+                f\"{__development_base_path__}/tests/cli/test_flow.py:hello\",\n                 \"--name\",\n                 \"test\",\n                 \"--interval\",\n@@ -85,7 +100,7 @@ async def test_flow_serve_cli_accepts_cron(\n             command=[\n                 \"flow\",\n                 \"serve\",\n-                \"flows/hello_world.py:hello\",\n+                f\"{__development_base_path__}/tests/cli/test_flow.py:hello\",\n                 \"--name\",\n                 \"test\",\n                 \"--cron\",\n@@ -106,7 +121,7 @@ async def test_flow_serve_cli_accepts_rrule(\n             command=[\n                 \"flow\",\n                 \"serve\",\n-                \"flows/hello_world.py:hello\",\n+                f\"{__development_base_path__}/tests/cli/test_flow.py:hello\",\n                 \"--name\",\n                 \"test\",\n                 \"--rrule\",\n@@ -140,7 +155,7 @@ def runner_spy_init(self: Runner, *args: Any, **kwargs: Any):\n             command=[\n                 \"flow\",\n                 \"serve\",\n-                \"flows/hello_world.py:hello\",\n+                f\"{__development_base_path__}/tests/cli/test_flow.py:hello\",\n                 \"--name\",\n                 \"test\",\n                 \"--limit\",\n@@ -164,7 +179,7 @@ async def test_flow_serve_cli_accepts_metadata_fields(\n             command=[\n                 \"flow\",\n                 \"serve\",\n-                \"flows/hello_world.py:hello\",\n+                f\"{__development_base_path__}/tests/cli/test_flow.py:hello\",\n                 \"--name\",\n                 \"test\",\n                 \"--description\","
+                }
+            ]
+        },
+        {
+            "sha": "7214ff7a08bc096c6a7b42db56182bd252a8b08c",
+            "commit_date": "2025-07-08T21:27:04Z",
+            "message": "Fix other failing tests",
+            "number_of_links_in_commit": 0,
+            "files_changed_count": 1,
+            "files": [
+                {
+                    "sha": "2afedaa2ff4f4e31db557037aa398600067c4dc1",
+                    "filename": "tests/cli/test_flow_run.py",
+                    "status": "modified",
+                    "additions": 5,
+                    "deletions": 5,
+                    "changes": 10,
+                    "blob_url": "https://github.com/PrefectHQ/prefect/blob/7214ff7a08bc096c6a7b42db56182bd252a8b08c/tests%2Fcli%2Ftest_flow_run.py",
+                    "raw_url": "https://github.com/PrefectHQ/prefect/raw/7214ff7a08bc096c6a7b42db56182bd252a8b08c/tests%2Fcli%2Ftest_flow_run.py",
+                    "contents_url": "https://api.github.com/repos/PrefectHQ/prefect/contents/tests%2Fcli%2Ftest_flow_run.py?ref=7214ff7a08bc096c6a7b42db56182bd252a8b08c",
+                    "patch": "@@ -12,7 +12,7 @@\n import pytest\n \n import prefect.exceptions\n-from prefect import flow\n+from prefect import __development_base_path__, flow\n from prefect.cli.flow_run import LOGS_WITH_LIMIT_FLAG_DEFAULT_NUM_LOGS\n from prefect.client.orchestration import PrefectClient, SyncPrefectClient\n from prefect.client.schemas.actions import LogCreate\n@@ -842,10 +842,10 @@ async def test_when_num_logs_greater_than_page_size_with_tail_outputs_correct_nu\n \n \n class TestFlowRunExecute:\n-    @pytest.mark.usefixtures(\"use_hosted_api_server\")\n     async def test_execute_flow_run_via_argument(self, prefect_client: PrefectClient):\n         deployment_id = await RunnerDeployment.from_entrypoint(\n-            entrypoint=\"flows/hello_world.py:hello\", name=\"test\"\n+            entrypoint=f\"{__development_base_path__}/tests/cli/test_flow_run.py:hello_flow\",\n+            name=\"test\",\n         ).apply()\n \n         flow_run = await prefect_client.create_flow_run_from_deployment(\n@@ -861,12 +861,12 @@ async def test_execute_flow_run_via_argument(self, prefect_client: PrefectClient\n         flow_run = await prefect_client.read_flow_run(flow_run.id)\n         assert flow_run.state.is_completed()\n \n-    @pytest.mark.usefixtures(\"use_hosted_api_server\")\n     async def test_execute_flow_run_via_environment_variable(\n         self, prefect_client: PrefectClient, monkeypatch\n     ):\n         deployment = RunnerDeployment.from_entrypoint(\n-            entrypoint=\"flows/hello_world.py:hello\", name=\"test\"\n+            entrypoint=f\"{__development_base_path__}/tests/cli/test_flow_run.py:hello_flow\",\n+            name=\"test\",\n         )\n         deployment_id = await deployment.apply()\n "
+                }
+            ]
+        }
+    ],
+    "pull_request_url": "https://github.com/PrefectHQ/prefect/pull/18463",
+    "commits_url": "https://github.com/PrefectHQ/prefect/pull/18463/commits",
+    "files_url": "https://github.com/PrefectHQ/prefect/pull/18463/files"
+}

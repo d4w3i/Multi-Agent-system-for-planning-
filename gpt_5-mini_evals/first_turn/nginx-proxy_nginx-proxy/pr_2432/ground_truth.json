@@ -1,0 +1,59 @@
+{
+  "pr_number": 2432,
+  "repository": "nginx-proxy/nginx-proxy",
+  "title": "fix: tests webserver syntaxwarning",
+  "body": "> Changed in Python version 3.12: Unrecognized escape sequences produce a SyntaxWarning. In a future Python version they will be eventually a SyntaxError.\r\n[2.4.1.1. Escape sequences](https://docs.python.org/3/reference/lexical_analysis.html#index-23)\r\n\r\nChange to raw string literal to fix:\r\n```\r\n/webserver.py:17: SyntaxWarning: invalid escape sequence '\\d'\r\n  elif re.match(\"/status/(\\d+)\", self.path):\r\n/webserver.py:18: SyntaxWarning: invalid escape sequence '\\d'\r\n  result = re.match(\"/status/(\\d+)\", self.path)\r\n```",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T01:03:54.293951",
+    "extractor_version": "1.0.0",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "test/requirements/web/webserver.py",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 2,
+      "functions_modified": [
+        {
+          "function_name": "do_GET",
+          "class_name": "Handler",
+          "full_name": "Handler.do_GET",
+          "start_line": 8,
+          "end_line": 32,
+          "lines_changed": [
+            17,
+            18
+          ]
+        }
+      ],
+      "patch": "@@ -14,8 +14,8 @@ def do_GET(self):\n             response_body += self.headers.as_string()\n         elif self.path == \"/port\":\n             response_body += f\"answer from port {PORT}\\n\"\n-        elif re.match(\"/status/(\\d+)\", self.path):\n-            result = re.match(\"/status/(\\d+)\", self.path)\n+        elif re.match(r\"/status/(\\d+)\", self.path):\n+            result = re.match(r\"/status/(\\d+)\", self.path)\n             response_code = int(result.group(1))\n             response_body += f\"answer with response code {response_code}\\n\"\n         elif self.path == \"/\":"
+    }
+  ],
+  "functions_modified": [
+    {
+      "function_name": "do_GET",
+      "class_name": "Handler",
+      "full_name": "Handler.do_GET",
+      "start_line": 8,
+      "end_line": 32,
+      "lines_changed": [
+        17,
+        18
+      ]
+    }
+  ],
+  "step_plan": {
+    "steps": [
+      {
+        "operation": "Fix invalid escape sequence warnings by converting the regex pattern string to a raw string literal in the GET request handler",
+        "file_to_modify": "test/requirements/web/webserver.py",
+        "function_to_modify": "do_GET",
+        "reason": "Python 3.12 emits a SyntaxWarning for unrecognized escape sequences like `\\d` in normal string literals; using a raw string literal (`r\"...\"`) preserves the intended regex and avoids future incompatibility where this may become a SyntaxError.",
+        "side_effects": "Only affects request-path matching for the `/status/<code>` route in this test webserver; behavior should remain the same, but any code or tests relying on the previous (warning-producing) literal form will now run cleanly under Python 3.12+."
+      }
+    ],
+    "summary": "Updates the test webserver’s `/status/<code>` regex to use raw string literals, eliminating Python 3.12 invalid escape sequence SyntaxWarnings while preserving matching behavior."
+  }
+}

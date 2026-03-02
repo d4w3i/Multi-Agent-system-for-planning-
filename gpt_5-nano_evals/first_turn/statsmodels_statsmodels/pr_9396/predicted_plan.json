@@ -1,0 +1,49 @@
+{
+  "pr_number": 9396,
+  "repository": "statsmodels/statsmodels",
+  "title": "BUG: Remove method setting in summary2 of genmod",
+  "body": "Summary:\n- The PR removes reliance on the Method field being set for GenMod results in summary2. This prevents potential AttributeError or incorrect method reporting when results objects do not expose a method attribute.\n\nWhat was found:\n- In statsmodels/iolib/summary2.py, summary_model(results) builds a dict of fields for the summary. The entry for the model method is currently sourced as 'Method': lambda x: x.method, which assumes every result has a 'method' attribute.\n\nProposed change:\n- Make the Method entry robust by guarding access to the attribute. Use getattr with a safe default (e.g., empty string) so missing or non-applicable methods do not cause errors and do not pollute the summary.\n\nTests:\n- The PR note mentions tests were added. This should include at least:\n  - A test where a GenMod-like result lacks a 'method' attribute and summary2 can render without raising an exception.\n  - A test where a result has a 'method' attribute, ensuring the value is displayed correctly when present.\n\nNotes for maintainers:\n- Ensure flake8 compliance and consistency with existing formatting.\n- No behavioral changes to other fields; only the robustness of the 'Method:' entry is affected.\n- If the project has a dedicated test helper for summary2 result objects, consider reusing it to craft minimal dummy result objects for these tests.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T14:32:41.194785",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "statsmodels/iolib/summary2.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "summary_model",
+          "class_name": null,
+          "full_name": "summary_model",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "statsmodels/iolib/tests/test_summary2.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    }
+  ],
+  "step_plan": {
+    "summary": "Robustify the 'Method' entry in summary_model to tolerate missing method attributes on GenMod results by guarding attribute access with getattr and defaulting to an empty string.",
+    "steps": [
+      {
+        "operation": "Guard access to the Method field in summary_model using getattr with a default",
+        "file_to_modify": "statsmodels/iolib/summary2.py",
+        "function_to_modify": "summary_model",
+        "reason": "Prevent AttributeError when a result object (e.g., GenMod result) lacks a 'method' attribute; preserve existing behavior when present",
+        "side_effects": "No behavioral change to other fields; minor impact on tests; may require updating tests to verify presence/absence; potential minor performance impact due to getattr usage"
+      }
+    ]
+  }
+}

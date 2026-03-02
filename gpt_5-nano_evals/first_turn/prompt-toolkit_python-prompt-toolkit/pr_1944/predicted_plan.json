@@ -1,0 +1,117 @@
+{
+  "pr_number": 1944,
+  "repository": "prompt-toolkit/python-prompt-toolkit",
+  "title": "Fixes bug whereby read_only bool is called as a function",
+  "body": "Summary:\nA bug occurs when read_only is used as if it were a callable (read_only()), while in some code paths it is a boolean property. This leads to a TypeError: 'bool' object is not callable. The issue is visible in prompt_toolkit's EMACS insert-mode path and may propagate to other mode guards that gate editing based on buffer writability.\n\nWhat I found:\n- The EMACS insert-mode predicate emacs_insert_mode currently calls current_buffer.read_only() to gate insert-mode activation.\n- Other mode predicates (VI-related and possibly others) also gate behavior based on read_only(), which could produce similar issues if read_only is a property rather than a method in the runtime environment.\n- The repository version shown uses read_only() as a function in app.py. If the intended API surface is a boolean property (read_only) rather than a method, these call sites must be updated to use property access (read_only) or a safe accessor.\n\nProposed fix (focused but mindful of consistency):\n- Replace read_only() calls with a safe, consistent access pattern across the relevant predicates. The simplest portable approach is to treat read_only as a property where possible. If the codebase intends read_only to be a callable, then the runtime must expose a method; otherwise, switch to property access.\n- Specifically, start with emacs_insert_mode (the explicit bug reference) and extend to related VI-mode predicates (vi_navigation_mode, vi_insert_mode, vi_insert_multiple_mode, vi_replace_mode, vi_replace_single_mode) to ensure consistent behavior and avoid similar runtime errors.\n\nRecommended follow-ups:\n- Add a small regression test that ensures emacs_insert_mode does not crash when the buffer is read-only and when read_only is a boolean property.\n- Consider adding a tiny helper (e.g., _read_only_state(buffer)) that encapsulates the distinction between a boolean property and a callable, to avoid future regressions when the API surface changes.\n\nImpact:\n- Low to Moderate risk: changes are limited to mode-gating predicates and should not alter business logic beyond how read-only state is read. The semantics (do not allow edits in read-only buffers) should be preserved.\n- Tests: Add regression coverage for EMACS insert mode when the buffer is read-only.\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T14:16:09.398010",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "src/prompt_toolkit/filters/app.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "emacs_insert_mode",
+          "class_name": null,
+          "full_name": "emacs_insert_mode",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "vi_navigation_mode",
+          "class_name": null,
+          "full_name": "vi_navigation_mode",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "vi_insert_mode",
+          "class_name": null,
+          "full_name": "vi_insert_mode",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "vi_insert_multiple_mode",
+          "class_name": null,
+          "full_name": "vi_insert_multiple_mode",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "vi_replace_mode",
+          "class_name": null,
+          "full_name": "vi_replace_mode",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "vi_replace_single_mode",
+          "class_name": null,
+          "full_name": "vi_replace_single_mode",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Fixes a bug where read_only is treated as a function in mode-gating predicates by switching to a safe, consistent access pattern. The changes focus on EMACS insert mode first and extend to VI-related predicates to prevent bool-vs-callable runtime issues.",
+    "steps": [
+      {
+        "operation": "Refactor emacs_insert_mode to use safe read-only access",
+        "file_to_modify": "src/prompt_toolkit/filters/app.py",
+        "function_to_modify": "emacs_insert_mode",
+        "reason": "Avoid TypeError when read_only is a boolean property by using a robust access pattern that works for both callable and non-callable forms",
+        "side_effects": "Low risk; ensures EMACS insert-mode gating remains correct across API shapes; may require minor test updates to cover both property and callable forms"
+      },
+      {
+        "operation": "Refactor vi_navigation_mode to use safe read-only access",
+        "file_to_modify": "src/prompt_toolkit/filters/app.py",
+        "function_to_modify": "vi_navigation_mode",
+        "reason": "Prevent similar runtime errors in VI navigation gating by adopting a safe access for read_only",
+        "side_effects": "Low risk; preserves gating semantics; may necessitate updating tests that cover VI navigation mode under read-only conditions"
+      },
+      {
+        "operation": "Refactor vi_insert_mode to use safe read-only access",
+        "file_to_modify": "src/prompt_toolkit/filters/app.py",
+        "function_to_modify": "vi_insert_mode",
+        "reason": "Ensure VI insert-mode gating does not fail if read_only is a boolean property instead of a method",
+        "side_effects": "Low risk; keeps editing disabled in read-only buffers; tests may need to simulate both callable and non-callable shapes"
+      },
+      {
+        "operation": "Refactor vi_insert_multiple_mode to use safe read-only access",
+        "file_to_modify": "src/prompt_toolkit/filters/app.py",
+        "function_to_modify": "vi_insert_multiple_mode",
+        "reason": "Guard against TypeError when read_only is not a callable in VI insert-multiple mode",
+        "side_effects": "Low risk; maintains existing behavior; potential test adjustments for read-only scenarios"
+      },
+      {
+        "operation": "Refactor vi_replace_mode to use safe read-only access",
+        "file_to_modify": "src/prompt_toolkit/filters/app.py",
+        "function_to_modify": "vi_replace_mode",
+        "reason": "Prevent runtime errors in VI replace gating by reliably reading read_only regardless of API shape",
+        "side_effects": "Low risk; ensure replace-mode respects read-only buffers; may require test updates for both property-like and callable read_only"
+      },
+      {
+        "operation": "Refactor vi_replace_single_mode to use safe read-only access",
+        "file_to_modify": "src/prompt_toolkit/filters/app.py",
+        "function_to_modify": "vi_replace_single_mode",
+        "reason": "Eliminate potential TypeError in VI replace-single gating when read_only is a boolean property",
+        "side_effects": "Low risk; preserves behavior; regression tests should cover read-only conditions in replace-single mode"
+      }
+    ]
+  }
+}

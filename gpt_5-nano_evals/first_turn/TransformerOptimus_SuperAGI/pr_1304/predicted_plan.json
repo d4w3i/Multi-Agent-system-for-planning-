@@ -1,0 +1,33 @@
+{
+  "pr_number": 1304,
+  "repository": "TransformerOptimus/SuperAGI",
+  "title": "Fix Recruitment Workflow",
+  "body": "This PR targets the recruitment workflow seed to correct and stabilize its behavior. The primary area of change is in the recruitment seed path inside the single-file seed orchestrator at base_project/workflow_seed.py. The focus is on AgentWorkflowSeed.build_recruitment_workflow, with potential adjustments to: \n- Transition logic between steps (especially how we handle the resume vs. job description check and subsequent email queuing).\n- Termination/COMPLETION paths when there are no viable candidates or no matching resume-job pairs.\n- Preserving idempotent seed behavior while updating step definitions and descriptions.\n- Clarifying step descriptions to aid future maintenance and testing.\nThis change is scoped to the seed logic and does not alter runtime tooling beyond how the recruitment workflow is seeded. If there are downstream consumers relying on a particular branching pattern, they may need to adapt to the updated transitions (the PR should include a migration note if needed).",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T13:36:43.944586",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "base_project/workflow_seed.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    }
+  ],
+  "step_plan": {
+    "summary": "This PR fixes and stabilizes the Recruitment Workflow seed by adjusting transitions, ensuring an explicit COMPLETE path when no candidates exist, and preserving idempotency in the recruitment seeding logic.",
+    "steps": [
+      {
+        "operation": "Rewrite recruitment workflow seeding logic to normalize transitions and ensure deterministic COMPLETE path when no candidates exist, while preserving idempotency and clarifying step descriptions",
+        "file_to_modify": "base_project/workflow_seed.py",
+        "function_to_modify": "AgentWorkflowSeed.build_recruitment_workflow",
+        "reason": "To fix and stabilize recruitment workflow seeding by adjusting transitions (especially NO/YES branches and COMPLETE termination), improving idempotency, and making step descriptions clearer for maintenance and testing.",
+        "side_effects": "Potential changes to downstream tooling that consumes the recruitment seed; need to verify idempotent behavior across re-seeding, update unit tests to cover new transition paths, and add migration notes if tooling or monitors rely on previous branching patterns."
+      }
+    ]
+  }
+}

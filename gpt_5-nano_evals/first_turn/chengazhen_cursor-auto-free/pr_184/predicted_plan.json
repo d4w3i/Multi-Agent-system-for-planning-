@@ -1,0 +1,42 @@
+{
+  "pr_number": 184,
+  "repository": "chengazhen/cursor-auto-free",
+  "title": "update build.py as to use env prioritized",
+  "body": "This PR updates the build workflow to prefer using a local .env when building CursorPro. If a local .env is not present, the build will fall back to using env.example. The goal is to let developers build against their own environment configuration locally, without having to manually modify the build process.\n\nKey changes:\n- Introduce environment file prioritization in the build flow so that dist/.env is populated from the user's local .env if available, otherwise from env.example.\n- Preserve existing behavior for copying config templates (config.ini.example) while changing how the .env file is prepared for the packaged output.\n- Maintain compatibility with both macOS/Linux and Windows build targets and ensure post-build steps only act when the relevant template files exist.\n\nThis aligns with the described intention to allow local builds with user-specific environment settings while keeping a safe fallback to template values when a local .env is not supplied.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T13:42:03.155800",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "build.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "build",
+          "class_name": null,
+          "full_name": "build",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Modify the build flow to prioritize a local .env for the build output, falling back to env.example, and copy the chosen file into dist/{system}/.env after PyInstaller, preserving existing config.ini handling and cross-platform considerations.",
+    "steps": [
+      {
+        "operation": "Update build() to implement env prioritization in the packaging flow",
+        "file_to_modify": "build.py",
+        "function_to_modify": "build",
+        "reason": "To ensure the packaged CursorPro uses the developer's local environment settings when available, with a safe fallback to env.example, without altering runtime logic.",
+        "side_effects": "Adds filesystem checks and copy operations; requires tests or validation; may affect cross-platform path handling; logs indicate source used; potential minor delay in build; ensure dist/.env is not overwritten if already present; may impact CI if env.template files missing"
+      }
+    ]
+  }
+}

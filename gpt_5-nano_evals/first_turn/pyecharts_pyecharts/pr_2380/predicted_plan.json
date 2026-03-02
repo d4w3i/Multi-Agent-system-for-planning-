@@ -1,0 +1,110 @@
+{
+  "pr_number": 2380,
+  "repository": "pyecharts/pyecharts",
+  "title": "fix and update",
+  "body": "* 修复 timeline 的 bug，关联：https://github.com/pyecharts/pyecharts/issues/2361\n* 更新一些配置的引用位置和方式\n    * `markline`, `markarea` 增加动画配置项：https://github.com/pyecharts/pyecharts/issues/2362",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T14:20:04.818175",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "pyecharts/charts/composite_charts/timeline.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "__check_components",
+          "class_name": "Timeline",
+          "full_name": "Timeline.__check_components",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "add",
+          "class_name": "Timeline",
+          "full_name": "Timeline.add",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "add_schema",
+          "class_name": "Timeline",
+          "full_name": "Timeline.add_schema",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "pyecharts/options/series_options.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "__init__",
+          "class_name": "MarkLineOpts",
+          "full_name": "MarkLineOpts.__init__",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "__init__",
+          "class_name": "MarkAreaOpts",
+          "full_name": "MarkAreaOpts.__init__",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "This PR fixes a timeline component merging bug (#2361) and adds animation options for markLine/markArea (#2362) by updating Timeline merging/propagation logic and extending MarkLineOpts and MarkAreaOpts with optional animation fields. The changes are scoped to two Python modules to minimize risk and maintain backward compatibility.",
+    "steps": [
+      {
+        "operation": "Improve merging logic in Timeline.__check_components to append rather than overwrite components across timepoints",
+        "file_to_modify": "pyecharts/charts/composite_charts/timeline.py",
+        "function_to_modify": "Timeline.__check_components",
+        "reason": "Fix bug where merging per-timepoint components (grid, xAxis, yAxis, etc.) could lead to dropped or duplicated axes/legends when multiple charts are stitched into a Timeline; ensure robust, incremental merging across timepoints.",
+        "side_effects": "Potential changes to internal state consistency; may require updates to unit/integration tests that validate component merging across timepoints; could affect serialization of baseOption and per-timepoint options."
+      },
+      {
+        "operation": "Ensure Timeline.add properly updates internal time_points, baseOption, and per-timepoint configurations when a new chart is added",
+        "file_to_modify": "pyecharts/charts/composite_charts/timeline.py",
+        "function_to_modify": "Timeline.add",
+        "reason": "Guarantee consistent propagation of dependencies and configuration when new charts are appended to the Timeline, preventing stale or missing timepoint configurations.",
+        "side_effects": "Tests for multi-chart timelines may need adjustments; API behavior for adding charts should remain backward-compatible but with improved state updates."
+      },
+      {
+        "operation": "Make Timeline.add_schema robust with sane defaults and guard against None, preparing for future animation config support if needed",
+        "file_to_modify": "pyecharts/charts/composite_charts/timeline.py",
+        "function_to_modify": "Timeline.add_schema",
+        "reason": "Prevent invalid input from breaking Timeline construction and lay groundwork for integrating new animation-related options without breaking existing usage.",
+        "side_effects": "Low risk to existing behavior; may require default configuration tests to be updated to reflect stricter guards and sane defaults."
+      },
+      {
+        "operation": "Add animation-related fields to MarkLineOpts to support new animation feature",
+        "file_to_modify": "pyecharts/options/series_options.py",
+        "function_to_modify": "MarkLineOpts.__init__",
+        "reason": "Introduce optional animation configuration (animation, animationDuration, animationDelay, animationDurationUpdate, animationDelayUpdate, animationEasing) for MarkLine while preserving backward compatibility.",
+        "side_effects": "Serialization of MarkLine options will include new fields when provided; downstream tests and docs may need updates to cover new options."
+      },
+      {
+        "operation": "Add animation-related fields to MarkAreaOpts to support new animation feature",
+        "file_to_modify": "pyecharts/options/series_options.py",
+        "function_to_modify": "MarkAreaOpts.__init__",
+        "reason": "Introduce optional animation configuration (same set as MarkLine) for MarkArea while preserving backward compatibility.",
+        "side_effects": "Serialization of MarkArea options will include new fields when provided; downstream tests and docs may need updates to cover new options."
+      }
+    ]
+  }
+}

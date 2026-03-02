@@ -1,0 +1,57 @@
+{
+  "pr_number": 383,
+  "repository": "THUDM/CogVideo",
+  "title": "fix deprecation of clear_objs_and_retain_memory",
+  "body": "The API of diffusers `clear_objs_and_retain_memory` has been deprecated in [huggingface/diffusers#9543] and is replaced with `free_memory`. Therefore, the corresponding parts in the LoRA training script need to be adjusted to adapt to the latest version of diffusers.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T11:38:39.120169",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "base_project/train_cogvideox_lora.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "module-level imports",
+          "class_name": null,
+          "full_name": "module-level imports",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "log_validation",
+          "class_name": null,
+          "full_name": "log_validation",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Replace the deprecated diffusers clear_objs_and_retain_memory usage with the newer free_memory API by adding a compatibility import/wrapper at module import time and updating the call site in log_validation to use the unified free_memory symbol.",
+    "steps": [
+      {
+        "operation": "Add compatibility import and wrapper for diffusers memory helper",
+        "file_to_modify": "base_project/train_cogvideox_lora.py",
+        "function_to_modify": "train_cogvideox_lora",
+        "reason": "The diffusers API deprecated clear_objs_and_retain_memory in favor of free_memory (moved to diffusers.utils). Add a try/except import at module level to import free_memory when present and fall back to the old clear_objs_and_retain_memory. Implement a small wrapper that normalizes signatures so the rest of the code can call a single free_memory(...) API regardless of installed diffusers version.",
+        "side_effects": "Changes the module-level namespace by adding/overriding free_memory. Must ensure cast_training_params and other diffusers imports remain intact; linting may require reordering imports. Requires running tests (or smoke validation) against both older and newer diffusers versions to verify the fallback and wrapper behave correctly. May hide signature differences if the new API intentionally removed ability to free specific objects — validate functional equivalence. No external API of this script changes, but downstream code that expects the old clear function to be present by name will see free_memory instead."
+      },
+      {
+        "operation": "Replace runtime call to deprecated helper in log_validation",
+        "file_to_modify": "base_project/train_cogvideox_lora.py",
+        "function_to_modify": "log_validation",
+        "reason": "log_validation currently calls the deprecated clear_objs_and_retain_memory([pipe]). Update the call to the unified free_memory(...) symbol introduced in the module imports so the code uses the new diffusers API when available and the fallback otherwise. Use the normalized calling convention provided by the wrapper (e.g., free_memory([pipe]) or free_memory()) depending on the wrapper implementation chosen to preserve behavior.",
+        "side_effects": "This change eliminates the deprecation call site. If the wrapper was implemented to accept optional args, calling free_memory([pipe]) should work across versions; if the new free_memory intentionally ignores provided objects, behavior might slightly differ in how aggressively memory is freed — run the validation/SMOKE path to ensure no out-of-memory or resource-leak regressions. Affects only validation/inference phases (log_validation) and should not change training state, but tests that assert memory-freeing behavior may need updating."
+      }
+    ]
+  }
+}

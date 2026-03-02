@@ -1,0 +1,57 @@
+{
+  "pr_number": 1535,
+  "repository": "wkentaro/labelme",
+  "title": "feat: support AI-generated masks in shape_to_mask",
+  "body": "Updated the export functionality to support AI-generated masks. The function now handles mask data from JSON files, including AI-generated mask formats (list/array and base64 encoded images).",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T13:38:59.368299",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "labelme/utils/shape.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "shape_to_mask",
+          "class_name": null,
+          "full_name": "shape_to_mask",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "shapes_to_label",
+          "class_name": null,
+          "full_name": "shapes_to_label",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Add support for AI-generated masks by updating shape_to_mask to accept mask arrays and base64 mask strings and by updating shapes_to_label to prefer per-shape 'mask' fields (list/array or base64) before rasterizing vector shapes. This allows export_json and other callers of shapes_to_label to produce correct labels when shapes include embedded masks.",
+    "steps": [
+      {
+        "operation": "Extend shape_to_mask to accept precomputed masks and base64 mask strings before rasterizing vector geometry",
+        "file_to_modify": "labelme/utils/shape.py",
+        "function_to_modify": "shape_to_mask",
+        "reason": "Centralize mask decoding/acceptance so callers can pass either vector geometry or mask-like inputs (numpy array / nested list / base64-encoded image). This enables code paths that previously assumed points-only to accept AI-generated masks without changing all callers.",
+        "side_effects": "All callers of shape_to_mask (including shapes_to_label and any other utilities) will now accept mask arrays and base64 strings. New imports (numpy as np and utils.img_b64_to_arr) and logging will be required. Behavior must remain backward-compatible for vector shapes (same rasterization path). Potential performance impact when decoding base64 images. Need unit tests for: ndarray/list masks, base64 masks with/without alpha channel, and shape mismatch handling. If mask shape mismatches image shape, the function should log a warning and return an all-False mask (or otherwise safe fallback) rather than raising, to avoid breaking export flows; downstream logic that expects masks may need to handle empty masks."
+      },
+      {
+        "operation": "Modify shapes_to_label to prefer and consume a per-shape 'mask' field (list/array or base64 string) before falling back to rasterization",
+        "file_to_modify": "labelme/utils/shape.py",
+        "function_to_modify": "shapes_to_label",
+        "reason": "export_json and other code paths that pass raw JSON shapes must be able to interpret AI-generated masks embedded in the shape dict (shape['mask']) so label images produced by shapes_to_label reflect those masks. Checking shape['mask'] first ensures LabelFile.load behavior (which already decodes masks) and raw JSON flows both work consistently.",
+        "side_effects": "Export behavior will change when shapes include a 'mask' key — masks encoded as nested lists or base64 strings will be used directly. Must validate mask dimension matches image size; if not, log and skip/ignore the mask for the shape to avoid exceptions. This change affects outputs produced by export_json and any other code that calls shapes_to_label with raw shape dicts — tests relying on older behavior should be updated. Keep class/instance assignment semantics the same (cls[mask] = cls_id / ins[mask] = ins_id). Ensure no API signature changes are introduced. Also add/adjust unit tests covering mask decoding, alpha-channel handling, and shape compatibility."
+      }
+    ]
+  }
+}

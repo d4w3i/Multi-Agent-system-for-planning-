@@ -1,0 +1,65 @@
+{
+  "pr_number": 563,
+  "repository": "netease-youdao/QAnything",
+  "title": "修复错误：将 update_chunks_number 的更新目标从 chunk_size 改为正确的字段并移除不当的并发写入",
+  "body": "问题描述\n- KnowledgeBaseManager 中用于更新文件元数据的 update_chunks_number 方法实际更新的是 File.chunk_size 字段（SQL 为 UPDATE File SET chunk_size = %s WHERE file_id = %s），这会导致 chunk_size 与 chunks_number 的值被错误地同步，产生数据不一致。\n- insert_files_server.py 的 process_data 中在文件上传并分块完成后，调用 update_chunks_number 来写回 chunks_number。由于该方法实际写的是 chunk_size，这么做会把 chunk_size 写错，且在某些场景下也可能被误用于更新 chunks_number。\n- 另外，在文件插入向量数据库结束后，代码对 chunks_number 等信息进行统一修改的逻辑也暴露了该写入路径的风险点。\n\n期望改动\n- 移除 insert_files_server.py 中对 chunks_number 的写回调用（process_data 中的 mysql_client.update_chunks_number(local_file.file_id, chunks_number)），避免错误地修改 chunk_size。\n- 结合后续的修正，确保 chunks_number 的更新不再通过错误的 column 写入，或将 update_chunks_number 的实现改为真正更新 chunks_number 字段（若仍需通过此方法写回）。\n- 若保留 update_chunks_number 方法，修正其 SQL，使其更新正确的列（如 chunks_number）。\n\n影响范围\n- 直接影响：\n  - qanything_kernel/dependent_server/insert_files_serve/insert_files_server.py\n  - qanything_kernel/connector/database/mysql/mysql_client.py\n\n验收要点\n- 上传完成后，chunks_number 与实际分块数量一致，且不会再错误地写回 chunk_size。\n- 相关单元/集成测试若存在，应覆盖 update_chunks_number 的正确写入目标及 insert_files_server.process_data 的行为变更。",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T14:12:52.272752",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "qanything_kernel/dependent_server/insert_files_serve/insert_files_server.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "process_data",
+          "class_name": "insert_files_server",
+          "full_name": "insert_files_server.process_data",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "qanything_kernel/connector/database/mysql/mysql_client.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "update_chunks_number",
+          "class_name": "KnowledgeBaseManager",
+          "full_name": "KnowledgeBaseManager.update_chunks_number",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "This PR prevents erroneous writes to chunk_size by removing the chunks_number write-back during upload and fixes KnowledgeBaseManager.update_chunks_number to update the correct column (chunks_number), ensuring data consistency between chunk counts and chunk sizes.",
+    "steps": [
+      {
+        "operation": "Remove chunks_number write-back call from process_data",
+        "file_to_modify": "qanything_kernel/dependent_server/insert_files_serve/insert_files_server.py",
+        "function_to_modify": "process_data",
+        "reason": "The current update_chunks_number call writes to the chunk_size column due to the implementation, leading to data inconsistency. Removing this call ensures that chunks_number is not accidentally overwritten during file upload processing.",
+        "side_effects": "Integration tests and any workflows relying on the post-upload chunks_number update may need adjustments; no change to public APIs, but downstream logic should not expect this write path."
+      },
+      {
+        "operation": "Fix KnowledgeBaseManager.update_chunks_number SQL to update chunks_number",
+        "file_to_modify": "qanything_kernel/connector/database/mysql/mysql_client.py",
+        "function_to_modify": "KnowledgeBaseManager.update_chunks_number",
+        "reason": "Current SQL updates chunk_size instead of chunks_number, causing semantic and data integrity issues. Align the SQL with the method name by updating the correct column (chunks_number) or adjust to reflect actual DB schema.",
+        "side_effects": "Requires validation that the chunks_number column exists or is available in the target table; downstream call sites should continue to function if the column is present. Tests should cover proper updates to chunks_number without touching chunk_size."
+      }
+    ]
+  }
+}

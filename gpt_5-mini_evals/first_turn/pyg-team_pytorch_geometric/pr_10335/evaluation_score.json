@@ -1,0 +1,70 @@
+{
+  "evaluated_at": "2026-03-02T13:09:14.855162",
+  "pr_dir": "/Users/davidecroatto/code/planningtest0/gpt_5-mini_evals/first_turn/pyg-team_pytorch_geometric/pr_10335",
+  "pr_number": 10335,
+  "repository": "pyg-team/pytorch_geometric",
+  "files": {
+    "precision": 0.3333,
+    "recall": 0.5,
+    "f1": 0.4,
+    "predicted_count": 3,
+    "actual_count": 2,
+    "correct_count": 1
+  },
+  "functions": {
+    "precision": 0.125,
+    "recall": 0.25,
+    "f1": 0.1667,
+    "predicted_count": 8,
+    "actual_count": 4,
+    "correct_count": 1
+  },
+  "steps": {
+    "predicted_steps": 8,
+    "actual_steps": 4,
+    "step_diff": 4,
+    "target_coverage": 0.75,
+    "targets_matched": 6,
+    "targets_total": 8
+  },
+  "semantic": {
+    "summary_similarity": 0.6727,
+    "avg_step_similarity": 0.2859,
+    "step_matches": [
+      {
+        "pred_idx": 0,
+        "pred_text": "Operation: Make save() non-destructive and skip empty mapped/attribute files | Function: LargeGraphI...",
+        "gt_idx": 2,
+        "gt_text": "Operation: Change graph indexer save location to a dedicated `indexer_path` instead of relying on `p...",
+        "similarity": 0.5815
+      },
+      {
+        "pred_idx": 1,
+        "pred_text": "Operation: Make from_disk() tolerant to missing files and partial indexes | Function: LargeGraphInde...",
+        "gt_idx": 3,
+        "gt_text": "Operation: Introduce and use an explicit `self.indexer_path` for existence checks and loading the in...",
+        "similarity": 0.583
+      },
+      {
+        "pred_idx": 6,
+        "pred_text": "Operation: Make inference_step use keyword args and make eval output saving conditional | Function: ...",
+        "gt_idx": 1,
+        "gt_text": "Operation: Remove the internal split-file-name helper property and stop including the indexer artifa...",
+        "similarity": 0.3563
+      },
+      {
+        "pred_idx": 7,
+        "pred_text": "Operation: Fix GRetriever constructor usage and conditionally checkpoint in training flow | Function...",
+        "gt_idx": 0,
+        "gt_text": "Operation: Update GRetriever instantiation to match the new/default interface by removing the explic...",
+        "similarity": 0.7664
+      }
+    ],
+    "overall_semantic_score": 0.4019,
+    "computed": true,
+    "error": null
+  },
+  "has_prediction": true,
+  "has_ground_truth": true,
+  "error": null
+}

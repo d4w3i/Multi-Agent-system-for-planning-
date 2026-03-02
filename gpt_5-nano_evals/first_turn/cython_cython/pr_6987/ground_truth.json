@@ -1,0 +1,35 @@
+{
+  "pr_number": 6987,
+  "repository": "cython/cython",
+  "title": "Fix return type of bytes.join()",
+  "body": "This was already tested in `tests/run/bytesmethods.pyx`, but there were apparently (non-trivial?) cases where the return type wasn't correctly inferred.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T00:59:06.002370",
+    "extractor_version": "1.0.0",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "Cython/Compiler/Builtin.py",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "functions_modified": [],
+      "patch": "@@ -381,7 +381,7 @@ def _generate_divmod_function(scope, argument_types):\n                                     BuiltinMethod(\"__mul__\",  \"Tz\",   \"T\", \"__Pyx_PySequence_Multiply\",\n                                                   utility_code=pysequence_multiply_utility_code),\n                                     ]),\n-    (\"bytes\",   \"&PyBytes_Type\",   [BuiltinMethod(\"join\",  \"TO\",   \"O\", \"__Pyx_PyBytes_Join\",\n+    (\"bytes\",   \"&PyBytes_Type\",   [BuiltinMethod(\"join\",  \"TO\",   \"T\", \"__Pyx_PyBytes_Join\",\n                                                   utility_code=UtilityCode.load(\"StringJoin\", \"StringTools.c\")),\n                                     BuiltinMethod(\"__mul__\",  \"Tz\",   \"T\", \"__Pyx_PySequence_Multiply\",\n                                                   utility_code=pysequence_multiply_utility_code),"
+    }
+  ],
+  "functions_modified": [],
+  "step_plan": {
+    "steps": [
+      {
+        "operation": "Correct the Cython builtin signature metadata for `bytes.join()` so its inferred return type is `bytes`/`T` instead of generic `object`/`O`.",
+        "file_to_modify": "Cython/Compiler/Builtin.py",
+        "function_to_modify": "BuiltinMethod",
+        "reason": "The builtin method table drives Cython’s type inference and code generation. `bytes.join()` always returns a `bytes` object, but the previous signature declared an `object` return type, causing incorrect inference in certain cases; switching the signature’s return type to `T` fixes the inferred result type while keeping the same implementation (`__Pyx_PyBytes_Join`).",
+        "side_effects": "May change inferred types and generated C code for expressions involving `bytes.join()`, potentially affecting compilation errors/warnings, overload resolution, and performance (more specialized code paths) in user code; could also influence downstream optimizations and any tests relying on the return being treated as `object`."
+      }
+    ],
+    "summary": "Fixes Cython’s type inference for `bytes.join()` by updating the builtin method signature to indicate it returns `bytes` rather than a generic Python object, resolving cases where the return type was not correctly inferred."
+  }
+}

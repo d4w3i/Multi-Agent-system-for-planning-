@@ -1,0 +1,33 @@
+{
+  "pr_number": 2952,
+  "repository": "Mikubill/sd-webui-controlnet",
+  "title": "Fix issue with > in pip cmd causing file creation",
+  "body": "Problem: When starting the Web UI, install.py reads requirements.txt. If a line uses a '>' operator (e.g., opencv-python>=4.8.0), the shell may interpret '>' as a redirection, leading to unintended file creation (e.g., a file named '=4.8.0'). This behavior occurs during the pip install invocation in install.py.\n\nFix: Quote the package specification or, preferably, invoke pip without going through a shell by using sys.executable -m pip with a proper argument, ensuring that operators like '>' are not treated as shell redirection.\n\n reproduction steps:\n - Run webui.bat or webui.sh on a system where requirements.txt contains lines like opencv-python>=4.8.0\n - Observe that a file named '=4.8.0' (or similar) may be created instead of performing the intended upgrade/install\n\nExpected behavior: install.py should install/upgrade packages without shell redirection being triggered by version specifiers. This can be achieved by passing the package spec to pip as a single, well-formed argument (and ideally by invoking pip via [python -m pip] rather than through a shell).\n\nNotes:\n- The change should be isolated to the dependency installation path, without altering unknown wheels/optional installers logic.\n- Ensure compatibility with existing logic for ==, >=, <= specifiers and VCS-like entries.\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T13:26:48.597416",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "base_project/install.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    }
+  ],
+  "step_plan": {
+    "summary": "Fix install.py to avoid shell redirection issues from '>' in version specs by using a shell-less pip invocation (python -m pip) for requirements installation.",
+    "steps": [
+      {
+        "operation": "Refactor pip installation invocation to be shell-less",
+        "file_to_modify": "base_project/install.py",
+        "function_to_modify": "install_requirements",
+        "reason": "The current pip invocation may be executed via a shell, causing shell redirection issues when requirements.txt contains version specifiers with '>' (e.g., opencv-python>=4.8.0). By invoking pip as a direct subprocess using the Python interpreter (sys.executable -m pip) with a list of arguments, we ensure operators like '>=' are treated as part of the package specification and not as shell redirection, preventing unintended file creation across platforms.",
+        "side_effects": "Upstream tests and any mocks for subprocess calls may need updates to expect a list-based invocation (e.g., [sys.executable, -m, pip, install, spec]). No change to wheel/optional installers logic; the change is localized to the installation path. Cross-platform behavior improves (Windows CMD can no longer misinterpret '>')."
+      }
+    ]
+  }
+}

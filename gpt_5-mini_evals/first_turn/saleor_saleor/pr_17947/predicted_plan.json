@@ -1,0 +1,33 @@
+{
+  "pr_number": 17947,
+  "repository": "saleor/saleor",
+  "title": "Fix incorrect multipler for limit field",
+  "body": "I want to merge this change because we recently introduced the `values` field with input limit. By accident the query cost was added to incorrect place. This PR fixes this. \n\n> [!IMPORTANT]  \n> The changes on `SelectedAttribute` is expected. We don't have `limit` there, and it is not paginated.  (The query cost for this field will be handled separatly)\n\n<!-- Please mention all relevant issue numbers. -->\n<!-- GitHub issue number is required for external contributions. -->\n\n# Impact\n\n- [ ] New migrations\n- [ ] New/Updated API fields or mutations\n- [ ] Deprecated API fields or mutations\n- [ ] Removed API types, fields, or mutations\n\n# Docs\n\n<!-- Docs are stored in a separate repository: https://github.com/saleor/saleor-docs/. -->\n<!-- Please provide a link to the PR that updates documentation for your changes. -->\n<!-- If changes in docs are not required, please mention that in the description. -->\n\n- [ ] Link to documentation:\n\n# Pull Request Checklist\n\n<!-- Please keep this section. It will make the maintainer's life easier. -->\n\n- [ ] Privileged queries and mutations are either absent or guarded by proper permission checks\n- [ ] Database queries are optimized and the number of queries is constant\n- [ ] Database migrations are either absent or optimized for zero downtime\n- [ ] The changes are covered by test cases\n- [ ] All new fields/inputs/mutations have proper labels added (`ADDED_IN_X`, `PREVIEW_FEATURE`, etc.)\n- [ ] All migrations have proper dependencies\n- [ ] All indexes are added concurrently in migrations\n- [ ] All RunSql and RunPython migrations have revert option defined",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T13:14:22.347769",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "saleor/graphql/query_cost_map.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    }
+  ],
+  "step_plan": {
+    "summary": "Fix COST_MAP so the 'limit' multiplier is applied to Attribute.values (which exposes a limit argument) and removed from SelectedAttribute.values (which has no limit), correcting query cost calculation.",
+    "steps": [
+      {
+        "operation": "Update COST_MAP multipliers for Attribute.values and SelectedAttribute.values",
+        "file_to_modify": "saleor/graphql/query_cost_map.py",
+        "function_to_modify": "COST_MAP",
+        "reason": "The COST_MAP currently applies the 'limit' multiplier to SelectedAttribute.values, but SelectedAttribute.values does not accept a limit argument. Attribute.values defines a 'limit' argument and should therefore use the 'limit' multiplier. Moving/removing the multiplier fixes incorrect query cost calculations by ensuring multipliers reference actual field arguments.",
+        "side_effects": "Changes will alter computed query costs for queries that request Attribute.values (they will now scale with the provided limit argument). Tests that assert specific cost values or snapshots may need updating (notably query cost validation tests and attribute query/pagination tests). There are no API or schema changes (arguments remain the same), but downstream systems or rate-limiters that relied on previous cost numbers may observe different cost estimates. Review saleor/graphql/attribute/types.py to confirm the 'limit' argument name and saleor/graphql/core/validators/query_cost.py to ensure multiplier resolution logic remains compatible."
+      }
+    ]
+  }
+}

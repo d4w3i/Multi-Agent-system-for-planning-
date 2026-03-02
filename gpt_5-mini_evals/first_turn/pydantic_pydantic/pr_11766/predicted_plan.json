@@ -1,0 +1,33 @@
+{
+  "pr_number": 11766,
+  "repository": "pydantic/pydantic",
+  "title": "Fix example in `populate_by_name` documentation",
+  "body": "<!-- Thank you for your contribution! -->\n<!-- Unless your change is trivial, please create an issue to discuss the change before creating a PR -->\n\n## Change Summary\n\nfix the docstring of ConfigDict's populate_by_name.\n\n## Related issue number\n\nfix #11765 \n\n- #11765 \n\n<!-- WARNING: please use \"fix #123\" style references so the issue is closed when this PR is merged. -->\n\n## Checklist\n\n* [ ] The pull request title is a good summary of the changes - it will be used in the changelog\n* [x] Unit tests for the changes exist\n* [x] Tests pass on CI\n* [x] Documentation reflects the changes where applicable\n* [ ] My PR is ready to review, **please add a comment including the phrase \"please review\" to assign reviewers**",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T13:00:21.852985",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "pydantic/config.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    }
+  ],
+  "step_plan": {
+    "summary": "Fix the populate_by_name example in ConfigDict's docstring in pydantic/config.py by changing the second Model instantiation to pass the attribute name (my_field='foo'), making the example match the explanatory comments.",
+    "steps": [
+      {
+        "operation": "Edit the populate_by_name example in the ConfigDict docstring to use the attribute name for the second Model instantiation",
+        "file_to_modify": "pydantic/config.py",
+        "function_to_modify": "ConfigDict",
+        "reason": "The docstring example currently passes the alias (my_alias='foo') for both instantiations, which contradicts the explanatory text stating the second instantiation demonstrates population by attribute name. Changing the second call to my_field='foo' makes the example consistent with the narrative and easier to understand.",
+        "side_effects": "Documentation-only change: no runtime or API behavior changes. Potential impacts: if docstrings are run as doctests or included in generated docs, those builds/tests should be run to ensure the example still executes/formatting is preserved. No code dependents or unit tests should be affected, but CI doc builds or doctest suites may need to be checked."
+      }
+    ]
+  }
+}

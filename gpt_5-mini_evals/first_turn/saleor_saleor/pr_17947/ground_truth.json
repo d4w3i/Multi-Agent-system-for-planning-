@@ -1,0 +1,35 @@
+{
+  "pr_number": 17947,
+  "repository": "saleor/saleor",
+  "title": "Fix incorrect multipler for limit field",
+  "body": "I want to merge this change because we recently introduced the `values` field with input limit. By accident the query cost was added to incorrect place. This PR fixes this. \r\n\r\n> [!IMPORTANT]  \r\n> The changes on `SelectedAttribute` is expected. We don't have `limit` there, and it is not paginated.  (The query cost for this field will be handled separatly)\r\n\r\n<!-- Please mention all relevant issue numbers. -->\r\n<!-- GitHub issue number is required for external contributions. -->\r\n\r\n# Impact\r\n\r\n- [ ] New migrations\r\n- [ ] New/Updated API fields or mutations\r\n- [ ] Deprecated API fields or mutations\r\n- [ ] Removed API types, fields, or mutations\r\n\r\n# Docs\r\n\r\n<!-- Docs are stored in a separate repository: https://github.com/saleor/saleor-docs/. -->\r\n<!-- Please provide a link to the PR that updates documentation for your changes. -->\r\n<!-- If changes in docs are not required, please mention that in the description. -->\r\n\r\n- [ ] Link to documentation:\r\n\r\n# Pull Request Checklist\r\n\r\n<!-- Please keep this section. It will make the maintainer's life easier. -->\r\n\r\n- [ ] Privileged queries and mutations are either absent or guarded by proper permission checks\r\n- [ ] Database queries are optimized and the number of queries is constant\r\n- [ ] Database migrations are either absent or optimized for zero downtime\r\n- [ ] The changes are covered by test cases\r\n- [ ] All new fields/inputs/mutations have proper labels added (`ADDED_IN_X`, `PREVIEW_FEATURE`, etc.)\r\n- [ ] All migrations have proper dependencies\r\n- [ ] All indexes are added concurrently in migrations\r\n- [ ] All RunSql and RunPython migrations have revert option defined\r\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T09:45:28.360625",
+    "extractor_version": "1.0.0",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "saleor/graphql/query_cost_map.py",
+      "status": "modified",
+      "additions": 7,
+      "deletions": 2,
+      "functions_modified": [],
+      "patch": "@@ -143,7 +143,12 @@\n     },\n     \"Attribute\": {\n         \"choices\": {\"complexity\": 1, \"multipliers\": [\"first\", \"last\"]},\n-        \"values\": {\"complexity\": 1, \"multipliers\": [\"first\", \"last\"]},\n+        \"values\": {\n+            \"complexity\": 1,\n+            \"multipliers\": [\n+                \"limit\",\n+            ],\n+        },\n         \"productTypes\": {\"complexity\": 1, \"multipliers\": [\"first\", \"last\"]},\n         \"productVariantTypes\": {\"complexity\": 1, \"multipliers\": [\"first\", \"last\"]},\n     },\n@@ -302,7 +307,7 @@\n     },\n     \"SelectedAttribute\": {\n         \"attribute\": {\"complexity\": 1},\n-        \"values\": {\"complexity\": 1, \"multipliers\": [\"limit\"]},\n+        \"values\": {\"complexity\": 1},\n     },\n     \"ShippingMethodChannelListing\": {\n         \"channel\": {\"complexity\": 1},"
+    }
+  ],
+  "functions_modified": [],
+  "step_plan": {
+    "steps": [
+      {
+        "operation": "Fix query cost multipliers for Attribute.values and SelectedAttribute.values by moving the `limit` multiplier from SelectedAttribute.values to Attribute.values",
+        "file_to_modify": "saleor/graphql/query_cost_map.py",
+        "function_to_modify": null,
+        "reason": "The `values` field was recently introduced with an input `limit`, and the query cost multiplier was accidentally applied to `SelectedAttribute.values` (which is not paginated and does not expose `limit`). The multiplier must be applied where `limit` is actually accepted (on `Attribute.values`) so complexity scales correctly with requested amount of data.",
+        "side_effects": "GraphQL query complexity calculation will change: queries using `Attribute.values(limit: ...)` will now properly scale cost with `limit`, while `SelectedAttribute.values` will become cheaper (no multiplier). This can affect rate limiting/throttling behavior, query rejection/acceptance at max complexity thresholds, and potentially tests or monitoring dashboards that assert specific complexity scores."
+      }
+    ],
+    "summary": "Adjusts the GraphQL query cost map so the `limit`-based multiplier applies to `Attribute.values` (where `limit` exists) instead of `SelectedAttribute.values` (where it does not), correcting complexity calculation for the new limited values field."
+  }
+}

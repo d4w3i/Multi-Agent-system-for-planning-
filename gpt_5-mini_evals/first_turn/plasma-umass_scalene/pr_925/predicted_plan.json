@@ -1,0 +1,57 @@
+{
+  "pr_number": 925,
+  "repository": "plasma-umass/scalene",
+  "title": "Fix for overwriting LD_PRELOAD if it contains libscalene.so and other values",
+  "body": "It looks like in some cases setup_preload gets called more than once, so it was adding `libscalene.so` to `LD_PRELOAD` the first time then later replacing `LD_PRELOAD`  with just `libscalene.so`, this fixes that case.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T12:53:52.973903",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "scalene/scalene_preload.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "get_preload_environ",
+          "class_name": "ScalenePreload",
+          "full_name": "ScalenePreload.get_preload_environ",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "setup_preload",
+          "class_name": "ScalenePreload",
+          "full_name": "ScalenePreload.setup_preload",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Fix get_preload_environ so LD_PRELOAD is only modified when necessary (set if missing, prepend if present but missing libscalene, and omitted if already contains libscalene) and make setup_preload's re-exec detection explicit and robust to avoid unnecessary overwrites and re-execs.",
+    "steps": [
+      {
+        "operation": "Fix LD_PRELOAD handling in Linux branch to avoid clobbering existing values",
+        "file_to_modify": "scalene/scalene_preload.py",
+        "function_to_modify": "ScalenePreload.get_preload_environ",
+        "reason": "The current logic overwrites LD_PRELOAD with 'libscalene.so' even when the existing LD_PRELOAD already contains 'libscalene.so' along with other libraries, causing other entries to be lost on os.environ.update(req_env) and a later re-exec. Implement explicit handling: (1) if LD_PRELOAD is not set -> set env['LD_PRELOAD']='libscalene.so'; (2) if set and does not contain 'libscalene.so' -> prepend 'libscalene.so:' to the existing value; (3) if set and already contains 'libscalene.so' -> do not include LD_PRELOAD in the returned req_env (leave it unchanged). Also handle empty/whitespace LD_PRELOAD safely and use a robust detection (e.g., split on ':' or a substring check) to detect existing libscalene.",
+        "side_effects": "Prevents unnecessary overwrites and re-execs when LD_PRELOAD already contains libscalene, reducing runtime disruptions. Tests referencing the previous overwrite behavior must be updated. Downstream code that expects get_preload_environ to always return an LD_PRELOAD key will see different behavior (no key when no change is needed) — update callers/tests if they relied on that. No public API change beyond behavior of returned env dict; re-exec semantics may change (fewer re-execs)."
+      },
+      {
+        "operation": "Clarify and harden re-exec detection in setup_preload (no behavior change intended)",
+        "file_to_modify": "scalene/scalene_preload.py",
+        "function_to_modify": "ScalenePreload.setup_preload",
+        "reason": "After changing get_preload_environ to omit LD_PRELOAD when no change is needed, make the re-exec detection explicit and easier to reason about. Replace the tuple-membership style check (any(k_v not in os.environ.items() for k_v in req_env.items())) with an explicit per-key comparison (any(os.environ.get(k) != v for k, v in req_env.items())). Add a short comment explaining that omitting keys signals no change is required. This keeps behavior the same while avoiding subtle tuple membership pitfalls and documenting intent.",
+        "side_effects": "No functional change intended, but the explicit check may avoid accidental re-exec triggers in corner cases. Tests that assert whether a re-exec occurs should be run to confirm identical behavior. Because the logic is clearer, future maintainers are less likely to reintroduce the bug. Ensure no change to the macOS branch behavior unless purposely modified."
+      }
+    ]
+  }
+}

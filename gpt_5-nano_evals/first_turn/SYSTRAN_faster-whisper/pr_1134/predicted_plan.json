@@ -1,0 +1,87 @@
+{
+  "pr_number": 1134,
+  "repository": "SYSTRAN/faster-whisper",
+  "title": "Change default for language_detection_threshold to respect language_detection_segments in multilingual transcription",
+  "body": "Issue: The current default for language_detection_threshold results in language_detection_segments effectively being treated as 1, regardless of user input for language_detection_segments. This reduces multilingual detection to a single-segment check and can degrade robustness when users configure more segments.\n\nFix approach (proposed in this PR):\n- Set numeric defaults for language_detection_threshold (instead of None) so that the detector will accumulate evidence across multiple segments up to language_detection_segments when deciding the language.\n- Increase the default scope of language_detection_segments from 1 to a value like 4, aligning with multi-segment detection strategies already described in similar multi-segment workflows.\n- Apply these changes to both batched and non-batched transcription paths to ensure consistent behavior across interfaces.\n- Keep multi-segment fallback behavior intact while ensuring user-specified language_detection_segments is honored by default.\n\nWhat this changes for users:\n- By default, language detection will consider multiple segments (default 4) and only stop early if the confidence crosses a numeric threshold (default 0.7). This improves language detection robustness in multilingual inputs.\n- Users who rely on single-segment detection can still tune down the number of segments or threshold as needed.\n\nImpact notes:\n- Potentially small impact on latency when language is not strongly detected, due to evaluating more segments by default.\n- No API changes beyond defaults; behavior is more predictable and respects user-provided language_detection_segments by default.\n\nTesting ideas:\n- Transcriptions for multilingual inputs should show language detected after using up to language_detection_segments (default 4) rather than stopping after the first segment.\n- Unit tests should validate that when language_detection_segments is set to N, detection can consider up to N segments unless the threshold is crossed earlier.\n- End-to-end benchmarks to ensure no regressions in average latency for English-only inputs (where language detection may still be bypassed quickly).\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T13:34:40.441576",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "faster_whisper/transcribe.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "transcribe",
+          "class_name": "BatchedInferencePipeline",
+          "full_name": "BatchedInferencePipeline.transcribe",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "generate_segments",
+          "class_name": "BatchedInferencePipeline",
+          "full_name": "BatchedInferencePipeline.generate_segments",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "transcribe",
+          "class_name": "WhisperModel",
+          "full_name": "WhisperModel.transcribe",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "generate_segments",
+          "class_name": "WhisperModel",
+          "full_name": "WhisperModel.generate_segments",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Change default for language_detection_threshold to a numeric value (0.7) and expand language_detection_segments default to 4, applying the changes to both batched and non-batched transcription paths. This ensures multi-segment language detection is honored by default and remains configurable by users, improving robustness for multilingual inputs while keeping latency bounded.",
+    "steps": [
+      {
+        "operation": "Update default parameters in BatchedInferencePipeline.transcribe to language_detection_threshold=0.7 and language_detection_segments=4",
+        "file_to_modify": "faster_whisper/transcribe.py",
+        "function_to_modify": "BatchedInferencePipeline.transcribe",
+        "reason": "To ensure multi-segment evidence accumulation across up to 4 segments by default, instead of treating language detection as effectively single-segment due to None threshold and a 1-segment default.",
+        "side_effects": "Potential modest increase in latency on multilingual inputs; requires corresponding test updates to validate multi-segment behavior; internal defaults will change but external API signature remains functionally stable if parameters are not exposed publicly."
+      },
+      {
+        "operation": "Update BatchedInferencePipeline.generate_segments to respect language_detection_segments as an upper bound and accumulate until the numeric threshold is crossed; adjust fast-path logic accordingly",
+        "file_to_modify": "faster_whisper/transcribe.py",
+        "function_to_modify": "BatchedInferencePipeline.generate_segments",
+        "reason": "Align segment generation with new defaults so detection can span up to language_detection_segments (e.g., 4) and only exit early when the numeric threshold is crossed; ensures behavior is consistent with BatchedInferencePipeline.transcribe.",
+        "side_effects": "Tests for multi-segment detection must account for up to 4 segments; potential higher CPU usage per utterance in multilingual scenarios; downstream components relying on single-segment behavior may need updates."
+      },
+      {
+        "operation": "Update default parameters in WhisperModel.transcribe for the non-batched path to language_detection_threshold=0.7 and language_detection_segments=4",
+        "file_to_modify": "faster_whisper/transcribe.py",
+        "function_to_modify": "WhisperModel.transcribe",
+        "reason": "Mirror batched path to ensure consistent language detection behavior across interfaces; ensures user-configured language_detection_segments is honored by default in non-batched transcription as well.",
+        "side_effects": "Test suite updates required to cover non-batched path; potential minor latency impact on multilingual inputs; no external API changes."
+      },
+      {
+        "operation": "Update WhisperModel.generate_segments to utilize the numeric threshold and up to language_detection_segments in the non-batched path, aligning with batched path behavior",
+        "file_to_modify": "faster_whisper/transcribe.py",
+        "function_to_modify": "WhisperModel.generate_segments",
+        "reason": "Ensure per-segment language detection in non-batched path respects the new defaults and can span multiple segments up to the specified limit, with early exit only when threshold is crossed.",
+        "side_effects": "Tests need to validate cross-path consistency; possible latency changes for multilingual inputs; maintain coherence with BatchedInferencePipeline behavior."
+      }
+    ]
+  }
+}

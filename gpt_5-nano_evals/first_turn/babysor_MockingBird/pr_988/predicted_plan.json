@@ -1,0 +1,276 @@
+{
+  "pr_number": 988,
+  "repository": "babysor/MockingBird",
+  "title": "fix-issues-963:preprocess_audio.py--The .npy file failed to save",
+  "body": "Issue #963 reports that preprocessing outputs (.npy files) could not be saved. Analysis of the codebase shows that .npy files are written during encoder preprocessing and PPG-based preprocessing. The saving points are typically implemented via numpy.save calls within functions that compute bottleneck features (BNF), F0 (pitch) features, and per-utterance speaker embeddings. Potential failure points include: missing output directories, path mismanagement, and unhandled exceptions during saving.\n\nProposed fix (scope inferred from code):\n- Ensure output directories exist before saving .npy files (create parent folders if missing).\n- Wrap numpy.save calls in try/except blocks with proper logging to surface save-time errors instead of failing silently or crashing the pipeline.\n- Consider adding a lightweight fallback or retry mechanism and validating that the saved file size is non-zero.\n- Align saving logic across both encoder preprocessing and PPG-based preprocessing to prevent inconsistencies (the same issue could appear in either path).\n\nThese changes target robust saving behavior for the .npy outputs and will help prevent regressions where saves fail due to missing directories or transient IO errors. They also improve observability by adding/augmenting logs for save operations.\n\nNote: The related modules involved appear to be:\n- models/ppg2mel/preprocess.py (BNF, f0, and speaker embedding saves)\n- models/encoder/preprocess.py (BNF, f0, and speaker embedding saves)\n- control/cli/encoder_preprocess.py (CLI path that triggers the preprocessing which saves .npy files)\n\nThe PR should focus on adding directory creation, robust error handling around np.save, and consistent logging in these areas.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T13:41:02.749028",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "models/ppg2mel/preprocess.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "_compute_bnf",
+          "class_name": "models",
+          "full_name": "models.ppg2mel.preprocess._compute_bnf",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_compute_f0_from_wav",
+          "class_name": "models",
+          "full_name": "models.ppg2mel.preprocess._compute_f0_from_wav",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_compute_spkEmbed",
+          "class_name": "models",
+          "full_name": "models.ppg2mel.preprocess._compute_spkEmbed",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "preprocess_one",
+          "class_name": "models",
+          "full_name": "models.ppg2mel.preprocess.preprocess_one",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "preprocess_dataset",
+          "class_name": "models",
+          "full_name": "models.ppg2mel.preprocess.preprocess_dataset",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "models/encoder/preprocess.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "_compute_bnf",
+          "class_name": "models",
+          "full_name": "models.encoder.preprocess._compute_bnf",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_compute_f0_from_wav",
+          "class_name": "models",
+          "full_name": "models.encoder.preprocess._compute_f0_from_wav",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_compute_spkEmbed",
+          "class_name": "models",
+          "full_name": "models.encoder.preprocess._compute_spkEmbed",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "preprocess_one",
+          "class_name": "models",
+          "full_name": "models.encoder.preprocess.preprocess_one",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "preprocess_dataset",
+          "class_name": "models",
+          "full_name": "models.encoder.preprocess.preprocess_dataset",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "control/cli/encoder_preprocess.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    }
+  ],
+  "step_plan": {
+    "summary": "Hardening .npy save operations across both encoder and PPG-based preprocessing by ensuring output directories exist, wrapping saves in try/except with logging, validating file integrity, and aligning saving logic for BNF, F0, and speaker embeddings. The changes aim to prevent silent failures and improve observability without altering downstream pipeline behavior.",
+    "steps": [
+      {
+        "operation": "Add pre-save directory creation for BNF output",
+        "file_to_modify": "models/ppg2mel/preprocess.py",
+        "function_to_modify": "_compute_bnf",
+        "reason": "Ensure the parent directory for the BNF .npy output exists before saving to avoid FileNotFoundError and missing files",
+        "side_effects": "Adds a small IO operation (os.makedirs) before save; may add dependency on os; tests should verify directory creation on missing paths and no regression in path logic."
+      },
+      {
+        "operation": "Wrap numpy.save for BNF in try/except with logging",
+        "file_to_modify": "models/ppg2mel/preprocess.py",
+        "function_to_modify": "_compute_bnf",
+        "reason": "Capture and surface save-time exceptions for BNF outputs instead of crashing preprocessing; improves observability",
+        "side_effects": "Requires logging configuration to surface errors; ensure logs include utterance/file identifiers; tests should simulate write errors."
+      },
+      {
+        "operation": "Validate BNF save by checking file existence and size",
+        "file_to_modify": "models/ppg2mel/preprocess.py",
+        "function_to_modify": "_compute_bnf",
+        "reason": "Confirm successful save and non-zero file size to detect partial writes or silent failures",
+        "side_effects": "Introduces post-save check; may slightly affect performance but improves reliability; tests should assert non-zero file size after save."
+      },
+      {
+        "operation": "Add pre-save directory creation for F0 output",
+        "file_to_modify": "models/ppg2mel/preprocess.py",
+        "function_to_modify": "_compute_f0_from_wav",
+        "reason": "Ensure the output directory for F0 .npy files exists prior to saving, preventing FileNotFoundError",
+        "side_effects": "Ensures directory creation is consistently performed; tests should confirm directory creation for F0 outputs."
+      },
+      {
+        "operation": "Wrap numpy.save for F0 in try/except with logging",
+        "file_to_modify": "models/ppg2mel/preprocess.py",
+        "function_to_modify": "_compute_f0_from_wav",
+        "reason": "Surface IO/save-time errors for F0 outputs and provide actionable logs rather than crashing pipeline",
+        "side_effects": "Requires appropriate logging; tests should simulate write failures and verify logs and non-crashing behavior."
+      },
+      {
+        "operation": "Validate F0 save by checking file existence and size",
+        "file_to_modify": "models/ppg2mel/preprocess.py",
+        "function_to_modify": "_compute_f0_from_wav",
+        "reason": "Verify F0 file is created and non-empty to ensure integrity of saved data",
+        "side_effects": "Tests should check file size > 0 post-save."
+      },
+      {
+        "operation": "Add pre-save directory creation for speaker embedding output",
+        "file_to_modify": "models/ppg2mel/preprocess.py",
+        "function_to_modify": "_compute_spkEmbed",
+        "reason": "Ensure the output directory for speaker embeddings exists before saving .npy files",
+        "side_effects": "Directory creation added; tests should validate path creation for embeddings."
+      },
+      {
+        "operation": "Wrap numpy.save for speaker embedding in try/except with logging",
+        "file_to_modify": "models/ppg2mel/preprocess.py",
+        "function_to_modify": "_compute_spkEmbed",
+        "reason": "Capture and surface save-time errors for embeddings and provide clear logs",
+        "side_effects": "Logging enhancements may require log level adjustments; tests simulate write failures."
+      },
+      {
+        "operation": "Validate speaker embedding save by checking file existence and size",
+        "file_to_modify": "models/ppg2mel/preprocess.py",
+        "function_to_modify": "_compute_spkEmbed",
+        "reason": "Confirm embeddings are saved correctly and not zero-sized",
+        "side_effects": "Tests should assert non-zero saved file size."
+      },
+      {
+        "operation": "Guard per-utterance saves and ensure output directories exist in preprocess_one",
+        "file_to_modify": "models/ppg2mel/preprocess.py",
+        "function_to_modify": "preprocess_one",
+        "reason": "Make per-utterance saving robust by ensuring directory creation and handling Save errors gracefully at the unit/utterance level",
+        "side_effects": "Could slightly change control flow; tests should verify per-utt exception handling does not crash overall run."
+      },
+      {
+        "operation": "Ensure all required subdirectories exist before parallel saves in preprocess_dataset",
+        "file_to_modify": "models/ppg2mel/preprocess.py",
+        "function_to_modify": "preprocess_dataset",
+        "reason": "Prevent race conditions or missing dirs when creating/batching BNF, F0, and embedding outputs across utterances",
+        "side_effects": "Adds pre-create step for bnf/f0/embed directories; tests should verify directory readiness prior to multiprocessing/parallel saves."
+      },
+      {
+        "operation": "Add pre-save directory creation for BNF output (encoder path)",
+        "file_to_modify": "models/encoder/preprocess.py",
+        "function_to_modify": "_compute_bnf",
+        "reason": "Mirror robust directory creation to encoder path to avoid missing-dir failures for BNF saves",
+        "side_effects": "Keeps encoder path consistent with PPG path; tests should verify directory creation."
+      },
+      {
+        "operation": "Wrap numpy.save for BNF in encoder path in try/except with logging",
+        "file_to_modify": "models/encoder/preprocess.py",
+        "function_to_modify": "_compute_bnf",
+        "reason": "Surface IO/save-time errors for encoder BNF and provide actionable logs",
+        "side_effects": "Requires logging; tests should simulate write failures and validate non-crashing behavior."
+      },
+      {
+        "operation": "Validate BNF save by checking file existence and size in encoder path",
+        "file_to_modify": "models/encoder/preprocess.py",
+        "function_to_modify": "_compute_bnf",
+        "reason": "Ensure encoder BNF files are saved and non-zero sized",
+        "side_effects": "Tests should verify saved file presence and size."
+      },
+      {
+        "operation": "Add pre-save directory creation for F0 output in encoder path",
+        "file_to_modify": "models/encoder/preprocess.py",
+        "function_to_modify": "_compute_f0_from_wav",
+        "reason": "Ensure F0 saves have guaranteed output directory existence in encoder path",
+        "side_effects": "Tests should confirm directory creation and successful save."
+      },
+      {
+        "operation": "Wrap numpy.save for F0 in encoder path in try/except with logging",
+        "file_to_modify": "models/encoder/preprocess.py",
+        "function_to_modify": "_compute_f0_from_wav",
+        "reason": "Capture and surface F0 save-time errors for encoder path with logs",
+        "side_effects": "Tests simulate write errors and verify non-crashing behavior."
+      },
+      {
+        "operation": "Validate F0 save by checking file existence and size in encoder path",
+        "file_to_modify": "models/encoder/preprocess.py",
+        "function_to_modify": "_compute_f0_from_wav",
+        "reason": "Confirm encoder F0 files are saved and non-zero sized",
+        "side_effects": "Tests should assert non-zero file size post-save."
+      },
+      {
+        "operation": "Add pre-save directory creation for speaker embedding output in encoder path",
+        "file_to_modify": "models/encoder/preprocess.py",
+        "function_to_modify": "_compute_spkEmbed",
+        "reason": "Ensure encoder speaker embeddings have guaranteed output directory existence",
+        "side_effects": "Tests should verify directory creation and successful saves."
+      },
+      {
+        "operation": "Wrap numpy.save for speaker embedding in encoder path in try/except with logging",
+        "file_to_modify": "models/encoder/preprocess.py",
+        "function_to_modify": "_compute_spkEmbed",
+        "reason": "Surface IO/save-time errors for encoder embeddings and provide logs",
+        "side_effects": "Logging enhancements; tests should simulate write failures."
+      },
+      {
+        "operation": "Validate speaker embedding save by checking file existence and size in encoder path",
+        "file_to_modify": "models/encoder/preprocess.py",
+        "function_to_modify": "_compute_spkEmbed",
+        "reason": "Ensure embeddings saved by encoder path are present and non-empty",
+        "side_effects": "Tests should verify file size > 0."
+      },
+      {
+        "operation": "Guard per-utterance saves and ensure output directories exist in encoder preprocess_one",
+        "file_to_modify": "models/encoder/preprocess.py",
+        "function_to_modify": "preprocess_one",
+        "reason": "Make per-utterance saves robust in encoder path with directory creation and error handling",
+        "side_effects": "May affect control flow modestly; tests should confirm non-crashing behavior on save errors."
+      },
+      {
+        "operation": "Ensure all required subdirectories exist before parallel saves in encoder preprocess_dataset",
+        "file_to_modify": "models/encoder/preprocess.py",
+        "function_to_modify": "preprocess_dataset",
+        "reason": "Prevent missing-dir issues during encoder dataset saving of BNF/F0/embeddings",
+        "side_effects": "Tests should validate directory readiness and proper logging."
+      }
+    ]
+  }
+}

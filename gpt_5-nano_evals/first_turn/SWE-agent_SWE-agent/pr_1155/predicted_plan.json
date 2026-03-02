@@ -1,0 +1,33 @@
+{
+  "pr_number": 1155,
+  "repository": "SWE-agent/SWE-agent",
+  "title": "Fix: Correctly format commit message for PR creation",
+  "body": "This PR fixes the commit message formatting used when creating a PR. The previous implementation constructed commit messages with literal placeholders like \"{issue.title}\" and \"{issue.number}\", which resulted in incorrect commit messages being generated. The change replaces these with proper string interpolation using f-strings to include the actual issue title and number in the commit messages (e.g., \"Fix: <issue title>\" and \"Closes #<issue number>\"). The modification targets the open_pr workflow which builds the PR commit messages during PR creation.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T13:32:18.047355",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "base_project/open_pr.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    }
+  ],
+  "step_plan": {
+    "summary": "Fix commit message formatting by interpolating issue.title and issue.number in PR creation flow, updating open_pr to use f-strings.",
+    "steps": [
+      {
+        "operation": "Refactor commit message construction to interpolate issue data using f-strings",
+        "file_to_modify": "base_project/open_pr.py",
+        "function_to_modify": "open_pr",
+        "reason": "Previously commit messages were built with literal placeholders such as '{issue.title}' and '{issue.number}'. Using f-strings ensures actual values are included in commit messages when PRs are created.",
+        "side_effects": "Tests relying on exact string literals in commit_msg may need updates; downstream components consuming commit_msg may require adjustments if they perform shell operations or escaping; potential need for unit/integration tests to cover the new interpolation behavior; no API surface changes."
+      }
+    ]
+  }
+}

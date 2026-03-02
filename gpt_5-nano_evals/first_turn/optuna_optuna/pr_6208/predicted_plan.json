@@ -1,0 +1,42 @@
+{
+  "pr_number": 6208,
+  "repository": "optuna/optuna",
+  "title": "Fix `test_log_completed_trial_skip_storage_access`",
+  "body": "This patch addresses a test stability issue where test_log_completed_trial_skip_storage_access was inadvertently affected by the global logging state left by earlier tests.\n\nRoot cause: The test relied on Optuna's logging configuration being in a clean, known state, but prior tests could modify the library logger (verbosity, handlers, propagation) and leave side effects that caused the test to fail or behave inconsistently when run in isolation.\n\nFix: Introduce a public reset mechanism for Optuna's logging configuration and ensure the test environment can reset the logger to a deterministic, isolated state before running the test (i.e., reset the logger and set a known default logging level).\n\nNotes: The changes are implemented in the central logging utilities so other tests can opt into a clean state as needed. This keeps test isolation intact without requiring changes to individual tests. If needed in the future, a test fixture can invoke the new reset function to guarantee isolation across test modules.\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T14:14:59.253211",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "optuna/logging.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "reset_logging",
+          "class_name": "optuna",
+          "full_name": "optuna.logging.reset_logging",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Expose a public reset_logging API in Optuna's logging utilities to reset the library's root logger between tests, ensuring deterministic and isolated test execution for test_log_completed_trial_skip_storage_access.",
+    "steps": [
+      {
+        "operation": "Add public reset_logging API in optuna/logging.py",
+        "file_to_modify": "optuna/logging.py",
+        "function_to_modify": "reset_logging",
+        "reason": "Provide a lightweight, thread-safe way to reset Optuna's library root logger by calling existing internal reset and configuration routines, enabling test isolation.",
+        "side_effects": "Tests can call reset_logging() to ensure deterministic logger state; potential impact if tests rely on a pre-reset logger state;requires callers to invoke before tests to guarantee isolation; downstream modules relying on specific logging configurations may need adjustment if they assume a persisted global state."
+      }
+    ]
+  }
+}

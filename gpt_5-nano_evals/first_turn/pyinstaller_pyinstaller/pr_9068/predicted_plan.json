@@ -1,0 +1,33 @@
+{
+  "pr_number": 9068,
+  "repository": "pyinstaller/pyinstaller",
+  "title": "Fix for failing test_site_module_disabled on macOS and python 3.9",
+  "body": "Summary:\n- The test test_site_module_disabled fails on macOS with Python 3.9 due to an import chain that can bring in distutils/setuptools during site initialization. This happens via the _osx_support.compiler_fixup path.\n- The proposed fix is to add a PyInstaller hook for _osx_support that excludes distutils from the import graph. By excluding distutils, the chain leading to site import during interpreter startup is avoided, stabilizing the test across macOS/python 3.9 environments.\n\nWhat/Where:\n- Implement a new hook file: PyInstaller/hooks/hook-_osx_support.py\n- Content: exclude distutils from analysis via excludedimports = ['distutils']\n\nRationale:\n- The failure is specific to macOS and Python 3.9 due to distutils interactions in the _osx_support path. Excluding distutils at hook time prevents PyInstaller from pulling in modules that could trigger site initialization at startup, thereby ensuring test_site_module_disabled stays robust across different environments.\n\nImpact:\n- This should not affect normal builds where distutils isn’t required by the analyzed modules. If a downstream module truly relies on distutils, users may need explicit handling, but for the failing test scenario this hook aligns with the intended behavior of keeping site disabled.\n\nTests:\n- The functional test tests/functional/scripts/pyi_site_module_disabled.py remains the reference for site.disable/startup behavior. The hook targets the race condition causing the test to fail on macOS/python 3.9 by avoiding the distutils-induced import path.\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T14:20:11.987000",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "PyInstaller/hooks/hook-_osx_support.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    }
+  ],
+  "step_plan": {
+    "summary": "Add a PyInstaller hook to exclude distutils from the analysis when _osx_support is loaded, stabilizing test_site_module_disabled on macOS with Python 3.9. This targets the distutils-driven import path that leads to unintended site startup during interpreter initialization.",
+    "steps": [
+      {
+        "operation": "Create PyInstaller hook to exclude distutils from analysis",
+        "file_to_modify": "PyInstaller/hooks/hook-_osx_support.py",
+        "function_to_modify": "hook-_osx_support",
+        "reason": "Exclude distutils from the analysis graph when _osx_support is loaded to avoid the import chain that can trigger site initialization during interpreter startup on macOS with Python 3.9",
+        "side_effects": "If a downstream path truly requires distutils via _osx_support, this could affect that path. Generally safe for the failing test scenario; ensure CI on macOS Python 3.9+ to confirm test_site_module_disabled stability; may require downstream module adjustments if distutils becomes a hard requirement in future envs."
+      }
+    ]
+  }
+}

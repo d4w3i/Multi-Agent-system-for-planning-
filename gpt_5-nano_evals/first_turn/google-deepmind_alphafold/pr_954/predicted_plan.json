@@ -1,0 +1,72 @@
+{
+  "pr_number": 954,
+  "repository": "google-deepmind/alphafold",
+  "title": "Fix deprecation warning / error from BioPython",
+  "body": "Hi,\n\n   Here is a small PR to fix a deprecation issue related to BioPython. It would be great if y'all could run this through CI to make sure it doesn't have any side effects, but BioPython _seems_ to promise it's a safe change.\n\n## Description:\nThis PR swaps the BioPython.SCOPData module import in the mmcif_parsing module for BioPython.PDBData.\n\n## Related issue:\nSee https://github.com/biopython/biopython/blob/master/DEPRECATED.rst#biodatascopdata for information about the SCOPData deprecation.\n\n## Motivation:\nSCOPData was removed in version 1.82 of BioPython, so its usage throws an error when imported. This change allows upgrading BioPython beyond version 1.79, which brings improvements in security and stability. I had been trying to use AlphaFold2 with an updated BioPython but kept receiving deprecation warnings / errors depending on which version I was using.\n\n## Verification\n  [X] Package still installs after change\n  [X] `run_alphafold_test.py` returns `ok` after this change.\n\nExplore the source code to identify the files and functions to modify.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T13:55:02.376182",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "alphafold/data/mmcif_parsing.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "parse",
+          "class_name": null,
+          "full_name": "parse",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_get_atom_site_list",
+          "class_name": null,
+          "full_name": "_get_atom_site_list",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_get_protein_chains",
+          "class_name": null,
+          "full_name": "_get_protein_chains",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "This PR fixes a BioPython deprecation issue by replacing SCOPData usage with PDBData-based amino acid mapping in the mmCIF parsing flow, with a compatibility fallback. It updates the primary parsing entry and the two critical mapping steps to ensure stable, version-agnostic behavior and maintainers can rely on updated Biopython versions without breaking parsing or tests.",
+    "steps": [
+      {
+        "operation": "Implement robust BioPython mapping import with fallback in mmcif_parsing",
+        "file_to_modify": "alphafold/data/mmcif_parsing.py",
+        "function_to_modify": "parse",
+        "reason": "Biopython SCOPData is deprecated/removed in Biopython >= 1.82. Introduce a mapping path using Bio.PDB.PDBData (protein_letters_3to1) with a fallback to SCOPData for backward compatibility, so 3-letter to 1-letter amino acid conversion works across Biopython versions and CI environments.",
+        "side_effects": "Potentially touches the initial parsing flow; may require downstream code paths to handle both mapping sources; ensures CI exercises both paths if fallback is taken; may necessitate small logging additions to indicate which mapping source is active."
+      },
+      {
+        "operation": "Replace 3-letter to 1-letter mapping usage in _get_atom_site_list to use PDBData.protein_letters_3to1",
+        "file_to_modify": "alphafold/data/mmcif_parsing.py",
+        "function_to_modify": "_get_atom_site_list",
+        "reason": "Update the amino acid mapping to Biopython's current recommended approach (PDBData.protein_letters_3to1) to avoid SCOPData deprecation and future breakage, ensuring 3-letter codes are correctly converted during AtomSite construction.",
+        "side_effects": "Ensures mapping is consistent across atom site processing; may require minor adjustments to tests that validate 3-letter to 1-letter conversions; may log a deprecation warning path if SCOPData is encountered as a fallback."
+      },
+      {
+        "operation": "Update _get_protein_chains to utilize the updated amino acid mapping path and maintain compatibility",
+        "file_to_modify": "alphafold/data/mmcif_parsing.py",
+        "function_to_modify": "_get_protein_chains",
+        "reason": "Ensure chain sequence construction uses the new PDBData-based mapping (or fallback) so protein sequences are built correctly under Biopython 1.82+ and beyond, preserving existing behavior for unknown codes.",
+        "side_effects": "Minor impact on sequence construction logic; CI tests (run_alphafold_test.py) should continue to pass; may require updates to unit tests that assert exact mapping behavior for edge cases."
+      }
+    ]
+  }
+}

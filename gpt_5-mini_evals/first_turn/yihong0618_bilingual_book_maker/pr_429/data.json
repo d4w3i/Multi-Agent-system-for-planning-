@@ -1,0 +1,84 @@
+{
+    "repository": "yihong0618/bilingual_book_maker",
+    "pull_request_number": 429,
+    "title": "fix: Fix parameter mismatch in EPUBBookLoaderHelper.translate_with_ba\u2026",
+    "body": "## Problem\r\nThe `translate_with_backoff` method in `EPUBBookLoaderHelper` class was raising TypeError because of parameter mismatch between the method signature and actual calls through the backoff decorator.\r\n\r\nError message:\r\nTypeError: EPUBBookLoaderHelper.translate_with_backoff() takes 1 positional argument but 3 were given\r\n\r\n## Solution\r\n1. Modified the method signature to properly handle parameters:\r\n   - Added explicit parameters for text and context_flag\r\n   - Added jitter=None to backoff decorator\r\n   \r\n2. Improved error handling and logging\r\n#bug",
+    "pr_date": "2024-11-06T02:17:15Z",
+    "source_branch": "fix/translate-with-backoff-params",
+    "language": "en",
+    "keywords_detected": {
+        "branch": [
+            "fix"
+        ],
+        "requirement": [
+            "fix"
+        ],
+        "body": [
+            "add"
+        ]
+    },
+    "number_of_links_in_pr": 0,
+    "base_sha": "9261d92e20a93f99293fd662c971b8f24617d6ab",
+    "last_commit_sha": "b86bbf6e731b8e7470d5e858e80771b26e85b03f",
+    "diff_between_base_and_last": [
+        {
+            "sha": "ba5485e921425dc646026aaa0e47e82c31096b5c",
+            "filename": "book_maker/loader/helper.py",
+            "status": "modified",
+            "additions": 4,
+            "deletions": 3,
+            "changes": 7,
+            "blob_url": "https://github.com/yihong0618/bilingual_book_maker/blob/b86bbf6e731b8e7470d5e858e80771b26e85b03f/book_maker%2Floader%2Fhelper.py",
+            "raw_url": "https://github.com/yihong0618/bilingual_book_maker/raw/b86bbf6e731b8e7470d5e858e80771b26e85b03f/book_maker%2Floader%2Fhelper.py",
+            "contents_url": "https://api.github.com/repos/yihong0618/bilingual_book_maker/contents/book_maker%2Floader%2Fhelper.py?ref=b86bbf6e731b8e7470d5e858e80771b26e85b03f",
+            "patch": "@@ -1,7 +1,7 @@\n import re\n-from copy import copy\n import backoff\n import logging\n+from copy import copy\n \n logging.basicConfig(level=logging.WARNING)\n logger = logging.getLogger(__name__)\n@@ -37,9 +37,10 @@ def insert_trans(self, p, text, translation_style=\"\", single_translate=False):\n         Exception,\n         on_backoff=lambda details: logger.warning(f\"retry backoff: {details}\"),\n         on_giveup=lambda details: logger.warning(f\"retry abort: {details}\"),\n+        jitter=None,\n     )\n-    def translate_with_backoff(self, **kwargs):\n-        return self.translate_model.translate(**kwargs)\n+    def translate_with_backoff(self, text, context_flag=False):\n+        return self.translate_model.translate(text, context_flag)\n \n     def deal_new(self, p, wait_p_list, single_translate=False):\n         self.deal_old(wait_p_list, single_translate, self.context_flag)"
+        }
+    ],
+    "commits": [
+        {
+            "sha": "0b5e5f4d089ffe22074ed67f9b93008da467dff0",
+            "commit_date": "2024-11-06T02:12:30Z",
+            "message": "fix: Fix parameter mismatch in EPUBBookLoaderHelper.translate_with_backoff\n\n- Fix TypeError when calling translate_with_backoff with multiple arguments\n- Add proper parameter handling in the decorated method\n- Add jitter=None to prevent extra parameters from backoff decorator\n- Improve code readability and error handling",
+            "number_of_links_in_commit": 0,
+            "files_changed_count": 1,
+            "files": [
+                {
+                    "sha": "b473b21e3473f8336593e2464fe9a15dd41b71f4",
+                    "filename": "book_maker/loader/helper.py",
+                    "status": "modified",
+                    "additions": 5,
+                    "deletions": 4,
+                    "changes": 9,
+                    "blob_url": "https://github.com/yihong0618/bilingual_book_maker/blob/0b5e5f4d089ffe22074ed67f9b93008da467dff0/book_maker%2Floader%2Fhelper.py",
+                    "raw_url": "https://github.com/yihong0618/bilingual_book_maker/raw/0b5e5f4d089ffe22074ed67f9b93008da467dff0/book_maker%2Floader%2Fhelper.py",
+                    "contents_url": "https://api.github.com/repos/yihong0618/bilingual_book_maker/contents/book_maker%2Floader%2Fhelper.py?ref=0b5e5f4d089ffe22074ed67f9b93008da467dff0",
+                    "patch": "@@ -1,7 +1,7 @@\n import re\n-from copy import copy\n import backoff\n import logging\n+from copy import copy\n \n logging.basicConfig(level=logging.WARNING)\n logger = logging.getLogger(__name__)\n@@ -37,9 +37,10 @@ def insert_trans(self, p, text, translation_style=\"\", single_translate=False):\n         Exception,\n         on_backoff=lambda details: logger.warning(f\"retry backoff: {details}\"),\n         on_giveup=lambda details: logger.warning(f\"retry abort: {details}\"),\n+        jitter=None\n     )\n-    def translate_with_backoff(self, **kwargs):\n-        return self.translate_model.translate(**kwargs)\n+    def translate_with_backoff(self, text, context_flag=False):\n+        return self.translate_model.translate(text, context_flag)\n \n     def deal_new(self, p, wait_p_list, single_translate=False):\n         self.deal_old(wait_p_list, single_translate, self.context_flag)\n@@ -128,4 +129,4 @@ def not_trans(s):\n             is_text_digit_and_space(s),\n             is_text_isbn(s),\n         ]\n-    )\n+    )\n\\ No newline at end of file"
+                }
+            ]
+        },
+        {
+            "sha": "b86bbf6e731b8e7470d5e858e80771b26e85b03f",
+            "commit_date": "2024-11-06T10:02:10Z",
+            "message": "style: format code with black",
+            "number_of_links_in_commit": 0,
+            "files_changed_count": 1,
+            "files": [
+                {
+                    "sha": "ba5485e921425dc646026aaa0e47e82c31096b5c",
+                    "filename": "book_maker/loader/helper.py",
+                    "status": "modified",
+                    "additions": 2,
+                    "deletions": 2,
+                    "changes": 4,
+                    "blob_url": "https://github.com/yihong0618/bilingual_book_maker/blob/b86bbf6e731b8e7470d5e858e80771b26e85b03f/book_maker%2Floader%2Fhelper.py",
+                    "raw_url": "https://github.com/yihong0618/bilingual_book_maker/raw/b86bbf6e731b8e7470d5e858e80771b26e85b03f/book_maker%2Floader%2Fhelper.py",
+                    "contents_url": "https://api.github.com/repos/yihong0618/bilingual_book_maker/contents/book_maker%2Floader%2Fhelper.py?ref=b86bbf6e731b8e7470d5e858e80771b26e85b03f",
+                    "patch": "@@ -37,7 +37,7 @@ def insert_trans(self, p, text, translation_style=\"\", single_translate=False):\n         Exception,\n         on_backoff=lambda details: logger.warning(f\"retry backoff: {details}\"),\n         on_giveup=lambda details: logger.warning(f\"retry abort: {details}\"),\n-        jitter=None\n+        jitter=None,\n     )\n     def translate_with_backoff(self, text, context_flag=False):\n         return self.translate_model.translate(text, context_flag)\n@@ -129,4 +129,4 @@ def not_trans(s):\n             is_text_digit_and_space(s),\n             is_text_isbn(s),\n         ]\n-    )\n\\ No newline at end of file\n+    )"
+                }
+            ]
+        }
+    ],
+    "pull_request_url": "https://github.com/yihong0618/bilingual_book_maker/pull/429",
+    "commits_url": "https://github.com/yihong0618/bilingual_book_maker/pull/429/commits",
+    "files_url": "https://github.com/yihong0618/bilingual_book_maker/pull/429/files"
+}

@@ -1,0 +1,42 @@
+{
+  "pr_number": 5485,
+  "repository": "facebookresearch/fairseq",
+  "title": "The cause of the error has been fixed: \"NameError: name 'help' is not…",
+  "body": "… defined\"\n\n# Before submitting\n\n- [-] Was this discussed/approved via a Github issue? (no need for typos, doc improvements)\n- [+] Did you read the [contributor guideline](https://github.com/pytorch/fairseq/blob/main/CONTRIBUTING.md)?\n- [+] Did you make sure to update the docs?\n- [+] Did you write any new necessary tests?\n\n## What does this PR do?\nA typo in the code causing an error in the operation of File \"fairseq\\dataclass\\configs.py\", line 1080, in EMAConfig has been fixed\nNameError: name 'help' is not defined.\n\n## PR review\nAnyone in the community is free to review the PR once the tests have passed.\nIf we didn't discuss your PR in Github issues there's a high chance it will not be merged.\n\n## Did you have fun?\nMake sure you had fun coding 🙃",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T12:13:13.470725",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "fairseq/dataclass/configs.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "EMAConfig (dataclass field: store_ema)",
+          "class_name": null,
+          "full_name": "EMAConfig (dataclass field: store_ema)",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Fix a NameError at import caused by an unquoted dict key in EMAConfig.store_ema metadata by changing metadata={help: ...} to metadata={\"help\": ...} in fairseq/dataclass/configs.py.",
+    "steps": [
+      {
+        "operation": "Quote the metadata key for store_ema in EMAConfig",
+        "file_to_modify": "fairseq/dataclass/configs.py",
+        "function_to_modify": "EMAConfig",
+        "reason": "The store_ema field currently uses an unquoted bare name help in its metadata dict (metadata={help: ...}), which triggers a NameError at module import time because Python attempts to resolve help as a variable. Quoting the key (metadata={\"help\": ...}) makes it a valid string key and preserves the intended metadata used for help/CLI generation.",
+        "side_effects": "Low risk. Fixes import-time NameError so modules depending on fairseq.dataclass.configs can be imported. No behavioral/API changes beyond correcting metadata syntax. Run import/smoke tests and existing unit tests to ensure no regressions; dependent modules that relied on failing import will now load. Lint/formatting tools (flake8/black) may flag style changes but no functional impact."
+      }
+    ]
+  }
+}

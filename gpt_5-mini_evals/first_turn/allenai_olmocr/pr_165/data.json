@@ -1,0 +1,67 @@
+{
+    "repository": "allenai/olmocr",
+    "pull_request_number": 165,
+    "title": "fix jsonl_to_markdown",
+    "body": "\r\n<!-- To ensure we can review your pull request promptly please complete this template entirely. -->\r\n\r\n<!-- Please reference the issue number here. You can replace \"Fixes\" with \"Closes\" if it makes more sense. -->\r\nFixes #162\r\n\r\nChanges proposed in this pull request:\r\n<!-- Please list all changes/additions here. -->\r\n- Add `jsonl_to_markdown.py` utility script to convert JSONL files to Markdown format\r\n- Script extracts the 'text' field from each line in a JSONL file and saves it as a separate Markdown file\r\n- Include proper error handling for JSON decoding and file operations\r\n- Add example usage and documentation\r\n\r\n## Before submitting\r\n\r\n<!-- Please complete this checklist BEFORE submitting your PR to speed along the review process. -->\r\n- [x] I've read and followed all steps in the [Making a pull request](https://github.com/allenai/olmocr/blob/main/.github/CONTRIBUTING.md#making-a-pull-request) section of the `CONTRIBUTING` docs.\r\n- [x] I've updated or added relevant docstrings following the syntax described in the [Writing docstrings](https://github.com/allenai/olmocr/blob/main/.github/CONTRIBUTING.md#writing-docstrings) section of the `CONTRIBUTING` docs.\r\n- [x] If this PR fixes a bug, I've added a test that will fail without my fix.\r\n- [x] If this PR adds a new feature, I've added tests that sufficiently cover my new functionality.\r\n\r\nfixes  #162 \r\n",
+    "pr_date": "2025-04-07T20:46:45Z",
+    "source_branch": "fix_jsonl_to_markdown.py",
+    "language": "en",
+    "keywords_detected": {
+        "branch": [
+            "fix"
+        ],
+        "requirement": [
+            "fix"
+        ],
+        "body": [
+            "feature",
+            "add",
+            "change",
+            "fix",
+            "update"
+        ]
+    },
+    "number_of_links_in_pr": 4,
+    "base_sha": "71275cce761e6641a9b8cd116b0079bab16da996",
+    "last_commit_sha": "7a435c3ec1de13eaf04c3ab8335107967254961f",
+    "diff_between_base_and_last": [
+        {
+            "sha": "850603c2203f626ce5c3b7b10976b6d8af604a08",
+            "filename": "scripts/jsonl_to_markdown.py",
+            "status": "modified",
+            "additions": 15,
+            "deletions": 9,
+            "changes": 24,
+            "blob_url": "https://github.com/allenai/olmocr/blob/7a435c3ec1de13eaf04c3ab8335107967254961f/scripts%2Fjsonl_to_markdown.py",
+            "raw_url": "https://github.com/allenai/olmocr/raw/7a435c3ec1de13eaf04c3ab8335107967254961f/scripts%2Fjsonl_to_markdown.py",
+            "contents_url": "https://api.github.com/repos/allenai/olmocr/contents/scripts%2Fjsonl_to_markdown.py?ref=7a435c3ec1de13eaf04c3ab8335107967254961f",
+            "patch": "@@ -1,40 +1,46 @@\n+#!/usr/bin/env python3\n import json\n import os\n import sys\n+from pathlib import Path\n \n \n # This is a simple script to convert JSONL files to Markdown format.\n # It reads each line of the JSONL file, extracts the 'text' field,\n # and saves it as a Markdown file with the line number as the filename.\n # The script also handles potential JSON decoding errors and prints relevant messages.\n-def jsonl_to_markdown(input_file, output_dir):\n+def jsonl_to_markdown(input_file: str, output_dir: str) -> None:\n     \"\"\"\n     Reads a JSONL file, extracts the 'text' field from each line, and saves it as a Markdown file.\n \n     Args:\n         input_file (str): Path to the input JSONL file.\n         output_dir (str): Directory to save the Markdown files.\n     \"\"\"\n-    if not os.path.exists(output_dir):\n-        os.makedirs(output_dir)\n+    # Create output directory if it doesn't exist\n+    output_path = Path(output_dir)\n+    output_path.mkdir(parents=True, exist_ok=True)\n \n     with open(input_file, \"r\", encoding=\"utf-8\") as file:\n-        for i, line in enumerate(file):\n+        for i, line in enumerate(file, 1):\n             try:\n                 # Parse the JSON line\n                 data = json.loads(line)\n                 text_content = data.get(\"text\", \"\")\n \n+                # Convert to Markdown format\n+                markdown_content = f\"# Extracted Content (Line {i})\\n\\n{text_content}\"\n+\n                 # Save to a Markdown file\n-                output_file = os.path.join(output_dir, f\"line_{i + 1}.md\")\n+                output_file = output_path / f\"line_{i}.md\"\n                 with open(output_file, \"w\", encoding=\"utf-8\") as md_file:\n-                    md_file.write(text_content)\n+                    md_file.write(markdown_content)\n \n-                print(f\"Extracted and saved line {i + 1} to {output_file}\")\n+                print(f\"Extracted and saved line {i} to {output_file}\")\n             except json.JSONDecodeError as e:\n-                print(f\"Error decoding JSON on line {i + 1}: {e}\")\n+                print(f\"Error decoding JSON on line {i}: {e}\")\n             except Exception as e:\n-                print(f\"Unexpected error on line {i + 1}: {e}\")\n+                print(f\"Unexpected error on line {i}: {e}\")\n \n \n # Example usage"
+        }
+    ],
+    "commits": [
+        {
+            "sha": "7a435c3ec1de13eaf04c3ab8335107967254961f",
+            "commit_date": "2025-04-07T20:44:06Z",
+            "message": "fix jsonl_to_markdown",
+            "number_of_links_in_commit": 0,
+            "files_changed_count": 1,
+            "files": [
+                {
+                    "sha": "850603c2203f626ce5c3b7b10976b6d8af604a08",
+                    "filename": "scripts/jsonl_to_markdown.py",
+                    "status": "modified",
+                    "additions": 15,
+                    "deletions": 9,
+                    "changes": 24,
+                    "blob_url": "https://github.com/allenai/olmocr/blob/7a435c3ec1de13eaf04c3ab8335107967254961f/scripts%2Fjsonl_to_markdown.py",
+                    "raw_url": "https://github.com/allenai/olmocr/raw/7a435c3ec1de13eaf04c3ab8335107967254961f/scripts%2Fjsonl_to_markdown.py",
+                    "contents_url": "https://api.github.com/repos/allenai/olmocr/contents/scripts%2Fjsonl_to_markdown.py?ref=7a435c3ec1de13eaf04c3ab8335107967254961f",
+                    "patch": "@@ -1,40 +1,46 @@\n+#!/usr/bin/env python3\n import json\n import os\n import sys\n+from pathlib import Path\n \n \n # This is a simple script to convert JSONL files to Markdown format.\n # It reads each line of the JSONL file, extracts the 'text' field,\n # and saves it as a Markdown file with the line number as the filename.\n # The script also handles potential JSON decoding errors and prints relevant messages.\n-def jsonl_to_markdown(input_file, output_dir):\n+def jsonl_to_markdown(input_file: str, output_dir: str) -> None:\n     \"\"\"\n     Reads a JSONL file, extracts the 'text' field from each line, and saves it as a Markdown file.\n \n     Args:\n         input_file (str): Path to the input JSONL file.\n         output_dir (str): Directory to save the Markdown files.\n     \"\"\"\n-    if not os.path.exists(output_dir):\n-        os.makedirs(output_dir)\n+    # Create output directory if it doesn't exist\n+    output_path = Path(output_dir)\n+    output_path.mkdir(parents=True, exist_ok=True)\n \n     with open(input_file, \"r\", encoding=\"utf-8\") as file:\n-        for i, line in enumerate(file):\n+        for i, line in enumerate(file, 1):\n             try:\n                 # Parse the JSON line\n                 data = json.loads(line)\n                 text_content = data.get(\"text\", \"\")\n \n+                # Convert to Markdown format\n+                markdown_content = f\"# Extracted Content (Line {i})\\n\\n{text_content}\"\n+\n                 # Save to a Markdown file\n-                output_file = os.path.join(output_dir, f\"line_{i + 1}.md\")\n+                output_file = output_path / f\"line_{i}.md\"\n                 with open(output_file, \"w\", encoding=\"utf-8\") as md_file:\n-                    md_file.write(text_content)\n+                    md_file.write(markdown_content)\n \n-                print(f\"Extracted and saved line {i + 1} to {output_file}\")\n+                print(f\"Extracted and saved line {i} to {output_file}\")\n             except json.JSONDecodeError as e:\n-                print(f\"Error decoding JSON on line {i + 1}: {e}\")\n+                print(f\"Error decoding JSON on line {i}: {e}\")\n             except Exception as e:\n-                print(f\"Unexpected error on line {i + 1}: {e}\")\n+                print(f\"Unexpected error on line {i}: {e}\")\n \n \n # Example usage"
+                }
+            ]
+        }
+    ],
+    "pull_request_url": "https://github.com/allenai/olmocr/pull/165",
+    "commits_url": "https://github.com/allenai/olmocr/pull/165/commits",
+    "files_url": "https://github.com/allenai/olmocr/pull/165/files"
+}

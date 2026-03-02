@@ -1,0 +1,109 @@
+{
+  "pr_number": 31674,
+  "repository": "scikit-learn/scikit-learn",
+  "title": "fix(docs): Fix glossary FIXME tags",
+  "body": "This PR addresses two related doc build issues observed while working on #31628:\n- A ModuleNotFoundError caused by a misnamed Sphinx extension (sphinx-prompt instead of sphinx_prompt) which prevents local builds from completing.\n- Cleaning up glossary-related placeholders (FIXME tags) so the glossary builds cleanly and renders correctly.\n\nThe primary code change centers on the documentation configuration to ensure the correct Sphinx extension name is used, enabling local builds to succeed without requiring environment-specific fixes. The glossary change aims to remove or replace remaining FIX ME placeholders that could disrupt rendering or confuse readers.\n\nReferences:\n- Issue: #31628\n- Local build note: make should succeed without manual environment edits.\n\nIf you want, I can adjust the glossary entries to reflect canonical terms or add a small note explaining any FIX ME replacements for future contributors.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T14:25:17.447400",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "doc/conf.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "setup",
+          "class_name": "doc",
+          "full_name": "doc.conf.setup",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "notebook_modification_function",
+          "class_name": "doc",
+          "full_name": "doc.conf.notebook_modification_function",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "make_carousel_thumbs",
+          "class_name": "doc",
+          "full_name": "doc.conf.make_carousel_thumbs",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "filter_search_index",
+          "class_name": "doc",
+          "full_name": "doc.conf.filter_search_index",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "infer_next_release_versions",
+          "class_name": "doc",
+          "full_name": "doc.conf.infer_next_release_versions",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "doc/glossary.rst",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    }
+  ],
+  "step_plan": {
+    "summary": "This PR fixes doc build reliability by correcting the Sphinx extension name and hardening build-time hooks, while addressing glossary placeholders to ensure clean rendering and local builds.",
+    "steps": [
+      {
+        "operation": "Fix misnamed Sphinx extension in doc/conf.py and add optional-extension guard in setup",
+        "file_to_modify": "doc/conf.py",
+        "function_to_modify": "setup",
+        "reason": "Corrects extension name from 'sphinx-prompt' to 'sphinx_prompt' and adds a guard so that missing optional extensions do not crash local builds, enabling follow-up work without environment-specific tweaks.",
+        "side_effects": "Local doc builds succeed when sphinx_prompt is installed; if not installed, features relying on the extension may be skipped with warnings; CI may need to account for optional-extensions absence."
+      },
+      {
+        "operation": "Add robust handling for optional extensions in notebook_modification_function",
+        "file_to_modify": "doc/conf.py",
+        "function_to_modify": "notebook_modification_function",
+        "reason": "Ensure notebook-related build-time modifications do not fail when optional extensions are unavailable after the extension name update.",
+        "side_effects": "Notebook integration features may be skipped gracefully in some environments; may require updated tests or docs to reflect conditional behavior."
+      },
+      {
+        "operation": "Ensure post-build carousel thumbs logic accounts for extension name changes",
+        "file_to_modify": "doc/conf.py",
+        "function_to_modify": "make_carousel_thumbs",
+        "reason": "Post-build asset generation should remain correct after the extension rename; update logic to reference the corrected extension naming and avoid import-time errors.",
+        "side_effects": "Carousel thumbs generation remains reliable across environments; possible minor performance impact during post-build steps."
+      },
+      {
+        "operation": "Align search index filtering with extension changes",
+        "file_to_modify": "doc/conf.py",
+        "function_to_modify": "filter_search_index",
+        "reason": "Prevent failures in search index refinement due to the renamed extension or missing features; ensure the workflow is resilient to build-time variability.",
+        "side_effects": "Search index remains functional; potential minor differences in index results if build-time features are conditionally enabled."
+      },
+      {
+        "operation": "Make next-release version inference robust and apply glossary cleanup during build",
+        "file_to_modify": "doc/conf.py",
+        "function_to_modify": "infer_next_release_versions",
+        "reason": "Improve resilience to network access or data format changes during the glossary/docs build and prepare for replacing FIX ME placeholders in glossary entries.",
+        "side_effects": "Deterministic builds with network limitations; glossary rendering improvements with FIX ME placeholders replaced or sanitized; tests may need minor updates to account for updated version data and glossary content."
+      }
+    ]
+  }
+}

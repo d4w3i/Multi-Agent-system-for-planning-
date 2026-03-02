@@ -1,0 +1,57 @@
+{
+  "pr_number": 5479,
+  "repository": "angr/angr",
+  "title": "arg_session: Ensure created void* types have arch.",
+  "body": "This PR fixes the following exception:\n\n```python\nFile F:\\angr\\angr\\angr\\calling_conventions.py:878, in SimCC.arg_locs(self, prototype)\n    876 if prototype._arch is None:\n    877     prototype = prototype.with_arch(self.arch)\n--> 878 session = self.arg_session(prototype.returnty)\n    879 return [self.next_arg(session, arg_ty) for arg_ty in prototype.args]\n\nFile F:\\angr\\angr\\angr\\calling_conventions.py:728, in SimCC.arg_session(self, ret_ty)\n    726 session = self.ArgSession(self)\n    727 if self.return_in_implicit_outparam(ret_ty):\n--> 728     self.next_arg(session, SimTypePointer(SimTypeBottom()))\n    729 return session\n\nFile F:\\angr\\angr\\angr\\calling_conventions.py:1614, in SimCCSystemVAMD64.next_arg(self, session, arg_type)\n   1612     arg_type = SimTypePointer(arg_type.elem_type).with_arch(self.arch)\n   1613 state = session.getstate()\n-> 1614 classification = self._classify(arg_type)\n   1615 try:\n   1616     mapped_classes = []\n\nFile F:\\angr\\angr\\angr\\calling_conventions.py:1678, in SimCCSystemVAMD64._classify(self, ty, chunksize)\n   1676     chunksize = self.arch.bytes\n   1677 # treat BOT as INTEGER\n-> 1678 nchunks = 1 if isinstance(ty, SimTypeBottom) else (ty.size // self.arch.byte_width + chunksize - 1) // chunksize\n   1679 if isinstance(ty, (SimTypeFloat,)):\n   1680     return [\"SSE\"] + [\"SSEUP\"] * (nchunks - 1)\n\nFile F:\\angr\\angr\\angr\\sim_type.py:778, in SimTypePointer.size(self)\n    775 @property\n    776 def size(self):\n    777     if self._arch is None:\n--> 778         raise ValueError(\"Can't tell my size without an arch!\")\n    779     return self._arch.bits\n\nValueError: Can't tell my size without an arch!\n```",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T11:56:33.379770",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "angr/calling_conventions.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "arg_session",
+          "class_name": "SimCC",
+          "full_name": "SimCC.arg_session",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "return_val",
+          "class_name": "SimCC",
+          "full_name": "SimCC.return_val",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Attach the calling-convention's architecture to ephemeral void* pointer types created for implicit outparam handling in SimCC.arg_session and SimCC.return_val by calling .with_arch(self.arch) on SimTypePointer(SimTypeBottom()) prior to passing them to next_arg/classification logic, preventing Size/arch-related ValueErrors.",
+    "steps": [
+      {
+        "operation": "Bind arch to ephemeral void* before passing to next_arg in arg_session",
+        "file_to_modify": "angr/calling_conventions.py",
+        "function_to_modify": "SimCC.arg_session",
+        "reason": "arg_session currently constructs a temporary SimTypePointer(SimTypeBottom()) and calls next_arg(session, <that pointer>) when return_in_implicit_outparam(ret_ty) is True. Classification code (e.g., SystemV _classify) calls .size on the pointer and expects an architecture to be attached. Attaching the CC's arch via .with_arch(self.arch) ensures SimTypePointer.size can compute a valid size and that the pointed-to type is arch-aware.",
+        "side_effects": "Fixes the ValueError by ensuring size queries succeed. Tests: calling-convention tests (especially System V AMD64), any unit tests that exercise arg_locs/arg_session and implicit outparam handling. Dependents: functions that rely on next_arg/_classify will now always receive arch-bound types; code that intentionally created unbound pointers (rare) will see them bound earlier. API: no public API changes; internal type objects get an _arch set earlier which may alter any logic expecting unbound types."
+      },
+      {
+        "operation": "Bind arch to ephemeral void* before passing to next_arg in return_val implicit-outparam branch",
+        "file_to_modify": "angr/calling_conventions.py",
+        "function_to_modify": "SimCC.return_val",
+        "reason": "In the branch where an implicit outparam is requested and perspective_returned is False, return_val creates a temporary SimTypePointer(SimTypeBottom()) and passes it to next_arg without binding an arch. Classification and size computation require the pointer to have an _arch. Calling .with_arch(self.arch) on the pointer before passing it to next_arg ensures correct classification and prevents ValueError from SimTypePointer.size.",
+        "side_effects": "Fixes crashes when return_val triggers implicit outparam handling. Tests: run calling-convention and return-value tests across ABIs (especially System V AMD64) and any high-level tests that trigger return-by-reference. Dependents: behavior of return_val remains functionally identical except the temporary pointer is arch-bound earlier; code that expected an unbound temporary pointer may be affected. API: no external API changes, only internal type-object arch propagation is altered."
+      }
+    ]
+  }
+}

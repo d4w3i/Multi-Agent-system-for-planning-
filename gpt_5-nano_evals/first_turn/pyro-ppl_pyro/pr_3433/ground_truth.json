@@ -1,0 +1,72 @@
+{
+  "pr_number": 3433,
+  "repository": "pyro-ppl/pyro",
+  "title": "Fixes #3430 (serializing an easyguide corrupts it).",
+  "body": "- The issue is that on Python 3.12 the `super()` object of `easyguide.Group` started having the `__getstate__` attribute (this doesn't happen in python 3.9), which is then called to return the state object, which is then modified without making a copy before modification, which causes the corruption.\r\n- The solution is to ensure that we always make a copy of the state object before modifying it.\r\n- This was tested on both python 3.9 and 3.12.\r\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T01:04:36.855646",
+    "extractor_version": "1.0.0",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "pyro/contrib/easyguide/easyguide.py",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "functions_modified": [
+        {
+          "function_name": "__getstate__",
+          "class_name": "Group",
+          "full_name": "Group.__getstate__",
+          "start_line": 232,
+          "end_line": 235,
+          "lines_changed": [
+            233
+          ]
+        }
+      ],
+      "patch": "@@ -230,7 +230,7 @@ def __init__(self, guide, sites):\n         self.event_shape = torch.Size([sum(self._site_sizes.values())])\n \n     def __getstate__(self):\n-        state = getattr(super(), \"__getstate__\", self.__dict__.copy)()\n+        state = getattr(super(), \"__getstate__\", lambda: self.__dict__)().copy()\n         state[\"_guide\"] = state[\"_guide\"]()  # weakref -> ref\n         return state\n "
+    },
+    {
+      "filename": "tests/contrib/easyguide/test_easyguide.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 1,
+      "functions_modified": [],
+      "patch": "@@ -79,7 +79,6 @@ def guide(self, batch, subsample, full_size):\n             self.group(match=\"state_[0-9]*\").map_estimate()\n \n \n-@pytest.mark.xfail(reason=\"https://github.com/pyro-ppl/pyro/issues/3430\")\n def test_serialize():\n     guide = PickleGuide(model)\n     check_guide(guide)"
+    }
+  ],
+  "functions_modified": [
+    {
+      "function_name": "__getstate__",
+      "class_name": "Group",
+      "full_name": "Group.__getstate__",
+      "start_line": 232,
+      "end_line": 235,
+      "lines_changed": [
+        233
+      ]
+    }
+  ],
+  "step_plan": {
+    "steps": [
+      {
+        "operation": "Fix `Group.__getstate__` to always copy the returned state dict before mutating it",
+        "file_to_modify": "pyro/contrib/easyguide/easyguide.py",
+        "function_to_modify": "Group.__getstate__",
+        "reason": "On Python 3.12, `super()` can expose a `__getstate__` attribute that returns the underlying instance state by reference; mutating it in-place (e.g., rewriting `_guide`) can corrupt the object. Calling `.copy()` on the result ensures mutations happen on an isolated dict regardless of whether state came from `super().__getstate__` or `self.__dict__`.",
+        "side_effects": "Pickling/unpickling behavior for `easyguide.Group` changes slightly: nested/mutable values in the state are still shallow-copied (same as before for `self.__dict__.copy()`), but the top-level dict is now guaranteed to be a distinct object, avoiding cross-instance/state corruption across Python versions."
+      },
+      {
+        "operation": "Remove the expected-failure marker from the serialization regression test now that the bug is fixed",
+        "file_to_modify": "tests/contrib/easyguide/test_easyguide.py",
+        "function_to_modify": "test_serialize",
+        "reason": "The test was previously marked `xfail` due to the known corruption bug (#3430). With the state-copy fix in place, the test should pass on supported Python versions, so the `xfail` annotation is no longer appropriate and would hide regressions.",
+        "side_effects": "CI/test runs will now fail if serialization corruption reappears or if other pickling-related issues exist in the easyguide stack (e.g., changes in pickle protocol behavior across Python versions)."
+      }
+    ],
+    "summary": "Fixes easyguide serialization corruption on Python 3.12 by ensuring `Group.__getstate__` always copies the state dict before modifying it, and enables the previously xfailed serialization test to pass as a regression check."
+  }
+}

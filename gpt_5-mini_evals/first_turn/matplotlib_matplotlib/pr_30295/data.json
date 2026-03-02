@@ -1,0 +1,65 @@
+{
+    "repository": "matplotlib/matplotlib",
+    "pull_request_number": 30295,
+    "title": "DOC: clarify Annotation clipping behavior with set_clip_path after axis limit changes",
+    "body": "This PR updates the docstring for `Annotation.__init__()` to clarify that when `.set_clip_path()` is used (e.g., to clip an annotation to an `axvspan` patch), subsequent axis limit changes (like `set_xlim()`) may cause the clipping to become misaligned.\r\n\r\nThe new `Notes` section advises users to:\r\n- Set axis limits *before* applying the clip path, or\r\n- Reassign the clip path using a new patch with the appropriate transform, e.g., `ax.transData`.\r\n\r\nThis clarification was inspired by the behavior discussed in issue #28717 and related use cases.\r\n\r\n## PR summary\r\n\r\n- **Why is this change necessary?**  \r\n  The current documentation does not mention that axis limits applied after setting a clip path can lead to incorrect visual behavior. This can confuse users working with annotations clipped to spans or patches.\r\n\r\n- **What problem does it solve?**  \r\n  Prevents misunderstandings by documenting how to maintain correct clipping behavior after axis limit changes.\r\n\r\n- **What is the reasoning for this implementation?**  \r\n  A simple docstring clarification is sufficient since the behavior is not a bug but an undocumented side effect.\r\n\r\n- **Minimum reproducible example:**\r\n\r\n```python\r\nfig, ax = plt.subplots()\r\nrect = ax.axvspan(2, 3.05, ymin=0, ymax=1, color='red', alpha=0.5)\r\nann = ax.annotate(\"Hello\", xy=(3, 0.5), xycoords=(\"data\", \"axes fraction\"),\r\n                  xytext=(0, 0), textcoords=\"offset points\", va=\"center\", clip_on=True)\r\nann.set_clip_path(rect)\r\n\r\n# This causes clipping to break visually\r\nax.set_xlim(0, 3)",
+    "pr_date": "2025-07-11T18:48:05Z",
+    "source_branch": "fix-annotation-clipping",
+    "language": "en",
+    "keywords_detected": {
+        "branch": [
+            "fix"
+        ],
+        "requirement": [
+            "change"
+        ],
+        "body": [
+            "implement",
+            "change",
+            "update"
+        ]
+    },
+    "number_of_links_in_pr": 0,
+    "base_sha": "30f4ece3f55244c90bb8fe9a77aef8a615a920a9",
+    "last_commit_sha": "70e1848ae993613ea547e1bbf6eca4f90edc0713",
+    "diff_between_base_and_last": [
+        {
+            "sha": "698a632f3276d86a09d20f0bc667f1b7a5b04bc0",
+            "filename": "lib/matplotlib/text.py",
+            "status": "modified",
+            "additions": 13,
+            "deletions": 0,
+            "changes": 13,
+            "blob_url": "https://github.com/matplotlib/matplotlib/blob/70e1848ae993613ea547e1bbf6eca4f90edc0713/lib%2Fmatplotlib%2Ftext.py",
+            "raw_url": "https://github.com/matplotlib/matplotlib/raw/70e1848ae993613ea547e1bbf6eca4f90edc0713/lib%2Fmatplotlib%2Ftext.py",
+            "contents_url": "https://api.github.com/repos/matplotlib/matplotlib/contents/lib%2Fmatplotlib%2Ftext.py?ref=70e1848ae993613ea547e1bbf6eca4f90edc0713",
+            "patch": "@@ -1857,6 +1857,19 @@ def transform(renderer) -> Transform\n         --------\n         :ref:`annotations`\n \n+        Notes\n+        -----\n+        When using `.set_clip_path()` to clip an annotation to a patch (e.g., an\n+        `axvspan`), be aware that if the axis limits (such as via `set_xlim()`)\n+        are changed *after* assigning the clip path, the clipping may no longer\n+        align visually. This is because the patch transform may change, but the\n+        annotation\u2019s clip path remains tied to the old coordinates.\n+\n+        To avoid this issue, you should either:\n+        - Set the axis limits *before* setting the clip path, or\n+        - Reassign the clip path manually using a new patch with the correct transform\n+          (typically `transform=ax.transData`).\n+\n         \"\"\"\n         _AnnotationBase.__init__(self,\n                                  xy,"
+        }
+    ],
+    "commits": [
+        {
+            "sha": "70e1848ae993613ea547e1bbf6eca4f90edc0713",
+            "commit_date": "2025-07-11T18:38:42Z",
+            "message": "DOC: clarify Annotation clipping behavior with set_clip_path after axis limit changes",
+            "number_of_links_in_commit": 0,
+            "files_changed_count": 1,
+            "files": [
+                {
+                    "sha": "698a632f3276d86a09d20f0bc667f1b7a5b04bc0",
+                    "filename": "lib/matplotlib/text.py",
+                    "status": "modified",
+                    "additions": 13,
+                    "deletions": 0,
+                    "changes": 13,
+                    "blob_url": "https://github.com/matplotlib/matplotlib/blob/70e1848ae993613ea547e1bbf6eca4f90edc0713/lib%2Fmatplotlib%2Ftext.py",
+                    "raw_url": "https://github.com/matplotlib/matplotlib/raw/70e1848ae993613ea547e1bbf6eca4f90edc0713/lib%2Fmatplotlib%2Ftext.py",
+                    "contents_url": "https://api.github.com/repos/matplotlib/matplotlib/contents/lib%2Fmatplotlib%2Ftext.py?ref=70e1848ae993613ea547e1bbf6eca4f90edc0713",
+                    "patch": "@@ -1857,6 +1857,19 @@ def transform(renderer) -> Transform\n         --------\n         :ref:`annotations`\n \n+        Notes\n+        -----\n+        When using `.set_clip_path()` to clip an annotation to a patch (e.g., an\n+        `axvspan`), be aware that if the axis limits (such as via `set_xlim()`)\n+        are changed *after* assigning the clip path, the clipping may no longer\n+        align visually. This is because the patch transform may change, but the\n+        annotation\u2019s clip path remains tied to the old coordinates.\n+\n+        To avoid this issue, you should either:\n+        - Set the axis limits *before* setting the clip path, or\n+        - Reassign the clip path manually using a new patch with the correct transform\n+          (typically `transform=ax.transData`).\n+\n         \"\"\"\n         _AnnotationBase.__init__(self,\n                                  xy,"
+                }
+            ]
+        }
+    ],
+    "pull_request_url": "https://github.com/matplotlib/matplotlib/pull/30295",
+    "commits_url": "https://github.com/matplotlib/matplotlib/pull/30295/commits",
+    "files_url": "https://github.com/matplotlib/matplotlib/pull/30295/files"
+}

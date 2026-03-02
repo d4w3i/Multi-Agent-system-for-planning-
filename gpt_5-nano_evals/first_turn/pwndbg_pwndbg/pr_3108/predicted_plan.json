@@ -1,0 +1,65 @@
+{
+  "pr_number": 3108,
+  "repository": "pwndbg/pwndbg",
+  "title": "Fix: Prevent error in lldb `kernel vmmap`",
+  "body": "Resumo do PR:\n- Corrige um caminho de vmmap no LLDB quando kernel_vmmap é invocado em cenários onde get_known_pages() não retorna páginas.\n- Especificamente, se get_known_pages() não encontra páginas, o fluxo atual tentava chegar ao kernel_vmmap e acabava causando erro quando KernelVmmap.adjust iterava sobre valores LLDB inválidos.\n- A solução adiciona um retorno direto de um LLDBMemoryMap vazio (sem páginas) em LLDB antes de cair em kernel_vmmap, evitando a rota problemática.\n- Um teste novo foi adicionado em tests/lldb-tests/tests/test_command_vmmap.py para assegurar que o comando vmmap roda sem erro em LLDB mesmo quando não há mapeamentos de memória. \n- Referência de bug: Fixes #3102.\n\nObservações de implementação (alto nível):\n- Alterar o caminho de obtenção de memória no LLDB para que, ao detectar ausência de páginas conhecidas, já retorne um mapa vazio e não tente construir/manejar kernel_vmmap.\n- Manter a exibição/formatadores existentes para memoria maps, mas com uma rota segura quando não houver entradas conhecidas. \n- O PR foca na robustez da camada LLDB sem alterar a semântica de vmmap quando há mapeamentos válidos.\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T14:20:22.327291",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "pwndbg/dbg/lldb/repl/proc.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "vmmap",
+          "class_name": "pwndbg",
+          "full_name": "pwndbg.dbg.lldb.repl.proc.LLDBProcess.vmmap",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "pwndbg/aglib/vmmap.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "find",
+          "class_name": "pwndbg/aglib/vmmap",
+          "full_name": "pwndbg/aglib/vmmap.find",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "This PR stabilizes LLDB's vmmap by short-circuiting to an empty memory map when no known pages exist, preventing errors from kernel_vmmap and invalid LLDBValue processing. It adds a backend-safe fallback in the aglib vmmap path and aligns the flow with the new LLDB behavior. A test verifying vmmap runs without error when there are zero mappings is referenced in the PR description.",
+    "steps": [
+      {
+        "operation": "Add early return to LLDB vmmap path",
+        "file_to_modify": "pwndbg/dbg/lldb/repl/proc.py",
+        "function_to_modify": "LLDBProcess.vmmap",
+        "reason": "To prevent entering the kernel_vmmap path when get_known_pages() returns no pages by returning an empty LLDBMemoryMap early, avoiding invalid LLDBValue processing during KernelVmmap.adjust",
+        "side_effects": "Potential impact on code paths that assume kernel_vmmap will populate the map; tests must cover edge-case where there are zero known pages; minor formatting stability expected since we preserve existing memory map display logic for the non-empty path"
+      },
+      {
+        "operation": "Enforce fallback behavior in vmmap memory map resolver",
+        "file_to_modify": "pwndbg/aglib/vmmap.py",
+        "function_to_modify": "find",
+        "reason": "To ensure a consistent fallback when there are no known pages, returning an empty map instead of continuing to kernel_vmmap, thereby aligning with the LLDB-specific workaround and avoiding invalid LLDBValue paths",
+        "side_effects": "May affect callers relying on kernel_vmmap population via the vmmap.find flow; requires tests to confirm behavior remains correct for non-empty known pages; ensures API consistency across backends"
+      }
+    ]
+  }
+}

@@ -1,0 +1,87 @@
+{
+  "pr_number": 20938,
+  "repository": "vllm-project/vllm",
+  "title": "Fix overflow indexing in causal_conv1d kernel",
+  "body": "This PR targets a potential 32-bit indexing overflow in the causal_conv1d Triton kernels when running many GPU blocks (V1 integration context). The description notes that conv_state_batch_coord can range from 0 up to num_gpu_blocks-1, which can be substantially larger than the previous max_num_seqs. In practice, this can overflow 32-bit counters unless indices are cast to 64-bit. An equivalent fix was already applied to selective_state_update in mamba_ssm.py. The change should ensure safe 64-bit indexing for addresses/offset computations within the forward and incremental update paths of causal_conv1d, mirroring the approach used in the related fix. The PR also mentions tests are non-trivial to reproduce in normal unit tests due to the requirement of large block counts and scheduler timing, but the fix is necessary for correctness with large-scale deployments. \n\nProposed alignment with codebase:\n- Identify and cast indexing expressions that involve conv_state_batch_coord, num_gpu_blocks, and related offsets to 64-bit (tl.int64) where they participate in pointer arithmetic or complex offsets.\n- Ensure both forward (_causal_conv1d_fwd_kernel, causal_conv1d_fn) and update (_causal_conv1d_update_kernel, causal_conv1d_update) paths use 64-bit indices for the critical paths that map sequences to cache/state lines.\n- Maintain compatibility with existing 32-bit code paths where safe (e.g., small cu_seqlen or limited blocks) but guard high-range scenarios with int64 arithmetic.\n- Provide minimal surface area impact by localizing changes to the indexing logic while preserving the overall API and behavior.\n\nTests and validation plan:\n- Add a targeted regression test that simulates large num_gpu_blocks and cu_seqlen to exercise conv_state lookups and updates, asserting no overflow and correctness of outputs.\n- Validate no regression for typical (<2^31) sizes by running existing unit/integration tests.\n\nOptional documentation impact:\n- Update any developer notes or docs that discuss kernel indexing limits or 64-bit indexing requirements for large-scale deployments.\n\nNo test results are provided yet (n/a in PR description).",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T14:36:54.324927",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "vllm/model_executor/layers/mamba/ops/causal_conv1d.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "_causal_conv1d_fwd_kernel",
+          "class_name": null,
+          "full_name": "_causal_conv1d_fwd_kernel",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "causal_conv1d_fn",
+          "class_name": null,
+          "full_name": "causal_conv1d_fn",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_causal_conv1d_update_kernel",
+          "class_name": null,
+          "full_name": "_causal_conv1d_update_kernel",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "causal_conv1d_update",
+          "class_name": null,
+          "full_name": "causal_conv1d_update",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "This plan implements 64-bit indexing (tl.int64) in the causal_conv1d kernel family to prevent 32-bit overflow when num_gpu_blocks is large, applying changes to the forward and update paths and ensuring consistent dispatch logic.",
+    "steps": [
+      {
+        "operation": "Patch _causal_conv1d_fwd_kernel to use 64-bit indexing",
+        "file_to_modify": "vllm/model_executor/layers/mamba/ops/causal_conv1d.py",
+        "function_to_modify": "_causal_conv1d_fwd_kernel",
+        "reason": "32-bit indexing can overflow when conv_state_batch_coord and related offsets grow with large numbers of GPU blocks; cast critical indices to tl.int64 to ensure safe pointer arithmetic and state lookups.",
+        "side_effects": "May require re-compilation of Triton kernels; potential minor performance impact due to 64-bit arithmetic; improves correctness for large-scale deployments; downstream code paths relying on 32-bit assumptions may need revalidation."
+      },
+      {
+        "operation": "Propagate 64-bit indexing through the forward path by updating the high-level wrapper to coordinate 64-bit index usage",
+        "file_to_modify": "vllm/model_executor/layers/mamba/ops/causal_conv1d.py",
+        "function_to_modify": "causal_conv1d_fn",
+        "reason": "Ensure grid/offset calculations and pointer preparations used by _causal_conv1d_fwd_kernel are carried out with 64-bit indices, maintaining consistency across dispatch and addressing logic.",
+        "side_effects": "Risk of mismatched dtypes if there are residual 32-bit casts elsewhere; requires careful verification of all downstream calls and tests to ensure no regressions for typical workloads."
+      },
+      {
+        "operation": "Patch _causal_conv1d_update_kernel to use 64-bit indexing for the update path",
+        "file_to_modify": "vllm/model_executor/layers/mamba/ops/causal_conv1d.py",
+        "function_to_modify": "_causal_conv1d_update_kernel",
+        "reason": "The update path also performs conv_state lookups and offset computations that can exceed 32-bit bounds under large block counts; switching to 64-bit indexing prevents overflow and preserves correctness.",
+        "side_effects": "Update path may require adjustments to any pointer arithmetic in the kernel; minor latency/perf considerations due to 64-bit arithmetic; ensures correctness in large-scale usage."
+      },
+      {
+        "operation": "Update causal_conv1d_update wrapper to align with 64-bit indexing changes",
+        "file_to_modify": "vllm/model_executor/layers/mamba/ops/causal_conv1d.py",
+        "function_to_modify": "causal_conv1d_update",
+        "reason": "Propagate 64-bit indexing expectations through the public incremental update interface and guarantee input shaping/strides are compatible with 64-bit offset calculations.",
+        "side_effects": "Potential API-compat considerations; ensure no regressions for standard sizes; regression tests should exercise large-size update scenarios to validate correctness."
+      }
+    ]
+  }
+}

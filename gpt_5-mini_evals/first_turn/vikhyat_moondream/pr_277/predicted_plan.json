@@ -1,0 +1,86 @@
+{
+  "pr_number": 277,
+  "repository": "vikhyat/moondream",
+  "title": "finetune_region.py fixed. Added waste_detection eval",
+  "body": "Fixed bug in finetune_region.py that was introduced when log2 was added. Bug pointed out here: https://github.com/vikhyat/moondream/issues/267\n\nIncluded an eval script for waste detection. The F1 score improves from 65.67 ->  66.23 after 1 epoch of finetuning.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T13:33:54.495999",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "moondream/finetune/finetune_region.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "main",
+          "class_name": null,
+          "full_name": "main",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "region_loss",
+          "class_name": null,
+          "full_name": "region_loss",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "__getitem__",
+          "class_name": "WasteDetection",
+          "full_name": "WasteDetection.__getitem__",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "moondream/eval/waste_detection.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    }
+  ],
+  "step_plan": {
+    "summary": "Fix the label-construction bug in finetune_region.py that duplicated labels per object (causing label/logit misalignment) and add an evaluation script moondream/eval/waste_detection.py to compute detection metrics (precision/recall/F1 and optionally mAP) for the waste_detection dataset.",
+    "steps": [
+      {
+        "operation": "Fix duplicate label construction and enforce integer labels",
+        "file_to_modify": "moondream/finetune/finetune_region.py",
+        "function_to_modify": "main",
+        "reason": "The label-construction loop was extending cs_labels twice (producing 8 labels per object) while cs_emb contains only 3 embeddings per object. Removing the duplicate cs_labels.extend([... for p in bb]) restores the expected 4 labels per object (x_bin, y_bin, w_bin, h_bin). Casting each label explicitly to int prevents dtype surprises when creating torch tensors. Add an assertion to verify label count == 4 * num_objects to catch regressions early.",
+        "side_effects": "Fixes loss/shape misalignment and prevents incorrect training signals. Tests that previously failed with shape/runtime errors should pass; finetuning behavior and reported metrics may change (for the better). No public API changes outside the module. If any external code relied on the previous buggy behavior (unlikely), metrics will differ."
+      },
+      {
+        "operation": "Add alignment assertions and clarify indexing in region_loss",
+        "file_to_modify": "moondream/finetune/finetune_region.py",
+        "function_to_modify": "region_loss",
+        "reason": "region_loss uses c_idx = c_idx - 1 and s_idx = s_idx - 1 before indexing hidden states. Add explicit comments documenting why the -1 offset is needed, and add runtime assertions verifying that the number of selected token hidden states equals the number of labels (and shapes are compatible) before calling cross_entropy. This makes the code robust to misalignment introduced elsewhere and yields clearer errors.",
+        "side_effects": "Adds minor runtime overhead from assertions in debug runs. Will cause earlier, clearer failures when label/logit shape mismatches occur, helping developers locate upstream bugs (e.g., in label construction). No API or training behavior change when assertions pass. Tests should be updated to expect clear assertion messages if they were previously failing with opaque errors."
+      },
+      {
+        "operation": "Ensure dataset returns normalized box sizes in WasteDetection.__getitem__",
+        "file_to_modify": "moondream/finetune/finetune_region.py",
+        "function_to_modify": "WasteDetection.__getitem__",
+        "reason": "region size bins use a log2(size) mapping that expects normalized widths/heights in [0,1]. Convert pixel-based boxes to normalized (w/image_width, h/image_height) here (or explicitly validate that boxes are already normalized). Add assertions that boxes lie in (0,1] and clamp very small sizes to a safe minimum (e.g., 1/1024) before log2 to match region.py's expectations.",
+        "side_effects": "Changes the dataset output format to normalized boxes; downstream code that expects pixel coordinates will break unless updated. Finetuning and region mapping will now be correct; metrics will change accordingly. Update any dataset consumers and tests that relied on pixel-boxes."
+      },
+      {
+        "operation": "Add waste detection evaluation script",
+        "file_to_modify": "moondream/eval/waste_detection.py",
+        "function_to_modify": "main",
+        "reason": "Add a new evaluation script (patterned on coco_map.py) to compute detection metrics (precision, recall, F1, optionally AP) for the moondream/waste_detection dataset so the reported F1 improvement (65.67 -> 66.23 after 1 epoch) can be reproduced and validated. The script should: load the validation split, ensure GT boxes and model predictions use the same coordinate space (normalized vs pixel), run model.encode_image and model.detect (or equivalent model API), perform IoU matching (e.g., IoU>=0.5) to assign TP/FP/FN, and compute per-class/global precision/recall/F1 and mAP if desired. Provide CLI entrypoint and clear logging.",
+        "side_effects": "Adds a new CLI utility and testable script. Requires the model API used in other eval scripts (e.g., coco_map.py) to be available and stable. No changes to training or model code; may add test expectations for evaluation outputs. Developers should validate environment dependencies (datasets library access, model loading) when running the script."
+      }
+    ]
+  }
+}

@@ -1,0 +1,87 @@
+{
+  "pr_number": 3150,
+  "repository": "mlc-ai/mlc-llm",
+  "title": "Fixed log prob result generation",
+  "body": "Fixes the merging logic of logprobs of different tokens  for the same choice.\n\nEarlier response \n\n```{\n    \"id\": \"cmpl-0e79013e278c497a8926be59641d0381\",\n    \"choices\": [\n        {\n            \"finish_reason\": \"length\",\n            \"index\": 0,\n            \"logprobs\": {\n                \"text_offset\": null,\n                \"token_logprobs\": [\n                    0.0\n                ],\n                \"tokens\": [\n                    \"\"\n                ],\n                \"top_logprobs\": [\n                    {\n                        \"\": -23.0259,\n                        \"<unk>\": -23.0259,\n                        \"<s>\": -23.0259,\n                        \"</s>\": -23.0259\n                    }\n                ]\n            },\n            \"text\": \"2, and \"\n        }\n    ],\n    \"created\": 1741063066,\n    \"model\": \"/home/annanyac/mlc-llm/dist/Llama-2-7b-chat-hf-q0f16-MLC/\",\n    \"object\": \"text_completion\",\n    \"usage\": {\n        \"prompt_tokens\": 6,\n        \"completion_tokens\": 5,\n        \"total_tokens\": 11,\n        \"extra\": null\n    }\n}\n```\n\n\nNew response \n\n```{\n    \"id\": \"cmpl-d6b2bc3820f8441fbfbe9d5d0be3d9ce\",\n    \"choices\": [\n        {\n            \"finish_reason\": \"length\",\n            \"index\": 0,\n            \"logprobs\": {\n                \"text_offset\": null,\n                \"token_logprobs\": [\n                    0.0,\n                    -0.912338,\n                    -0.47704,\n                    -0.111992\n                ],\n                \"tokens\": [\n                    \"2\",\n                    \".\",\n                    \"\",\n                    \"\"\n                ],\n                \"top_logprobs\": [\n                    {\n                        \"2\": 0.0,\n                        \"<unk>\": -23.0259,\n                        \"<s>\": -23.0259,\n                        \"</s>\": -23.0259,\n                        \"\": -23.0259\n                    },\n                    {\n                        \".\": -0.912338,\n                        \",\": -1.07249,\n                        \"\": -1.36156,\n                        \"<unk>\": -23.0259,\n                        \"<s>\": -23.0259\n                    },\n                    {\n                        \"\": -1.39891,\n                        \"So\": -2.54735,\n                        \"In\": -2.91454,\n                        \"<unk>\": -23.0259\n                    },\n                    {\n                        \"\": -0.111992,\n                        \"So\": -2.2448,\n                        \"<unk>\": -23.0259,\n                        \"<s>\": -23.0259,\n                        \"</s>\": -23.0259\n                    }\n                ]\n            },\n            \"text\": \"2.\\n\\n\"\n        }\n    ],\n    \"created\": 1741064363,\n    \"model\": \"/mnt/data/ehdd1/home/models/mlc/Llama-2-7b-chat-hf-q0f16-MLC/\",\n    \"object\": \"text_completion\",\n    \"usage\": {\n        \"prompt_tokens\": 6,\n        \"completion_tokens\": 5,\n        \"total_tokens\": 11,\n        \"extra\": null\n    }\n}```\n\nExplore the source code to identify the files and functions to modify.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T12:51:32.845459",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "cpp/json_ffi/json_ffi_engine.cc",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "JSONFFIEngineImpl::GetResponseFromStreamOutput",
+          "class_name": null,
+          "full_name": "JSONFFIEngineImpl::GetResponseFromStreamOutput",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "cpp/json_ffi/openai_api_protocol.h",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    },
+    {
+      "filename": "cpp/json_ffi/openai_api_protocol.cc",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "ChatCompletionStreamResponseChoice::AsJSON",
+          "class_name": null,
+          "full_name": "ChatCompletionStreamResponseChoice::AsJSON",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "ChatCompletionResponseChoice::AsJSON",
+          "class_name": null,
+          "full_name": "ChatCompletionResponseChoice::AsJSON",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Add support for merging per-token logprob JSON strings into a single OpenAI-compatible 'logprobs' object per choice and serialize it in both streaming and non-streaming responses so multi-token emissions report ordered arrays of tokens, token_logprobs, and top_logprobs.",
+    "steps": [
+      {
+        "operation": "Add optional 'logprobs' member to response choice structs",
+        "file_to_modify": "cpp/json_ffi/openai_api_protocol.h",
+        "function_to_modify": null,
+        "reason": "Introduce a place to store the merged per-choice logprobs payload (streaming and non-streaming). RequestState already emits per-token JSON strings; the JSON FFI layer needs an optional holder on the choice objects so the merged logprob object can be attached before serialization.",
+        "side_effects": "Requires recompilation of units depending on this header. Other code that constructs ChatCompletionResponseChoice/ChatCompletionStreamResponseChoice may need minor updates (default initialization). ABI/struct size changes may affect consumers; keep the field optional (e.g., std::optional<picojson::value> or pointer) to minimize breakage. Add includes (picojson) and update include ordering. Unit tests that validate JSON shape must be updated to expect the new optional field when present."
+      },
+      {
+        "operation": "Serialize the optional 'logprobs' field in choice.AsJSON()",
+        "file_to_modify": "cpp/json_ffi/openai_api_protocol.cc",
+        "function_to_modify": null,
+        "reason": "Ensure that when the new logprobs member is populated by the engine, AsJSON() will emit a 'logprobs' field in the OpenAI-compatible shape (text_offset, token_logprobs, tokens, top_logprobs). Implement this for both streaming and non-streaming choice serialization paths so responses are consistent.",
+        "side_effects": "Alters JSON output shape for responses that include logprobs (backwards compatible because the field is optional). Tests that compare serialized JSON must be updated to account for the logprobs field when provided. Care must be taken to produce the exact OpenAI-like shape (null text_offset or proper offsets) to avoid breaking callers that parse logprobs. Small performance overhead when serializing picojson values, negligible in typical workloads."
+      },
+      {
+        "operation": "Merge per-token logprob JSON strings and attach as choice.logprobs",
+        "file_to_modify": "cpp/json_ffi/json_ffi_engine.cc",
+        "function_to_modify": null,
+        "reason": "Implement merging logic in JSONFFIEngineImpl::GetResponseFromStreamOutput so that group_delta_logprob_json_strs (per-token JSON strings produced earlier) are parsed and concatenated into a single OpenAI-style 'logprobs' object (arrays: tokens, token_logprobs, top_logprobs, text_offset) in the same order as token output for each choice. Attach the resulting picojson::value to the corresponding ChatCompletionStreamResponseChoice so it will be emitted by AsJSON().",
+        "side_effects": "Adds CPU work for parsing per-token JSON strings and building merged objects; memory usage temporarily increases while assembling merged arrays. Must handle malformed per-token JSON gracefully (log and skip) to avoid crashing the server. Ensure invariants: group_delta_logprob_json_strs aligns with group_delta_token_ids and choice ordering — if sizes mismatch, decide fallback (skip logprobs or take common prefix). Tests should cover multiple-token emissions across multiple deltas, malformed token JSON, and empty logprob arrays. Downstream clients will start receiving a 'logprobs' field when available; ensure behavior is optional and documented."
+      }
+    ]
+  }
+}

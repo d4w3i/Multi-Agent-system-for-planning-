@@ -1,0 +1,42 @@
+{
+  "pr_number": 6890,
+  "repository": "sqlfluff/sqlfluff",
+  "title": "Fix RawFileSlice idx and tags in lexer_test",
+  "body": "While running the lexer test in rust mode, these `RawFileSlice` tags came across with type errors. This fixes the order of the `block_idx` and `tag`.\n\nNone\n\n(Tests included / updated accordingly.)",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T13:24:56.764658",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "test/core/parser/lexer_test.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "test__parser__lexer_slicing_from_template_file",
+          "class_name": null,
+          "full_name": "test__parser__lexer_slicing_from_template_file",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Correct the order of block_idx and tag in RawFileSlice positional calls inside the lexer slicing test so the tests match the RawFileSlice signature (raw, slice_type, source_idx, block_idx, tag) and eliminate type errors.",
+    "steps": [
+      {
+        "operation": "Fix RawFileSlice positional arguments in test parametrization",
+        "file_to_modify": "test/core/parser/lexer_test.py",
+        "function_to_modify": "test__parser__lexer_slicing_from_template_file",
+        "reason": "RawFileSlice is defined as (raw, slice_type, source_idx, block_idx, tag). Several parametrized test cases used five positional args with block_idx and tag swapped (passing None for block_idx and an int for tag), causing type mismatches in strict type-checking and test runs. Swap the 4th and 5th positional arguments in each RawFileSlice(...) call so block_idx (int) is the 4th and tag (Optional[str]) is the 5th.",
+        "side_effects": "Only test code is modified; no production API changes. Running the updated tests should remove the type errors in this test module. Possible impacts: other tests that (incorrectly) relied on the previous mistaken ordering will now reflect the correct semantics; if similar incorrect usages exist elsewhere, they will still fail until fixed. Must run pytest test/core/parser/lexer_test.py and then the broader test suite to ensure no additional occurrences cause failures. No runtime API break for production code, but test expectations (if any asserted on tag vs. block_idx) will now match the intended values."
+      }
+    ]
+  }
+}

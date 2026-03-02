@@ -1,0 +1,72 @@
+{
+  "pr_number": 2200,
+  "repository": "mopidy/mopidy",
+  "title": "add workaround for gstreamer 1.25.0 to 1.26.2",
+  "body": "This change introduces a targeted workaround for GStreamer versions 1.25.0 through 1.26.2 in Mopidy's GStreamer backend integration. The focus is on the audio playback path, specifically how new sources (URIs) are configured and how the playback pipeline handles source setup and volume across track changes. The workaround is designed to be minimal, version-guarded, and API-compatible.\n\nKey focus areas:\n- Robust handling of GStreamer source setup for certain versions where behaviour differs.\n- A safe URI switch workflow that preserves volume across track changes when using the affected GStreamer versions.\n- Lightweight version detection to gate the workaround without impacting other versions.\n\nFiles touched (proposed):\n- src/mopidy/audio/actor.py\n  - Extend Audio with a GStreamer version guard and a dedicated workaround path for 1.25.0–1.26.2.\n  - Improve _on_source_setup to handle version-specific quirks safely (e.g., different Gst.Object/Element handling across versions).\n  - Harden set_uri to preserve and re-apply volume across URI changes when in the affected GStreamer range.\n  - Optionally add a small helper to detect the GStreamer version (e.g., _is_gst_compat_version).\n\nNo public API changes are intended. The workaround is isolated behind a version check and should be transparent to normal operation on other GStreamer versions. Tests should cover normal operation and the guarded path for the affected versions.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T14:09:52.404763",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "src/mopidy/audio/actor.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "set_uri",
+          "class_name": "Audio",
+          "full_name": "Audio.set_uri",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_on_source_setup",
+          "class_name": "Audio",
+          "full_name": "Audio._on_source_setup",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_is_gst_compat_version",
+          "class_name": "Audio",
+          "full_name": "Audio._is_gst_compat_version",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Introduce a targeted, version-guarded workaround for GStreamer 1.25.0–1.26.2 in Mopidy's audio backend. Implement a centralized Gst version detector and apply minimal, isolated changes to set_uri and _on_source_setup to preserve volume across URI changes and stabilize source setup for affected versions, without changing the public API.",
+    "steps": [
+      {
+        "operation": "Add new helper _is_gst_compat_version to detect GStreamer 1.25.x to 1.26.2 compatibility window",
+        "file_to_modify": "src/mopidy/audio/actor.py",
+        "function_to_modify": "Audio._is_gst_compat_version",
+        "reason": "Centralize version detection logic to cleanly gate the workaround without scattering version checks across methods",
+        "side_effects": "Internal API addition; tests will mock this helper to simulate different Gst versions without requiring real Gst runtime changes"
+      },
+      {
+        "operation": "Guard Audio.set_uri with the Gst compatibility check and implement volume-preservation logic for affected versions",
+        "file_to_modify": "src/mopidy/audio/actor.py",
+        "function_to_modify": "Audio.set_uri",
+        "reason": "Preserve and re-apply current volume when changing URIs under Gst 1.25.x–1.26.2 to address a known source-switch issue, while leaving behavior unchanged for other versions",
+        "side_effects": "Tests should cover both guarded path and normal path; potential minor state interactions with volume during URI changes"
+      },
+      {
+        "operation": "Extend Audio._on_source_setup to apply a version-guarded safe setup path for affected Gst versions",
+        "file_to_modify": "src/mopidy/audio/actor.py",
+        "function_to_modify": "Audio._on_source_setup",
+        "reason": "Ensure robust handling of new sources and source_setup semantics under Gst 1.25.x–1.26.2, mitigating version-specific quirks without impacting other versions",
+        "side_effects": "Tests should validate that the guarded path executes for the affected versions and does not alter behavior for unaffected versions; downstream callers relying on _on_source_setup should remain unaffected in normal operation"
+      }
+    ]
+  }
+}

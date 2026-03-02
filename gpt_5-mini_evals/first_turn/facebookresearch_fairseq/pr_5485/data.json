@@ -1,0 +1,66 @@
+{
+    "repository": "facebookresearch/fairseq",
+    "pull_request_number": 5485,
+    "title": "The cause of the error has been fixed: \"NameError: name 'help' is not\u2026",
+    "body": "\u2026 defined\"\r\n\r\n# Before submitting\r\n\r\n- [-] Was this discussed/approved via a Github issue? (no need for typos, doc improvements)\r\n- [+] Did you read the [contributor guideline](https://github.com/pytorch/fairseq/blob/main/CONTRIBUTING.md)?\r\n- [+] Did you make sure to update the docs?\r\n- [+] Did you write any new necessary tests?\r\n\r\n## What does this PR do?\r\nA typo in the code causing an error in the operation of File \"fairseq\\dataclass\\configs.py\", line 1080, in EMAConfig has been fixed\r\nNameError: name 'help' is not defined.\r\n\r\n## PR review\r\nAnyone in the community is free to review the PR once the tests have passed.\r\nIf we didn't discuss your PR in Github issues there's a high chance it will not be merged.\r\n\r\n## Did you have fun?\r\nMake sure you had fun coding \ud83d\ude43\r\n",
+    "pr_date": "2024-04-20T19:14:50Z",
+    "source_branch": "fix-issue-branch",
+    "language": "en",
+    "keywords_detected": {
+        "branch": [
+            "fix"
+        ],
+        "requirement": [
+            "fix"
+        ],
+        "body": [
+            "fix",
+            "update",
+            "merge",
+            "improvement"
+        ]
+    },
+    "number_of_links_in_pr": 2,
+    "base_sha": "bedb259bf34a9fc22073c13a1cee23192fa70ef3",
+    "last_commit_sha": "94e79484ab89b9e17db79471c5479a70ac33682d",
+    "diff_between_base_and_last": [
+        {
+            "sha": "d28028b3c70f71acaa889a4133c6801e68e71da8",
+            "filename": "fairseq/dataclass/configs.py",
+            "status": "modified",
+            "additions": 1,
+            "deletions": 1,
+            "changes": 2,
+            "blob_url": "https://github.com/facebookresearch/fairseq/blob/94e79484ab89b9e17db79471c5479a70ac33682d/fairseq%2Fdataclass%2Fconfigs.py",
+            "raw_url": "https://github.com/facebookresearch/fairseq/raw/94e79484ab89b9e17db79471c5479a70ac33682d/fairseq%2Fdataclass%2Fconfigs.py",
+            "contents_url": "https://api.github.com/repos/facebookresearch/fairseq/contents/fairseq%2Fdataclass%2Fconfigs.py?ref=94e79484ab89b9e17db79471c5479a70ac33682d",
+            "patch": "@@ -1100,7 +1100,7 @@ class InteractiveConfig(FairseqDataclass):\n @dataclass\n class EMAConfig(FairseqDataclass):\n     store_ema: bool = field(\n-        default=False, metadata={help: \"store exponential moving average shadow model\"}\n+        default=False, metadata={\"help\": \"store exponential moving average shadow model\"}\n     )\n     ema_decay: float = field(\n         default=0.9999, metadata={\"help\": \"decay for exponential moving average model\"}"
+        }
+    ],
+    "commits": [
+        {
+            "sha": "94e79484ab89b9e17db79471c5479a70ac33682d",
+            "commit_date": "2024-04-20T18:50:38Z",
+            "message": "The cause of the error has been fixed: \"NameError: name 'help' is not defined\"",
+            "number_of_links_in_commit": 0,
+            "files_changed_count": 1,
+            "files": [
+                {
+                    "sha": "d28028b3c70f71acaa889a4133c6801e68e71da8",
+                    "filename": "fairseq/dataclass/configs.py",
+                    "status": "modified",
+                    "additions": 1,
+                    "deletions": 1,
+                    "changes": 2,
+                    "blob_url": "https://github.com/facebookresearch/fairseq/blob/94e79484ab89b9e17db79471c5479a70ac33682d/fairseq%2Fdataclass%2Fconfigs.py",
+                    "raw_url": "https://github.com/facebookresearch/fairseq/raw/94e79484ab89b9e17db79471c5479a70ac33682d/fairseq%2Fdataclass%2Fconfigs.py",
+                    "contents_url": "https://api.github.com/repos/facebookresearch/fairseq/contents/fairseq%2Fdataclass%2Fconfigs.py?ref=94e79484ab89b9e17db79471c5479a70ac33682d",
+                    "patch": "@@ -1100,7 +1100,7 @@ class InteractiveConfig(FairseqDataclass):\n @dataclass\n class EMAConfig(FairseqDataclass):\n     store_ema: bool = field(\n-        default=False, metadata={help: \"store exponential moving average shadow model\"}\n+        default=False, metadata={\"help\": \"store exponential moving average shadow model\"}\n     )\n     ema_decay: float = field(\n         default=0.9999, metadata={\"help\": \"decay for exponential moving average model\"}"
+                }
+            ]
+        }
+    ],
+    "pull_request_url": "https://github.com/facebookresearch/fairseq/pull/5485",
+    "commits_url": "https://github.com/facebookresearch/fairseq/pull/5485/commits",
+    "files_url": "https://github.com/facebookresearch/fairseq/pull/5485/files"
+}

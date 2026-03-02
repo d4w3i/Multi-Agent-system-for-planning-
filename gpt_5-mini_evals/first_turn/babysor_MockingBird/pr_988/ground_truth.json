@@ -1,0 +1,63 @@
+{
+  "pr_number": 988,
+  "repository": "babysor/MockingBird",
+  "title": "fix-issues-963:preprocess_audio.py--The .npy file failed to save",
+  "body": "https://github.com/babysor/MockingBird/issues/963\r\n![image](https://github.com/babysor/MockingBird/assets/55903432/a7544cd3-8242-4008-9dbd-3b7badeaed1d)\r\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-02-26T01:06:35.023455",
+    "extractor_version": "1.0.0",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "models/synthesizer/preprocess_audio.py",
+      "status": "modified",
+      "additions": 4,
+      "deletions": 5,
+      "functions_modified": [
+        {
+          "function_name": "preprocess_general",
+          "class_name": null,
+          "full_name": "preprocess_general",
+          "start_line": 105,
+          "end_line": 131,
+          "lines_changed": [
+            119,
+            120,
+            122,
+            125
+          ]
+        }
+      ],
+      "patch": "@@ -116,14 +116,13 @@ def preprocess_general(speaker_dir, out_dir: Path, skip_existing: bool, hparams,\n                     print(f\"No word found in dict_info for {wav_fpath.name}, skip it\")\n                     continue\n             sub_basename = \"%s_%02d\" % (wav_fpath.name, 0)\n-            mel_fpath = out_dir.joinpath(\"mels\", f\"mel-{sub_basename}.npy\")\n-            wav_fpath = out_dir.joinpath(\"audio\", f\"audio-{sub_basename}.npy\")\n+            mel_fpath_out = out_dir.joinpath(\"mels\", f\"mel-{sub_basename}.npy\")\n+            wav_fpath_out = out_dir.joinpath(\"audio\", f\"audio-{sub_basename}.npy\")\n             \n-            if skip_existing and mel_fpath.exists() and wav_fpath.exists():\n+            if skip_existing and mel_fpath_out.exists() and wav_fpath_out.exists():\n                 continue\n             wav, text = _split_on_silences(wav_fpath, words, hparams)\n-            result = _process_utterance(wav, text, out_dir, sub_basename, \n-                                                False, hparams, encoder_model_fpath) # accelarate\n+            result = _process_utterance(wav, text, out_dir, sub_basename, mel_fpath_out, wav_fpath_out, hparams, encoder_model_fpath)\n             if result is None:\n                 continue\n             wav_fpath_name, mel_fpath_name, embed_fpath_name, wav, mel_frames, text = result"
+    }
+  ],
+  "functions_modified": [
+    {
+      "function_name": "preprocess_general",
+      "class_name": null,
+      "full_name": "preprocess_general",
+      "start_line": 105,
+      "end_line": 131,
+      "lines_changed": [
+        119,
+        120,
+        122,
+        125
+      ]
+    }
+  ],
+  "step_plan": {
+    "steps": [
+      {
+        "operation": "Fix output path handling in `preprocess_general` by separating input `wav_fpath` from output `.npy` paths and passing explicit mel/audio output filepaths into `_process_utterance` so numpy arrays are saved to the intended locations.",
+        "file_to_modify": "models/synthesizer/preprocess_audio.py",
+        "function_to_modify": "preprocess_general",
+        "reason": "The previous code overwrote the input `wav_fpath` variable with an output `.npy` path, causing subsequent processing (e.g., `_split_on_silences(wav_fpath, ...)`) to operate on the wrong filepath and leading to failures when saving or reading expected artifacts. Using distinct `mel_fpath_out`/`wav_fpath_out` variables and passing them to `_process_utterance` ensures correct I/O targets and avoids variable shadowing bugs.",
+        "side_effects": "Changes the call signature expectations for `_process_utterance` within this module; any other call sites (if present) may need to be updated to pass the new mel/audio output paths. Also affects skip-existing behavior because existence checks now correctly reference the output artifact paths rather than accidentally reused variables."
+      }
+    ],
+    "summary": "Fixes issue #963 where preprocessing failed to save `.npy` outputs by preventing input filepath shadowing and ensuring `_process_utterance` receives explicit mel/audio output paths."
+  }
+}

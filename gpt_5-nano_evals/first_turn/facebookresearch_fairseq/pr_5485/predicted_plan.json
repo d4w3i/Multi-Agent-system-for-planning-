@@ -1,0 +1,33 @@
+{
+  "pr_number": 5485,
+  "repository": "facebookresearch/fairseq",
+  "title": "The cause of the error has been fixed: \"NameError: name 'help' is not defined\"",
+  "body": "Root cause\n- A typo in EMAConfig metadata triggered a NameError at import time: store_ema: bool = field(default=False, metadata={help: \"store exponential moving average shadow model\"}). The key help was unquoted, so help is treated as a bare identifier rather than a string key.\n\nWhat I changed\n- In fairseq/dataclass/configs.py, inside EMAConfig, corrected the metadata key to a proper string:\n  - Before: store_ema: bool = field(default=False, metadata={help: \"store exponential moving average shadow model\"})\n  - After:  store_ema: bool = field(default=False, metadata={\"help\": \"store exponential moving average shadow model\"})\n\nRationale\n- This aligns with the rest of the codebase where metadata keys are strings (e.g., {\"help\": ...}). It prevents an import-time NameError and ensures the helper methods that read metadata (e.g., _get_help) work as expected.\n\nTesting and validation\n- Importing FairseqConfig (which includes ema: EMAConfig = EMAConfig()) should no longer raise NameError.\n- Consider adding a regression test that imports the config module and asserts that EMAConfig can be instantiated and that _get_help for the store_ema field returns the expected string.\n\nNotes\n- The fix is isolated to the EMAConfig field metadata. Other EMAConfig fields and the overall config wiring remain unchanged.\n- No documentation changes are strictly required, but a brief note in release docs about the fix could be added if needed.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T13:47:21.939428",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "fairseq/dataclass/configs.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    }
+  ],
+  "step_plan": {
+    "summary": "Fix the import-time NameError by correcting EMAConfig.metadata to use a string key for 'help'.",
+    "steps": [
+      {
+        "operation": "Fix EMAConfig metadata key to a string",
+        "file_to_modify": "fairseq/dataclass/configs.py",
+        "function_to_modify": "EMAConfig",
+        "reason": "A bare identifier 'help' was used as a dictionary key, causing a NameError during import. Converting to a string key (\"help\") aligns with project conventions and ensures metadata retrieval (e.g., _get_help) works as intended.",
+        "side_effects": "Minimal risk. No changes to runtime behavior. May require re-running import/tests to confirm no regressions; downstream tooling that reads EMAConfig metadata remains compatible."
+      }
+    ]
+  }
+}

@@ -1,0 +1,42 @@
+{
+  "pr_number": 2303,
+  "repository": "lllyasviel/stable-diffusion-webui-forge",
+  "title": "fix for Florence-2 space",
+  "body": "previously Florence2 had flash attention as a requirement due to an error in *transformers* (issue with packages Forge uses rather than in Forge itself) (https://huggingface.co/microsoft/Florence-2-base/discussions/4#6673ffb9436907f83a8aaf2d); the workaround was to patch the imports to remove it (https://huggingface.co/microsoft/phi-1_5/discussions/72#65a0339f64520347aa3d703c).\nAt some point, an update has made this patch unnecessary. And turned it into an error.\n\nThis PR simply removes the patch.\n\nNow the Space loads again; tested a couple of functions as working correctly too.\n\n#2299",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T12:35:36.167096",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "extensions-builtin/forge_space_florence_2/forge_app.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "fixed_get_imports",
+          "class_name": null,
+          "full_name": "fixed_get_imports",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Remove the Florence-2-specific monkeypatch that stripped 'flash_attn' from transformers' dynamic imports by deleting fixed_get_imports, removing the unittest.mock.patch usage and related imports, and restoring the normal model-loading block so the Space loads without error.",
+    "steps": [
+      {
+        "operation": "Remove the Florence-2-specific monkeypatch (fixed_get_imports) and its usage, clean up related imports, and unindent the model-loading block",
+        "file_to_modify": "extensions-builtin/forge_space_florence_2/forge_app.py",
+        "function_to_modify": "fixed_get_imports",
+        "reason": "Upstream transformers no longer requires the workaround that stripped 'flash_attn' from dynamic imports; the monkeypatch now causes import errors. Removing the helper function fixed_get_imports, the with patch(...) context that replaced transformers.dynamic_module_utils.get_imports, and the unused imports eliminates the harmful patch and restores normal model loading. Unindenting the model-loading block ensures models are loaded inside the existing spaces.capture_gpu_object() context without the temporary patch.",
+        "side_effects": "Changes model-loading behavior for the Florence-2 Space back to the default transformers import resolution. Tests to run: start the Space locally and load microsoft/Florence-2-large, then run example tasks (Caption, OD, OCR) to verify model loads and inference works; run unit/integration tests that touch this Space. Potential impacts: If users run on older transformers versions that still exhibited the original bug, they may encounter the original import issue again (consider documenting or adding a narrowly-scoped conditional workaround in a future PR if needed). No public API changes expected beyond the Space behavior; removing the monkeypatch may affect any code that relied on the previous patched behavior. Also ensure no linter/unused-import warnings remain after removal."
+      }
+    ]
+  }
+}

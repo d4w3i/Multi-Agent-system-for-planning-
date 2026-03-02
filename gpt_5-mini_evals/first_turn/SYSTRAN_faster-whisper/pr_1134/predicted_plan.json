@@ -1,0 +1,42 @@
+{
+  "pr_number": 1134,
+  "repository": "SYSTRAN/faster-whisper",
+  "title": "change `language_detection_threshold` default value",
+  "body": "the current value of `language_detection_threshold` means that `language_detection_segments` will be 1 regardless of the user set value, the new value will ensure that `language_detection_segments` is respected",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T11:38:48.394141",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "faster_whisper/transcribe.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "transcribe",
+          "class_name": "WhisperModel",
+          "full_name": "WhisperModel.transcribe",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Update WhisperModel.transcribe to use a numeric default (0.7) for language_detection_threshold and update its docstring so language_detection_segments is respected by default; this aligns behavior with detect_language_multi_segment and prevents an immediate break on the first segment.",
+    "steps": [
+      {
+        "operation": "Change default language_detection_threshold and update docstring",
+        "file_to_modify": "faster_whisper/transcribe.py",
+        "function_to_modify": "WhisperModel.transcribe",
+        "reason": "The current default language_detection_threshold is None, and the detection loop uses `if language_detection_threshold is None or language_probability > language_detection_threshold: break`, which causes the loop to always break on the first segment and thus ignores language_detection_segments. Setting a numeric default (0.7) matches detect_language_multi_segment and ensures the loop will continue scanning up to language_detection_segments unless a segment's probability exceeds the threshold.",
+        "side_effects": "Behavioral change for callers that relied on the old None default: language detection will now scan multiple segments by default (up to language_detection_segments) unless a segment exceeds 0.7, which may change detected language for some inputs and slightly increase CPU/audio processing in transcribe. API surface (function signature) remains compatible (parameter still present), but the default behavior changes so consumer code and tests that assumed the previous immediate-break behavior may need updates. Document string and any user-facing docs/examples should be adjusted. No changes to batched inference are required by this PR, but consider future enhancements to use multi-segment detection there. Run unit/integration tests to catch any downstream failures."
+      }
+    ]
+  }
+}

@@ -1,0 +1,33 @@
+{
+  "pr_number": 11766,
+  "repository": "pydantic/pydantic",
+  "title": "Fix example in populate_by_name documentation",
+  "body": "This PR fixes the docstring example for ConfigDict.populate_by_name to align with the recommended usage using validate_by_name and validate_by_alias, as discussed in issue #11765. No runtime behavior changes are introduced; the modification is limited to the inline documentation to prevent user confusion about how to reproduce the behavior via the newer configuration options. The example currently described in the docstring may mislead users regarding the interaction between populate_by_name and the newer validate_by_name/validate_by_alias approach. Updated documentation should reflect the intended guidance and usage. \n\nRelated issue: fix #11765.\n\nImpact: Documentation change only. Tests should remain unaffected since this touches only docstrings, but existing tests that rely on the docstring content (if any) should continue to pass after the update. If any doc-generation tests exist that introspect examples, they should pick up the corrected example.\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T14:17:51.042209",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "pydantic/config.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    }
+  ],
+  "step_plan": {
+    "summary": "Documentation-only update: fix the ConfigDict.populate_by_name example to reflect the recommended validate_by_name/validate_by_alias usage, with no runtime changes.",
+    "steps": [
+      {
+        "operation": "Update docstring example in ConfigDict.populate_by_name to reflect recommended usage with validate_by_name and validate_by_alias",
+        "file_to_modify": "pydantic/config.py",
+        "function_to_modify": "ConfigDict.populate_by_name",
+        "reason": "The inline example previously described behavior that could be misinterpreted after introducing newer configuration options; updating it aligns the documentation with the guidance from issue #11765 and reduces user confusion when reproducing behavior via validate_by_name/validate_by_alias.",
+        "side_effects": "Documentation-only change; no runtime behavior changes. Potential impact on doc-generation tests or string-matching tests that assert exact docstring content; may require a docs build and lightweight test adjustments if exact snippets are validated."
+      }
+    ]
+  }
+}

@@ -1,0 +1,72 @@
+{
+  "pr_number": 2127,
+  "repository": "DLR-RM/stable-baselines3",
+  "title": "Feature/batch norm",
+  "body": "Added a boolean `use_batch_norm` flag to the CNN and MLP feature extractors.  \n- In **NatureCNN**, each convolutional block now conditionally inserts an `nn.BatchNorm2d` layer (before the ReLU) when `use_batch_norm=True`.  \n- In **create_mlp**, an initial `nn.BatchNorm1d` may be applied to the inputs, and batch-norm modules can wrap each linear layer.  \nAll defaults remain unchanged (batch norm off), and existing behavior is fully preserved.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T11:18:58.035487",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "stable_baselines3/common/torch_layers.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "__init__",
+          "class_name": "NatureCNN",
+          "full_name": "NatureCNN.__init__",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "create_mlp",
+          "class_name": null,
+          "full_name": "create_mlp",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "__init__",
+          "class_name": "CombinedExtractor",
+          "full_name": "CombinedExtractor.__init__",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Add an optional use_batch_norm flag to NatureCNN and create_mlp to enable conditional BatchNorm2d/BatchNorm1d in CNN and MLP feature builders, and make CombinedExtractor accept/forward the flag so features_extractor_kwargs can enable batch norm for image subspaces. Defaults remain False to preserve existing behavior.",
+    "steps": [
+      {
+        "operation": "Add use_batch_norm parameter and conditional BatchNorm2d insertion",
+        "file_to_modify": "stable_baselines3/common/torch_layers.py",
+        "function_to_modify": "NatureCNN.__init__",
+        "reason": "Expose an optional use_batch_norm: bool = False argument and, when True, insert nn.BatchNorm2d(out_channels) after each Conv2d (before the ReLU) in the existing convolutional Sequential so image feature extraction can optionally use batch normalization without changing the default behavior.",
+        "side_effects": "Backward compatible by default (use_batch_norm defaults to False). If enabled, training dynamics may change (BatchNorm affects statistics and learning); saved checkpoints with different use_batch_norm settings are not directly compatible because enabling BN adds parameters (running_mean/var, weight, bias) that won't exist in state dicts from models built with use_batch_norm=False. Tests should be added to verify forward passes with use_batch_norm=True. No other modules need modification to call sites because the new parameter has a default."
+      },
+      {
+        "operation": "Add use_batch_norm parameter to create_mlp and include BatchNorm1d among pre-linear modules when requested",
+        "file_to_modify": "stable_baselines3/common/torch_layers.py",
+        "function_to_modify": "create_mlp",
+        "reason": "Add use_batch_norm: bool = False to create_mlp so callers can request BatchNorm1d to be applied before linear layers. Implement by ensuring, when use_batch_norm is True, that BatchNorm1d is present in pre_linear_modules (e.g., set pre_linear_modules = [nn.BatchNorm1d] if None, or prepend/insert nn.BatchNorm1d into the existing list if not already present). This composes with existing pre_linear_modules/post_linear_modules behavior and preserves defaults.",
+        "side_effects": "Backward compatible by default. Enabling BN changes network architecture (adds BatchNorm1d modules) and will alter training dynamics. Saved models built with/without use_batch_norm will have different parameter sets; loading across configurations may fail unless handled. Ensure unit tests verify: create_mlp(..., use_batch_norm=True) constructs modules with BatchNorm1d and forward passes produce expected shapes. Callers that pass custom pre_linear_modules must still work; ensure the implementation appends/inserts without overwriting user-provided lists."
+      },
+      {
+        "operation": "Accept and forward use_batch_norm in CombinedExtractor construction for image sub-extractors",
+        "file_to_modify": "stable_baselines3/common/torch_layers.py",
+        "function_to_modify": "CombinedExtractor.__init__",
+        "reason": "CombinedExtractor composes per-key extractors (e.g., NatureCNN for image keys) and must accept/use the new use_batch_norm argument so that passing use_batch_norm via features_extractor_kwargs is accepted and forwarded to underlying NatureCNN instances. This avoids unexpected keyword errors when users pass use_batch_norm through BaseModel.features_extractor_kwargs.",
+        "side_effects": "Backward compatible by default. If use_batch_norm is forwarded and True, image sub-extractors created by CombinedExtractor will include BatchNorm2d layers which affects training and saved model parameter sets (see above). Update tests to ensure CombinedExtractor(..., use_batch_norm=True) instantiates sub-extractors correctly and that concatenated outputs keep the same shapes. Also ensure CombinedExtractor still accepts arbitrary features_extractor_kwargs without breaking other keys."
+      }
+    ]
+  }
+}

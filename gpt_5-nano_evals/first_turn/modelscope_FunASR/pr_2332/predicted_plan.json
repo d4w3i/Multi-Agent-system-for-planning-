@@ -1,0 +1,57 @@
+{
+  "pr_number": 2332,
+  "repository": "modelscope/FunASR",
+  "title": "fix #2331: solve problems in sensevoice_bin.py related to argmax and unique operations",
+  "body": "Summary of changes to address decoding issues in SenseVoice's bin/decoder:\n\n- Replace the decoding path that uses argmax and torch.unique_consecutive with a numpy-based approach that is robust to input type and mirrors the semantics of non-consecutive unique removal (i.e., consecutive collapse).\n- Ensure argmax works whether the model outputs a PyTorch tensor or a NumPy array by converting to NumPy when necessary, then applying axis-based argmax.\n- Implement a consecutive-duplicate collapse using a mask derived from numpy.diff, preserving the first element, to emulate torch.unique_consecutive behaviour for 1D sequences.\n- Add guards for empty token sequences to avoid decoding errors and ensure stable outputs.\n- Fix a small bug in an error message in _get_lid where an undefined variable could appear in the f-string.\n- Add numpy import as needed for the new decoding path and keep compatibility with the existing PyTorch-based flow.\n\nFiles touched should clearly reflect the decoding logic changes and the error-message improvement. The goal is to preserve decoding semantics while eliminating a TypeError scenario and aligning with the intended behavior described in issue #2331.\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T14:09:22.459544",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "runtime/python/libtorch/funasr_torch/sensevoice_bin.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "__call__",
+          "class_name": "SenseVoiceSmall",
+          "full_name": "SenseVoiceSmall.__call__",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_get_lid",
+          "class_name": "SenseVoiceSmall",
+          "full_name": "SenseVoiceSmall._get_lid",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Implement a robust, numpy-based decoding path for sensevoice_bin.py to handle argmax and consecutive-duplicate removal in a type-agnostic way, while fixing a small error message bug in _get_lid to prevent potential NameError. The changes align decoding behavior with the intended semantics described in issue #2331 and preserve compatibility with the existing PyTorch flow.",
+    "steps": [
+      {
+        "operation": "Refactor decoding path in SenseVoiceSmall.__call__ to use a numpy-based argmax and consecutive-duplicate collapse",
+        "file_to_modify": "runtime/python/libtorch/funasr_torch/sensevoice_bin.py",
+        "function_to_modify": "SenseVoiceSmall.__call__",
+        "reason": "Replace the PyTorch-centric argmax and torch.unique_consecutive path with a type-agnostic decoding path that converts inputs to NumPy when needed, applies axis-based argmax, and collapses consecutive duplicates using a NumPy-based mask. This preserves decoding semantics while avoiding TypeError scenarios when inputs are PyTorch tensors, NumPy arrays, or mixed types, and ensures compatibility with the issue #2331 requirements.",
+        "side_effects": "Adds a NumPy-based code path that may affect performance slightly for very long sequences; ensures compatibility for both torch.tensor and numpy inputs; requires regression tests to verify equivalence with existing behavior for non-empty sequences and edge cases (empty sequences, all blanks, long repetitive patterns); ONNX/inference paths that bypass the PyTorch route should remain unaffected."
+      },
+      {
+        "operation": "Fix undefined variable in error message within SenseVoiceSmall._get_lid",
+        "file_to_modify": "runtime/python/libtorch/funasr_torch/sensevoice_bin.py",
+        "function_to_modify": "SenseVoiceSmall._get_lid",
+        "reason": "The error message currently references an undefined variable in an f-string, which can raise NameError during decoding failures. Correcting the message improves error reporting and avoids runtime exceptions in edge cases where a language id is not found.",
+        "side_effects": "Minor improvement to logs/errors; no change to decoding logic or outputs; may require minor tests to confirm error messages are informative and that no NameError is raised in the error path."
+      }
+    ]
+  }
+}

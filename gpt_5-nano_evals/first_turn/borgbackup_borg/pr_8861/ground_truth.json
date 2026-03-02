@@ -1,0 +1,57 @@
+{
+  "pr_number": 8861,
+  "repository": "borgbackup/borg",
+  "title": "tests: fix diff cmd test on macOS HFS+, fixes #8860",
+  "body": "If we touch too quickly after file creation, it would not noticably update the timestamp.\r\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T00:58:48.079237",
+    "extractor_version": "1.0.0",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "src/borg/testsuite/archiver/diff_cmd_test.py",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "test_basic_functionality",
+          "class_name": null,
+          "full_name": "test_basic_functionality",
+          "start_line": 22,
+          "end_line": 261,
+          "lines_changed": [
+            56
+          ]
+        }
+      ],
+      "patch": "@@ -53,6 +53,7 @@ def test_basic_functionality(archivers, request):\n     create_regular_file(archiver.input_path, \"file_replaced\", contents=b\"0\" * 4096)\n     os.unlink(\"input/file_removed\")\n     os.unlink(\"input/file_removed2\")\n+    time.sleep(1)  # macOS HFS+ has a 1s timestamp granularity\n     Path(\"input/file_touched\").touch()\n     os.rmdir(\"input/dir_replaced_with_file\")\n     create_regular_file(archiver.input_path, \"dir_replaced_with_file\", size=8192)"
+    }
+  ],
+  "functions_modified": [
+    {
+      "function_name": "test_basic_functionality",
+      "class_name": null,
+      "full_name": "test_basic_functionality",
+      "start_line": 22,
+      "end_line": 261,
+      "lines_changed": [
+        56
+      ]
+    }
+  ],
+  "step_plan": {
+    "steps": [
+      {
+        "operation": "Add a delay before touching a file to ensure its mtime changes on filesystems with coarse timestamp granularity",
+        "file_to_modify": "src/borg/testsuite/archiver/diff_cmd_test.py",
+        "function_to_modify": "test_basic_functionality",
+        "reason": "On macOS HFS+ the timestamp granularity is 1 second, so touching a file immediately after creation may not update the modification time, causing the diff command test to be flaky; sleeping for 1 second guarantees a detectable mtime change.",
+        "side_effects": "Slightly increases the runtime of this test (and any suite that includes it) by ~1s; reduces flakiness specifically on macOS/HFS+ and potentially other filesystems with 1s timestamp resolution."
+      }
+    ],
+    "summary": "Fixes a flaky diff command test on macOS HFS+ by sleeping 1 second before touching a file so the file’s mtime change is reliably detected."
+  }
+}

@@ -1,0 +1,59 @@
+{
+  "pr_number": 1155,
+  "repository": "SWE-agent/SWE-agent",
+  "title": "Fix: Correctly format commit message for PR creation",
+  "body": "The commit message by the agent does not formatted properly\r\n![image](https://github.com/user-attachments/assets/4d40e248-2761-47e1-a091-26d53bde1179)\r\n\r\n<!--\r\nThanks for contributing a pull request!\r\n-->\r\n\r\n#### Reference Issues/PRs\r\n<!--\r\nExample: \"Fixes #1234\", \"See also #3456\"\r\nPlease use keywords (e.g., Fixes) to create link to the issues or pull requests\r\nyou resolved, so that they will automatically be closed when your pull request\r\nis merged. See https://github.com/blog/1506-closing-issues-via-pull-requests\r\n-->\r\n\r\n#### What does this implement/fix? Explain your changes.\r\n<!--\r\nPlease include a brief explanation of how your solution\r\nfixes the tagged issue(s), along with what files / entities have\r\nbeen modified for this fix.\r\n-->\r\n\r\nThis pull request includes a small change to the `open_pr` function in `sweagent/run/hooks/open_pr.py`. The change updates the string formatting for commit messages to use f-strings for formating the message properly",
+  "extraction_metadata": {
+    "extracted_at": "2026-02-25T15:50:36.009801",
+    "extractor_version": "1.0.0",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "sweagent/run/hooks/open_pr.py",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 2,
+      "functions_modified": [
+        {
+          "function_name": "open_pr",
+          "class_name": null,
+          "full_name": "open_pr",
+          "start_line": 24,
+          "end_line": 116,
+          "lines_changed": [
+            53,
+            54
+          ]
+        }
+      ],
+      "patch": "@@ -50,8 +50,8 @@ def open_pr(*, logger, token, env: SWEEnv, github_url, trajectory, _dry_run: boo\n     env.communicate(input=\"git add .\", error_msg=\"Failed to add commits\", timeout=10, check=\"raise\")\n     dry_run_flag = \"--allow-empty\" if _dry_run else \"\"\n     commit_msg = [\n-        shlex.quote(\"Fix: {issue.title}\"),\n-        shlex.quote(\"Closes #{issue.number}\"),\n+        shlex.quote(f\"Fix: {issue.title}\"),\n+        shlex.quote(f\"Closes #{issue.number}\"),\n     ]\n     out = env.communicate(\n         input=f\"git commit -m {commit_msg[0]} -m  {commit_msg[1]} {dry_run_flag}\","
+    }
+  ],
+  "functions_modified": [
+    {
+      "function_name": "open_pr",
+      "class_name": null,
+      "full_name": "open_pr",
+      "start_line": 24,
+      "end_line": 116,
+      "lines_changed": [
+        53,
+        54
+      ]
+    }
+  ],
+  "step_plan": {
+    "steps": [
+      {
+        "operation": "Fix commit message construction by switching the commit message templates to f-strings before shell-quoting",
+        "file_to_modify": "sweagent/run/hooks/open_pr.py",
+        "function_to_modify": "open_pr",
+        "reason": "The previous code used literal strings (\"Fix: {issue.title}\" / \"Closes #{issue.number}\") that were never interpolated, so the generated `git commit -m ...` messages contained braces instead of the actual issue title/number; using f-strings ensures the issue metadata is correctly embedded before passing through `shlex.quote`.",
+        "side_effects": "Changes the exact commit subject/body produced by the PR-creation hook; this may affect downstream automation that parses commit messages (e.g., release notes generation, linkage/closing behavior based on \"Closes #N\"), and could expose unexpected characters from `issue.title` to the shell-quoting layer (mitigated by `shlex.quote` but still may alter quoting behavior compared to prior output)."
+      }
+    ],
+    "summary": "Fixes PR creation so the git commit message is properly interpolated with the issue title and number by using f-strings in the `open_pr` hook."
+  }
+}

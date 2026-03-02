@@ -1,0 +1,64 @@
+{
+  "pr_number": 464,
+  "repository": "karpathy/nanoGPT",
+  "title": "fix: h100-mfu-calculation",
+  "body": "The MFU calculation in the GPT model currently references a fixed A100 BF16 peak (312e12). This PR aims to make MFU GPU-specific (e.g., H100) by parameterizing the MFU peak and allowing selection between A100, H100, or a custom peak. The change targets the MFU estimation path used during training/logging to ensure MFU metrics reflect the chosen hardware, avoiding misleading measurements (e.g., 104% MFU on H100 when using A100 baselines).",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T14:02:32.140640",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "model.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "__init__",
+          "class_name": "GPT",
+          "full_name": "GPT.__init__",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "estimate_mfu",
+          "class_name": "GPT",
+          "full_name": "GPT.estimate_mfu",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "config/train_gpt2.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    }
+  ],
+  "step_plan": {
+    "summary": "Introduce a hardware-aware MFU peak parameter (mfu_peak_bf16) and propagate it into the GPT MFU estimator so MFU reflects the chosen GPU (A100/H100/custom) while preserving backward compatibility by default.",
+    "steps": [
+      {
+        "operation": "Store mfu_peak_bf16 from config in GPT.__init__ with a safe default",
+        "file_to_modify": "model.py",
+        "function_to_modify": "GPT.__init__",
+        "reason": "To enable hardware-aware MFU peak values and preserve backward compatibility by defaulting to 312e12 when config doesn't specify a value.",
+        "side_effects": "Adds a new instance attribute; downstream code may reference self.config.mfu_peak_bf16; no external API changes; unit tests should account for default value."
+      },
+      {
+        "operation": "Refactor MFU estimation to use configurable peak",
+        "file_to_modify": "model.py",
+        "function_to_modify": "GPT.estimate_mfu",
+        "reason": "Replace hardcoded A100 BF16 peak with self.config.mfu_peak_bf16 to support H100 or custom peaks while preserving existing computation structure.",
+        "side_effects": "MFU results reflect configured peak; may affect MFU-derived metrics in logs; tests may need updates; ensures thread-safety if config is mutable; default preserves current behavior."
+      }
+    ]
+  }
+}

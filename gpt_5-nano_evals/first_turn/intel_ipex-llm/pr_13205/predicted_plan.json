@@ -1,0 +1,42 @@
+{
+  "pr_number": 13205,
+  "repository": "intel/ipex-llm",
+  "title": "Fix internvl fp16 error",
+  "body": "This PR targets FP16-related quantization path issues in the ggml quantization wrapper. The FP16 path appears to exist at the tensor level (ggml_tensor_qtype) but is not surfaced as a valid dtype in the quantization wrapper (quantize.py). The change will extend the dtype coverage to include fp16 for model families supported by the external quantizer, and ensure the quantization command and output naming correctly reflect FP16 usage. It also includes improved input validation and error messaging to better diagnose FP16-related failures.\n\nPlanned changes include:\n- Expose 'fp16' as a valid dtype for all model families supported by the wrapper (llama, bloom, gptneox, starcoder).\n- Map 'fp16' to the correct internal quantization code in per-family mappings (_quantize_type, _llama_quantize_type, _bloom_quantize_type, _gptneox_quantize_type, _starcoder_quantize_type).\n- Ensure quantize() accepts dtype='fp16', validates it, and constructs the output filename accordingly (e.g., bigdl_llm_<model_family>_fp16.bin).\n- Preserve cross-platform command construction (Windows vs others) and robust error handling for FP16 quantization failures.\n- Consider extending similar support to bf16 if the external quantizer supports it, with corresponding mappings.\n\nNo API surface changes beyond allowing an additional dtype value for quantization; downstream integrations that call quantize() with dtype='fp16' should now work and surface FP16-specific errors more clearly if the external tool fails.\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T13:59:46.375219",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "python/llm/src/ipex_llm/ggml/quantize.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "quantize",
+          "class_name": null,
+          "full_name": "quantize",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Enable FP16 quantization path in the ggml quantization wrapper by adding FP16 to per-family mappings, validating dtype='fp16' in quantize(), and updating output naming to reflect FP16 usage. This preserves cross-platform command construction and improves diagnostics for FP16-related failures.",
+    "steps": [
+      {
+        "operation": "Extend FP16 support in quantize: update per-family dtype mappings to include 'fp16', modify quantize() to validate and accept dtype='fp16', map to internal quantization codes, and ensure output filename reflects FP16 (e.g., bigdl_llm_<family>_fp16.bin)",
+        "file_to_modify": "python/llm/src/ipex_llm/ggml/quantize.py",
+        "function_to_modify": "quantize",
+        "reason": "Expose FP16 as a first-class quantization dtype across all supported model families (llama, bloom, gptneox, starcoder), map it to the correct internal code, and produce FP16-specific output artifacts. This addresses FP16 interval errors and improves error messaging when FP16 is unsupported by a given family.",
+        "side_effects": "Tests will need to cover quantize(..., dtype='fp16') across all families; downstream code calling quantize with fp16 should now surface FP16-specific errors clearly if the external tool fails; potential need to update documentation and adapt to any external quantizer compatibility constraints"
+      }
+    ]
+  }
+}

@@ -1,0 +1,42 @@
+{
+  "pr_number": 1632,
+  "repository": "ultrafunkamsterdam/undetected-chromedriver",
+  "title": "fix: add headless attribute to ChromeOptions to support options.headless usage",
+  "body": "Issue: Runtime errors when using headless mode due to ChromeOptions lacking a headless attribute.\n\nRoot cause: The code path in undetected_chromedriver/__init__.py references options.headless (e.g., if headless or options.headless: ... and if options.headless: ...). ChromeOptions (undetected_chromedriver/options.py) implements additional options handling but does not define a headless attribute, leading to AttributeError:\n- AttributeError: 'ChromeOptions' object has no attribute 'headless'\n\nWhat this change does:\n- Add a headless property to ChromeOptions with a default of False, including a getter and setter so that code can reliably check and assign the flag without triggering AttributeError.\n- This aligns ChromeOptions with the expectations in __init__.py and preserves existing behavior (headless remains opt-in and off by default unless explicitly enabled).\n\nImpact:\n- Fixes the exact crash reported by the PR while maintaining backward compatibility.\n- No changes to runtime headless behavior unless the user sets options.headless or the headless flag is passed to the driver.\n- Keeps the change localized to ChromeOptions, reducing risk and surface area for regressions.\n\nTesting suggestions:\n- Instantiate ChromeOptions and verify options.headless exists and defaults to False.\n- Instantiate the Chrome driver with headless=True and ensure no AttributeError occurs when the code checks options.headless.\n- Confirm that existing behavior around headless (e.g., if headless is passed via constructor) remains intact.\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T14:35:03.057195",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "undetected_chromedriver/options.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "headless",
+          "class_name": "ChromeOptions",
+          "full_name": "ChromeOptions.headless",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Add a headless attribute to ChromeOptions with a getter/setter defaulting to False to prevent AttributeError when code checks options.headless and to keep backward compatibility.",
+    "steps": [
+      {
+        "operation": "Add headless property to ChromeOptions with getter/setter (default False)",
+        "file_to_modify": "undetected_chromedriver/options.py",
+        "function_to_modify": "ChromeOptions.headless",
+        "reason": "To expose a reliable headless flag on ChromeOptions to satisfy downstream code paths that reference options.headless (e.g., __init__.py) and avoid AttributeError, while preserving existing default behavior (off unless explicitly enabled).",
+        "side_effects": "Minimal surface area change confined to options.py. No behavioral change unless code explicitly reads or sets options.headless. Tests should be added or updated to verify the new property exists, defaults to False, and can be assigned without side effects."
+      }
+    ]
+  }
+}

@@ -1,0 +1,47 @@
+{
+  "pr_number": 3597,
+  "repository": "piskvorky/gensim",
+  "title": "Clarify BM25 Documentation in Gensim Core Tutorials (Document Fix)",
+  "body": "**What changes were proposed in this pull request?**\n\nThis pull request corrects the documentation for the BM25 algorithm within the core tutorials of the Gensim library. The previous documentation misleadingly implied that BM25 transforms vectors into other vectors while altering their values based on feature rarity. This update provides an accurate description of BM25, highlighting its actual function as a scoring algorithm that does not manipulate the dimensionality of its input data.\n\n**Why are these changes needed?**\n\nThe correction ensures the Gensim documentation accurately reflects the true nature of BM25 as a relevance scoring mechanism, not a vector transformation tool. It rectifies misconceptions and provides clarity, which is vital for users and developers relying on the Gensim documentation for implementing and understanding BM25.\n\n**File Modified**\n\n- gensim/docs/src/gallery/core/run_topics_and_transformations.py\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T12:54:30.574077",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "docs/src/gallery/core/run_topics_and_transformations.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    }
+  ],
+  "step_plan": {
+    "summary": "Replace the misleading Okapi BM25 paragraph in docs/src/gallery/core/run_topics_and_transformations.py with text that explains gensim's BM25 returns weighted bag-of-words [(term_id, weight), ...] without altering vocabulary/feature ids, and advise using similarity measures to compute relevance; then rebuild docs to verify formatting. Optionally add a clarifying docstring to gensim/models/bm25model.py to mirror the tutorial wording.",
+    "steps": [
+      {
+        "operation": "Update BM25 description in tutorial",
+        "file_to_modify": "docs/src/gallery/core/run_topics_and_transformations.py",
+        "function_to_modify": "BM25 paragraph (module-level explanatory text)",
+        "reason": "The tutorial's existing paragraph incorrectly implies BM25 behaves like a TF–IDF vector transformation (changing dimensionality or feature ids). The documentation must be changed to state that gensim's BM25 models compute per-term BM25 weights and return a weighted bag-of-words ([(term_id, weight), ...]) without changing vocabulary/feature ids, and that scoring/ranking is obtained by combining these weighted vectors with a similarity measure.",
+        "side_effects": "Documentation-only change: no code or API impacts. Consumers of the docs will receive clearer guidance. No tests should be affected, but doc build should be run to verify Sphinx formatting; search/indexing of docs might need a rebuild."
+      },
+      {
+        "operation": "Run documentation build and verify formatting",
+        "file_to_modify": "docs/src/gallery/core/run_topics_and_transformations.py",
+        "function_to_modify": "module-level documentation rendering (no function)",
+        "reason": "Ensure the new paragraph renders correctly in Sphinx and the example sourcecode block appears as intended.",
+        "side_effects": "May surface Sphinx formatting issues (reflow, indentation) that require minor edits. No code or API impacts."
+      },
+      {
+        "operation": "Optional: add clarifying docstring to BM25 model",
+        "file_to_modify": "gensim/models/bm25model.py",
+        "function_to_modify": "BM25ABC.__getitem__",
+        "reason": "To keep API docs consistent with the tutorial, add a short note in the BM25ABC/OkapiBM25Model docstring clarifying that model[bow] returns weighted (term_id, weight) pairs and does not directly compute a scalar relevance score.",
+        "side_effects": "Small docstring change only; no runtime behavior impact. May affect generated API docs and require doc build to include the change."
+      }
+    ]
+  }
+}

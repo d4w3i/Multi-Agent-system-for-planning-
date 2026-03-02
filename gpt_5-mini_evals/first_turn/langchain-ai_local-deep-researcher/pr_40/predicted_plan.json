@@ -1,0 +1,65 @@
+{
+  "pr_number": 40,
+  "repository": "langchain-ai/local-deep-researcher",
+  "title": "convert max_web_research_loops to int to make sure comparison works",
+  "body": "This PR fixes a bug introduced by my previous PR and the getting the max_web_research_loops from the environment variable. I'm not sure why it is a string value when doing the `if state.research_loop_count <= int(configurable.max_web_research_loops):` compare, I fixed it with just another `int()` around it.\n\nSorry for that!",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T12:33:44.580050",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "src/assistant/configuration.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "from_runnable_config",
+          "class_name": "Configuration",
+          "full_name": "Configuration.from_runnable_config",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "src/assistant/graph.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "route_research",
+          "class_name": null,
+          "full_name": "route_research",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Normalize the max_web_research_loops configuration value to an int at configuration load time and add a defensive int() cast in route_research so comparisons with research_loop_count work reliably even if configuration values come in as strings.",
+    "steps": [
+      {
+        "operation": "Normalize and type-cast configuration values when building Configuration",
+        "file_to_modify": "src/assistant/configuration.py",
+        "function_to_modify": "Configuration.from_runnable_config",
+        "reason": "Fix root cause by ensuring Configuration.max_web_research_loops (and similar fields) are produced with the correct Python types when reading from env/runnable config. Specifically, cast max_web_research_loops to int if present and change the kwargs filtering to keep values that are not None (v is not None) so valid falsy values like '0' are not dropped. This prevents consumers from receiving string values and avoids brittle runtime comparisons elsewhere.",
+        "side_effects": "Downstream code will now receive ints instead of strings for this field, which may expose latent bugs in callers that assumed string types (tests may fail if they asserted string semantics). If an environment value is an invalid non-numeric string, the int cast will raise ValueError unless you add handling; consider validating and raising a clear configuration error or using a safe int conversion with a descriptive error. Changing the filtering semantics can also surface previously-silently-ignored keys (e.g., '0'), which may change runtime behavior and should be covered by tests."
+      },
+      {
+        "operation": "Add defensive int() coercion in the route_research comparison",
+        "file_to_modify": "src/assistant/graph.py",
+        "function_to_modify": "route_research",
+        "reason": "Add a defensive cast (int(configurable.max_web_research_loops)) at the point-of-use to make the comparison robust even if Configuration.from_runnable_config did not normalize types or a config override supplies a string. This matches the quick fix described in the PR and prevents the specific bug where a string on the right-hand side made the numeric comparison behave incorrectly or throw.",
+        "side_effects": "If Configuration.max_web_research_loops is None, int(None) will raise TypeError, so guard against None (e.g., only cast when not None) or handle exceptions — the change should include that guard. After adding the defensive cast, the comparison will behave correctly regardless of config typing, but this is redundant once the config layer is normalized. Tests covering route_research should be updated to include cases where max_web_research_loops is '0', other numeric strings, non-numeric strings, and None to ensure robust behavior. No external API changes expected, but runtime behavior may change if previously the comparison allowed string semantics."
+      }
+    ]
+  }
+}

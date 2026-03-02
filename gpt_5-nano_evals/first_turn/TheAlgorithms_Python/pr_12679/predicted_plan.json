@@ -1,0 +1,42 @@
+{
+  "pr_number": 12679,
+  "repository": "TheAlgorithms/Python",
+  "title": "Fix: Correct time-and-a-half pay calculation logic",
+  "body": "This PR fixes the time-and-a-half overtime calculation in financial/time_and_half_pay.py by explicitly applying the 1.5x rate to overtime hours and clearly separating regular vs overtime hours. It updates the calculation to improve readability and maintainability while preserving correct results for existing doctests.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T13:35:16.635098",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "financial/time_and_half_pay.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "pay",
+          "class_name": null,
+          "full_name": "pay",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Refactor the time-and-a-half pay calculation to explicitly separate regular vs overtime hours and apply a 1.5x rate to overtime, preserving existing doctest results and improving readability.",
+    "steps": [
+      {
+        "operation": "Rewrite pay function to explicitly split hours_worked into regular_hours and overtime_hours, compute total = regular_hours * pay_rate + overtime_hours * pay_rate * 1.5, and add input validation",
+        "file_to_modify": "financial/time_and_half_pay.py",
+        "function_to_modify": "pay",
+        "reason": "Current implementation uses an implicit/ambiguous calculation; explicit split aligns with payroll practice and reduces risk of misinterpretation, while preserving doctests. Also enforces non-negative numeric inputs and clearer behavior for edge cases.",
+        "side_effects": "Doc tests should continue to pass; potential changes to tests for negative/non-numeric inputs; downstream modules depending on pay may be affected if they rely on old internal behavior; improved maintainability"
+      }
+    ]
+  }
+}

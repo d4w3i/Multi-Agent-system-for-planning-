@@ -1,0 +1,57 @@
+{
+  "pr_number": 1224,
+  "repository": "pytorch/examples",
+  "title": "Fixes in Imagenet training script",
+  "body": "* ngpus_per_node variable count fix\n* dist_backend assertion added for nccl issue",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T14:21:50.700290",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "imagenet/main.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "main",
+          "class_name": null,
+          "full_name": "main",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "main_worker",
+          "class_name": null,
+          "full_name": "main_worker",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Fixes in Imagenet training script by robustly counting GPUs per node and enforcing safe dist_backend usage to avoid NCCL-related initialization errors.",
+    "steps": [
+      {
+        "operation": "Refactor ngpus_per_node calculation in main",
+        "file_to_modify": "imagenet/main.py",
+        "function_to_modify": "main",
+        "reason": "Ensure ngpus_per_node is correctly determined across CUDA-present and CPU-only environments; default to at least 1 to prevent world_size misconfiguration in distributed setups.",
+        "side_effects": "May alter world_size computation and distributed initialization; requires validation on CUDA-enabled, CPU-only, and multi-node environments; could affect startup logs and behavior."
+      },
+      {
+        "operation": "Add dist_backend validation and NCCL guard in main_worker",
+        "file_to_modify": "imagenet/main.py",
+        "function_to_modify": "main_worker",
+        "reason": "Prevent NCCL usage when CUDA is unavailable and validate dist_backend values to fail fast with clear messages; improve error handling for invalid distributed configurations.",
+        "side_effects": "Improved error messaging for invalid configurations; may require tests or explicit dist_backend selections in certain environments; could affect CLI usage."
+      }
+    ]
+  }
+}

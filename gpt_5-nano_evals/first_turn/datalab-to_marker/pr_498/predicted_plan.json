@@ -1,0 +1,65 @@
+{
+  "pr_number": 498,
+  "repository": "datalab-to/marker",
+  "title": "OCR Error Detection Hotfix",
+  "body": "Summary of changes:\n- Fix input handling of the error-detection model used for OCR text processing.\n- Segment length is now managed by the tokenizer via token counts (#tokens) rather than character counts (#chars).\n- Remove internal splitting logic that segmented inputs by character length within the marker pipeline.\n- Join lines with a newline separator (\"\\n\") when constructing inputs for the LLM, ensuring per-line processing remains aligned with the model expectations.\n\nRationale:\n- Token-based segmentation aligns with common LLM tokenization practices and avoids brittle, character-level split logic that can disrupt line integrity across languages and encodings.\n- Joining lines with explicit newlines ensures the model receives well-delimited per-line context, which improves per-line rewriting fidelity and downstream span construction.\n\nImpact:\n- Changes are isolated to the OCR/text processing and LLM augmentation paths, with no changes to the underlying rendering or storage formats.\n- Tests and integration points that rely on the previous line-splitting behavior may need minor adjustments to inputs to the LLM prompts.\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T13:45:11.849006",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "marker/processors/llm/llm_text.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "process_rewriting",
+          "class_name": "LLMTextProcessor",
+          "full_name": "LLMTextProcessor.process_rewriting",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "marker/processors/text.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "__call__",
+          "class_name": "TextProcessor",
+          "full_name": "TextProcessor.__call__",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "OCR Error Detection Hotfix: switch input assembly to token-based per-line processing, remove character-based splitting, and join lines with newline separators to improve LLM prompt fidelity and line integrity.",
+    "steps": [
+      {
+        "operation": "Refactor per-line LLM input assembly to use newline-joined per-line content and enforce one-to-one mapping between input lines and corrected_lines",
+        "file_to_modify": "marker/processors/llm/llm_text.py",
+        "function_to_modify": "LLMTextProcessor.process_rewriting",
+        "reason": "Token-based segmentation replaces brittle character-based splitting; joining lines with a newline separator ensures stable per-line contexts for the LLM and maintains correct alignment between input lines and the model's corrected output lines, as described in the hotfix.",
+        "side_effects": "Tests and integration points that relied on the old per-line input format may require updates; downstream span construction logic may need to adapt to the new line-aligned outputs; ensure the LLM prompt construction remains compatible with token-based segmentation."
+      },
+      {
+        "operation": "Remove character-count based line-splitting in text processing and align continuation/merging with token-based segmentation; preserve line boundaries via newline joining",
+        "file_to_modify": "marker/processors/text.py",
+        "function_to_modify": "TextProcessor.__call__",
+        "reason": "Ensure that line handling uses token-based segmentation rather than character counts, removing brittle char-based splitting and aligning with the updated LLM input assembly in llm_text.py.",
+        "side_effects": "Tests relying on the old character-based splitting behavior may need updates; potential changes to how merged text blocks map to spans; verify that line boundaries are preserved and no unintended blank lines or trailing spaces are introduced."
+      }
+    ]
+  }
+}

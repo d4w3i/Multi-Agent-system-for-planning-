@@ -1,0 +1,42 @@
+{
+  "pr_number": 464,
+  "repository": "karpathy/nanoGPT",
+  "title": "fix: h100-mfu-calculation",
+  "body": "I was getting 104% MFU on h100 then i realized that MFU calculation might of been based on a100 312 tflops \n\nh100 is 989 tflops at bfloat16. nvidia claims 1,979tflops but that is for 2:4 sparsity.\n\n<img width=\"515\" alt=\"image\" src=\"https://github.com/karpathy/nanoGPT/assets/47992694/7ed83ae5-3769-4c48-91a6-7cc4d8f6e140\">",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T12:29:47.586041",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "model.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "estimate_mfu",
+          "class_name": "GPT",
+          "full_name": "GPT.estimate_mfu",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Replace the hardcoded A100 BF16 peak in GPT.estimate_mfu with logic that (optionally) accepts a flops override or sparsity multiplier and otherwise detects the CUDA device to choose an appropriate BF16 peak (e.g., H100 989e12, A100 312e12), falling back to 312e12 when detection fails — preserving backward compatibility.",
+    "steps": [
+      {
+        "operation": "Make MFU peak-FLOPS detection & override-capable inside GPT.estimate_mfu",
+        "file_to_modify": "model.py",
+        "function_to_modify": "GPT.estimate_mfu",
+        "reason": "The current implementation hardcodes flops_promised = 312e12 (A100 BF16), producing >100% MFU on faster GPUs (e.g., H100). Update estimate_mfu to (1) accept an optional override for peak FLOPS and an optional sparsity multiplier/flag, (2) detect the CUDA device name when available and map it to a more accurate BF16 peak FLOPS (e.g., H100: 989e12, A100: 312e12), and (3) fall back to the existing 312e12 if detection fails. This keeps the change minimal and backward-compatible because new parameters are optional.",
+        "side_effects": "Changes reported MFU numbers for runs on non-A100 hardware (H100 will no longer exceed 100% when using correct peak). Downstream callers (train.py, bench.py) are unaffected because new parameters are optional and defaults preserve prior behavior. Tests that assert exact MFU values may need updates. If model.py currently lacks an import for torch, add one; if other modules rely on the old hardcoded assumption in documentation, update docs/bench notes. No API breakage if defaults are used, but callers can now pass explicit overrides (affects reproducibility if different values are supplied)."
+      }
+    ]
+  }
+}

@@ -1,0 +1,65 @@
+{
+  "pr_number": 7339,
+  "repository": "getredash/redash",
+  "title": "Sanitize NaN, Infinite, -Infinite causing error when saving as PostgreSQL JSON",
+  "body": "## What type of PR is this? \n- [x] Bug Fix\n\n## Description\nWhen running query that output NaN, Infinite, or -Infinite, redash executor crashes with the error \"Out of range float values are not JSON compliant\". Redash does not output any rows when the error occurs. The error is raised because PostgreSQL JSON / JSONB and Python's json.dumps with allow_nan=False do not permit NaN/Infinity. The PR fixes the issue by sanitizing NaN/Infinite/-Infinite to None (null) before JSON serialization. This matches JavaScript JSON.stringify behavior (it turns NaN/Infinity into null). The PR adds unit tests and manual verification using queries that return NaN/Inf values.\n\nReproduction examples included for BigQuery and PostgreSQL. The problem was introduced by removal of simplejson which previously converted NaN/Inf to null with ignore_nan=True.\n\n## How is this tested?\n- Unit tests (pytest, jest)\n- Manual\n\nUnit tests were added showing before/after behavior; screenshots provided.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T12:17:51.282183",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "redash/utils/__init__.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "json_dumps",
+          "class_name": null,
+          "full_name": "json_dumps",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "redash/models/types.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "process_bind_param",
+          "class_name": "JSONText",
+          "full_name": "JSONText.process_bind_param",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Sanitize non-finite floats (NaN, Infinity, -Infinity) by converting them to null before JSON serialization and add a defensive fallback in the DB binding layer so such values do not cause json.dumps or PostgreSQL JSON/JSONB storage to error.",
+    "steps": [
+      {
+        "operation": "Add recursive sanitizer and integrate into json_dumps",
+        "file_to_modify": "redash/utils/__init__.py",
+        "function_to_modify": "json_dumps",
+        "reason": "Centralize sanitization so any callsite using redash.utils.json_dumps will never pass NaN/Infinity/-Infinity to json.dumps (which is configured with allow_nan=False) and thus avoid ValueError. Implement a helper (e.g., sanitize_non_finite_floats) that walks built-in containers and replaces non-finite float values with None, then call it at the start of json_dumps prior to json.dumps. Keeping allow_nan=False ensures strict JSON validity while the sanitizer prevents invalid floats reaching the encoder.",
+        "side_effects": "Changes serialized output: float('nan'), float('inf') and float('-inf') become null in stored JSON. This affects any component that consumes JSON produced by json_dumps (UI, downstream services, or exported data) — they will now observe null instead of previously-raising errors (or any prior special handling). Minor CPU/memory overhead: O(n) traversal of the structure before serialization. Tests that explicitly expected a ValueError on NaN/Inf will need updating; unit tests should be added/updated to cover nested containers and mixed types. Should not impact API schema or DB column types, but semantics of values change (NaN->null)."
+      },
+      {
+        "operation": "Add defensive fallback in JSONText.process_bind_param to sanitize on serialization error",
+        "file_to_modify": "redash/models/types.py",
+        "function_to_modify": "JSONText.process_bind_param",
+        "reason": "Although json_dumps is the canonical place for sanitization, a defensive try/except here ensures code paths that bypass or pre-process data differently still won't raise during DB binding. If json_dumps raises ValueError (unexpected), catch it, sanitize the python value (using the same sanitizer) and retry json_dumps, then return that result for DB bind.",
+        "side_effects": "Prevents StatementError/DB write failures when an unusual call path bypasses the sanitizer. Introduces a small extra branch on serialization failure (very rare in normal operation) and requires importing/using the sanitizer helper from redash.utils. Tests should exercise both the normal (no exception) and fallback paths; existing tests that assert failure on bind-time serialization should be adjusted. No change to DB schema; behavior will align with json_dumps (NaN/Inf => null) even for previously-unhandled code paths."
+      }
+    ]
+  }
+}

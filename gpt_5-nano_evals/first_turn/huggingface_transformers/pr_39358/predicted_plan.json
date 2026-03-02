@@ -1,0 +1,147 @@
+{
+  "pr_number": 39358,
+  "repository": "huggingface/transformers",
+  "title": "fix(siglip2): improve pooled output logic in modular file",
+  "body": "This PR focuses on stabilizing and clarifying the pooled output pathways in modular_siglip2.py. It aims to ensure consistent generation of pooler_output for the vision encoder, align pooling semantics across the pooling head and vision transformer, and solidify how pooled representations are used in the multimodal fusion path (image-text logits). The changes are internal to the Siglip2 modular implementation and should preserve the public API while reducing shape/aggregation edge-cases when varying image sizes or pooling configurations are used. No user-facing API changes are expected, but the pooling behavior will be more robust and predictable across forward passes.\n\nKey aspects addressed:\n- Consistent pooler_output creation in Siglip2VisionTransformer and Siglip2VisionModel\n- Harmonized pooling path in Siglip2MultiheadAttentionPoolingHead and Siglip2Model\n- Safer and more stable logits computation by keeping embeddings normalized and ensuring deterministic pooling outputs\n- Guarding 4D attention mask compatibility and handling optional pooler usage\n\nIf tests exist for Siglip2 pooling, they should continue to pass; this PR focuses on internal pooling consistency and robustness rather than new features.\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T13:58:34.571588",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "modular_siglip2.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "forward",
+          "class_name": "Siglip2VisionEmbeddings",
+          "full_name": "Siglip2VisionEmbeddings.forward",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "resize_positional_embeddings",
+          "class_name": "Siglip2VisionEmbeddings",
+          "full_name": "Siglip2VisionEmbeddings.resize_positional_embeddings",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "forward",
+          "class_name": "Siglip2VisionTransformer",
+          "full_name": "Siglip2VisionTransformer.forward",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "forward",
+          "class_name": "Siglip2VisionModel",
+          "full_name": "Siglip2VisionModel.forward",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "forward",
+          "class_name": "Siglip2MultiheadAttentionPoolingHead",
+          "full_name": "Siglip2MultiheadAttentionPoolingHead.forward",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "get_image_features",
+          "class_name": "Siglip2Model",
+          "full_name": "Siglip2Model.get_image_features",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "forward",
+          "class_name": "Siglip2Model",
+          "full_name": "Siglip2Model.forward",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "forward",
+          "class_name": "Siglip2ForImageClassification",
+          "full_name": "Siglip2ForImageClassification.forward",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "This PR stabilizes and unifies the pooled output pathway inside modular_siglip2.py by making the vision embedding/transformer pooling deterministic across varying input sizes, propagating pooler_output consistently, and aligning the multimodal fusion and image-classification paths to use compatible, normalized pooled representations.",
+    "steps": [
+      {
+        "operation": "Improve resize_positional_embeddings robustness",
+        "file_to_modify": "modular_siglip2.py",
+        "function_to_modify": "Siglip2VisionEmbeddings.resize_positional_embeddings",
+        "reason": "Make interpolation/padding robust for variable spatial shapes, ensure dtype/device handling, and guard edge cases so positional embeddings align with pooled outputs",
+        "side_effects": "May affect memory usage due to additional temporary tensors; tests may need adjustments for edge-case shapes; keeps API behavior intact"
+      },
+      {
+        "operation": "Tighten Siglip2VisionEmbeddings.forward to align with new positional embeddings",
+        "file_to_modify": "modular_siglip2.py",
+        "function_to_modify": "Siglip2VisionEmbeddings.forward",
+        "reason": "Ensure patch embeddings and resized positional embeddings are combined correctly across varying image sizes and spatial shapes",
+        "side_effects": "Potential minor shape broadcasting changes; downstream pooling remains compatible if implemented correctly"
+      },
+      {
+        "operation": "Ensure pooler_output is created in Siglip2VisionTransformer.forward with robust 4D mask handling",
+        "file_to_modify": "modular_siglip2.py",
+        "function_to_modify": "Siglip2VisionTransformer.forward",
+        "reason": "Guarantee deterministic pooler_output generation when a pooling head is used and handle 4D attention masks gracefully across variable input sizes",
+        "side_effects": "May alter pooler_output presence in some edge cases; tests relying on exact masking behavior may need adjustment"
+      },
+      {
+        "operation": "Propagate and preserve pooler_output through Siglip2VisionModel.forward",
+        "file_to_modify": "modular_siglip2.py",
+        "function_to_modify": "Siglip2VisionModel.forward",
+        "reason": "Ensure downstream pooling paths consistently receive pooler_output and avoid drops when a head is configured",
+        "side_effects": "Potential API expectations for vision model outputs may shift if pooler_output handling changes; downstream tests may need minor updates"
+      },
+      {
+        "operation": "Stabilize Siglip2MultiheadAttentionPoolingHead.forward to produce (B, D) with a clear fallback",
+        "file_to_modify": "modular_siglip2.py",
+        "function_to_modify": "Siglip2MultiheadAttentionPoolingHead.forward",
+        "reason": "Provide a stable pooled representation that matches the vision pooler_output dimension, with a deterministic fallback when no attention mask is provided",
+        "side_effects": "Output shape and values may change in masking scenarios; downstream components relying on pooling outputs should remain compatible"
+      },
+      {
+        "operation": "Normalize and stabilize image features in Siglip2Model.get_image_features",
+        "file_to_modify": "modular_siglip2.py",
+        "function_to_modify": "Siglip2Model.get_image_features",
+        "reason": "Return a consistent, normalized pooled feature for image embeddings to support cosine-similarity logits",
+        "side_effects": "May affect classifier logits slightly; ensure no division-by-zero and maintain numerical stability"
+      },
+      {
+        "operation": "Align Siglip2Model.forward to use normalized pooled embeddings for fusion logits",
+        "file_to_modify": "modular_siglip2.py",
+        "function_to_modify": "Siglip2Model.forward",
+        "reason": "Ensure consistent normalization and stable scaling across the multimodal fusion path and logits computation",
+        "side_effects": "Minor changes to logits or their scaling; tests should remain stable if shapes are unchanged"
+      },
+      {
+        "operation": "Harmonize pooling path in Siglip2ForImageClassification.forward with other pooled representations",
+        "file_to_modify": "modular_siglip2.py",
+        "function_to_modify": "Siglip2ForImageClassification.forward",
+        "reason": "Align mean/masked pooling approach with pooled outputs used elsewhere to avoid incompatible feature shapes for the classifier head",
+        "side_effects": "Classifier outputs may shift slightly; ensure tests validate both shape and non-NaN outputs"
+      }
+    ]
+  }
+}

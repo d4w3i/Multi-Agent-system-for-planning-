@@ -1,0 +1,101 @@
+{
+  "pr_number": 31,
+  "repository": "KwaiVGI/LivePortrait",
+  "title": "Fix: add sound in generated video",
+  "body": "Summary of the request: The generated video currently lacks audio. This PR proposes adding sound/audiotrack support to the video output so the produced portrait animation is synchronized with the original audio (if provided).\n\nWhat this entails at a high level:\n- Extend the UI to accept an audio input (optional).\n- Propagate the audio input through the Gradio/UI pipeline to the video generation flow.\n- Merge or mux the audio track with the generated video as a post-processing step (ideally a lightweight, optional step that gracefully degrades when no audio is provided).\n- Ensure the final video container (e.g., MP4) supports audio and that synchronization is reasonable (audio length handling, sample rate, and fps alignment).\n\nGiven the current code layout, there is no explicit audio handling. The change plan focuses on minimal, safe integration: add an optional audio input path in the UI and pipeline, perform a post-process mux to attach audio to the output video, and ensure existing behavior remains unchanged when no audio is supplied.\n\nImpact considerations:\n- UI changes: an optional audio input field in the app (Gradio-based UI).\n- Pipeline changes: pass audio path through GradioPipeline to the LivePortraitPipeline and perform a mux after video generation.\n- Dependency considerations: may require a lightweight media tool (ffmpeg) or an internal Python wrapper to mux audio with video.\n- Safety and UX: if audio is longer/shorter than video, trim or loop to align; if audio is not provided, behavior remains identical.\n- Testing: verify video with and without audio; verify synchronization under different fps and resolutions; verify cross-platform behavior.\n\nIf you’d like, I can outline concrete patch diffs for each touched file and a minimal helper module to perform audio-video muxing (with fallbacks when ffmpeg is unavailable).",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T13:30:41.646537",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "base_project/app.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    },
+    {
+      "filename": "base_project/src/gradio_pipeline.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "execute_video",
+          "class_name": "GradioPipeline",
+          "full_name": "GradioPipeline.execute_video",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "__init__",
+          "class_name": "GradioPipeline",
+          "full_name": "GradioPipeline.__init__",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "base_project/src/live_portrait_pipeline.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "execute",
+          "class_name": "LivePortraitPipeline",
+          "full_name": "LivePortraitPipeline.execute",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "base_project/src/utils/audio.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    },
+    {
+      "filename": "base_project/src/utils/helper.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    }
+  ],
+  "step_plan": {
+    "summary": "Add optional audio input support and a post-processing mux to attach audio to generated videos. The changes are designed to be backward-compatible when no audio is supplied, with the actual muxing occurring after video generation as a lightweight, optional step.",
+    "steps": [
+      {
+        "operation": "Extend GradioPipeline.__init__ to initialize and store optional audio_path",
+        "file_to_modify": "base_project/src/gradio_pipeline.py",
+        "function_to_modify": "GradioPipeline.__init__",
+        "reason": "Prepare the pipeline to carry an optional audio input through to downstream post-processing by storing an audio path in the pipeline instance.",
+        "side_effects": "Alters object initialization; downstream components must access the new attribute; tests must account for cases with and without audio."
+      },
+      {
+        "operation": "Modify GradioPipeline.execute_video to accept an optional audio_path and propagate it to downstream stages; trigger post-processing mux when provided",
+        "file_to_modify": "base_project/src/gradio_pipeline.py",
+        "function_to_modify": "GradioPipeline.execute_video",
+        "reason": "Enable the UI to pass through an audio path and initiate audio-video mux after video generation, while preserving backward compatibility when audio_path is None.",
+        "side_effects": "Requires integration with a mux utility; downstream code (LivePortraitPipeline) may need to handle the new argument; existing workflows without audio remain unchanged."
+      },
+      {
+        "operation": "Inject optional audio mux logic into LivePortraitPipeline.execute to perform audio mux post-generation when audio_path is provided",
+        "file_to_modify": "base_project/src/live_portrait_pipeline.py",
+        "function_to_modify": "LivePortraitPipeline.execute",
+        "reason": "Attach the audio track to the resulting video via a post-processing step after video generation to ensure synchronization when an audio file is supplied.",
+        "side_effects": "Depends on an external muxing tool or internal wrapper; may require environment prerequisites (e.g., FFmpeg); tests should verify both with and without audio and correct handling of duration/sync."
+      }
+    ]
+  }
+}

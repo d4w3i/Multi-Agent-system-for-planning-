@@ -1,0 +1,419 @@
+{
+  "pr_number": 1895,
+  "repository": "Acly/krita-ai-diffusion",
+  "title": "feat: Switch to enum queue mode, add 'replace' mode.",
+  "body": "Follow up to https://github.com/Acly/krita-ai-diffusion/pull/1879\r\n\r\nKind of janky because of the fact that job queue tasks are split up before the client- I make clear-queue a property of the first job.\r\n\r\nNot sure if the enum is in the right place.\r\n\r\nTentatively planning to implement ctrl-click as \"Alternate queue mode\".",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T00:56:58.860696",
+    "extractor_version": "1.0.0",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "ai_diffusion/model.py",
+      "status": "modified",
+      "additions": 41,
+      "deletions": 13,
+      "functions_modified": [
+        {
+          "function_name": "generate",
+          "class_name": "Model",
+          "full_name": "Model.generate",
+          "start_line": 156,
+          "end_line": 158,
+          "lines_changed": [
+            157,
+            158
+          ]
+        },
+        {
+          "function_name": "generate_replace",
+          "class_name": "Model",
+          "full_name": "Model.generate_replace",
+          "start_line": 160,
+          "end_line": 162,
+          "lines_changed": [
+            160,
+            161,
+            162
+          ]
+        },
+        {
+          "function_name": "_generate",
+          "class_name": "Model",
+          "full_name": "Model._generate",
+          "start_line": 164,
+          "end_line": 178,
+          "lines_changed": [
+            164,
+            177
+          ]
+        },
+        {
+          "function_name": "enqueue_jobs",
+          "class_name": "Model",
+          "full_name": "Model.enqueue_jobs",
+          "start_line": 256,
+          "end_line": 279,
+          "lines_changed": [
+            257,
+            258,
+            259,
+            260,
+            261,
+            262,
+            266,
+            267,
+            268,
+            269,
+            270,
+            271,
+            278,
+            279
+          ]
+        },
+        {
+          "function_name": "_enqueue_job",
+          "class_name": "Model",
+          "full_name": "Model._enqueue_job",
+          "start_line": 281,
+          "end_line": 285,
+          "lines_changed": [
+            281,
+            285
+          ]
+        },
+        {
+          "function_name": "cancel",
+          "class_name": "Model",
+          "full_name": "Model.cancel",
+          "start_line": 507,
+          "end_line": 511,
+          "lines_changed": [
+            508,
+            509
+          ]
+        },
+        {
+          "function_name": "clear_queued",
+          "class_name": "Model",
+          "full_name": "Model.clear_queued",
+          "start_line": 513,
+          "end_line": 517,
+          "lines_changed": [
+            513,
+            514,
+            515,
+            516,
+            517
+          ]
+        }
+      ],
+      "patch": "@@ -37,6 +37,12 @@\n from .resolution import compute_bounds, compute_relative_bounds\n \n \n+class QueueMode(Enum):\n+    back = 0\n+    front = 1\n+    replace = 2\n+\n+\n class Workspace(Enum):\n     generation = 0\n     upscaling = 1\n@@ -95,7 +101,7 @@ class Model(QObject, ObservableProperties):\n     seed = Property(0, persist=True)\n     fixed_seed = Property(False, persist=True)\n     resolution_multiplier = Property(1.0, persist=True)\n-    queue_front = Property(False, persist=True)\n+    queue_mode = Property(QueueMode.back, persist=True)\n     translation_enabled = Property(True, persist=True)\n     progress_kind = Property(ProgressKind.generation)\n     progress = Property(0.0)\n@@ -109,7 +115,7 @@ class Model(QObject, ObservableProperties):\n     seed_changed = pyqtSignal(int)\n     fixed_seed_changed = pyqtSignal(bool)\n     resolution_multiplier_changed = pyqtSignal(float)\n-    queue_front_changed = pyqtSignal(bool)\n+    queue_mode_changed = pyqtSignal(QueueMode)\n     translation_enabled_changed = pyqtSignal(bool)\n     progress_kind_changed = pyqtSignal(ProgressKind)\n     progress_changed = pyqtSignal(float)\n@@ -148,6 +154,14 @@ def _forward_error(self, error: str):\n         self.report_error(error if error else no_error)\n \n     def generate(self):\n+        \"\"\"Enqueue image generation for the current setup.\"\"\"\n+        self._generate(self.queue_mode)\n+\n+    def generate_replace(self):\n+        \"\"\"Enqueue image generation with queue mode set to replace.\"\"\"\n+        self._generate(QueueMode.replace)\n+\n+    def _generate(self, queue_mode: QueueMode):\n         \"\"\"Enqueue image generation for the current setup.\"\"\"\n         ok, msg = self._doc.check_color_mode()\n         if not ok and msg:\n@@ -160,7 +174,7 @@ def generate(self):\n             self.report_error(util.log_error(e))\n             return\n         self.clear_error()\n-        jobs = self.enqueue_jobs(input, JobKind.diffusion, job_params, self.batch_count)\n+        jobs = self.enqueue_jobs(input, JobKind.diffusion, job_params, self.batch_count, queue_mode)\n         eventloop.run(_report_errors(self, jobs))\n \n     def _prepare_workflow(self, dryrun=False):\n@@ -240,23 +254,35 @@ def _prepare_workflow(self, dryrun=False):\n         return input, job_params\n \n     async def enqueue_jobs(\n-        self, input: WorkflowInput, kind: JobKind, params: JobParams, count: int = 1\n+        self,\n+        input: WorkflowInput,\n+        kind: JobKind,\n+        params: JobParams,\n+        count: int = 1,\n+        queue_mode: QueueMode | None = None,\n     ):\n         sampling = ensure(input.sampling)\n         params.has_mask = input.images is not None and input.images.hires_mask is not None\n+        queue_mode = queue_mode or self.queue_mode\n+\n+        if queue_mode is QueueMode.replace:\n+            await self._connection.client.clear_queue()\n+            self.clear_queued()\n+            queue_mode = QueueMode.back\n \n         for i in range(count):\n             next_seed = sampling.seed + i * settings.batch_size\n             input = replace(input, sampling=replace(sampling, seed=next_seed))\n             params.seed = next_seed\n             job = self.jobs.add(kind, copy(params))\n-            await self._enqueue_job(job, input)\n+            front = queue_mode is QueueMode.front\n+            await self._enqueue_job(job, input, front=front)\n \n-    async def _enqueue_job(self, job: Job, input: WorkflowInput):\n+    async def _enqueue_job(self, job: Job, input: WorkflowInput, front: bool = False):\n         if not self.jobs.any_executing():\n             self.progress = 0.0\n         client = self._connection.client\n-        job.id = await client.enqueue(input, self.queue_front)\n+        job.id = await client.enqueue(input, front)\n \n     def _prepare_upscale_image(self, dryrun=False):\n         assert not self.arch.is_edit, \"Edit models do not support upscaling\"\n@@ -479,15 +505,17 @@ def generate_control_layer(self, control: ControlLayer):\n         return job\n \n     def cancel(self, active=False, queued=False):\n-        if queued:\n-            to_remove = [job for job in self.jobs if job.state is JobState.queued]\n-            if len(to_remove) > 0:\n-                self._connection.clear_queue()\n-                for job in to_remove:\n-                    self.jobs.remove(job)\n+        if queued and self.clear_queued():\n+            self._connection.clear_queue()\n         if active and self.jobs.any_executing():\n             self._connection.interrupt()\n \n+    def clear_queued(self):\n+        to_remove = [job for job in self.jobs if job.state is JobState.queued]\n+        for job in to_remove:\n+            self.jobs.remove(job)\n+        return len(to_remove) > 0\n+\n     def report_error(self, error: Error | str):\n         if isinstance(error, str):\n             error = Error.from_string(error, ErrorKind.server_error)"
+    },
+    {
+      "filename": "ai_diffusion/ui/generation.py",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "model",
+          "class_name": "GenerationWidget",
+          "full_name": "GenerationWidget.model",
+          "start_line": 743,
+          "end_line": 773,
+          "lines_changed": [
+            764
+          ]
+        }
+      ],
+      "patch": "@@ -761,6 +761,7 @@ def model(self, model: Model):\n                 self.add_region_button.clicked.connect(model.regions.create_region_group),\n                 self.region_prompt.activated.connect(model.generate),\n                 self.generate_button.clicked.connect(model.generate),\n+                self.generate_button.ctrl_clicked.connect(model.generate_replace),\n             ]\n             self.region_prompt.regions = model.regions\n             self.custom_inpaint.model = model"
+    },
+    {
+      "filename": "ai_diffusion/ui/widget.py",
+      "status": "modified",
+      "additions": 30,
+      "deletions": 6,
+      "functions_modified": [
+        {
+          "function_name": "__init__",
+          "class_name": "QueuePopup",
+          "full_name": "QueuePopup.__init__",
+          "start_line": 70,
+          "end_line": 161,
+          "lines_changed": [
+            143,
+            144,
+            145,
+            146,
+            148
+          ]
+        },
+        {
+          "function_name": "model",
+          "class_name": "QueuePopup",
+          "full_name": "QueuePopup.model",
+          "start_line": 168,
+          "end_line": 186,
+          "lines_changed": [
+            184
+          ]
+        },
+        {
+          "function_name": "mouseReleaseEvent",
+          "class_name": "GenerateButton",
+          "full_name": "GenerateButton.mouseReleaseEvent",
+          "start_line": 784,
+          "end_line": 794,
+          "lines_changed": [
+            784,
+            785,
+            786,
+            787,
+            788,
+            789,
+            790,
+            791,
+            792,
+            793,
+            794
+          ]
+        }
+      ],
+      "patch": "@@ -43,7 +43,16 @@\n from ..client import filter_supported_styles, resolve_arch\n from ..properties import Binding, Bind, bind, bind_combo\n from ..jobs import JobState, JobKind\n-from ..model import Model, Workspace, SamplingQuality, ProgressKind, ErrorKind, Error, no_error\n+from ..model import (\n+    Model,\n+    Workspace,\n+    SamplingQuality,\n+    ProgressKind,\n+    ErrorKind,\n+    Error,\n+    no_error,\n+    QueueMode,\n+)\n from ..text import edit_attention, select_on_cursor_pos\n from ..localization import translate as _\n from ..util import ensure\n@@ -131,11 +140,12 @@ def __init__(self, supports_batch=True, parent: QWidget | None = None):\n         self._layout.addLayout(resolution_multiplier_layout, 2, 1)\n \n         enqueue_label = QLabel(_(\"Enqueue\"), self)\n-        self._queue_front_combo = QComboBox(self)\n-        self._queue_front_combo.addItem(_(\"in Front (new jobs first)\"), True)\n-        self._queue_front_combo.addItem(_(\"at the Back\"), False)\n+        self._queue_mode_combo = QComboBox(self)\n+        self._queue_mode_combo.addItem(_(\"at the Back\"), QueueMode.back)\n+        self._queue_mode_combo.addItem(_(\"in Front (new jobs first)\"), QueueMode.front)\n+        self._queue_mode_combo.addItem(_(\"Replace Queue\"), QueueMode.replace)\n         self._layout.addWidget(enqueue_label, 3, 0)\n-        self._layout.addWidget(self._queue_front_combo, 3, 1)\n+        self._layout.addWidget(self._queue_mode_combo, 3, 1)\n \n         cancel_label = QLabel(_(\"Cancel\"), self)\n         self._layout.addWidget(cancel_label, 4, 0)\n@@ -171,7 +181,7 @@ def model(self, model: Model):\n             self._model.fixed_seed_changed.connect(self._randomize_seed.setEnabled),\n             self._randomize_seed.clicked.connect(self._model.generate_seed),\n             model.resolution_multiplier_changed.connect(self._update_resolution_multiplier),\n-            bind_combo(self._model, \"queue_front\", self._queue_front_combo),\n+            bind_combo(self._model, \"queue_mode\", self._queue_mode_combo),\n             model.jobs.count_changed.connect(self._update_cancel_buttons),\n         ]\n \n@@ -737,6 +747,8 @@ def _create_action(self, name: str, workspace: Workspace):\n \n \n class GenerateButton(QPushButton):\n+    ctrl_clicked = pyqtSignal()\n+\n     def __init__(self, kind: JobKind, parent: QWidget):\n         super().__init__(parent)\n         self.model = root.active_model\n@@ -769,6 +781,18 @@ def enterEvent(self, a0: QEvent | None):\n     def leaveEvent(self, a0: QEvent | None):\n         self._cost = 0\n \n+    def mouseReleaseEvent(self, e: QMouseEvent | None):\n+        if (\n+            e\n+            and e.button() == Qt.MouseButton.LeftButton\n+            and bool(e.modifiers() & Qt.KeyboardModifier.ControlModifier)\n+        ):\n+            self.ctrl_clicked.emit()\n+            e.accept()\n+            self.setDown(False)\n+        else:\n+            super().mouseReleaseEvent(e)\n+\n     def paintEvent(self, a0: QPaintEvent | None) -> None:\n         opt = QStyleOption()\n         opt.initFrom(self)"
+    }
+  ],
+  "functions_modified": [
+    {
+      "function_name": "generate",
+      "class_name": "Model",
+      "full_name": "Model.generate",
+      "start_line": 156,
+      "end_line": 158,
+      "lines_changed": [
+        157,
+        158
+      ]
+    },
+    {
+      "function_name": "generate_replace",
+      "class_name": "Model",
+      "full_name": "Model.generate_replace",
+      "start_line": 160,
+      "end_line": 162,
+      "lines_changed": [
+        160,
+        161,
+        162
+      ]
+    },
+    {
+      "function_name": "_generate",
+      "class_name": "Model",
+      "full_name": "Model._generate",
+      "start_line": 164,
+      "end_line": 178,
+      "lines_changed": [
+        164,
+        177
+      ]
+    },
+    {
+      "function_name": "enqueue_jobs",
+      "class_name": "Model",
+      "full_name": "Model.enqueue_jobs",
+      "start_line": 256,
+      "end_line": 279,
+      "lines_changed": [
+        257,
+        258,
+        259,
+        260,
+        261,
+        262,
+        266,
+        267,
+        268,
+        269,
+        270,
+        271,
+        278,
+        279
+      ]
+    },
+    {
+      "function_name": "_enqueue_job",
+      "class_name": "Model",
+      "full_name": "Model._enqueue_job",
+      "start_line": 281,
+      "end_line": 285,
+      "lines_changed": [
+        281,
+        285
+      ]
+    },
+    {
+      "function_name": "cancel",
+      "class_name": "Model",
+      "full_name": "Model.cancel",
+      "start_line": 507,
+      "end_line": 511,
+      "lines_changed": [
+        508,
+        509
+      ]
+    },
+    {
+      "function_name": "clear_queued",
+      "class_name": "Model",
+      "full_name": "Model.clear_queued",
+      "start_line": 513,
+      "end_line": 517,
+      "lines_changed": [
+        513,
+        514,
+        515,
+        516,
+        517
+      ]
+    },
+    {
+      "function_name": "model",
+      "class_name": "GenerationWidget",
+      "full_name": "GenerationWidget.model",
+      "start_line": 743,
+      "end_line": 773,
+      "lines_changed": [
+        764
+      ]
+    },
+    {
+      "function_name": "__init__",
+      "class_name": "QueuePopup",
+      "full_name": "QueuePopup.__init__",
+      "start_line": 70,
+      "end_line": 161,
+      "lines_changed": [
+        143,
+        144,
+        145,
+        146,
+        148
+      ]
+    },
+    {
+      "function_name": "model",
+      "class_name": "QueuePopup",
+      "full_name": "QueuePopup.model",
+      "start_line": 168,
+      "end_line": 186,
+      "lines_changed": [
+        184
+      ]
+    },
+    {
+      "function_name": "mouseReleaseEvent",
+      "class_name": "GenerateButton",
+      "full_name": "GenerateButton.mouseReleaseEvent",
+      "start_line": 784,
+      "end_line": 794,
+      "lines_changed": [
+        784,
+        785,
+        786,
+        787,
+        788,
+        789,
+        790,
+        791,
+        792,
+        793,
+        794
+      ]
+    }
+  ],
+  "step_plan": {
+    "steps": [
+      {
+        "operation": "Introduce an enum representing queue insertion behavior (back/front/replace)",
+        "file_to_modify": "ai_diffusion/model.py",
+        "function_to_modify": null,
+        "reason": "Replace a boolean (queue_front) with a scalable representation that can add additional modes (e.g., replace) without further schema churn.",
+        "side_effects": "Any persisted settings, bindings, or code paths expecting a bool for queueing will need migration/updates to handle an Enum value."
+      },
+      {
+        "operation": "Replace the persisted model property/signal from boolean queue_front to enum queue_mode",
+        "file_to_modify": "ai_diffusion/model.py",
+        "function_to_modify": null,
+        "reason": "Store and broadcast queue behavior as an enum so UI and enqueue logic can select among multiple modes consistently.",
+        "side_effects": "Property persistence format changes; existing user settings may default/reset unless there is implicit enum serialization compatibility in Property()."
+      },
+      {
+        "operation": "Refactor generation entrypoint to delegate to a private generator that accepts a queue mode",
+        "file_to_modify": "ai_diffusion/model.py",
+        "function_to_modify": "Model.generate",
+        "reason": "Centralize queue-mode handling so the default generate path uses the configured queue_mode while allowing alternate generation triggers to override it.",
+        "side_effects": "Any callers relying on Model.generate’s prior inline behavior now go through a wrapper, which could affect debugging/stack traces but not semantics."
+      },
+      {
+        "operation": "Add an alternate generation method that forces replace mode",
+        "file_to_modify": "ai_diffusion/model.py",
+        "function_to_modify": "Model.generate_replace",
+        "reason": "Expose a dedicated action for UI/shortcuts (e.g., ctrl-click) to enqueue with replace semantics without changing the persisted queue_mode selection.",
+        "side_effects": "Adds a new public API method that other UI components might start calling; must remain stable for signal connections."
+      },
+      {
+        "operation": "Implement the private generation helper and plumb queue_mode into enqueue_jobs",
+        "file_to_modify": "ai_diffusion/model.py",
+        "function_to_modify": "Model._generate",
+        "reason": "Allow per-request queue mode (default/back/front/replace) to influence how jobs are enqueued, while keeping the core workflow preparation unchanged.",
+        "side_effects": "Changes the signature/usage of enqueue_jobs from internal callers; any other internal call sites must be updated to pass (or rely on default) queue_mode."
+      },
+      {
+        "operation": "Extend enqueue_jobs to support replace semantics by clearing server/client queues and then enqueueing at back",
+        "file_to_modify": "ai_diffusion/model.py",
+        "function_to_modify": "Model.enqueue_jobs",
+        "reason": "Implement 'replace' mode despite the queue being split into multiple tasks by ensuring the first job triggers a queue clear before new jobs are added.",
+        "side_effects": "Clearing the remote queue may cancel unrelated queued jobs from other actions; local job list is also mutated (clear_queued), which can affect UI counters and cancel state."
+      },
+      {
+        "operation": "Update job enqueue helper to accept a computed 'front' boolean and pass it to the client enqueue call",
+        "file_to_modify": "ai_diffusion/model.py",
+        "function_to_modify": "Model._enqueue_job",
+        "reason": "Decouple enqueue position from model state (previously self.queue_front) so per-call queue_mode can control placement deterministically.",
+        "side_effects": "Any direct callers of _enqueue_job must now pass the appropriate front flag or rely on the default; enqueue ordering may change if mismatched."
+      },
+      {
+        "operation": "Refactor queued-cancel path to reuse a shared local queued-job clearing routine",
+        "file_to_modify": "ai_diffusion/model.py",
+        "function_to_modify": "Model.cancel",
+        "reason": "Avoid duplicated logic and ensure consistent behavior between explicit cancel-queued and replace-queue operations by using a single queued-removal implementation.",
+        "side_effects": "If clear_queued() semantics differ subtly from the previous inline logic, the conditions under which _connection.clear_queue() is invoked may change."
+      },
+      {
+        "operation": "Add a helper that removes all locally tracked queued jobs and reports whether any were removed",
+        "file_to_modify": "ai_diffusion/model.py",
+        "function_to_modify": "Model.clear_queued",
+        "reason": "Provide a reusable primitive for both cancel(queued=True) and replace-mode enqueue to keep local job state consistent with server-side queue clearing.",
+        "side_effects": "UI elements observing jobs collection changes will update more often; any logic depending on queued jobs remaining for audit/history may be affected."
+      },
+      {
+        "operation": "Wire ctrl-click on the generate button to call model.generate_replace",
+        "file_to_modify": "ai_diffusion/ui/generation.py",
+        "function_to_modify": null,
+        "reason": "Expose the new replace mode through an ergonomic gesture without changing the user’s selected default queue mode.",
+        "side_effects": "Ctrl-click behavior may conflict with other modifier-based interactions; users may accidentally clear their queue if they ctrl-click unintentionally."
+      },
+      {
+        "operation": "Update the UI to use an enum-backed queue mode combo and add a ctrl-click-capable GenerateButton signal/emission",
+        "file_to_modify": "ai_diffusion/ui/widget.py",
+        "function_to_modify": "GenerateButton.mouseReleaseEvent",
+        "reason": "Present all queue modes (back/front/replace) in the enqueue selector and emit a dedicated signal when the user ctrl-clicks, enabling alternate queue mode behavior.",
+        "side_effects": "Combo binding now persists an enum rather than a bool; overriding mouseReleaseEvent changes click handling and could impact accessibility, press/release visual state, and other mouse interactions."
+      }
+    ],
+    "summary": "This PR replaces the boolean “queue_front” setting with an enum-based “queue_mode” and adds a new “replace” mode that clears the queue before enqueueing new jobs. It also adds ctrl-click handling on the Generate button to trigger replace-mode generation from the UI."
+  }
+}

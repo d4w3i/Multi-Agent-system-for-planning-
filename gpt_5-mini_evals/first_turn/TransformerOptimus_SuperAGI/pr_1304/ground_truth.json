@@ -1,0 +1,73 @@
+{
+  "pr_number": 1304,
+  "repository": "TransformerOptimus/SuperAGI",
+  "title": "Fix Recruitment Workflow",
+  "body": "<!-- Thank you for submitting this PR! :) -->\r\n<!-- Provide a general summary of your changes in the Title above ^, end with (close #<issue-no>) or (fix #<issue-no>) -->\r\n\r\n### Description\r\n<!-- The title might not be enough to convey how this change affects the user. -->\r\n<!-- Describe the changes from a user's perspective -->\r\nFixing the existing recruitment workflow.\r\n\r\n<!-- Changelog Section End -->\r\n\r\n### Related Issues\r\n<!-- Please make sure you have an issue associated with this Pull Request -->\r\n<!-- And then add `(close #<issue-no>)` to the pull request title -->\r\n<!-- Add the issue number below (e.g. #234) -->\r\n\r\n### Solution and Design\r\n<!-- How is this issue solved/fixed? What is the design? -->\r\n<!-- It's better if we elaborate -->\r\nFixing the existing recruitment workflow.\r\n\r\n### Test Plan\r\n<!-- Describe how you tested this functionality. Include steps to reproduce, relevant test cases, and any other pertinent information. -->\r\n\r\n### Type of change\r\n- [x] Bug fix (non-breaking change which fixes an issue)\r\n- [x] New feature (non-breaking change which adds functionality)\r\n- [x] Breaking change (fix or feature that would cause existing functionality to change)\r\n- [x] Docs update\r\n\r\n\r\n### Checklist\r\n- [x] My pull request is atomic and focuses on a single change.\r\n- [x] I have read the contributing guide and my code conforms to the guidelines.\r\n- [x] I have documented my changes clearly and comprehensively.\r\n- [x] I have added the required tests.\r\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-02-25T15:50:48.592625",
+    "extractor_version": "1.0.0",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "superagi/agent/workflow_seed.py",
+      "status": "modified",
+      "additions": 9,
+      "deletions": 10,
+      "functions_modified": [
+        {
+          "function_name": "build_recruitment_workflow",
+          "class_name": "AgentWorkflowSeed",
+          "full_name": "AgentWorkflowSeed.build_recruitment_workflow",
+          "start_line": 109,
+          "end_line": 148,
+          "lines_changed": [
+            115,
+            128,
+            129,
+            133,
+            134,
+            139,
+            144,
+            145,
+            146
+          ]
+        }
+      ],
+      "patch": "@@ -112,7 +112,7 @@ def build_recruitment_workflow(cls, session):\n         step1 = AgentWorkflowStep.find_or_create_tool_workflow_step(session, agent_workflow.id,\n                                                                     str(agent_workflow.id) + \"_step1\",\n                                                                     ListFileTool().name,\n-                                                                    \"Read files from the resource manager\",\n+                                                                    \"List the files from the resource manager\",\n                                                                     step_type=\"TRIGGER\")\n \n         # task queue ends when the elements gets over\n@@ -125,29 +125,28 @@ def build_recruitment_workflow(cls, session):\n         step3 = AgentWorkflowStep.find_or_create_tool_workflow_step(session, agent_workflow.id,\n                                                                     str(agent_workflow.id) + \"_step3\",\n                                                                     ReadFileTool().name,\n-                                                                    \"Read the resume from above input\")\n+                                                                    \"Read the resume from above input\",\n+                                                                    \"Check if the resume matches High-Level GOAL\")\n \n         step4 = AgentWorkflowStep.find_or_create_tool_workflow_step(session, agent_workflow.id,\n                                                                     str(agent_workflow.id) + \"_step4\",\n-                                                                    ReadFileTool().name,\n-                                                                    \"Read the job description from file mentioned in High-Level GOAL\",\n-                                                                    \"Check if the resume matches the job description in goal\")\n+                                                                    SendEmailTool().name,\n+                                                                    \"Write a custom acceptance Email to the candidates\")\n \n         step5 = AgentWorkflowStep.find_or_create_tool_workflow_step(session, agent_workflow.id,\n                                                                     str(agent_workflow.id) + \"_step5\",\n                                                                     SendEmailTool().name,\n-                                                                    \"Write a custom Email the candidates for job profile based on their experience\")\n+                                                                    \"Write a custom Reject Email to the candidates\")\n \n         AgentWorkflowStep.add_next_workflow_step(session, step1.id, step2.id)\n         AgentWorkflowStep.add_next_workflow_step(session, step2.id, step3.id)\n         AgentWorkflowStep.add_next_workflow_step(session, step2.id, -1, \"COMPLETE\")\n-        AgentWorkflowStep.add_next_workflow_step(session, step3.id, step4.id)\n-        AgentWorkflowStep.add_next_workflow_step(session, step4.id, step5.id, \"YES\")\n-        AgentWorkflowStep.add_next_workflow_step(session, step4.id, step2.id, \"NO\")\n+        AgentWorkflowStep.add_next_workflow_step(session, step3.id, step4.id, \"YES\")\n+        AgentWorkflowStep.add_next_workflow_step(session, step3.id, step5.id, \"NO\")\n+        AgentWorkflowStep.add_next_workflow_step(session, step4.id, step2.id)\n         AgentWorkflowStep.add_next_workflow_step(session, step5.id, step2.id)\n         session.commit()\n \n-\n     @classmethod\n     def build_coding_workflow(cls, session):\n         agent_workflow = AgentWorkflow.find_or_create_by_name(session, \"SuperCoder\", \"SuperCoder\")"
+    }
+  ],
+  "functions_modified": [
+    {
+      "function_name": "build_recruitment_workflow",
+      "class_name": "AgentWorkflowSeed",
+      "full_name": "AgentWorkflowSeed.build_recruitment_workflow",
+      "start_line": 109,
+      "end_line": 148,
+      "lines_changed": [
+        115,
+        128,
+        129,
+        133,
+        134,
+        139,
+        144,
+        145,
+        146
+      ]
+    }
+  ],
+  "step_plan": {
+    "steps": [
+      {
+        "operation": "Update the recruitment workflow definition by adjusting step tool usage, instructions, and branching logic (rename/repurpose steps and rewire transitions) inside the recruitment workflow builder.",
+        "file_to_modify": "superagi/agent/workflow_seed.py",
+        "function_to_modify": "build_recruitment_workflow",
+        "reason": "The existing recruitment workflow had inconsistent step semantics (e.g., reading job description as a separate step) and incorrect decision routing. The change consolidates the resume-check decision into step3, repurposes step4/step5 into acceptance/rejection email actions, updates the trigger wording to match the ListFileTool, and rewires YES/NO branches so candidates are routed to the correct email step before returning to the queue.",
+        "side_effects": "Any seeded or newly created \"Recruitment\" workflow will now have different step definitions and transition behavior (YES routes to acceptance email; NO routes to rejection email). Downstream systems relying on prior step numbering/tool names, UI labels, or expecting a job-description read step may behave differently, and previously stored workflows may need migration or reseeding to reflect the new graph."
+      }
+    ],
+    "summary": "Fixes the recruitment agent workflow by updating step descriptions/tools and correcting the branching logic so resume evaluation leads to the appropriate acceptance or rejection email actions."
+  }
+}

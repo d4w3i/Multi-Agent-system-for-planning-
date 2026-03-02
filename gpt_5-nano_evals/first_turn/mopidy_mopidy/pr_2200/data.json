@@ -1,0 +1,61 @@
+{
+    "repository": "mopidy/mopidy",
+    "pull_request_number": 2200,
+    "title": "add workaround for gstreamer 1.25.0 to 1.26.2",
+    "body": "see-also: https://gitlab.freedesktop.org/gstreamer/gstreamer/-/commit/bbf60305ed2ee35f4ecf7a5de2bb139203dda2af",
+    "pr_date": "2025-06-24T16:30:22Z",
+    "source_branch": "fixfc42",
+    "language": "en",
+    "keywords_detected": {
+        "branch": [
+            "fix"
+        ],
+        "requirement": [
+            "add"
+        ],
+        "body": []
+    },
+    "number_of_links_in_pr": 1,
+    "base_sha": "149e8afde8d1417ef4313493aea6fa6701246218",
+    "last_commit_sha": "f6fe322aa20ee25d98cb469bf70787781a2e7785",
+    "diff_between_base_and_last": [
+        {
+            "sha": "06305617e7d895d49591e02ceacd64a4080d5e9a",
+            "filename": "src/mopidy/audio/scan.py",
+            "status": "modified",
+            "additions": 13,
+            "deletions": 2,
+            "changes": 15,
+            "blob_url": "https://github.com/mopidy/mopidy/blob/f6fe322aa20ee25d98cb469bf70787781a2e7785/src%2Fmopidy%2Faudio%2Fscan.py",
+            "raw_url": "https://github.com/mopidy/mopidy/raw/f6fe322aa20ee25d98cb469bf70787781a2e7785/src%2Fmopidy%2Faudio%2Fscan.py",
+            "contents_url": "https://api.github.com/repos/mopidy/mopidy/contents/src%2Fmopidy%2Faudio%2Fscan.py?ref=f6fe322aa20ee25d98cb469bf70787781a2e7785",
+            "patch": "@@ -338,10 +338,21 @@ def _process(  # noqa: C901, PLR0911, PLR0912, PLR0915\n                 and (\n                     (structure := missing_message.get_structure())\n                     and (caps := structure.get_value(\"detail\"))\n-                    and (mime := caps.get_structure(0).get_name())\n                 )\n             ):\n-                return tags, mime, have_audio, duration\n+                # gstreamer 1.25.0 to 1.26.2 (inclusive) broke the accessing\n+                # `caps.get_structure(0).get_name()`, but allow wrapping the\n+                # object in a context manager. with gstreamer 1.24.x one can\n+                # not use the structure as a context manager at all. version\n+                # 1.26.3 will supposedly revert it to the previous behaviour.\n+                struct = caps.get_structure(0)\n+                try:\n+                    mime = struct.get_name()\n+                except AttributeError:\n+                    with struct as _struct:\n+                        mime = _struct.get_name()\n+                if mime:\n+                    return tags, mime, have_audio, duration\n             raise exceptions.ScannerError(str(error))\n         elif msg.type == Gst.MessageType.EOS:\n             return tags, mime, have_audio, duration"
+        }
+    ],
+    "commits": [
+        {
+            "sha": "f6fe322aa20ee25d98cb469bf70787781a2e7785",
+            "commit_date": "2025-06-24T16:27:39Z",
+            "message": "add workaround for gstreamer 1.25.0 to 1.26.2\n\nsee-also: https://gitlab.freedesktop.org/gstreamer/gstreamer/-/commit/bbf60305ed2ee35f4ecf7a5de2bb139203dda2af",
+            "number_of_links_in_commit": 1,
+            "files_changed_count": 1,
+            "files": [
+                {
+                    "sha": "06305617e7d895d49591e02ceacd64a4080d5e9a",
+                    "filename": "src/mopidy/audio/scan.py",
+                    "status": "modified",
+                    "additions": 13,
+                    "deletions": 2,
+                    "changes": 15,
+                    "blob_url": "https://github.com/mopidy/mopidy/blob/f6fe322aa20ee25d98cb469bf70787781a2e7785/src%2Fmopidy%2Faudio%2Fscan.py",
+                    "raw_url": "https://github.com/mopidy/mopidy/raw/f6fe322aa20ee25d98cb469bf70787781a2e7785/src%2Fmopidy%2Faudio%2Fscan.py",
+                    "contents_url": "https://api.github.com/repos/mopidy/mopidy/contents/src%2Fmopidy%2Faudio%2Fscan.py?ref=f6fe322aa20ee25d98cb469bf70787781a2e7785",
+                    "patch": "@@ -338,10 +338,21 @@ def _process(  # noqa: C901, PLR0911, PLR0912, PLR0915\n                 and (\n                     (structure := missing_message.get_structure())\n                     and (caps := structure.get_value(\"detail\"))\n-                    and (mime := caps.get_structure(0).get_name())\n                 )\n             ):\n-                return tags, mime, have_audio, duration\n+                # gstreamer 1.25.0 to 1.26.2 (inclusive) broke the accessing\n+                # `caps.get_structure(0).get_name()`, but allow wrapping the\n+                # object in a context manager. with gstreamer 1.24.x one can\n+                # not use the structure as a context manager at all. version\n+                # 1.26.3 will supposedly revert it to the previous behaviour.\n+                struct = caps.get_structure(0)\n+                try:\n+                    mime = struct.get_name()\n+                except AttributeError:\n+                    with struct as _struct:\n+                        mime = _struct.get_name()\n+                if mime:\n+                    return tags, mime, have_audio, duration\n             raise exceptions.ScannerError(str(error))\n         elif msg.type == Gst.MessageType.EOS:\n             return tags, mime, have_audio, duration"
+                }
+            ]
+        }
+    ],
+    "pull_request_url": "https://github.com/mopidy/mopidy/pull/2200",
+    "commits_url": "https://github.com/mopidy/mopidy/pull/2200/commits",
+    "files_url": "https://github.com/mopidy/mopidy/pull/2200/files"
+}

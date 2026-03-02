@@ -1,0 +1,50 @@
+{
+  "pr_number": 7339,
+  "repository": "getredash/redash",
+  "title": "Sanitize NaN, Infinite, -Infinite causing error when saving as PostgreSQL JSON",
+  "body": "Bug fix: When query results contain NaN, Infinity, or -Infinity, Redash crashes while saving to PostgreSQL JSON. The patch sanitizes these floating values to None before JSON serialization, matching pre-#6685 behavior (simplejson ignore_nan). A unit test was added to cover this scenario. Sanitization is applied at the result persistence layer so all downstream reads (and exports) see JSON-safe data.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T13:54:59.021043",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "redash/models/__init__.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "store_result",
+          "class_name": "QueryResult",
+          "full_name": "QueryResult.store_result",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "update_latest_result",
+          "class_name": "Query",
+          "full_name": "Query.update_latest_result",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Sanitize NaN, Infinity, and -Infinity values before persisting query results to PostgreSQL JSON by introducing a recursive sanitizer and applying it at the canonical insertion point (store_result).",
+    "steps": [
+      {
+        "operation": "Refactor store_result to sanitize result payload before persistence",
+        "file_to_modify": "redash/models/__init__.py",
+        "function_to_modify": "QueryResult.store_result",
+        "reason": "Introduce a recursive sanitizer that replaces NaN, Infinity, and -Infinity with None so the JSON stored in PostgreSQL JSON fields is always valid. This guarantees downstream reads and exports see JSON-safe data and aligns with the unit test coverage added for this scenario.",
+        "side_effects": "Adds a sanitizer utility (sanitize_json_values), imports math, and updates store_result to apply the sanitizer to the payload before persisting. May require tests to be updated or added; API/serializer outputs will reflect nulls in place of NaN/Inf; minor performance overhead for recursive traversal on large payloads."
+      }
+    ]
+  }
+}

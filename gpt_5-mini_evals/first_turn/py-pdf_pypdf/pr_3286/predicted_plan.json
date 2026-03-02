@@ -1,0 +1,57 @@
+{
+  "pr_number": 3286,
+  "repository": "py-pdf/pypdf",
+  "title": "BUG: Add delimiters to NameObject.renumber_table",
+  "body": "Per the spec, name objects cannot contain unescaped delimiters, which include angle, curly and square brackets (currently missing).\n\nI've attached a sample input PDF with a valid, correctly escaped name object. When appending this to a new PdfWriter the output is invalid (incorrectly escaped):\n\n```\n>>> w = PdfWriter()\n>>> w.append('nameobj.pdf')\n>>> w.write('out.pdf')\n```\n[out.pdf](https://github.com/user-attachments/files/20173760/out.pdf)\n[nameobj.pdf](https://github.com/user-attachments/files/20173761/nameobj.pdf)\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T13:01:38.344328",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "pypdf/generic/_base.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "renumber_table",
+          "class_name": "NameObject",
+          "full_name": "NameObject.renumber_table",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "renumber",
+          "class_name": "NameObject",
+          "full_name": "NameObject.renumber",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Add explicit hex-escape mappings for the angle, square and curly bracket delimiters to NameObject.renumber_table and ensure NameObject.renumber() consistently applies those mappings so names containing '<', '>', '[', ']', '{', '}' are serialized safely and consistently with the parser.",
+    "steps": [
+      {
+        "operation": "Add missing hex-escape mappings to the NameObject renumber_table",
+        "file_to_modify": "pypdf/generic/_base.py",
+        "function_to_modify": "NameObject.renumber_table",
+        "reason": "NameObject.delimiter_pattern treats '<', '>', '[', ']', '{', '}' as name delimiters when parsing, but renumber_table did not include mappings for these characters. Adding explicit mappings (\"<\": b\"#3C\", \">\": b\"#3E\", \"[\": b\"#5B\", \"]\": b\"#5D\", \"{\" : b\"#7B\", \"}\" : b\"#7D\") makes serialization escape them consistently with the reader and produces valid PDF output.",
+        "side_effects": "Serializing NameObject instances that contain these characters will now produce escaped sequences (changes output bytes). This may break byte-level output comparisons or signatures in downstream code/tests. No changes to public API surface are required, but consumers that rely on previously unescaped bytes will need to adapt. Run/adjust unit tests and full test suite to account for changed serialization. Other parts of the code that expect names to be emitted unescaped should be reviewed."
+      },
+      {
+        "operation": "Review and make renumber() explicitly consult renumber_table for each byte and preserve existing fallback behavior",
+        "file_to_modify": "pypdf/generic/_base.py",
+        "function_to_modify": "NameObject.renumber",
+        "reason": "Although renumber() already uses renumber_table, explicitly ensuring it iterates over input bytes and uses renumber_table.get(byte, fallback) makes the behavior clear and robust after the renumber_table change. This ensures the newly added delimiter mappings are actually applied and documents the intended fallback (hex-escape any unmapped byte). A small refactor or inline comment here also aids future maintainers and reduces the chance of regressions.",
+        "side_effects": "If renumber() is refactored to be more explicit about fallback hex-escaping, behavior should remain compatible, but any subtle differences in edge-case escaping must be validated. Update/extend unit tests to validate renumber() output for names containing the newly escaped delimiters and run PDF round-trip tests. Changes are internal to the serializer API; callers of NameObject.renumber() (if any) may observe different bytes for previously-unescaped characters, so integration tests should be run."
+      }
+    ]
+  }
+}

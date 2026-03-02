@@ -1,0 +1,138 @@
+{
+  "pr_number": 996,
+  "repository": "sshuttle/sshuttle",
+  "title": "Revert \"Support Windows11 As A sshuttle Server\"",
+  "body": "Reverts sshuttle/sshuttle#993\n\nThis change was made in error. See discussion in #993.\n\nExplore the source code to identify the files and functions to modify.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T14:30:47.265893",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "sshuttle/options.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    },
+    {
+      "filename": "sshuttle/methods/windivert.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "_egress_divert",
+          "class_name": "Windivert",
+          "full_name": "Windivert._egress_divert",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_ingress_divert",
+          "class_name": "Windivert",
+          "full_name": "Windivert._ingress_divert",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "wait_for_firewall_ready",
+          "class_name": "Windivert",
+          "full_name": "Windivert.wait_for_firewall_ready",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "setup_firewall",
+          "class_name": "Windivert",
+          "full_name": "Windivert.setup_firewall",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "get_supported_features",
+          "class_name": "Windivert",
+          "full_name": "Windivert.get_supported_features",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "is_supported",
+          "class_name": "Windivert",
+          "full_name": "Windivert.is_supported",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "sshuttle/methods/__init__.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    },
+    {
+      "filename": "sshuttle/server.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    }
+  ],
+  "step_plan": {
+    "summary": "Reverts Windows11-specific Windivert support by disabling Windivert-based paths and features in the Windivert module, ensuring cross-platform paths remain functional.",
+    "steps": [
+      {
+        "operation": "Disable Windivert outgoing divert path by early-return in Windivert._egress_divert",
+        "file_to_modify": "sshuttle/methods/windivert.py",
+        "function_to_modify": "Windivert._egress_divert",
+        "reason": "Reverts Windows11 Windivert-based routing by ensuring the outbound divert path cannot be engaged.",
+        "side_effects": "Linux/macOS paths remain unaffected; Windows Windivert path will be inert. Tests referencing Windivert egress behavior should be updated or skipped. CLI behavior should no longer advertise Windows-specific routing."
+      },
+      {
+        "operation": "Disable Windivert inbound divert path by early-return in Windivert._ ingress_divert",
+        "file_to_modify": "sshuttle/methods/windivert.py",
+        "function_to_modify": "Windivert._ingress_divert",
+        "reason": "Reverts Windows11 Windivert-based routing by ensuring the inbound divert path cannot be engaged.",
+        "side_effects": "Inbound Windows Windivert path inert; may affect integration tests expecting Windivert ingress behavior."
+      },
+      {
+        "operation": "Disable Windows firewall lifecycle orchestration by bypassing Windivert.wait_for_firewall_ready",
+        "file_to_modify": "sshuttle/methods/windivert.py",
+        "function_to_modify": "Windivert.wait_for_firewall_ready",
+        "reason": "Prevent Windows-specific firewall lifecycle from starting, removing Windows-only path.",
+        "side_effects": "Firewall-related thread lifecycle will be no-ops; avoids Windows-specific timing issues in tests."
+      },
+      {
+        "operation": "Disable Windows firewall setup by no-op in Windivert.setup_firewall",
+        "file_to_modify": "sshuttle/methods/windivert.py",
+        "function_to_modify": "Windivert.setup_firewall",
+        "reason": "Remove Windows-only firewall wiring introduced for Windivert path.",
+        "side_effects": "Windows firewall configuration steps are skipped; no impact on non-Windivert paths."
+      },
+      {
+        "operation": "Hide Windivert features from the feature set by returning empty features in Windivert.get_supported_features",
+        "file_to_modify": "sshuttle/methods/windivert.py",
+        "function_to_modify": "Windivert.get_supported_features",
+        "reason": "Ensures Windivert features are not advertised or selectable.",
+        "side_effects": "CLI and tests relying on Windivert features should stop expecting them; may require adjustments to feature checks."
+      },
+      {
+        "operation": "Deactivate Windivert path by making Windivert.is_supported always return False",
+        "file_to_modify": "sshuttle/methods/windivert.py",
+        "function_to_modify": "Windivert.is_supported",
+        "reason": "Guarantees Windivert path cannot be selected or used at runtime.",
+        "side_effects": "Windivert path cannot be chosen even if discovered; Windows users will fall back to non-Windivert paths; tests referencing Windivert support must be updated."
+      }
+    ]
+  }
+}

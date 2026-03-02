@@ -1,0 +1,57 @@
+{
+  "pr_number": 745,
+  "repository": "fishaudio/fish-speech",
+  "title": "fix: no-play argument for API client",
+  "body": "**Is this PR adding new feature or fix a BUG?**\r\n\r\nFix BUG.\r\n\r\n**Is this pull request related to any issue? If yes, please link the issue.**\r\n\r\nN/A\r\n\r\n**Description**\r\n\r\nCurrently, `--play` has no effect because its default value is `True`. The parser does not recognize anything like `--play False`. It only detect whether the argument exists.\r\n\r\nTherefore, we can use [BooleanOptionalAction](https://docs.python.org/3/library/argparse.html#argparse.BooleanOptionalAction), which automatically add the `--no-play` option, so that the play argument can be set to `False`.\r\n\r\n**Compatibility**\r\n\r\nThis change does not break the existing behaviors because it adds a new option.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T00:59:23.440937",
+    "extractor_version": "1.0.0",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "tools/api_client.py",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "functions_modified": [
+        {
+          "function_name": "parse_args",
+          "class_name": null,
+          "full_name": "parse_args",
+          "start_line": 15,
+          "end_line": 123,
+          "lines_changed": [
+            64
+          ]
+        }
+      ],
+      "patch": "@@ -61,7 +61,7 @@ def parse_args():\n     )\n     parser.add_argument(\n         \"--play\",\n-        type=bool,\n+        action=argparse.BooleanOptionalAction,\n         default=True,\n         help=\"Whether to play audio after receiving data\",\n     )"
+    }
+  ],
+  "functions_modified": [
+    {
+      "function_name": "parse_args",
+      "class_name": null,
+      "full_name": "parse_args",
+      "start_line": 15,
+      "end_line": 123,
+      "lines_changed": [
+        64
+      ]
+    }
+  ],
+  "step_plan": {
+    "steps": [
+      {
+        "operation": "Switch the `--play` CLI flag to use `argparse.BooleanOptionalAction` so argparse automatically supports both `--play` and `--no-play` while keeping the default as `True`.",
+        "file_to_modify": "tools/api_client.py",
+        "function_to_modify": "parse_args",
+        "reason": "Using `type=bool` does not allow users to pass `--play False` (argparse treats presence as truthy), so the flag could not be explicitly disabled; `BooleanOptionalAction` correctly models a boolean option and adds `--no-play` for setting it to `False`.",
+        "side_effects": "CLI behavior now includes an additional `--no-play` option and help text output changes accordingly; any scripts or documentation that enumerate available flags may need updating, though existing `--play` usage remains compatible."
+      }
+    ],
+    "summary": "Fixes the API client CLI so `--play` can be explicitly disabled by adding argparse’s `--no-play` counterpart via `BooleanOptionalAction`, while preserving the default behavior."
+  }
+}

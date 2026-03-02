@@ -1,0 +1,57 @@
+{
+  "pr_number": 925,
+  "repository": "plasma-umass/scalene",
+  "title": "Fix for overwriting LD_PRELOAD when setup_preload is called multiple times",
+  "body": "This patch addresses a bug where setup_preload can overwrite an existing LD_PRELOAD value on Linux, potentially removing other preloaded libraries when called more than once. The existing logic prepends libscalene.so to LD_PRELOAD if it's not already present, but when setup_preload is invoked again it may hit the else-branch and reset LD_PRELOAD to just libscalene.so, erasing prior preloads. The change ensures idempotent behavior: if libscalene.so is already in LD_PRELOAD, we leave the value as-is; otherwise we append or prepend libscalene.so without discarding other libraries. Aimed at making repeated invocations safe and predictable, this also reduces the risk of breaking user preloads or profiling configurations that rely on LD_PRELOAD.\n\nIn addition, the PR keeps the existing platform-specific handling (macOS and Windows) but enhances idempotence there as well by avoiding unnecessary overwrites and ensuring the library is only added if missing. No changes are made to the Windows path in this patch beyond maintaining the existing logic.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T14:14:21.876635",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "scalene/scalene_preload.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "get_preload_environ",
+          "class_name": "ScalenePreload",
+          "full_name": "ScalenePreload.get_preload_environ",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "setup_preload",
+          "class_name": "ScalenePreload",
+          "full_name": "ScalenePreload.setup_preload",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Fix Linux LD_PRELOAD handling to be idempotent by preserving existing preloads and only adding libscalene.so when missing, and ensure setup_preload avoids unnecessary relaunches when no changes are needed.",
+    "steps": [
+      {
+        "operation": "Refactor Linux LD_PRELOAD assembly in get_preload_environ to be idempotent",
+        "file_to_modify": "scalene/scalene_preload.py",
+        "function_to_modify": "ScalenePreload.get_preload_environ",
+        "reason": "Current logic overwrites LD_PRELOAD when libscalene.so is already present, erasing other preloads on repeated calls; new logic preserves existing libraries and only adds libscalene.so if missing.",
+        "side_effects": "Tests should verify idempotence; Linux behavior becomes more predictable when setup_preload is called multiple times; macOS/Windows paths are unaffected; reduces risk of discarding user preloads or profiling configurations."
+      },
+      {
+        "operation": "Guard process relaunch in setup_preload to only relaunch when LD_PRELOAD state actually changed",
+        "file_to_modify": "scalene/scalene_preload.py",
+        "function_to_modify": "ScalenePreload.setup_preload",
+        "reason": "With idempotent LD_PRELOAD logic, avoid unnecessary relaunches if environment already matches the desired state, reducing side effects from repeated calls.",
+        "side_effects": "Lower likelihood of spawning extra profiling sessions; tests should cover that no relaunch occurs when LD_PRELOAD is already in the correct state; macOS/Windows behavior remains stable."
+      }
+    ]
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "pr_number": 1496,
+  "repository": "openinterpreter/open-interpreter",
+  "title": "Fix: Change date format string for Windows compatibility",
+  "body": "# Fix date format string for Windows compatibility\r\n\r\n## Problem\r\nWhen running `interpreter --os` on Windows, the program crashes with a ValueError due to an incompatible date format string (`%-d`).\r\n\r\n## Solution\r\nChanged the date format string from `%-d` to `%d` to ensure compatibility with Windows systems.\r\n\r\n## Changes\r\n- Modified `interpreter/computer_use/loop.py` to use Windows-compatible date format\r\n- Replaced `%-d` with `%d` in `strftime()` call\r\n\r\n## Testing\r\nTested on:\r\n- Windows 11\r\n- Python 3.11\r\n- open-interpreter 0.4.1\r\n\r\nThe fix allows the program to start normally with the `--os` flag on Windows.\r\n\r\nFixes #1495",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T01:03:58.654480",
+    "extractor_version": "1.0.0",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "interpreter/computer_use/loop.py",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "functions_modified": [],
+      "patch": "@@ -101,7 +101,7 @@ class APIProvider(StrEnum):\n * You have access to a code editor tool for viewing and modifying source code files.\n * You can install and use command-line applications and development tools as needed.\n * When dealing with large outputs, use redirection to temporary files and tools like `grep` or the str_replace_editor to analyze the content efficiently.\n-* The current date is {datetime.today().strftime('%A, %B %-d, %Y')}.\n+* The current date is {datetime.today().strftime('%A, %B %#d, %Y' if platform.system() == 'Windows' else '%A, %B %-d, %Y')}.\n </SYSTEM_CAPABILITY>\"\"\"\n \n SYSTEM_PROMPT = f\"\"\"<SYSTEM_CAPABILITY>"
+    }
+  ],
+  "functions_modified": [],
+  "step_plan": {
+    "steps": [
+      {
+        "operation": "Make the date formatting in the SYSTEM_PROMPT Windows-compatible by selecting the correct day-of-month format specifier based on the current OS (use `%#d` on Windows, `%-d` elsewhere).",
+        "file_to_modify": "interpreter/computer_use/loop.py",
+        "function_to_modify": null,
+        "reason": "Windows `strftime` does not support `%-d` (no-leading-zero day), causing a `ValueError` when starting with `interpreter --os`; conditional formatting preserves the desired output on Unix-like systems while preventing crashes on Windows.",
+        "side_effects": "Changes the rendered prompt text on Windows (e.g., day formatting), and introduces a runtime dependency on `platform.system()` being available/imported in this module; any code/tests that assert exact prompt strings or snapshot outputs may need updating."
+      }
+    ],
+    "summary": "Fixes a Windows-only crash in `interpreter --os` by using a Windows-compatible `strftime` day format and keeping the existing Unix-like format on other platforms."
+  }
+}

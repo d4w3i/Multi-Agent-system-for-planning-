@@ -1,0 +1,42 @@
+{
+  "pr_number": 2332,
+  "repository": "modelscope/FunASR",
+  "title": "fix #2331: solve problems in sensevoice_bin.py related to argmax and unique operations.",
+  "body": "如issue #2331 提及，修复两个问题：\n1. yseq = x.argmax(dim=-1) 改为 yseq = np.argmax(x, axis=-1)：\n\n    - 由于 np.argmax 没有 dim 参数，原代码会导致 TypeError。改为 np.argmax(x, axis=-1) 以正确计算最大值的索引。    \n\n3. 原来yseq = np.unique(yseq) 跟torch.unique_consecutive不一致（torch.unique_consecutive返回的结果是正确的），查了下：torch.unique_consecutive 只去除连续重复的元素，而np.unique：去除所有重复的元素，并返回排序后的唯一值数组。所以需要改为：\n\n> mask = np.concatenate(([True], np.diff(yseq) != 0))\nyseq = yseq[mask]\n\n说明如下：\n- np.diff(yseq) 计算数组中相邻元素的差值。\n- np.diff(yseq) != 0 生成一个布尔数组，表示哪些位置的元素与前一个元素不同。\n- np.concatenate(([True], ...)) 在布尔数组前添加一个 True，以保留第一个元素。\n- yseq[mask] 使用布尔掩码提取去重后的数组。\n\n经过测试后，结果符合预期。",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T12:48:28.512157",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "runtime/python/onnxruntime/funasr_onnx/sensevoice_bin.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "__call__",
+          "class_name": "SenseVoiceSmall",
+          "full_name": "SenseVoiceSmall.__call__",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Modify SenseVoiceSmall.__call__ in the ONNX wrapper to use correct argmax for NumPy (or convert torch tensors to numpy) and replace np.unique with a consecutive-duplicate collapse (np.diff-based mask) so CTC greedy post-processing matches torch.unique_consecutive and avoids TypeError.",
+    "steps": [
+      {
+        "operation": "Fix argmax usage and replace global-unique with consecutive-unique collapse in ONNX wrapper",
+        "file_to_modify": "runtime/python/onnxruntime/funasr_onnx/sensevoice_bin.py",
+        "function_to_modify": "SenseVoiceSmall.__call__",
+        "reason": "ONNX runtime inference returns NumPy arrays: x.argmax(dim=-1) raises TypeError because NumPy uses axis not dim. np.unique removes all duplicates and sorts values, which breaks CTC greedy decoding semantics (we must only remove consecutive duplicates). Replace argmax call with logic that handles both NumPy arrays and torch tensors robustly, and replace np.unique with a consecutive-duplicate collapse based on np.diff so the output matches torch.unique_consecutive behavior.",
+        "side_effects": "Behavioral change for ONNX-based decoding: previously outputs could be reordered or have non-consecutive duplicates removed (due to np.unique); after the fix outputs preserve original token order and only consecutive duplicates are collapsed, matching libtorch behavior. This won't change public APIs but will change decoding outputs for cases that previously relied on np.unique sorting. Ensure unit tests for CTC greedy decoding are added/updated (e.g., synthetic logits with repeated tokens and blanks). Pay attention to performance: converting torch tensors to numpy requires .cpu().numpy() which may incur negligible overhead but is acceptable. Downstream code that assumed sorted unique token lists must be validated. Libtorch implementation is unaffected."
+      }
+    ]
+  }
+}

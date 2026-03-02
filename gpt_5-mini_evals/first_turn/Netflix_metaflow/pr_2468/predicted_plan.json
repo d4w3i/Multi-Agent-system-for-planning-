@@ -1,0 +1,42 @@
+{
+  "pr_number": 2468,
+  "repository": "Netflix/metaflow",
+  "title": "Fixup how commands show up as part of the Runner API",
+  "body": "When injecting commands to the runner, the stubs generated were not accurate or complete. This addresses this issue",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T11:32:01.434627",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "metaflow/runner/click_api.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "_lazy_load_command",
+          "class_name": null,
+          "full_name": "_lazy_load_command",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Modify _lazy_load_command in metaflow/runner/click_api.py so that lazily-injected command callables preserve the metadata (name, docstring, signature, annotations, defaults) from the original function produced by extract_command/extract_group by wrapping the bound callable with update_wrapper and explicitly copying __signature__ and __defaults__.",
+    "steps": [
+      {
+        "operation": "Preserve function metadata when binding lazily-loaded commands",
+        "file_to_modify": "metaflow/runner/click_api.py",
+        "function_to_modify": "_lazy_load_command",
+        "reason": "Currently _lazy_load_command binds callables returned by extract_command/extract_group using functools.partial which yields partial objects that do not carry the underlying function's __name__, __doc__, __signature__, __annotations__, or __defaults__. Copying/wrapping the metadata from the original function onto the bound callable ensures the Runner API's lazily-injected commands show up correctly for introspection, documentation, REPL and tools, matching commands attached at class creation.",
+        "side_effects": "Requires adding/updating imports (functools.update_wrapper and inspect, possibly types if alternative binding is chosen). Tests that verify command introspection, help text, and inspect.signature behavior should be updated/added; existing consumers expecting a plain functools.partial instance may observe a different runtime type (but callable behavior stays the same). Tools relying on exact object identity of the bound callable may be affected. No API surface change to how commands are invoked, but documentation/interactive tooling will now surface accurate names/docs/signatures. Ensure pickling or runtime-introspection code that relied on partial-specific attributes is validated."
+      }
+    ]
+  }
+}

@@ -1,0 +1,57 @@
+{
+  "pr_number": 745,
+  "repository": "fishaudio/fish-speech",
+  "title": "fix: no-play argument for API client",
+  "body": "Add a proper --play flag to the API client and propagate it to streaming behavior so that clients can explicitly disable playing/streaming output via --no-play. This preserves existing behavior by default (play enabled) while providing a straightforward way to opt-out of streaming.\n\nKey points:\n- Introduces a BooleanOptionalAction-based flag --play in the API server CLI arguments, exposing both --play and --no-play.\n- Propagates the flag value into the internal request flow by mapping play to the streaming setting used by the generation engine. This ensures that when --no-play is supplied, internal requests set streaming to False and streaming-based outputs are disabled.\n- Keeps existing behavior intact by default (no flag required means streaming remains enabled). The new --no-play option provides a simple opt-out path for clients that want non-streaming, fully-buffered responses.\n\nFiles touched (high level):\n- tools/server/api_utils.py\n  - Add CLI flag --play using argparse.BooleanOptionalAction with a default that preserves current behavior.\n  - Map incoming payload key play to streaming where appropriate so internal requests pick up the desired streaming behavior.\n\nNo breaking changes to the API surface; this is an additive improvement that makes the CLI/API client behavior explicit and controllable via a standard boolean flag.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T13:53:26.707442",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "tools/server/api_utils.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "parse_args",
+          "class_name": "tools",
+          "full_name": "tools.server.api_utils.parse_args",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "data",
+          "class_name": "tools",
+          "full_name": "tools.server.api_utils.MsgPackRequest.data",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Introduce a BooleanOptionalAction-based --play flag in the API server CLI and propagate its value into internal requests by mapping play to streaming, enabling explicit opt-out of streaming while preserving default behavior.",
+    "steps": [
+      {
+        "operation": "Add CLI flag --play using argparse.BooleanOptionalAction with default preserved to enable streaming by default",
+        "file_to_modify": "tools/server/api_utils.py",
+        "function_to_modify": "parse_args",
+        "reason": "Expose both --play and --no-play to explicitly control streaming behavior for API clients while preserving current default behavior (streaming enabled when flag is not provided).",
+        "side_effects": "Requires updates to server startup to ensure flag is parsed; downstream tests must verify default streaming remains enabled when no flag is supplied."
+      },
+      {
+        "operation": "Post-process incoming payload to map payload['play'] to payload['streaming'] in MsgPackRequest.data",
+        "file_to_modify": "tools/server/api_utils.py",
+        "function_to_modify": "MsgPackRequest.data",
+        "reason": "Translate the public play flag into the internal streaming parameter so internal requests reflect the desired streaming behavior across payload formats (msgpack/json).",
+        "side_effects": "Downstream generation pipeline consumes request.streaming; ensure non-breaking behavior for existing clients and add tests for both payload formats."
+      }
+    ]
+  }
+}

@@ -1,0 +1,72 @@
+{
+  "pr_number": 988,
+  "repository": "babysor/MockingBird",
+  "title": "fix-issues-963:preprocess_audio.py--The .npy file failed to save",
+  "body": "https://github.com/babysor/MockingBird/issues/963\n![image](https://github.com/babysor/MockingBird/assets/55903432/a7544cd3-8242-4008-9dbd-3b7badeaed1d)",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T11:58:47.149530",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "models/synthesizer/preprocess_audio.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "preprocess_general",
+          "class_name": null,
+          "full_name": "preprocess_general",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_process_utterance",
+          "class_name": null,
+          "full_name": "_process_utterance",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_split_on_silences",
+          "class_name": null,
+          "full_name": "_split_on_silences",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Fix preprocess_general to avoid variable shadowing and incorrect argument ordering so that mel and audio .npy files are saved; harden helpers (_process_utterance and _split_on_silences) to validate/convert path inputs and ensure parent directories exist before saving.",
+    "steps": [
+      {
+        "operation": "Harden _process_utterance to validate paths and ensure parent directories exist before saving",
+        "file_to_modify": "models/synthesizer/preprocess_audio.py",
+        "function_to_modify": "_process_utterance",
+        "reason": "Ensure _process_utterance tolerates either string or Path inputs, always writes to an existing directory, and fails with a clear error if given invalid types. This prevents np.save failures if callers pass paths whose parent directories do not yet exist or pass non-path types.",
+        "side_effects": "May change behavior for any other callers that relied on raising lower-level exceptions; adds small I/O overhead to create directories. Tests that assert particular exception types/messages from _process_utterance may need updating. No external API change, but downstream code that assumed parent directories existed will no longer have to create them."
+      },
+      {
+        "operation": "Add lightweight validation/conversion to _split_on_silences to accept Path or str and validate source file exists",
+        "file_to_modify": "models/synthesizer/preprocess_audio.py",
+        "function_to_modify": "_split_on_silences",
+        "reason": "Although the function's logic doesn't need changes, adding an initial check/conversion (Path(wav_fpath)) and an existence assertion makes callers safer and produces clearer errors if a wrong path is passed (e.g., an output path). This helps surface bugs in callers and documents the expected input.",
+        "side_effects": "Slight change to failure mode: instead of lower-level audio library errors when given a bad path, _split_on_silences will raise a clearer FileNotFoundError or TypeError. Tests expecting the previous exception may need adjustments. No change to outputs when called correctly."
+      },
+      {
+        "operation": "Fix preprocess_general: remove variable shadowing, create output directories, and call helper functions with correct arguments (use keyword args)",
+        "file_to_modify": "models/synthesizer/preprocess_audio.py",
+        "function_to_modify": "preprocess_general",
+        "reason": "The root cause is that preprocess_general overwrote the source wav loop variable with an output path and passed wrong positional args into _process_utterance. Change loop variable names (e.g., src_wav_fpath), compute separate out_mel_fpath and out_wav_fpath, call _split_on_silences(src_wav_fpath, ...), ensure out_dir / 'mels' and out_dir / 'audio' exist, and call _process_utterance using explicit keyword arguments (mel_fpath=out_mel_fpath, wav_fpath=out_wav_fpath, ...) to prevent ordering mistakes.",
+        "side_effects": "Fix will allow .npy files to be created as intended. It changes internal variable names only (no public API change), but behavior of preprocessing will differ from the broken version (correct outputs now created). Tests that previously failed due to the bug should pass; any test that relied on the old incorrect behavior should be updated. Upstream callers of preprocess_general see no API change but will observe created output directories and saved files. Small I/O overhead from directory creation."
+      }
+    ]
+  }
+}

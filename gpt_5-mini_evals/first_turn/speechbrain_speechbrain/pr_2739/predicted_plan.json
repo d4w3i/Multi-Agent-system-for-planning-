@@ -1,0 +1,42 @@
+{
+  "pr_number": 2739,
+  "repository": "speechbrain/speechbrain",
+  "title": "Allow importing model params with `convs_intermedite` typo in `PostNet`",
+  "body": "## What does this PR do?\n\nThis fixes importing some (older?) models that were failing to import otherwise.  \nPutting it as a PR to make it easier to find but not bothering with review since this is a very minor fix that shouldn't be functionally different (`convs_intermedite` no longer has any reference in codebase)",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T13:19:41.424333",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "speechbrain/lobes/models/FastSpeech2.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "_load_from_state_dict",
+          "class_name": "PostNet",
+          "full_name": "PostNet._load_from_state_dict",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Add a PostNet-specific _load_from_state_dict override that remaps old misspelled checkpoint keys 'convs_intermedite' to the current 'convs_intermediate' names before delegating to the default loader, enabling backward-compatible loading of older saved models.",
+    "steps": [
+      {
+        "operation": "Add backward-compatible _load_from_state_dict override in PostNet to remap misspelled keys",
+        "file_to_modify": "speechbrain/lobes/models/FastSpeech2.py",
+        "function_to_modify": "PostNet._load_from_state_dict",
+        "reason": "Older checkpoints used the misspelled prefix 'convs_intermedite' in state_dict keys which prevents loading into the current attribute self.convs_intermediate. Overriding nn.Module._load_from_state_dict lets PostNet detect keys that begin with prefix + 'convs_intermedite.' and rename them to prefix + 'convs_intermediate.' (only when the corrected key doesn't already exist), then delegate to the base loader. This provides a localized, PyTorch-compatible compatibility layer without changing runtime attributes or behavior.",
+        "side_effects": "Mutates the incoming state_dict keys before normal loading; should be safe and only affects model-loading behavior. Tests: add/adjust loading tests to ensure both old (typo) and new keys load correctly. Dependents: other modules are unaffected at runtime, but any external tooling that inspects raw checkpoint keys will see the remapping (the mutation is local to the load call). API impact: no public API changes; only loading is made more permissive. Edge cases: if a checkpoint already contains both the typo and the correct key, the code will not overwrite the correct key (it only renames when corrected key is absent), which avoids clobbering; ensure this behavior is acceptable. No changes required to forward/runtime code."
+      }
+    ]
+  }
+}

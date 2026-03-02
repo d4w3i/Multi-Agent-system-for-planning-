@@ -1,0 +1,42 @@
+{
+  "pr_number": 1155,
+  "repository": "SWE-agent/SWE-agent",
+  "title": "Fix: Correctly format commit message for PR creation",
+  "body": "The commit message by the agent does not formatted properly\n![image](https://github.com/user-attachments/assets/4d40e248-2761-47e1-a091-26d53bde1179)\n\n<!--\nThanks for contributing a pull request!\n-->\n\n#### Reference Issues/PRs\n<!--\nExample: \"Fixes #1234\", \"See also #3456\"\nPlease use keywords (e.g., Fixes) to create link to the issues or pull requests\nyou resolved, so that they will automatically be closed when your pull request\nis merged. See https://github.com/blog/1506-closing-issues-via-pull-requests\n-->\n\n#### What does this implement/fix? Explain your changes.\n<!--\nPlease include a brief explanation of how your solution\nfixes the tagged issue(s), along with what files / entities have\nbeen modified for this fix.\n-->\n\nThis pull request includes a small change to the `open_pr` function in `sweagent/run/hooks/open_pr.py`. The change updates the string formatting for commit messages to use f-strings for formating the message properly",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T11:35:49.530939",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "open_pr.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "open_pr",
+          "class_name": "open_pr",
+          "full_name": "open_pr.open_pr",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Fix open_pr commit message construction by interpolating issue.title and issue.number using f-strings, sanitizing the title (remove newlines/trim), and then shell-quoting the final strings before passing them to the git commit command.",
+    "steps": [
+      {
+        "operation": "Interpolate, sanitize, and shell-quote commit message parts",
+        "file_to_modify": "open_pr.py",
+        "function_to_modify": "open_pr",
+        "reason": "The current code constructs commit messages with literal placeholders (e.g., \"Fix: {issue.title}\") which results in the literal text being committed instead of the actual issue title/number. Replace those literal strings with formatted strings (f-strings) that interpolate issue.title and issue.number, sanitize the title to remove newlines and surrounding whitespace (e.g., issue.title.replace('\\n', ' ').strip()), and then call shlex.quote on the final formatted strings to preserve safe shell escaping when invoking git via env.communicate. This keeps the existing shell-based git invocation pattern while fixing the incorrect formatting and reducing the risk of multi-line commit messages.",
+        "side_effects": "Commit messages will change to include the actual issue title and number instead of placeholder text; any tests or tooling that assert on the prior exact literal commit message will need updating. Shell-escaping is preserved by shlex.quote, but titles with extreme length or unusual characters may still create less-than-ideal messages (consider -F / temp-file approach in future). No changes to the external GitHub API usage or PR body construction. OpenPRHook.on_instance_completed (the caller) will see corrected commit messages; dry-run behavior remains unchanged."
+      }
+    ]
+  }
+}

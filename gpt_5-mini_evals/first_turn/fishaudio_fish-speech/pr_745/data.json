@@ -1,0 +1,66 @@
+{
+    "repository": "fishaudio/fish-speech",
+    "pull_request_number": 745,
+    "title": "fix: no-play argument for API client",
+    "body": "**Is this PR adding new feature or fix a BUG?**\r\n\r\nFix BUG.\r\n\r\n**Is this pull request related to any issue? If yes, please link the issue.**\r\n\r\nN/A\r\n\r\n**Description**\r\n\r\nCurrently, `--play` has no effect because its default value is `True`. The parser does not recognize anything like `--play False`. It only detect whether the argument exists.\r\n\r\nTherefore, we can use [BooleanOptionalAction](https://docs.python.org/3/library/argparse.html#argparse.BooleanOptionalAction), which automatically add the `--no-play` option, so that the play argument can be set to `False`.\r\n\r\n**Compatibility**\r\n\r\nThis change does not break the existing behaviors because it adds a new option.",
+    "pr_date": "2024-12-13T04:15:14Z",
+    "source_branch": "fix-play-arg",
+    "language": "en",
+    "keywords_detected": {
+        "branch": [
+            "fix"
+        ],
+        "requirement": [
+            "fix"
+        ],
+        "body": [
+            "feature",
+            "add",
+            "change",
+            "fix"
+        ]
+    },
+    "number_of_links_in_pr": 2,
+    "base_sha": "fd0b73e699aa117c76d97563941a6f6f8a1d64b2",
+    "last_commit_sha": "749b46544dbc6343fb9fa3c8c2cc3174983bbc10",
+    "diff_between_base_and_last": [
+        {
+            "sha": "b47a10d5fbc790cf73bb669766fbbba092f0f8c3",
+            "filename": "tools/api_client.py",
+            "status": "modified",
+            "additions": 1,
+            "deletions": 1,
+            "changes": 2,
+            "blob_url": "https://github.com/fishaudio/fish-speech/blob/749b46544dbc6343fb9fa3c8c2cc3174983bbc10/tools%2Fapi_client.py",
+            "raw_url": "https://github.com/fishaudio/fish-speech/raw/749b46544dbc6343fb9fa3c8c2cc3174983bbc10/tools%2Fapi_client.py",
+            "contents_url": "https://api.github.com/repos/fishaudio/fish-speech/contents/tools%2Fapi_client.py?ref=749b46544dbc6343fb9fa3c8c2cc3174983bbc10",
+            "patch": "@@ -61,7 +61,7 @@ def parse_args():\n     )\n     parser.add_argument(\n         \"--play\",\n-        type=bool,\n+        action=argparse.BooleanOptionalAction,\n         default=True,\n         help=\"Whether to play audio after receiving data\",\n     )"
+        }
+    ],
+    "commits": [
+        {
+            "sha": "749b46544dbc6343fb9fa3c8c2cc3174983bbc10",
+            "commit_date": "2024-12-13T04:06:47Z",
+            "message": "fix: no-play argument for API client",
+            "number_of_links_in_commit": 0,
+            "files_changed_count": 1,
+            "files": [
+                {
+                    "sha": "b47a10d5fbc790cf73bb669766fbbba092f0f8c3",
+                    "filename": "tools/api_client.py",
+                    "status": "modified",
+                    "additions": 1,
+                    "deletions": 1,
+                    "changes": 2,
+                    "blob_url": "https://github.com/fishaudio/fish-speech/blob/749b46544dbc6343fb9fa3c8c2cc3174983bbc10/tools%2Fapi_client.py",
+                    "raw_url": "https://github.com/fishaudio/fish-speech/raw/749b46544dbc6343fb9fa3c8c2cc3174983bbc10/tools%2Fapi_client.py",
+                    "contents_url": "https://api.github.com/repos/fishaudio/fish-speech/contents/tools%2Fapi_client.py?ref=749b46544dbc6343fb9fa3c8c2cc3174983bbc10",
+                    "patch": "@@ -61,7 +61,7 @@ def parse_args():\n     )\n     parser.add_argument(\n         \"--play\",\n-        type=bool,\n+        action=argparse.BooleanOptionalAction,\n         default=True,\n         help=\"Whether to play audio after receiving data\",\n     )"
+                }
+            ]
+        }
+    ],
+    "pull_request_url": "https://github.com/fishaudio/fish-speech/pull/745",
+    "commits_url": "https://github.com/fishaudio/fish-speech/pull/745/commits",
+    "files_url": "https://github.com/fishaudio/fish-speech/pull/745/files"
+}

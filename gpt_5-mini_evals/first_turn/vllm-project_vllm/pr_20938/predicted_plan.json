@@ -1,0 +1,57 @@
+{
+  "pr_number": 20938,
+  "repository": "vllm-project/vllm",
+  "title": "Fix overflow indexing in causal_conv1d kernel",
+  "body": "## Essential Elements of an Effective PR Description Checklist\n- [x] The purpose of the PR, such as \"Fix some issue (link existing issues this PR will resolve)\".\n- [x] The test plan, such as providing test command.\n- [x] The test results, such as pasting the results comparison before and after, or e2e results\n- [x] (Optional) The necessary documentation update, such as updating `supported_models.md` and `examples` for a new model.\n\n## Purpose\n\nThis PR fixes an indexing overflow issue that can occur when running mamba-based models in V1. Before V1 integration, the value of `conv_state_batch_coord` could vary from `0` to `max_num_seqs-1`. However, with V1 integration it can now vary between `0` and `num_gpu_blocks-1`. Depending on the model and deployment, the number of blocks can be orders of magnitude higher and I'm running into overflow issues unless we explicitly cast to `tl.int64`.\n\nPlease note I already made the [equivalent fix](https://github.com/vllm-project/vllm/blob/main/vllm/model_executor/layers/mamba/ops/mamba_ssm.py#L111) to the `selective_state_update` as part of https://github.com/vllm-project/vllm/pull/20016. I forgot to make the equivalent change to this kernel, my bad. \n\n@tlrmchlsmth @cyang49 @thoangtrvn \n\n## Test Plan\n\nIt is actually not that easy to catch this with a test because you need a lot of blocks and need to let it run for a while until the scheduler starts picking off blocks with a high enough index to cause the overflow. I think it could be good to write some tests to try and catch these kernel overflow issues in general, but I would advocate for getting this fix in now. \n\n## Test Result\n\nn/a\n\n## (Optional) Documentation Update\n\nn/a\n\n<!--- pyml disable-next-line no-emphasis-as-heading -->",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T13:32:09.304842",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "vllm/model_executor/layers/mamba/ops/causal_conv1d.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "_causal_conv1d_fwd_kernel",
+          "class_name": null,
+          "full_name": "_causal_conv1d_fwd_kernel",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_causal_conv1d_update_kernel",
+          "class_name": null,
+          "full_name": "_causal_conv1d_update_kernel",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Fix 32-bit integer overflow in the causal_conv1d Triton kernels by casting conv_state_batch_coord to tl.int64 immediately after loading/assignment in both the forward and update kernels, matching the approach used in the analogous mamba_ssm kernel.",
+    "steps": [
+      {
+        "operation": "Cast conv_state_batch_coord to tl.int64 in forward Triton kernel",
+        "file_to_modify": "vllm/model_executor/layers/mamba/ops/causal_conv1d.py",
+        "function_to_modify": "_causal_conv1d_fwd_kernel",
+        "reason": "conv_state_batch_coord is loaded from conv_state_indices_ptr or set to idx_seq and then used in pointer arithmetic (multiplication by stride) and comparisons. With V1 integration this index can be much larger (up to num_gpu_blocks-1) and 32-bit arithmetic can overflow. Casting the loaded/assigned conv_state_batch_coord to tl.int64 inside the Triton kernel ensures subsequent multiplications and comparisons use 64-bit arithmetic and prevents overflow. This mirrors the existing safe pattern used in mamba_ssm.py.",
+        "side_effects": "No API changes. Minor increase in per-kernel arithmetic width (tl.int64) could have a small performance cost on kernels performing many integer ops, but this is localized and low-risk. Downstream callers and Python-side code need no changes. Tests: existing unit/integration tests should still pass; add/execute smoke tests that exercise large conv_state indices (many GPU blocks) to verify absence of overflow/crash. Dependents: other Triton kernels remain unchanged; ensure comparisons with pad_slot_id/num_cache_lines still behave (Triton will promote but if necessary cast those to tl.int64 as follow-up)."
+      },
+      {
+        "operation": "Cast conv_state_batch_coord to tl.int64 in update Triton kernel",
+        "file_to_modify": "vllm/model_executor/layers/mamba/ops/causal_conv1d.py",
+        "function_to_modify": "_causal_conv1d_update_kernel",
+        "reason": "The update kernel uses conv_state_batch_coord in pointer arithmetic and masks similarly to the forward kernel. To prevent 32-bit overflow when conv_state_batch_coord can be as large as num_gpu_blocks-1, cast the value to tl.int64 immediately after loading/assignment inside the kernel. This keeps behavior consistent with the fix applied in mamba_ssm.py and prevents incorrect memory addressing.",
+        "side_effects": "No external API changes. Same small potential performance cost from using 64-bit integer arithmetic inside the kernel. Tests: run unit and integration suites plus a manual/smoke test with artificially large conv_state indices to ensure the overflow no longer occurs. Dependents: other code that interacts with this kernel should be unaffected; verify that comparisons with 32-bit constants still behave as expected (Triton will typically promote types). If any mismatches are observed, consider casting constants like pad_slot_id or num_cache_lines to tl.int64 in a follow-up."
+      }
+    ]
+  }
+}

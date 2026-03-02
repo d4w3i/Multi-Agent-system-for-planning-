@@ -1,0 +1,57 @@
+{
+  "pr_number": 1706,
+  "repository": "confident-ai/deepeval",
+  "title": "Fixing IndexError list index out of range in Synthesizer.generate_goldens_from_docs()",
+  "body": "This fixes https://github.com/confident-ai/deepeval/issues/1682",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T12:02:18.614042",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "deepeval/synthesizer/synthesizer.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "generate_goldens_from_contexts",
+          "class_name": "Synthesizer",
+          "full_name": "Synthesizer.generate_goldens_from_contexts",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_a_generate_from_context",
+          "class_name": "Synthesizer",
+          "full_name": "Synthesizer._a_generate_from_context",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Fix variable shadowing that caused incorrect indexing (and IndexError) when generating Goldens from contexts by renaming context and per-input index variables and ensuring context-level metadata uses the context index while synthetic_input_quality remains per-input indexed.",
+    "steps": [
+      {
+        "operation": "Remove loop-variable shadowing in synchronous generation and index by context",
+        "file_to_modify": "deepeval/synthesizer/synthesizer.py",
+        "function_to_modify": "Synthesizer.generate_goldens_from_contexts",
+        "reason": "The outer context loop uses index variable i which is shadowed by an inner loop (for pbar creation). That inner reuse causes later lookups into source_files and _context_scores to use the wrong index (and sometimes go out of range). Rename the outer context index (e.g., ctx_index) and ensure inner loops use a different variable (e.g., _ or e_i). When building Golden objects, index context-level arrays (source_files and _context_scores) with ctx_index while keeping per-input synthetic_input_quality indexed by the per-input index.",
+        "side_effects": "Behavior change is limited to correct metadata assignment for Goldens. Tests: synthesizer and end-to-end generation tests must be run to verify no regressions (particularly tests that assert source_file/context_quality per Golden). Dependents: any internal code that relied on the local variable name i in this method is unaffected except linter/name checks. API: no external API changes. Progress bar text/ids referencing the previous i should be updated to use ctx_index or the inner loop variable to avoid confusing labels. Minor linter/type-hint updates may be required."
+      },
+      {
+        "operation": "Prevent parameter shadowing in async worker and pass correct indices",
+        "file_to_modify": "deepeval/synthesizer/synthesizer.py",
+        "function_to_modify": "Synthesizer._a_generate_from_context",
+        "reason": "The async worker accepts index (the context index) but defines an inner process_input(index: int, ...) which shadows the context index with the per-input enumerate index. This causes use of source_files[index] and scores[index] to use the wrong index. Rename the outer parameter to ctx_index and the inner per-input parameter to input_index (or input_i). Inside process_input use source_files[ctx_index] for context-level metadata and scores[input_index] for per-input synthetic_input_quality. Ensure tasks are created by enumerating qualified_synthetic_inputs and passing input_index along with ctx_index unchanged.",
+        "side_effects": "Fixes incorrect source_file/context_quality assignment and prevents possible IndexError in async flows. Tests: run async generation tests and any integration tests covering asynchronous synthesis. Dependents: a_generate_goldens_from_contexts and any callers that pass a positional context index remain compatible (renaming parameter doesn't require call-site changes), but verify any code that relied on keyword param name 'index' when invoking this method (unlikely). API: no external API changes. Also check progress/tracking ids inside async tasks to ensure they use ctx_index or input_index appropriately to avoid label confusion."
+      }
+    ]
+  }
+}

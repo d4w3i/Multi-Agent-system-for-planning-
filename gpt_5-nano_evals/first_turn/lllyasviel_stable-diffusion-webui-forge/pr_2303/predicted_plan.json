@@ -1,0 +1,42 @@
+{
+  "pr_number": 2303,
+  "repository": "lllyasviel/stable-diffusion-webui-forge",
+  "title": "fix for Florence-2 space",
+  "body": "This PR removes the patch that enables Flash Attention (AttnProcessor2_0) for Florence-2 workflows. The patch was previously applied to work around an issue in transformers, but an update made the patch unnecessary and it could even cause errors. With this change, the Space should load again and standard attention paths are used instead. The change is focused on cleaning up the Florence-2 related patching path so that Florence-2 space operates without forcing Flash Attention patches. Tests indicate that core functionalities load and basic operations still work.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T14:09:35.984221",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "modules_forge/diffusers_patcher.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "__init__",
+          "class_name": "DiffusersModelPatcher",
+          "full_name": "DiffusersModelPatcher.__init__",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Remove the Florence-2 Flash Attention patch by deleting the AttnProcessor2_0 patch in the DiffusersModelPatcher.__init__ so Florence-2 Space uses standard attention paths.",
+    "steps": [
+      {
+        "operation": "Remove AttnProcessor2_0 patching from Florence-2 flow",
+        "file_to_modify": "modules_forge/diffusers_patcher.py",
+        "function_to_modify": "DiffusersModelPatcher.__init__",
+        "reason": "The AttnProcessor2_0 Flash Attention workaround is no longer needed since upstream transformer changes; removing it reduces risk of patch-related errors and reverts Florence-2 space to standard attention paths.",
+        "side_effects": "Patch removal may affect tests or configurations that explicitly relied on AttnProcessor2_0; verify Florence-2 space loads with standard attention; ensure other patching features (LoRA, memory management) remain functional; update or add tests to cover absence of the patch and keep a safe rollback note in code comments."
+      }
+    ]
+  }
+}

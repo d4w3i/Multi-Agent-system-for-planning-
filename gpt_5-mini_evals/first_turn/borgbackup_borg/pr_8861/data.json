@@ -1,0 +1,63 @@
+{
+    "repository": "borgbackup/borg",
+    "pull_request_number": 8861,
+    "title": "tests: fix diff cmd test on macOS HFS+, fixes #8860",
+    "body": "If we touch too quickly after file creation, it would not noticably update the timestamp.\r\n",
+    "pr_date": "2025-05-21T12:41:19Z",
+    "source_branch": "tests-fix-ts-granularity",
+    "language": "en",
+    "keywords_detected": {
+        "branch": [
+            "fix"
+        ],
+        "requirement": [
+            "fix"
+        ],
+        "body": [
+            "update"
+        ]
+    },
+    "number_of_links_in_pr": 0,
+    "base_sha": "39b847a138ec01f9b5ac3adc86069f418b7f077c",
+    "last_commit_sha": "b4c4bf0b3fb643f6f27a24a426fbe4c482a0d199",
+    "diff_between_base_and_last": [
+        {
+            "sha": "8d5735154cbca44a502bd88659490b0ae8a2ed77",
+            "filename": "src/borg/testsuite/archiver/diff_cmd_test.py",
+            "status": "modified",
+            "additions": 1,
+            "deletions": 0,
+            "changes": 1,
+            "blob_url": "https://github.com/borgbackup/borg/blob/b4c4bf0b3fb643f6f27a24a426fbe4c482a0d199/src%2Fborg%2Ftestsuite%2Farchiver%2Fdiff_cmd_test.py",
+            "raw_url": "https://github.com/borgbackup/borg/raw/b4c4bf0b3fb643f6f27a24a426fbe4c482a0d199/src%2Fborg%2Ftestsuite%2Farchiver%2Fdiff_cmd_test.py",
+            "contents_url": "https://api.github.com/repos/borgbackup/borg/contents/src%2Fborg%2Ftestsuite%2Farchiver%2Fdiff_cmd_test.py?ref=b4c4bf0b3fb643f6f27a24a426fbe4c482a0d199",
+            "patch": "@@ -53,6 +53,7 @@ def test_basic_functionality(archivers, request):\n     create_regular_file(archiver.input_path, \"file_replaced\", contents=b\"0\" * 4096)\n     os.unlink(\"input/file_removed\")\n     os.unlink(\"input/file_removed2\")\n+    time.sleep(1)  # macOS HFS+ has a 1s timestamp granularity\n     Path(\"input/file_touched\").touch()\n     os.rmdir(\"input/dir_replaced_with_file\")\n     create_regular_file(archiver.input_path, \"dir_replaced_with_file\", size=8192)"
+        }
+    ],
+    "commits": [
+        {
+            "sha": "b4c4bf0b3fb643f6f27a24a426fbe4c482a0d199",
+            "commit_date": "2025-05-21T12:39:39Z",
+            "message": "tests: fix diff cmd test on macOS HFS+, fixes #8860\n\nIf we touch too quickly after file creation, it would not noticably update the timestamp.",
+            "number_of_links_in_commit": 0,
+            "files_changed_count": 1,
+            "files": [
+                {
+                    "sha": "8d5735154cbca44a502bd88659490b0ae8a2ed77",
+                    "filename": "src/borg/testsuite/archiver/diff_cmd_test.py",
+                    "status": "modified",
+                    "additions": 1,
+                    "deletions": 0,
+                    "changes": 1,
+                    "blob_url": "https://github.com/borgbackup/borg/blob/b4c4bf0b3fb643f6f27a24a426fbe4c482a0d199/src%2Fborg%2Ftestsuite%2Farchiver%2Fdiff_cmd_test.py",
+                    "raw_url": "https://github.com/borgbackup/borg/raw/b4c4bf0b3fb643f6f27a24a426fbe4c482a0d199/src%2Fborg%2Ftestsuite%2Farchiver%2Fdiff_cmd_test.py",
+                    "contents_url": "https://api.github.com/repos/borgbackup/borg/contents/src%2Fborg%2Ftestsuite%2Farchiver%2Fdiff_cmd_test.py?ref=b4c4bf0b3fb643f6f27a24a426fbe4c482a0d199",
+                    "patch": "@@ -53,6 +53,7 @@ def test_basic_functionality(archivers, request):\n     create_regular_file(archiver.input_path, \"file_replaced\", contents=b\"0\" * 4096)\n     os.unlink(\"input/file_removed\")\n     os.unlink(\"input/file_removed2\")\n+    time.sleep(1)  # macOS HFS+ has a 1s timestamp granularity\n     Path(\"input/file_touched\").touch()\n     os.rmdir(\"input/dir_replaced_with_file\")\n     create_regular_file(archiver.input_path, \"dir_replaced_with_file\", size=8192)"
+                }
+            ]
+        }
+    ],
+    "pull_request_url": "https://github.com/borgbackup/borg/pull/8861",
+    "commits_url": "https://github.com/borgbackup/borg/pull/8861/commits",
+    "files_url": "https://github.com/borgbackup/borg/pull/8861/files"
+}

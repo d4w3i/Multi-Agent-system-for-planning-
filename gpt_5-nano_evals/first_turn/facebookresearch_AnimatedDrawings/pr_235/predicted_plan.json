@@ -1,0 +1,42 @@
+{
+  "pr_number": 235,
+  "repository": "facebookresearch/AnimatedDrawings",
+  "title": "fix: repair window size in macOS",
+  "body": "MacOS can report a framebuffer size larger than the logical window size when an external monitor is connected. The rendering and projection setup should rely on the logical window size rather than the framebuffer size to avoid oversizing or misaligned rendering. This PR updates the size source used for projection and viewport calculations to use glfw.get_window_size(self.win) instead of glfw.get_framebuffer_size(self.win). The change is localized to the WindowView class, preserving the existing API surface and call sites.\n\nAffected area:\n- animated_drawings/view/window_view.py: WindowView.get_framebuffer_size()\n  - This method is the single source for the current window size used to initialize projection matrices and to set the viewport during rendering. By switching to the window size, the logical dimensions become the basis for rendering calculations, which aligns with the intended behavior on macOS when a monitor is connected.\n\nNo changes are required to the call sites since they continue to use the existing get_framebuffer_size() method, which will now return the logical size.\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T13:45:40.846720",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "animated_drawings/view/window_view.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "get_framebuffer_size",
+          "class_name": "WindowView",
+          "full_name": "WindowView.get_framebuffer_size",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "The PR updates the size source used for projection and viewport calculations to rely on the logical window size (glfw.get_window_size) instead of the framebuffer size (glfw.get_framebuffer_size) within WindowView, ensuring correct rendering on macOS with external displays while preserving the public API.",
+    "steps": [
+      {
+        "operation": "Modify WindowView.get_framebuffer_size to return the logical window size",
+        "file_to_modify": "animated_drawings/view/window_view.py",
+        "function_to_modify": "WindowView.get_framebuffer_size",
+        "reason": "On macOS with external monitors, framebuffer size can differ from the logical window size; using glfw.get_window_size(self.win) ensures projection and viewport calculations align with the intended display size.",
+        "side_effects": "Rendering and projection initialization will now use the logical window size; possible differences in aspect ratio; tests that validate get_framebuffer_size semantics may need updates; no public API changes."
+      }
+    ]
+  }
+}

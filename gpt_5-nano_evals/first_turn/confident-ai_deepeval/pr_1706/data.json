@@ -1,0 +1,105 @@
+{
+    "repository": "confident-ai/deepeval",
+    "pull_request_number": 1706,
+    "title": "Fixing IndexError list index out of range in Synthesizer.generate_goldens_from_docs()",
+    "body": "This fixes https://github.com/confident-ai/deepeval/issues/1682",
+    "pr_date": "2025-06-18T17:58:36Z",
+    "source_branch": "aditya/fix-index-out-of-bounds",
+    "language": "en",
+    "keywords_detected": {
+        "branch": [
+            "fix"
+        ],
+        "requirement": [
+            "fix"
+        ],
+        "body": [
+            "fix"
+        ]
+    },
+    "number_of_links_in_pr": 1,
+    "base_sha": "3091307c30cadd88d2e2272077488b1b44a087d8",
+    "last_commit_sha": "bbf258caccb93bfe0b735702cb6e83a8dcff940e",
+    "diff_between_base_and_last": [
+        {
+            "sha": "3e9c1020f3f02d584a7eff8eb0d4df15b6bdc1c9",
+            "filename": "deepeval/synthesizer/synthesizer.py",
+            "status": "modified",
+            "additions": 3,
+            "deletions": 1,
+            "changes": 4,
+            "blob_url": "https://github.com/confident-ai/deepeval/blob/bbf258caccb93bfe0b735702cb6e83a8dcff940e/deepeval%2Fsynthesizer%2Fsynthesizer.py",
+            "raw_url": "https://github.com/confident-ai/deepeval/raw/bbf258caccb93bfe0b735702cb6e83a8dcff940e/deepeval%2Fsynthesizer%2Fsynthesizer.py",
+            "contents_url": "https://api.github.com/repos/confident-ai/deepeval/contents/deepeval%2Fsynthesizer%2Fsynthesizer.py?ref=bbf258caccb93bfe0b735702cb6e83a8dcff940e",
+            "patch": "@@ -692,7 +692,9 @@ async def process_input(\n                 context=context,\n                 expected_output=expected_output,\n                 source_file=(\n-                    source_files[index] if source_files is not None else None\n+                    source_files[index]\n+                    if source_files is not None and index < len(source_files)\n+                    else None\n                 ),\n                 additional_metadata={\n                     \"evolutions\": evolutions_used,"
+        }
+    ],
+    "commits": [
+        {
+            "sha": "6c0d9359b6833d8931169188c3f124ec12a82e81",
+            "commit_date": "2025-06-18T17:57:06Z",
+            "message": "Fixing IndexError list index out of range in Synthesizer.generate_goldens_from_docs()",
+            "number_of_links_in_commit": 0,
+            "files_changed_count": 1,
+            "files": [
+                {
+                    "sha": "5d58382dcf03719bcea111122cd2d86d33890aa6",
+                    "filename": "deepeval/synthesizer/synthesizer.py",
+                    "status": "modified",
+                    "additions": 2,
+                    "deletions": 1,
+                    "changes": 3,
+                    "blob_url": "https://github.com/confident-ai/deepeval/blob/6c0d9359b6833d8931169188c3f124ec12a82e81/deepeval%2Fsynthesizer%2Fsynthesizer.py",
+                    "raw_url": "https://github.com/confident-ai/deepeval/raw/6c0d9359b6833d8931169188c3f124ec12a82e81/deepeval%2Fsynthesizer%2Fsynthesizer.py",
+                    "contents_url": "https://api.github.com/repos/confident-ai/deepeval/contents/deepeval%2Fsynthesizer%2Fsynthesizer.py?ref=6c0d9359b6833d8931169188c3f124ec12a82e81",
+                    "patch": "@@ -462,6 +462,7 @@ def generate_goldens_from_contexts(\n                         golden = Golden(\n                             input=evolved_input,\n                             context=context,\n+                            expected_output=None,\n                             source_file=(\n                                 source_files[i]\n                                 if source_files is not None\n@@ -692,7 +693,7 @@ async def process_input(\n                 context=context,\n                 expected_output=expected_output,\n                 source_file=(\n-                    source_files[index] if source_files is not None else None\n+                    source_files[index] if source_files is not None and index < len(source_files) else None\n                 ),\n                 additional_metadata={\n                     \"evolutions\": evolutions_used,"
+                }
+            ]
+        },
+        {
+            "sha": "6add5cf2ffccb715a6150131d570e647805de11d",
+            "commit_date": "2025-06-18T17:59:05Z",
+            "message": "Fixing",
+            "number_of_links_in_commit": 0,
+            "files_changed_count": 1,
+            "files": [
+                {
+                    "sha": "7c648c8b9b56a0022bdfc6f748f9fe667faf20ab",
+                    "filename": "deepeval/synthesizer/synthesizer.py",
+                    "status": "modified",
+                    "additions": 0,
+                    "deletions": 1,
+                    "changes": 1,
+                    "blob_url": "https://github.com/confident-ai/deepeval/blob/6add5cf2ffccb715a6150131d570e647805de11d/deepeval%2Fsynthesizer%2Fsynthesizer.py",
+                    "raw_url": "https://github.com/confident-ai/deepeval/raw/6add5cf2ffccb715a6150131d570e647805de11d/deepeval%2Fsynthesizer%2Fsynthesizer.py",
+                    "contents_url": "https://api.github.com/repos/confident-ai/deepeval/contents/deepeval%2Fsynthesizer%2Fsynthesizer.py?ref=6add5cf2ffccb715a6150131d570e647805de11d",
+                    "patch": "@@ -462,7 +462,6 @@ def generate_goldens_from_contexts(\n                         golden = Golden(\n                             input=evolved_input,\n                             context=context,\n-                            expected_output=None,\n                             source_file=(\n                                 source_files[i]\n                                 if source_files is not None"
+                }
+            ]
+        },
+        {
+            "sha": "bbf258caccb93bfe0b735702cb6e83a8dcff940e",
+            "commit_date": "2025-06-18T18:01:05Z",
+            "message": "Fixed formatting acc to Black",
+            "number_of_links_in_commit": 0,
+            "files_changed_count": 1,
+            "files": [
+                {
+                    "sha": "3e9c1020f3f02d584a7eff8eb0d4df15b6bdc1c9",
+                    "filename": "deepeval/synthesizer/synthesizer.py",
+                    "status": "modified",
+                    "additions": 3,
+                    "deletions": 1,
+                    "changes": 4,
+                    "blob_url": "https://github.com/confident-ai/deepeval/blob/bbf258caccb93bfe0b735702cb6e83a8dcff940e/deepeval%2Fsynthesizer%2Fsynthesizer.py",
+                    "raw_url": "https://github.com/confident-ai/deepeval/raw/bbf258caccb93bfe0b735702cb6e83a8dcff940e/deepeval%2Fsynthesizer%2Fsynthesizer.py",
+                    "contents_url": "https://api.github.com/repos/confident-ai/deepeval/contents/deepeval%2Fsynthesizer%2Fsynthesizer.py?ref=bbf258caccb93bfe0b735702cb6e83a8dcff940e",
+                    "patch": "@@ -692,7 +692,9 @@ async def process_input(\n                 context=context,\n                 expected_output=expected_output,\n                 source_file=(\n-                    source_files[index] if source_files is not None and index < len(source_files) else None\n+                    source_files[index]\n+                    if source_files is not None and index < len(source_files)\n+                    else None\n                 ),\n                 additional_metadata={\n                     \"evolutions\": evolutions_used,"
+                }
+            ]
+        }
+    ],
+    "pull_request_url": "https://github.com/confident-ai/deepeval/pull/1706",
+    "commits_url": "https://github.com/confident-ai/deepeval/pull/1706/commits",
+    "files_url": "https://github.com/confident-ai/deepeval/pull/1706/files"
+}

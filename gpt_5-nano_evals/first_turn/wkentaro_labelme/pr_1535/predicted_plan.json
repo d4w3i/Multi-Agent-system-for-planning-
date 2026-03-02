@@ -1,0 +1,104 @@
+{
+  "pr_number": 1535,
+  "repository": "wkentaro/labelme",
+  "title": "feat: support AI-generated masks in shape_to_mask",
+  "body": "Updated the export functionality to support AI-generated masks. The function now handles mask data from JSON files, including AI-generated mask formats (list/array and base64 encoded images).\n\nWhat this implies:\n- Shape-to-mask generation should be able to consume an already-provided mask (from JSON) in addition to producing a mask from shape geometry.\n- AI-generated masks can be provided as a Python/list/array, or as a base64-encoded image, and must be correctly aligned to the target image/shape coordinates.\n- Backward compatibility: If no mask is provided in JSON, existing behavior (rendering shapes to masks) should remain intact.\n\nProposed integration points (based on the codebase):\n- labelme/utils/shape.py: Extend the core function shape_to_mask to accept an optional mask parameter. If present, normalize/convert the provided mask (list/array or base64-encoded image) to a boolean mask of the target image size. If not present, fall back to the current polygon/shape-based rendering path.\n- labelme/cli/export_json.py: Ensure the export path supports shapes that carry AI-generated masks. If shapes contain a mask field (list/array or base64), pass it through to shape_to_mask; otherwise retain the existing rendering path via shapes_to_label.\n- labelme/utils/shape.py (or related deprecation wrappers like polygons_to_mask): Update to handle the new mask input formats and maintain backward compatibility for existing pipelines.\n\nNotes:\n- The current export path in export_json.py uses utils.shapes_to_label to build a label mask from shapes. With AI-generated masks, shapes_to_label should be able to utilize shape_to_mask with an externally supplied mask, instead of always rendering from the geometric points.\n- If the AI-generated mask is provided as a base64-encoded image, the code must decode and threshold/convert to a boolean mask of the same dimensions as the image being annotated.\n- Thorough validation is needed to ensure masks align with the image and shape coordinates when overlaid or exported as label maps.\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T14:38:32.400745",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "labelme/utils/shape.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "shape_to_mask",
+          "class_name": "labelme",
+          "full_name": "labelme.utils.shape.shape_to_mask",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "polygons_to_mask",
+          "class_name": null,
+          "full_name": "polygons_to_mask",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "labelme/cli/export_json.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "main",
+          "class_name": "labelme",
+          "full_name": "labelme.cli.export_json.main",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "labelme/utils/shape.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "shape_to_mask",
+          "class_name": "labelme",
+          "full_name": "labelme.utils.shape.shape_to_mask",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "polygons_to_mask",
+          "class_name": null,
+          "full_name": "polygons_to_mask",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "This PR adds AI-generated mask support to shape_to_mask by accepting JSON-provided masks, updates the export path to propagate these masks, and preserves backward-compatible behavior when no AI mask is provided.",
+    "steps": [
+      {
+        "operation": "Extend shape_to_mask to accept an optional mask parameter and normalize provided AI-generated mask to a boolean mask of the target image size. If a mask is not provided, preserve the existing shape-based rendering path.",
+        "file_to_modify": "labelme/utils/shape.py",
+        "function_to_modify": "shape_to_mask",
+        "reason": "Enable consuming AI-generated masks from JSON (list/array or base64) and align them with the target image/shape coordinates while preserving backward compatibility.",
+        "side_effects": "Potential changes to function signature; downstream callers must handle optional mask parameter; unit tests must cover new mask formats; may introduce dependencies on numpy/Pillow; ensure compatibility with existing code paths."
+      },
+      {
+        "operation": "Update export_json CLI path to pass through AI-generated masks from JSON shapes to the updated shape_to_mask; otherwise fall back to existing shapes_to_label pipeline.",
+        "file_to_modify": "labelme/cli/export_json.py",
+        "function_to_modify": "main",
+        "reason": "To ensure the export flow uses AI-generated masks when provided in shapes, while keeping current behavior when masks are absent.",
+        "side_effects": "Backward compatibility maintained for non-masked shapes; need tests for export with AI masks; potential minor changes in label map outputs."
+      },
+      {
+        "operation": "Update or wrap polygons_to_mask to support the new mask input formats or delegate to the updated shape_to_mask when a mask is provided.",
+        "file_to_modify": "labelme/utils/shape.py",
+        "function_to_modify": "polygons_to_mask",
+        "reason": "Maintain backward compatibility and centralize mask handling in shape_to_mask by routing to updated logic when AI mask data exists.",
+        "side_effects": "Tests and external dependencies referencing polygons_to_mask may need updates; ensure no regressions in exported label maps; potential duplication of logic."
+      }
+    ]
+  }
+}

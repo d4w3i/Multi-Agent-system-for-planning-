@@ -1,0 +1,57 @@
+{
+  "pr_number": 165,
+  "repository": "allenai/olmocr",
+  "title": "fix jsonl_to_markdown",
+  "body": "Fixes #162\n\nChanges proposed in this pull request:\n- Add `jsonl_to_markdown.py` utility script to convert JSONL files to Markdown format\n- Script extracts the 'text' field from each line in a JSONL file and saves it as a separate Markdown file\n- Include proper error handling for JSON decoding and file operations\n- Add example usage and documentation\n\nfixes  #162",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T11:44:41.861834",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "scripts/jsonl_to_markdown.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "jsonl_to_markdown",
+          "class_name": null,
+          "full_name": "jsonl_to_markdown",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "main (module-level CLI block)",
+          "class_name": null,
+          "full_name": "main (module-level CLI block)",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Make scripts/jsonl_to_markdown.py robust by hardening the jsonl_to_markdown conversion (safe directory creation, skip blank lines, robust JSON decoding, safe coercion of non-string 'text' values, UTF-8 writes) and replace the inline sys.argv CLI with a well-documented argparse-based main() that configures logging and returns proper exit codes.",
+    "steps": [
+      {
+        "operation": "Harden jsonl_to_markdown core conversion logic",
+        "file_to_modify": "scripts/jsonl_to_markdown.py",
+        "function_to_modify": "jsonl_to_markdown",
+        "reason": "Make the core conversion robust: avoid errors when output directory exists, skip blank lines, handle malformed JSON per-line without aborting the whole run, coerce non-string 'text' values to safe string representations, and ensure file operations use UTF-8 and are error-handled.",
+        "side_effects": "Changes logging/printed output (may require updating tests that assert printed messages). Output filename scheme will remain the default unless optional flags are added later, so downstream consumers of generated files should not be broken; however, coercing non-string 'text' values to JSON strings may change exact content compared to previous str() behavior. Tests should be added/updated to verify skipping blank lines and skipping/bubbling malformed JSON lines. Writing with explicit encoding may reveal existing files with different encodings; ensure CI environments handle UTF-8."
+      },
+      {
+        "operation": "Replace minimal sys.argv CLI with a proper main() using argparse and configure logging",
+        "file_to_modify": "scripts/jsonl_to_markdown.py",
+        "function_to_modify": "main",
+        "reason": "Provide a documented, extensible CLI with clear usage, optional flags (e.g., filename prefix, encoding, skip-empty), proper exit codes, and structured logging instead of ad-hoc sys.argv handling. This improves usability, helps automation, and enables future enhancements (like --use-id-field).",
+        "side_effects": "CLI behavior changes: scripts or automation that invoked the script relying on exact stdout messages or the old sys.argv contract may need to be updated. Tests that run the script via subprocess might need to be adapted to parse logging output or use the library function directly. Adding argument parsing introduces new optional parameters which should be documented; defaults should preserve previous behavior to minimize breakage. main() should return appropriate exit codes on fatal errors so CI can detect failures."
+      }
+    ]
+  }
+}

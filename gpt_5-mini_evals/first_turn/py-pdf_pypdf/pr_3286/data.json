@@ -1,0 +1,94 @@
+{
+    "repository": "py-pdf/pypdf",
+    "pull_request_number": 3286,
+    "title": "BUG: Add delimiters to NameObject.renumber_table",
+    "body": "Per the spec, name objects cannot contain unescaped delimiters, which include angle, curly and square brackets (currently missing).\r\n\r\nI've attached a sample input PDF with a valid, correctly escaped name object. When appending this to a new PdfWriter the output is invalid (incorrectly escaped):\r\n\r\n```\r\n>>> w = PdfWriter()\r\n>>> w.append('nameobj.pdf')\r\n>>> w.write('out.pdf')\r\n```\r\n[out.pdf](https://github.com/user-attachments/files/20173760/out.pdf)\r\n[nameobj.pdf](https://github.com/user-attachments/files/20173761/nameobj.pdf)\r\n",
+    "pr_date": "2025-05-12T18:29:55Z",
+    "source_branch": "bugfix/nameobject-renumber-table",
+    "language": "en",
+    "keywords_detected": {
+        "branch": [
+            "fix"
+        ],
+        "requirement": [
+            "add"
+        ],
+        "body": []
+    },
+    "number_of_links_in_pr": 4,
+    "base_sha": "a1c336631181767cef47c8f8ec311796d5e2a4ea",
+    "last_commit_sha": "20c4ac50c7708b6ea05a7c33b49af4616417d7fe",
+    "diff_between_base_and_last": [
+        {
+            "sha": "b458161a6fedbb64b764489219a3b52f82331dde",
+            "filename": "pypdf/generic/_base.py",
+            "status": "modified",
+            "additions": 1,
+            "deletions": 5,
+            "changes": 6,
+            "blob_url": "https://github.com/py-pdf/pypdf/blob/20c4ac50c7708b6ea05a7c33b49af4616417d7fe/pypdf%2Fgeneric%2F_base.py",
+            "raw_url": "https://github.com/py-pdf/pypdf/raw/20c4ac50c7708b6ea05a7c33b49af4616417d7fe/pypdf%2Fgeneric%2F_base.py",
+            "contents_url": "https://api.github.com/repos/py-pdf/pypdf/contents/pypdf%2Fgeneric%2F_base.py?ref=20c4ac50c7708b6ea05a7c33b49af4616417d7fe",
+            "patch": "@@ -780,11 +780,7 @@ class NameObject(str, PdfObject):  # noqa: SLOT000\n     delimiter_pattern = re.compile(rb\"\\s+|[\\(\\)<>\\[\\]{}/%]\")\n     surfix = b\"/\"\n     renumber_table: ClassVar[Dict[str, bytes]] = {\n-        \"#\": b\"#23\",\n-        \"(\": b\"#28\",\n-        \")\": b\"#29\",\n-        \"/\": b\"#2F\",\n-        \"%\": b\"#25\",\n+        **{chr(i): f\"#{i:02X}\".encode() for i in b\"#()<>[]{}/%\"},\n         **{chr(i): f\"#{i:02X}\".encode() for i in range(33)},\n     }\n "
+        },
+        {
+            "sha": "d8abc5c7daac3102feeacfe94191c41fcb0c1976",
+            "filename": "tests/test_generic.py",
+            "status": "modified",
+            "additions": 7,
+            "deletions": 0,
+            "changes": 7,
+            "blob_url": "https://github.com/py-pdf/pypdf/blob/20c4ac50c7708b6ea05a7c33b49af4616417d7fe/tests%2Ftest_generic.py",
+            "raw_url": "https://github.com/py-pdf/pypdf/raw/20c4ac50c7708b6ea05a7c33b49af4616417d7fe/tests%2Ftest_generic.py",
+            "contents_url": "https://api.github.com/repos/py-pdf/pypdf/contents/tests%2Ftest_generic.py?ref=20c4ac50c7708b6ea05a7c33b49af4616417d7fe",
+            "patch": "@@ -243,11 +243,18 @@ def test_name_object(caplog):\n     assert bytes(b.getbuffer()) == b\"/DIJMAC+Arial#20Black#231\"\n     assert caplog.text == \"\"\n \n+    caplog.clear()\n     b = BytesIO()\n     NameObject(\"/\u4f60\u597d\u4e16\u754c (%)\").write_to_stream(b)\n     assert bytes(b.getbuffer()) == b\"/#E4#BD#A0#E5#A5#BD#E4#B8#96#E7#95#8C#20#28#25#29\"\n     assert caplog.text == \"\"\n \n+    caplog.clear()\n+    b = BytesIO()\n+    NameObject(\"/{foo}<bar>(baz)[qux]#/%\").write_to_stream(b)\n+    assert bytes(b.getbuffer()) == b\"/#7Bfoo#7D#3Cbar#3E#28baz#29#5Bqux#5D#23#2F#25\"\n+    assert caplog.text == \"\"\n+\n \n def test_destination_fit_r():\n     d = Destination("
+        }
+    ],
+    "commits": [
+        {
+            "sha": "1baedebe5fa8d9022bc8db0c290158f23d942311",
+            "commit_date": "2025-05-12T18:28:06Z",
+            "message": "BUG: Add delimiters to NameObject.renumber_table",
+            "number_of_links_in_commit": 0,
+            "files_changed_count": 1,
+            "files": [
+                {
+                    "sha": "b458161a6fedbb64b764489219a3b52f82331dde",
+                    "filename": "pypdf/generic/_base.py",
+                    "status": "modified",
+                    "additions": 1,
+                    "deletions": 5,
+                    "changes": 6,
+                    "blob_url": "https://github.com/py-pdf/pypdf/blob/1baedebe5fa8d9022bc8db0c290158f23d942311/pypdf%2Fgeneric%2F_base.py",
+                    "raw_url": "https://github.com/py-pdf/pypdf/raw/1baedebe5fa8d9022bc8db0c290158f23d942311/pypdf%2Fgeneric%2F_base.py",
+                    "contents_url": "https://api.github.com/repos/py-pdf/pypdf/contents/pypdf%2Fgeneric%2F_base.py?ref=1baedebe5fa8d9022bc8db0c290158f23d942311",
+                    "patch": "@@ -780,11 +780,7 @@ class NameObject(str, PdfObject):  # noqa: SLOT000\n     delimiter_pattern = re.compile(rb\"\\s+|[\\(\\)<>\\[\\]{}/%]\")\n     surfix = b\"/\"\n     renumber_table: ClassVar[Dict[str, bytes]] = {\n-        \"#\": b\"#23\",\n-        \"(\": b\"#28\",\n-        \")\": b\"#29\",\n-        \"/\": b\"#2F\",\n-        \"%\": b\"#25\",\n+        **{chr(i): f\"#{i:02X}\".encode() for i in b\"#()<>[]{}/%\"},\n         **{chr(i): f\"#{i:02X}\".encode() for i in range(33)},\n     }\n "
+                }
+            ]
+        },
+        {
+            "sha": "20c4ac50c7708b6ea05a7c33b49af4616417d7fe",
+            "commit_date": "2025-05-12T19:02:40Z",
+            "message": "Add unit test",
+            "number_of_links_in_commit": 0,
+            "files_changed_count": 1,
+            "files": [
+                {
+                    "sha": "d8abc5c7daac3102feeacfe94191c41fcb0c1976",
+                    "filename": "tests/test_generic.py",
+                    "status": "modified",
+                    "additions": 7,
+                    "deletions": 0,
+                    "changes": 7,
+                    "blob_url": "https://github.com/py-pdf/pypdf/blob/20c4ac50c7708b6ea05a7c33b49af4616417d7fe/tests%2Ftest_generic.py",
+                    "raw_url": "https://github.com/py-pdf/pypdf/raw/20c4ac50c7708b6ea05a7c33b49af4616417d7fe/tests%2Ftest_generic.py",
+                    "contents_url": "https://api.github.com/repos/py-pdf/pypdf/contents/tests%2Ftest_generic.py?ref=20c4ac50c7708b6ea05a7c33b49af4616417d7fe",
+                    "patch": "@@ -243,11 +243,18 @@ def test_name_object(caplog):\n     assert bytes(b.getbuffer()) == b\"/DIJMAC+Arial#20Black#231\"\n     assert caplog.text == \"\"\n \n+    caplog.clear()\n     b = BytesIO()\n     NameObject(\"/\u4f60\u597d\u4e16\u754c (%)\").write_to_stream(b)\n     assert bytes(b.getbuffer()) == b\"/#E4#BD#A0#E5#A5#BD#E4#B8#96#E7#95#8C#20#28#25#29\"\n     assert caplog.text == \"\"\n \n+    caplog.clear()\n+    b = BytesIO()\n+    NameObject(\"/{foo}<bar>(baz)[qux]#/%\").write_to_stream(b)\n+    assert bytes(b.getbuffer()) == b\"/#7Bfoo#7D#3Cbar#3E#28baz#29#5Bqux#5D#23#2F#25\"\n+    assert caplog.text == \"\"\n+\n \n def test_destination_fit_r():\n     d = Destination("
+                }
+            ]
+        }
+    ],
+    "pull_request_url": "https://github.com/py-pdf/pypdf/pull/3286",
+    "commits_url": "https://github.com/py-pdf/pypdf/pull/3286/commits",
+    "files_url": "https://github.com/py-pdf/pypdf/pull/3286/files"
+}

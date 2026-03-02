@@ -1,0 +1,42 @@
+{
+  "pr_number": 2463,
+  "repository": "simonw/datasette",
+  "title": "Use the event_loop fixture",
+  "body": "This change aligns the test suite with an explicit use of the pytest-asyncio event_loop fixture. By consuming the event_loop fixture in asynchronous tests and fixtures (notably ds_client), we ensure all async code runs on a single, well-managed event loop provided by pytest-asyncio, reducing interleaving risks and improving test stability when starting up in-process Datasette instances and performing async I/O. The PR targets fixture-level changes rather than broad API changes, and aims to be compatible with the existing async tests in tests/conftest.py and related fixtures.\n\nRationale:\n- The test suite already uses asyncio-based tests (pytest.mark.asyncio, async def tests). Making event_loop explicit helps avoid accidental creation of separate loops and aligns with recommended pytest-asyncio usage.\n- ds_client and similar fixtures currently perform asynchronous startup and requests. Explicitly consuming event_loop ensures those awaitables execute on the intended loop and improves consistency across tests.\n\nWhat this PR likely changes:\n- Introduce event_loop as a parameter to the ds_client fixture (and any other async fixtures that spawn tasks or rely on the loop).\n- Remove or minimize ad-hoc loop creation in tests/fixtures code paths if present, so they rely on the provided event_loop.\n- Optionally annotate key async tests to include event_loop as a fixture parameter where appropriate to emphasize loop reuse.\n\nImpact and risks:\n- Low risk if done carefully; mainly affects test setup and fixture scoping. Real tests shouldn’t change application logic, just how the test harness runs async code.\n- Ensure compatibility with existing pytest-asyncio versions in use (avoid overwriting or conflicting with any existing event_loop fixtures).\n\nFollow-ups (optional):\n- If there are tests that spawn dedicated loops in their own helper tasks, consider migrating those to use the provided event_loop fixture explicitly.\n- Run the full test suite locally or in CI to verify no interleaving or resource leaks appear with the new fixture usage.\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T14:27:09.624217",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "tests/conftest.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "ds_client",
+          "class_name": "tests",
+          "full_name": "tests.conftest.ds_client",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Align the test harness with an explicit pytest-asyncio event_loop by wiring event_loop into the ds_client fixture, ensuring all async startup and I/O run on a single managed loop.",
+    "steps": [
+      {
+        "operation": "Modify ds_client fixture to accept event_loop and use it for async startup/requests",
+        "file_to_modify": "tests/conftest.py",
+        "function_to_modify": "ds_client",
+        "reason": "To ensure all asynchronous operations in the ds_client fixture run on the explicit pytest-asyncio event_loop, improving stability and avoiding interleaving.",
+        "side_effects": "Test suite will rely on pytest-asyncio's event_loop fixture; ensure no conflicting loop creation; potential minor updates to tests invoking ds_client; may require re-run of tests to confirm stability"
+      }
+    ]
+  }
+}

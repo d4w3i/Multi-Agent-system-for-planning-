@@ -1,0 +1,65 @@
+{
+  "pr_number": 2200,
+  "repository": "mopidy/mopidy",
+  "title": "add workaround for gstreamer 1.25.0 to 1.26.2",
+  "body": "see-also: https://gitlab.freedesktop.org/gstreamer/gstreamer/-/commit/bbf60305ed2ee35f4ecf7a5de2bb139203dda2af\n\nExplore the source code to identify the files and functions to modify.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T12:48:20.019200",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "src/mopidy/internal/gi.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "gi (module import/runtime code)",
+          "class_name": "mopidy",
+          "full_name": "mopidy.internal.gi (module import/runtime code)",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "src/mopidy/audio/actor.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "on_playbin_state_changed",
+          "class_name": "_Handler",
+          "full_name": "_Handler.on_playbin_state_changed",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Detect GStreamer versions 1.25.0–1.26.2 at import time and expose a module-level flag plus runtime warning in mopidy.internal.gi, then make the audio actor's _Handler.on_playbin_state_changed consult that flag and only apply the GStreamer workaround when running on those broken releases.",
+    "steps": [
+      {
+        "operation": "Add GStreamer problematic-version detection and module-level flag",
+        "file_to_modify": "src/mopidy/internal/gi.py",
+        "function_to_modify": "mopidy.internal.gi",
+        "reason": "Detect the loaded Gst library as early as possible (immediately after Gst.init([])) and expose a single module-level boolean that indicates whether the runtime is using a known-broken GStreamer release (>= 1.25.0 and <= 1.26.2). This centralizes version logic so other modules only check one flag instead of repeating tuple comparisons, and allows emitting a clear runtime warning to inform users of the issue.",
+        "side_effects": "Adds a new import-time check and a module-level variable (e.g. GST_BROKEN_VERSION or _GSTREAMER_NEEDS_WORKAROUND) that other modules will read. Potential impacts: (a) small runtime overhead at import; (b) other modules will start importing this new symbol — be careful about import-order/circular-import issues (audio.actor may import this flag; if circular imports exist, move imports into functions or use local import to avoid issues); (c) tests that inspect Gst initialization or expect no warnings may need updates; (d) no change to minimum-version enforcement, so API compatibility remains unchanged."
+      },
+      {
+        "operation": "Conditionally apply the workaround in the audio actor's state-change handler",
+        "file_to_modify": "src/mopidy/audio/actor.py",
+        "function_to_modify": "_Handler.on_playbin_state_changed",
+        "reason": "This handler already contains GStreamer-specific workaround logic. Update it to consult the module-level flag from mopidy.internal.gi and only apply the additional state-change workaround behavior when the flag indicates the running Gst version is in the broken range. This localizes the behavioral change to the existing workaround site and avoids changing behavior for unaffected versions.",
+        "side_effects": "Behavior will change only when the flag is true. Potential impacts: (a) unit/integration tests that assert state transitions or rely on the previous unconditional hack must be updated or extended with tests for both flagged and unflagged cases; (b) importing the flag may introduce circular import risk — mitigate by importing mopidy.internal.gi within the function scope or using a lazy accessor; (c) runtime logs will include an additional warning only for affected versions; (d) downstream components that rely on exact state-change ordering should be verified to ensure no regression."
+      }
+    ]
+  }
+}

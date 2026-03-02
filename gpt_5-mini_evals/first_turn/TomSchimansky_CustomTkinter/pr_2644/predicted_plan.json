@@ -1,0 +1,102 @@
+{
+  "pr_number": 2644,
+  "repository": "TomSchimansky/CustomTkinter",
+  "title": "Fix CTkEntry place_holder",
+  "body": "- Fixed place holder behavior when assigning a textvariable to a CTkEntry\n- Added flag to control textvariable_callback event",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T11:41:33.574976",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "customtkinter/windows/widgets/ctk_entry.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "__init__",
+          "class_name": "CTkEntry",
+          "full_name": "CTkEntry.__init__",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "configure",
+          "class_name": "CTkEntry",
+          "full_name": "CTkEntry.configure",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "destroy",
+          "class_name": "CTkEntry",
+          "full_name": "CTkEntry.destroy",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_textvariable_callback",
+          "class_name": "CTkEntry",
+          "full_name": "CTkEntry._textvariable_callback",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_activate_placeholder",
+          "class_name": "CTkEntry",
+          "full_name": "CTkEntry._activate_placeholder",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Ensure CTkEntry properly manages textvariable trace lifecycle, allow placeholders when a bound variable is empty, and add a flag to enable/disable the textvariable trace callback. Also clean up traces on destroy to avoid leaks.",
+    "steps": [
+      {
+        "operation": "Add textvariable-callback flag and register initial trace if textvariable provided",
+        "file_to_modify": "customtkinter/windows/widgets/ctk_entry.py",
+        "function_to_modify": "CTkEntry.__init__",
+        "reason": "Initialize a boolean flag (e.g., self._textvariable_callback_enabled = True) to allow external control over whether the textvariable trace callback runs. Also ensure that if a textvariable is passed at construction the code registers a trace_add('write', ...) on it and stores the returned callback id in self._textvariable_callback_name. After registering, immediately evaluate the variable's current value and call _activate_placeholder() if empty or _deactivate_placeholder() if non-empty so the displayed state matches the variable at widget creation.",
+        "side_effects": "Changes widget initialization behavior and internal state. Tests that create CTkEntry with a textvariable must still pass. Downstream code expecting the previous implicit behavior may need to be updated if they relied on trace callback always running at init time. The new flag defaults to True so most behavior remains unchanged. Be careful about tk.Variable.trace_add semantics across supported Tk versions."
+      },
+      {
+        "operation": "Manage trace lifecycle and add optional callback toggle when runtime-configuring textvariable",
+        "file_to_modify": "customtkinter/windows/widgets/ctk_entry.py",
+        "function_to_modify": "CTkEntry.configure",
+        "reason": "When configure(..., textvariable=...) is called at runtime we must remove any existing trace on the old variable (using stored self._textvariable_callback_name and trace_remove) before replacing self._textvariable, then add a trace_add on the new variable and store the new callback id. After attaching the trace, immediately inspect the new variable's value and call _activate_placeholder() if empty or _deactivate_placeholder() if non-empty so the entry display matches the new variable value. Also accept an optional kwarg (e.g., textvariable_callback_enabled or textvariable_callback) passed via configure to allow callers to toggle the new flag at runtime.",
+        "side_effects": "Alters runtime configuration flow, so any code that calls configure(textvariable=...) will now have traces cleaned up and re-registered; this prevents stale callbacks and avoids missing callbacks for newly assigned variables. Tests that monkeypatch or introspect trace IDs may be affected. The introduced configure kwarg slightly changes the public configure signature (backwards compatible if made optional), so documentation/tests should be updated accordingly."
+      },
+      {
+        "operation": "Allow placeholder activation when a bound textvariable exists but is empty",
+        "file_to_modify": "customtkinter/windows/widgets/ctk_entry.py",
+        "function_to_modify": "CTkEntry._activate_placeholder",
+        "reason": "Relax the prior check that prevented placeholder activation whenever any textvariable was present. Instead, allow activation when either no textvariable is bound OR the bound textvariable's current value is empty (var.get() == \"\"). This ensures placeholders are visible when a variable is assigned but contains no text.",
+        "side_effects": "Changes placeholder visibility semantics: placeholder will now appear when a bound variable is empty. Tests or code that previously assumed placeholder would never appear when a textvariable was bound must be updated. Interaction with focus and user input paths should be validated to ensure no regressions in UX."
+      },
+      {
+        "operation": "Respect callback-enabled flag and synchronize placeholder on variable change",
+        "file_to_modify": "customtkinter/windows/widgets/ctk_entry.py",
+        "function_to_modify": "CTkEntry._textvariable_callback",
+        "reason": "Modify the trace callback to early-return when self._textvariable_callback_enabled is False. When enabled, examine the current value of the bound variable and call _activate_placeholder() if empty or _deactivate_placeholder() if non-empty so external changes to the variable reflect in the widget. This makes placeholder behavior controlled and reversible by the new flag.",
+        "side_effects": "Provides a controlled mechanism to suppress placeholder activation during programmatic updates. Tests that depend on immediate trace-driven updates may need to set the new flag appropriately. Also ensure that re-enabling the flag triggers an immediate synchronization (consider whether additional code is needed elsewhere to force a sync when the flag is toggled)."
+      },
+      {
+        "operation": "Remove registered textvariable trace on widget destruction",
+        "file_to_modify": "customtkinter/windows/widgets/ctk_entry.py",
+        "function_to_modify": "CTkEntry.destroy",
+        "reason": "Prevent callback leaks by removing any registered 'write' trace on the bound textvariable when the widget is destroyed. Use stored self._textvariable_callback_name and call trace_remove('write', callback_id) on the variable if both exist before calling the superclass destroy behavior.",
+        "side_effects": "Prevents memory/callback leaks for long-running applications that create/destroy entries. Tests that previously relied on lingering callbacks may change behavior. Ensure destroy still functions correctly even if the variable or callback id is already None or has been removed elsewhere."
+      }
+    ]
+  }
+}

@@ -1,0 +1,232 @@
+{
+  "pr_number": 1895,
+  "repository": "Acly/krita-ai-diffusion",
+  "title": "feat: Switch to enum queue mode, add 'replace' mode.",
+  "body": "Follow up to https://github.com/Acly/krita-ai-diffusion/pull/1879\n\nKind of janky because of the fact that job queue tasks are split up before the client- I make clear-queue a property of the first job.\n\nNot sure if the enum is in the right place.\n\nTentatively planning to implement ctrl-click as \"Alternate queue mode\".\n\nExplore the source code to identify the files and functions to modify.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T11:29:56.627700",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "ai_diffusion/client.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "enqueue",
+          "class_name": "Client",
+          "full_name": "Client.enqueue",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "ai_diffusion/comfy_client.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "enqueue",
+          "class_name": "ComfyClient",
+          "full_name": "ComfyClient.enqueue",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_run_job",
+          "class_name": "ComfyClient",
+          "full_name": "ComfyClient._run_job",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "create",
+          "class_name": "JobInfo",
+          "full_name": "JobInfo.create",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "ai_diffusion/cloud_client.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "enqueue",
+          "class_name": "CloudClient",
+          "full_name": "CloudClient.enqueue",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_process_job",
+          "class_name": "CloudClient",
+          "full_name": "CloudClient._process_job",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "ai_diffusion/model.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "_enqueue_job",
+          "class_name": "Model",
+          "full_name": "Model._enqueue_job",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "queue_front",
+          "class_name": "Model",
+          "full_name": "Model.queue_front",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "ai_diffusion/ui/widget.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "__init__",
+          "class_name": "QueuePopup",
+          "full_name": "QueuePopup.__init__",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "model (setter)",
+          "class_name": "QueuePopup",
+          "full_name": "QueuePopup.model (setter)",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "ai_diffusion/ui/generation.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "generate is invoked)",
+          "class_name": "GenerateButton / GenerationWidget click handler (where model",
+          "full_name": "GenerateButton / GenerationWidget click handler (where model.generate is invoked)",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Replace the boolean enqueue 'front' flag with a QueueMode enum (front/back/replace): add the enum to the Client API, update Comfy and Cloud clients to store and serialize the mode in job payloads, change the Model to persist a QueueMode, update the UI combo to present three modes and bind to the new property, and implement ctrl-click alternate-mode behavior in the generate button handler.",
+    "steps": [
+      {
+        "operation": "Add QueueMode enum and change Client.enqueue signature",
+        "file_to_modify": "ai_diffusion/client.py",
+        "function_to_modify": "Client.enqueue",
+        "reason": "Introduce a typed enum (QueueMode) at the central Client API so all consumers and implementations share the same representation, and replace the boolean front flag with a mode parameter. This centralizes semantics and avoids scattering enum definitions.",
+        "side_effects": "All callers and implementations will need to import QueueMode; breaking API change for Client.enqueue signature (default preserved as QueueMode.back). Update unit tests for client API. Downstream modules that call Client.enqueue must be updated to pass a QueueMode instead of bool."
+      },
+      {
+        "operation": "Change JobInfo.create to accept QueueMode and store it",
+        "file_to_modify": "ai_diffusion/comfy_client.py",
+        "function_to_modify": "JobInfo.create",
+        "reason": "JobInfo currently stores a boolean front; to propagate queue semantics through job lifecycle the factory must accept and store the QueueMode so run-time workers can serialize it to the server payload.",
+        "side_effects": "Any code creating JobInfo using the old signature must be updated. Tests that assert JobInfo attributes must be adjusted. No API surface outside the client module unless JobInfo is used externally."
+      },
+      {
+        "operation": "Change ComfyClient.enqueue signature to accept QueueMode and create JobInfo.queue_mode",
+        "file_to_modify": "ai_diffusion/comfy_client.py",
+        "function_to_modify": "ComfyClient.enqueue",
+        "reason": "ComfyClient must receive and persist the queue mode for each enqueued job so the server receives the intended semantics. Change from front: bool to mode: QueueMode.",
+        "side_effects": "Model and any direct callers must pass QueueMode values. Local behavior of enqueue (returning job id) remains, but callers must be updated and tests adjusted. If the server expects boolean 'front', consider adding compatibility mapping (include both fields) in payload."
+      },
+      {
+        "operation": "Serialize QueueMode in ComfyClient._run_job payload",
+        "file_to_modify": "ai_diffusion/comfy_client.py",
+        "function_to_modify": "ComfyClient._run_job",
+        "reason": "When posting the prompt to the local Comfy server, include the job's queue mode so the server can apply front/back/replace semantics. Preserve backward compatibility by optionally also sending 'front': (mode == QueueMode.front) if needed.",
+        "side_effects": "Payload format change — servers that only expect 'front' boolean may require update; including both 'front' and 'queue_mode' is safer. Tests that inspect generated POST bodies must be updated. Downstream server behaviour must be validated."
+      },
+      {
+        "operation": "Change CloudClient.enqueue signature to accept QueueMode and create JobInfo.queue_mode",
+        "file_to_modify": "ai_diffusion/cloud_client.py",
+        "function_to_modify": "CloudClient.enqueue",
+        "reason": "CloudClient previously accepted a front arg but ignored it; to support queue semantics across cloud endpoints, the enqueue API should accept and store a QueueMode so the cloud request builder can include it.",
+        "side_effects": "Callers must pass QueueMode; cloud client tests must be updated. The cloud API payload format will change, so the remote service must either ignore unknown fields or be updated to consume queue_mode. Local enqueue semantics (append/prepend/replace) need to be implemented server-side or emulated client-side depending on architecture."
+      },
+      {
+        "operation": "Embed QueueMode into CloudClient._process_job generate payload",
+        "file_to_modify": "ai_diffusion/cloud_client.py",
+        "function_to_modify": "CloudClient._process_job",
+        "reason": "To allow the cloud backend to apply front/back/replace semantics, include queue_mode in the JSON sent to the 'generate' endpoint (e.g., under input.options.queue_mode or a top-level 'queue_mode' key).",
+        "side_effects": "Payload shape changes; cloud server must handle the new key. Unit/integration tests for cloud requests need updates. If the cloud server expects a different format, coordinate on the agreed key and representation (string name is recommended)."
+      },
+      {
+        "operation": "Rename Model.queue_front -> Model.queue_mode (persisted property) and map old persisted values",
+        "file_to_modify": "ai_diffusion/model.py",
+        "function_to_modify": "Model.queue_front",
+        "reason": "Move from a boolean stored setting to a typed QueueMode property so UI and model state reflect the new three-way semantics. Also implement a small migration: when loading persisted settings, if queue_front exists as a boolean convert it to QueueMode.front/back.",
+        "side_effects": "Settings persistence changes; existing users' saved boolean must be migrated to enum to avoid UX surprises. Any code referencing queue_front must be updated. Tests that check persisted values must be modified. Changing property name may break bindings if not updated."
+      },
+      {
+        "operation": "Pass QueueMode to client.enqueue in Model._enqueue_job",
+        "file_to_modify": "ai_diffusion/model.py",
+        "function_to_modify": "Model._enqueue_job",
+        "reason": "Model currently calls client.enqueue(work, self.queue_front). Replace this with client.enqueue(work, self.queue_mode) so the Client API receives the enum and enqueued jobs carry correct mode.",
+        "side_effects": "Client implementations must have been updated to accept QueueMode. Tests covering Model._enqueue_job and enqueue flows must be updated. Pay attention to batched job splitting and ensure the first job carries clear-queue if that logic is relied upon."
+      },
+      {
+        "operation": "Replace boolean combo contents with QueueMode enum items in QueuePopup.__init__ and import QueueMode",
+        "file_to_modify": "ai_diffusion/ui/widget.py",
+        "function_to_modify": "QueuePopup.__init__",
+        "reason": "UI must expose the new 'replace' option and bind selections to enum values. Create three combo items (Front, Back, Replace) whose item data are the corresponding QueueMode members and import QueueMode in the module.",
+        "side_effects": "UI tests must be updated; the combo's item data type changes from bool to enum. Ensure the UI binder uses .currentData() (or equivalent) and that it stores enum members successfully in the model. Visual change in UI may require layout updates or translations/documentation updates."
+      },
+      {
+        "operation": "Change QueuePopup.model binding to use 'queue_mode' instead of 'queue_front'",
+        "file_to_modify": "ai_diffusion/ui/widget.py",
+        "function_to_modify": "QueuePopup.model",
+        "reason": "The model property changed name and type; update the binding code to bind_combo(self._model, 'queue_mode', ...) so UI and model remain synchronized.",
+        "side_effects": "Binding helper must support enum values; if it previously used boolean-specific logic adapt it. Tests around UI-model binding must be updated. Any other UI components referencing queue_front must be updated similarly."
+      },
+      {
+        "operation": "Implement ctrl-click alternate-queue-mode behavior in the Generate button click handler",
+        "file_to_modify": "ai_diffusion/ui/generation.py",
+        "function_to_modify": "GenerationWidget._on_generate_clicked",
+        "reason": "Provide the requested UX: ctrl-click should enqueue using an alternate queue mode (e.g., cycle or pick a preferred alternate). Implement detection of keyboard modifiers in the click handler (or override mousePressEvent in the button subclass) and either temporarily override model.queue_mode for the immediate enqueue call or pass an explicit mode argument through the generate/enqueue flow.",
+        "side_effects": "UI event handling changes; ensure modifier detection works cross-platform and with the existing signal chain. Tests for button behavior must be added/updated. Consider edge cases where generate triggered programmatically should not be affected. If the generate API signature is extended to accept an explicit mode, update all call sites accordingly."
+      }
+    ]
+  }
+}

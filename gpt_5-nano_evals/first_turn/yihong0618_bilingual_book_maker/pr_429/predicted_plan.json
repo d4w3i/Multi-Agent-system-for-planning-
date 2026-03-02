@@ -1,0 +1,42 @@
+{
+  "pr_number": 429,
+  "repository": "yihong0618/bilingual_book_maker",
+  "title": "fix: Fix parameter mismatch in EPUBBookLoaderHelper.translate_with_backoff",
+  "body": "Problem: The translate_with_backoff method in EPUBBookLoaderHelper was raising a TypeError due to a parameter mismatch between its signature and how it is called through the backoff decorator. The error observed was:\nTypeError: EPUBBookLoaderHelper.translate_with_backoff() takes 1 positional argument but 3 were given\n\nSolution (summary):\n1) Change the method signature to explicitly accept parameters (text and context_flag) and still pass through any additional kwargs to the underlying translator.\n   - New signature: translate_with_backoff(self, text, context_flag=False, **kwargs)\n   - Forwarding: return self.translate_model.translate(text=text, context_flag=context_flag, **kwargs)\n2) Add jitter=None to the backoff decorator to align with the library’s usage and avoid unintended jitter behavior.\n3) Improve error handling and logging around translation attempts to aid debugging and observability.\n\nNotes:\n- Existing callers that used positional args (e.g., self.translate_with_backoff(p.text, self.context_flag)) will continue to work with the new positional mapping (text -> p.text, context_flag -> self.context_flag).\n- The updated signature also supports explicit keyword usage if desired in future refactors.\n- This change minimizes surface area while fixing the mismatch and improving resilience via backoff customization and better logging.\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T14:38:29.903693",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "book_maker/loader/helper.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "translate_with_backoff",
+          "class_name": "EPUBBookLoaderHelper",
+          "full_name": "EPUBBookLoaderHelper.translate_with_backoff",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "This PR resolves a parameter mismatch in EPUBBookLoaderHelper.translate_with_backoff by updating its signature to explicitly accept text and context_flag, forwarding additional kwargs to the translator, configuring the backoff decorator with jitter=None, and enhancing error handling and logging for better observability.",
+    "steps": [
+      {
+        "operation": "Refactor translate_with_backoff to explicit signature (text, context_flag=False, **kwargs) and forward kwargs to translate_model.translate; set backoff decorator jitter=None; enhance error handling and logging",
+        "file_to_modify": "book_maker/loader/helper.py",
+        "function_to_modify": "EPUBBookLoaderHelper.translate_with_backoff",
+        "reason": "Fix the TypeError caused by a parameter mismatch when the method is wrapped by a backoff decorator. The new explicit signature (text, context_flag) preserves backward compatibility with existing positional calls (text -> p.text, context_flag -> self.context_flag) while enabling future keyword usage. Adding jitter=None aligns with the library's usage and prevents unintended jitter. Enhanced error handling/logging improves observability during translation retries.",
+        "side_effects": "Backward compatibility for existing positional call sites is preserved; tests and mocks referencing the old signature may remain valid but could require updates to reflect the explicit parameters; backoff jitter behavior will become deterministic (jitter=None), which may affect retry timing; improved logging will surface in translation retry logs and aid debugging; no changes to core translation logic."
+      }
+    ]
+  }
+}

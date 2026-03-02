@@ -1,0 +1,72 @@
+{
+  "pr_number": 5625,
+  "repository": "pyodide/pyodide",
+  "title": "Fix test_package_index test",
+  "body": "Root cause: The test named test_package_index started failing due to unexpected extra terminal output during package loading/indexing. The noise likely originates from the package loading/metadata handling path, which can cause assertions that rely on clean stdout to fail or misinterpret test results.\n\nProposed approach:\n- Quiet the packaging/loading code paths during test runs by gating terminal output behind a test-friendly flag or converting prints to structured logging. This preserves visibility in real runs but prevents stdout pollution in CI/tests.\n- Narrow focus to the package-loading flow: ensure that packaging/index discovery (test_package_index) does not emit incidental prints when collecting or reporting package index data.\n- If necessary, adjust tests to not rely on stdout for success/failure signals, or to capture and ignore non-critical logs.\n\nImpact:\n- Should stabilize test_package_index by removing flaky stdout noise.\n- Improves test reliability for related package-loading tests that share the same code paths.\n- Maintains backward compatibility for end-user outputs, while enabling test environments to run quietly.\n\nVerification plan:\n- Run the test suite focusing on package-index related tests (including test_package_loading and any index-related tests) with stdout capture enabled.\n- Validate that test_package_index passes without being affected by incidental prints.\n- Ensure no regressions in normal runtime logging when not in test mode (e.g., in browsers or non-test environments).\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T14:22:12.819719",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "src/py/pyodide/_package_loader.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "unpack_buffer",
+          "class_name": "PackageLoader",
+          "full_name": "PackageLoader.unpack_buffer",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "get_dist_source",
+          "class_name": "PackageLoader",
+          "full_name": "PackageLoader.get_dist_source",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "init_loaded_packages",
+          "class_name": "PackageLoader",
+          "full_name": "PackageLoader.init_loaded_packages",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Silence extraneous stdout from the package loading/indexing path to stabilize test_package_index by gating prints behind a test-mode flag in packaging code.",
+    "steps": [
+      {
+        "operation": "Guard terminal output in PackageLoader.unpack_buffer behind a test-mode check",
+        "file_to_modify": "src/py/pyodide/_package_loader.py",
+        "function_to_modify": "PackageLoader.unpack_buffer",
+        "reason": "Prevent incidental prints from polluting stdout during tests (test_package_index) while preserving prints for real runs",
+        "side_effects": "Tests won't see incidental stdout; requires tests to rely on stdout capture; minimal performance impact; may require developers to set PYODIDE_TEST_MODE in CI"
+      },
+      {
+        "operation": "Guard terminal output in PackageLoader.get_dist_source behind a test-mode check",
+        "file_to_modify": "src/py/pyodide/_package_loader.py",
+        "function_to_modify": "PackageLoader.get_dist_source",
+        "reason": "Reduce noisy stdout during packaging metadata source resolution during tests",
+        "side_effects": "Same as above; potential minor changes to debugging output when test mode is off"
+      },
+      {
+        "operation": "Guard terminal output in PackageLoader.init_loaded_packages behind a test-mode check",
+        "file_to_modify": "src/py/pyodide/_package_loader.py",
+        "function_to_modify": "PackageLoader.init_loaded_packages",
+        "reason": "Ensure initialization of loaded packages does not emit verbose output in test environments",
+        "side_effects": "Noisy prints silenced in tests; may affect manual debugging outputs when not in test mode"
+      }
+    ]
+  }
+}

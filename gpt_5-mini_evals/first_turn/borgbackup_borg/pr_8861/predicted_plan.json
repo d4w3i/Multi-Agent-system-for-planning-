@@ -1,0 +1,42 @@
+{
+  "pr_number": 8861,
+  "repository": "borgbackup/borg",
+  "title": "tests: fix diff cmd test on macOS HFS+, fixes #8860",
+  "body": "If we touch too quickly after file creation, it would not noticably update the timestamp.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T12:02:11.755380",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "src/borg/testsuite/archiver/diff_cmd_test.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "test_basic_functionality",
+          "class_name": null,
+          "full_name": "test_basic_functionality",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Make the failing diff command test deterministic on macOS HFS+ by replacing a fragile immediate Path.touch() call with platform-aware logic that advances the file's mtime by >1 second (using os.utime on Darwin), avoiding sleeps while ensuring the timestamp change is observed.",
+    "steps": [
+      {
+        "operation": "Replace Path('input/file_touched').touch() with a macOS-aware utime that advances mtime by >1s (and add os import if needed)",
+        "file_to_modify": "src/borg/testsuite/archiver/diff_cmd_test.py",
+        "function_to_modify": "test_basic_functionality",
+        "reason": "On macOS HFS+ timestamps have 1s granularity; touching immediately after file creation can leave the recorded mtime unchanged and cause the test's timestamp-only change assertion to flake. Explicitly advancing the file's mtime (old_mtime + 2s) when running on Darwin ensures the filesystem-rounding yields a different timestamp deterministically without adding sleeps or changing test semantics on other platforms.",
+        "side_effects": "Only test code is changed; production code unaffected. Tests will be deterministic on macOS HFS+ and unchanged on other platforms. Implementation will likely require adding an 'import os' at the top of the test file (and use the existing is_darwin flag if present; if not present the change may add a small platform check like sys.platform == 'darwin'). This change may alter ctime on POSIX (expected by the test), and has no API implications. Downstream tests that depend on an unchanged touch() side-effect are unlikely, but if any test relies on exact atime/mtime behavior beyond this test it should be reviewed. No change to test runtime performance (no sleeps introduced)."
+      }
+    ]
+  }
+}

@@ -1,0 +1,65 @@
+{
+  "pr_number": 498,
+  "repository": "datalab-to/marker",
+  "title": "OCR Error Detection Hotfix",
+  "body": "Fix input handling of error detection model: \n- Segment length is automatically handled by tokenizer, and is by `#tokens`, not `#chars`, removing the splitting logic inside `marker`\n- Join lines using `\\n`",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T12:11:34.860527",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "marker/builders/ocr.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "ocr_extraction",
+          "class_name": "OcrBuilder",
+          "full_name": "OcrBuilder.ocr_extraction",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "marker/processors/llm/llm_text.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "process_rewriting",
+          "class_name": "LLMTextProcessor",
+          "full_name": "LLMTextProcessor.process_rewriting",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Remove trailing newlines from OCR-built Spans and change the LLM text processor to supply a single '\\n'-joined text block to the prompt while retaining the per-line list for validation, preventing duplicate newlines and relying on tokenizer token limits rather than char-based splitting.",
+    "steps": [
+      {
+        "operation": "Remove trailing newline when creating Spans",
+        "file_to_modify": "marker/builders/ocr.py",
+        "function_to_modify": "OcrBuilder.ocr_extraction",
+        "reason": "Spans are currently created with text = fix_text(ocr_line.text) + \"\\n\", which causes duplicate/newline proliferation when downstream processors (LLMTextProcessor) join lines with '\\n' or append their own trailing newlines. Removing the concatenated \"\\n\" keeps each Span's text as the normalized OCR text, delegating line-joining to downstream processors and the model/tokenizer.",
+        "side_effects": "Any code or tests that expect Span.text to include a trailing '\\n' will break; update tests and any dependent code that relied on the trailing newline. Downstream logic that previously relied on char-based splitting may see slightly different string contents; however, model tokenization and token-based splitting remain unaffected. Persisted span representations (DB/serialized forms) will change if stored with trailing newlines; migrations/tests may be needed."
+      },
+      {
+        "operation": "Join per-line texts with '\\n' when building LLM prompt while retaining list for validation",
+        "file_to_modify": "marker/processors/llm/llm_text.py",
+        "function_to_modify": "LLMTextProcessor.process_rewriting",
+        "reason": "Instead of inserting a JSON array of per-line strings or sending lines separately, build a single joined string extracted_lines_joined = '\\n'.join(extracted_lines_list) for the {extracted_lines} placeholder in the prompt template. Keep extracted_lines_list (the list of lines) to validate that len(corrected_lines) == len(extracted_lines_list). This implements the PR requirement to join lines using '\\n' and avoids per-character splitting inside marker.",
+        "side_effects": "Prompt shape changes: LLM receives a single newline-joined block instead of a list-like JSON payload; prompts and model behavior should be tested to ensure no unintended tokenization/formatting differences. Validation logic remains the same, so API-level behavior (response schema) should be stable. Unit/integration tests that assert on the exact prompt text or on JSON-wrapped extracted lines must be updated. Ensure the downstream step that materializes corrected_lines into Spans still appends a single trailing '\\n' per created span (preserve existing behavior) to avoid losing line breaks in final output."
+      }
+    ]
+  }
+}

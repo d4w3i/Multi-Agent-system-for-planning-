@@ -1,0 +1,42 @@
+{
+  "pr_number": 1002,
+  "repository": "FoundationAgents/OpenManus",
+  "title": "remove unnecessary actions while ensuring required tool calls",
+  "body": "Summary:\n- Adjust tool-calling flow to simplify behavior when no tool calls are planned while tool calls are required.\n\nWhat this changes:\n- In ToolCallAgent.act, when tool_calls is empty and tool_choices is set to REQUIRED, the previous behavior was to raise an exception (TOOL_CALL_REQUIRED). The PR proposes to return False instead, removing an exception path and allowing a simple falsy result to indicate that no actions are needed.\n- The existing behavior remains intact for other tool_choices configurations (e.g., AUTO or NONE), and when there are actual tool_calls to execute, execution flow is unchanged.\n\nRationale:\n- Reduces unnecessary exception handling and simplifies control flow in the common case where a decision to continue processing is not required or cannot be made due to lack of tool_calls.\n- Returning False provides a straightforward, checkable signal to callers without relying on exception handling.\n\nImpact & considerations:\n- Downstream callers that previously relied on TOOL_CALL_REQUIRED exception must now handle a False return value instead.\n- The return type of act() may change from str to Union[str, bool] in practice; consider updating type hints or documenting behavior to avoid surprises.\n- Tests expecting exceptions for empty tool_calls with REQUIRED should be updated to assert a False return value.\n- No changes to the planning (think) or tool execution (execute_tool) logic; only the finish/early-exit path is affected.\n\nFiles touched (proposed):\n- toolcall.py: Modify ToolCallAgent.act to return False when tool_calls is empty and tool_choices is REQUIRED, instead of raising TOOL_CALL_REQUIRED.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T13:24:44.115232",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "toolcall.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "act",
+          "class_name": "ToolCallAgent",
+          "full_name": "ToolCallAgent.act",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Simplify ToolCallAgent.act by returning False when there are no planned tool calls under REQUIRED mode, instead of raising an exception, while preserving existing behavior for other modes and when tool calls exist.",
+    "steps": [
+      {
+        "operation": "Modify ToolCallAgent.act to return False when no tool_calls and tool_choices == ToolChoice.REQUIRED",
+        "file_to_modify": "toolcall.py",
+        "function_to_modify": "ToolCallAgent.act",
+        "reason": "Replace the exception path TOOL_CALL_REQUIRED with a simple falsy return to indicate no actions are needed, aligning with the PR and reducing control-flow noise.",
+        "side_effects": "Downstream callers must handle a False return instead of catching TOOL_CALL_REQUIRED; tests relying on the exception must be updated; potential need to adjust type hints or consumer logic to accommodate Union[str, bool] return values; no changes to tool execution logic."
+      }
+    ]
+  }
+}

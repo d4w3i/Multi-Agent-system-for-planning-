@@ -1,0 +1,42 @@
+{
+  "pr_number": 6890,
+  "repository": "sqlfluff/sqlfluff",
+  "title": "Fix RawFileSlice idx and tags in lexer_test",
+  "body": "While running the lexer test in rust mode, these RawFileSlice tags came across with type errors. This fixes the order of the block_idx and tag.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T14:35:08.668576",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "src/sqlfluff/core/templaters/base.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "__new__",
+          "class_name": "RawFileSlice",
+          "full_name": "RawFileSlice.__new__",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Introduce a defensive __new__ shim for RawFileSlice to allow the 4th positional argument to be interpreted as either block_idx (int) or tag (str), resolving type errors in lexer_test without altering existing call sites.",
+    "steps": [
+      {
+        "operation": "Add defensive __new__ shim in RawFileSlice",
+        "file_to_modify": "src/sqlfluff/core/templaters/base.py",
+        "function_to_modify": "RawFileSlice.__new__",
+        "reason": "To tolerate the 4th positional argument being either a block_idx (int) or a tag (str) and preserve existing positional call sites while fixing type errors observed in lexer_test when run in Rust mode.",
+        "side_effects": "Tests that pass a block_idx in the 4th slot continue to work; tests that pass a tag in the 4th slot now construct correctly without type errors. Downstream usage of RawFileSlice.block_idx and RawFileSlice.tag remains compatible. Minimal API impact; may require minor type-hint adjustments or doc updates. Validate by running the lexer tests in Rust mode and ensuring no regressions in related templaters."
+      }
+    ]
+  }
+}

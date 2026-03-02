@@ -1,0 +1,42 @@
+{
+  "pr_number": 2432,
+  "repository": "nginx-proxy/nginx-proxy",
+  "title": "fix: tests webserver syntaxwarning",
+  "body": "This PR addresses a SyntaxWarning that occurs under Python 3.12+ due to unescaped, non-raw regex strings in the test webserver.\n\nPython 3.12+ treats unrecognized escape sequences in normal strings as SyntaxWarning (and may become SyntaxError in future versions). The status route in the test webserver uses a pattern like \"/status/(\\d+)\" which triggers warnings for \\d. The fix is to convert these regex strings to raw string literals.\n\nWhat to change:\n- In test/requirements/web/webserver.py, update occurrences of re.match(\"/status/(\\\\d+)\", self.path) to use a raw string: re.match(r\"/status/(\\\\d+)\", self.path).\n- Apply this change to all similar spots (as indicated by the PR description, there are two occurrences).\n\nThis preserves behavior while silencing the SyntaxWarning without altering the routing logic.\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T14:11:09.446336",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "test/requirements/web/webserver.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "do_GET",
+          "class_name": "Handler",
+          "full_name": "Handler.do_GET",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Fixes a Python 3.12+ SyntaxWarning by converting unescaped regex literals in the test webserver's /status route to raw strings, preserving behavior while silencing the warning.",
+    "steps": [
+      {
+        "operation": "Convert unescaped regex string to raw string for status route in test webserver",
+        "file_to_modify": "test/requirements/web/webserver.py",
+        "function_to_modify": "Handler.do_GET",
+        "reason": "Python 3.12+ treats unescaped sequences like \\d in normal strings as SyntaxWarning; using a raw string preserves the regex semantics while silencing the warning",
+        "side_effects": "No changes to routing logic; tests should continue to pass; requires re-running tests to confirm warning is silenced and that no other similar patterns exist"
+      }
+    ]
+  }
+}

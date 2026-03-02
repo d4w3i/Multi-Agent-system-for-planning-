@@ -1,0 +1,61 @@
+{
+    "repository": "cython/cython",
+    "pull_request_number": 6987,
+    "title": "Fix return type of bytes.join()",
+    "body": "This was already tested in `tests/run/bytesmethods.pyx`, but there were apparently (non-trivial?) cases where the return type wasn't correctly inferred.",
+    "pr_date": "2025-06-24T12:09:32Z",
+    "source_branch": "fix_bytes_join_ret",
+    "language": "en",
+    "keywords_detected": {
+        "branch": [
+            "fix"
+        ],
+        "requirement": [
+            "fix"
+        ],
+        "body": []
+    },
+    "number_of_links_in_pr": 0,
+    "base_sha": "aeec5cf58180efaaea10a27a97f1724622f521d3",
+    "last_commit_sha": "e61d07d0ef7de538861dcf38fd30db499901b8d5",
+    "diff_between_base_and_last": [
+        {
+            "sha": "4183254ae8eb6bc271e8fea6e94c2a55682ad4e9",
+            "filename": "Cython/Compiler/Builtin.py",
+            "status": "modified",
+            "additions": 1,
+            "deletions": 1,
+            "changes": 2,
+            "blob_url": "https://github.com/cython/cython/blob/e61d07d0ef7de538861dcf38fd30db499901b8d5/Cython%2FCompiler%2FBuiltin.py",
+            "raw_url": "https://github.com/cython/cython/raw/e61d07d0ef7de538861dcf38fd30db499901b8d5/Cython%2FCompiler%2FBuiltin.py",
+            "contents_url": "https://api.github.com/repos/cython/cython/contents/Cython%2FCompiler%2FBuiltin.py?ref=e61d07d0ef7de538861dcf38fd30db499901b8d5",
+            "patch": "@@ -381,7 +381,7 @@ def _generate_divmod_function(scope, argument_types):\n                                     BuiltinMethod(\"__mul__\",  \"Tz\",   \"T\", \"__Pyx_PySequence_Multiply\",\n                                                   utility_code=pysequence_multiply_utility_code),\n                                     ]),\n-    (\"bytes\",   \"&PyBytes_Type\",   [BuiltinMethod(\"join\",  \"TO\",   \"O\", \"__Pyx_PyBytes_Join\",\n+    (\"bytes\",   \"&PyBytes_Type\",   [BuiltinMethod(\"join\",  \"TO\",   \"T\", \"__Pyx_PyBytes_Join\",\n                                                   utility_code=UtilityCode.load(\"StringJoin\", \"StringTools.c\")),\n                                     BuiltinMethod(\"__mul__\",  \"Tz\",   \"T\", \"__Pyx_PySequence_Multiply\",\n                                                   utility_code=pysequence_multiply_utility_code),"
+        }
+    ],
+    "commits": [
+        {
+            "sha": "e61d07d0ef7de538861dcf38fd30db499901b8d5",
+            "commit_date": "2025-06-24T12:06:43Z",
+            "message": "Fix return type of bytes.join().",
+            "number_of_links_in_commit": 0,
+            "files_changed_count": 1,
+            "files": [
+                {
+                    "sha": "4183254ae8eb6bc271e8fea6e94c2a55682ad4e9",
+                    "filename": "Cython/Compiler/Builtin.py",
+                    "status": "modified",
+                    "additions": 1,
+                    "deletions": 1,
+                    "changes": 2,
+                    "blob_url": "https://github.com/cython/cython/blob/e61d07d0ef7de538861dcf38fd30db499901b8d5/Cython%2FCompiler%2FBuiltin.py",
+                    "raw_url": "https://github.com/cython/cython/raw/e61d07d0ef7de538861dcf38fd30db499901b8d5/Cython%2FCompiler%2FBuiltin.py",
+                    "contents_url": "https://api.github.com/repos/cython/cython/contents/Cython%2FCompiler%2FBuiltin.py?ref=e61d07d0ef7de538861dcf38fd30db499901b8d5",
+                    "patch": "@@ -381,7 +381,7 @@ def _generate_divmod_function(scope, argument_types):\n                                     BuiltinMethod(\"__mul__\",  \"Tz\",   \"T\", \"__Pyx_PySequence_Multiply\",\n                                                   utility_code=pysequence_multiply_utility_code),\n                                     ]),\n-    (\"bytes\",   \"&PyBytes_Type\",   [BuiltinMethod(\"join\",  \"TO\",   \"O\", \"__Pyx_PyBytes_Join\",\n+    (\"bytes\",   \"&PyBytes_Type\",   [BuiltinMethod(\"join\",  \"TO\",   \"T\", \"__Pyx_PyBytes_Join\",\n                                                   utility_code=UtilityCode.load(\"StringJoin\", \"StringTools.c\")),\n                                     BuiltinMethod(\"__mul__\",  \"Tz\",   \"T\", \"__Pyx_PySequence_Multiply\",\n                                                   utility_code=pysequence_multiply_utility_code),"
+                }
+            ]
+        }
+    ],
+    "pull_request_url": "https://github.com/cython/cython/pull/6987",
+    "commits_url": "https://github.com/cython/cython/pull/6987/commits",
+    "files_url": "https://github.com/cython/cython/pull/6987/files"
+}

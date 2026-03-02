@@ -1,0 +1,65 @@
+{
+  "pr_number": 6208,
+  "repository": "optuna/optuna",
+  "title": "Fix `test_log_completed_trial_skip_storage_access`",
+  "body": "Fix the first problem on #6206. `test_log_completed_trial_skip_storage_access` is incorrectly dependent on previously executed tests.\n\nReset the logger and set the logging level.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T12:57:58.387446",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "tests/storages_tests/test_cached_storage.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "test_log_completed_trial_skip_storage_access",
+          "class_name": null,
+          "full_name": "test_log_completed_trial_skip_storage_access",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "tests/storages_tests/journal_tests/test_journal.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "test_snapshot_given",
+          "class_name": null,
+          "full_name": "test_snapshot_given",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Make test_log_completed_trial_skip_storage_access deterministic by resetting and configuring Optuna's library-root logger at the start of the test; standardize or verify the same canonical pattern in test_snapshot_given as the template.",
+    "steps": [
+      {
+        "operation": "Ensure canonical logger-reset pattern in test_snapshot_given",
+        "file_to_modify": "tests/storages_tests/journal_tests/test_journal.py",
+        "function_to_modify": "test_snapshot_given",
+        "reason": "This test already demonstrates the correct sequence to isolate Optuna's library-root logger state. Confirming or standardizing the pattern here (optuna.logging._reset_library_root_logger(), optuna.logging.enable_default_handler(), optuna.logging.set_verbosity(...)) provides a canonical example to follow and ensures the helper calls are present and use the expected verbosity level.",
+        "side_effects": "Modifies only test code; minimal risk to other tests because this pattern intentionally isolates logger state. If the function already contains the pattern, this step is a no-op. Tests that inadvertently relied on previous global logger state will remain unaffected because this change makes the test self-contained. Uses the internal API _reset_library_root_logger (already used by tests in the repo)."
+      },
+      {
+        "operation": "Reset and configure Optuna library-root logger at start of test_log_completed_trial_skip_storage_access",
+        "file_to_modify": "tests/storages_tests/test_cached_storage.py",
+        "function_to_modify": "test_log_completed_trial_skip_storage_access",
+        "reason": "The failing/flaky test depends on global logger state left by other tests. Calling optuna.logging._reset_library_root_logger() at the start ensures a clean logger state; optuna.logging.enable_default_handler() ensures a default handler is present for capturing stderr; and optuna.logging.set_verbosity(optuna.logging.WARNING) (or the level the test expects) sets a deterministic effective level so assertions about logging output do not depend on test ordering.",
+        "side_effects": "This change affects only test code and should make the test deterministic. It may change captured stderr/logging output for this test (so verify assertions still match expected messages/levels). Other tests remain responsible for their own logger setup; if other tests assumed the previous global logger state, they should also be made self-contained. No production API changes; uses existing optuna.logging test APIs (including the private _reset_library_root_logger)."
+      }
+    ]
+  }
+}

@@ -1,0 +1,57 @@
+{
+  "pr_number": 2071,
+  "repository": "recommenders-team/recommenders",
+  "title": "Fixing TF to < 2.16",
+  "body": "### Description\n<!--- Describe your changes in detail -->\n<!--- Why is this change required? What problem does it solve? -->\n\n\n### Related Issues\n<!--- If it fixes an open issue, please link to the issue here. -->\n#2073\n\n### References\n<!--- References would be helpful to understand the changes. -->\n<!--- References can be books, links, etc. -->\n\n\n### Checklist:\n<!--- Go over all the following points, and put an `x` in all the boxes that apply. -->\n<!--- If you're unsure about any of these, don't hesitate to ask. We're here to help! -->\n- [ ] I have followed the [contribution guidelines](CONTRIBUTING.md) and code style for this project.\n- [ ] I have added tests covering my contributions.\n- [ ] I have updated the documentation accordingly.\n- [ ] I have [signed the commits](https://github.com/recommenders-team/recommenders/wiki/How-to-sign-commits), e.g. `git commit -s -m \"your commit message\"`. \n- [ ] This PR is being made to `staging branch` AND NOT TO `main branch`.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T13:12:00.583484",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "setup.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "py)",
+          "class_name": "module-level extras_require['gpu'] assignment (top-level in setup",
+          "full_name": "module-level extras_require['gpu'] assignment (top-level in setup.py)",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": ") call (uses extras_require)",
+          "class_name": "setup(",
+          "full_name": "setup(...) call (uses extras_require)",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Relax the TensorFlow upper bound in packaging metadata: change the 'gpu' extra in setup.py from '<=2.15.0' to '<2.16' so the package accepts any TensorFlow < 2.16 while keeping existing minimum and excluded versions.",
+    "steps": [
+      {
+        "operation": "Update TensorFlow version constraint in extras_require['gpu']",
+        "file_to_modify": "setup.py",
+        "function_to_modify": "extras_require",
+        "reason": "Relax the upper bound on the tensorflow requirement from '<=2.15.0' to '<2.16' so the package allows any 2.x release below 2.16 while preserving the existing minimum and excluded problematic versions.",
+        "side_effects": "Changes package installation behavior for extras that include 'gpu' (and any 'all' extra that unions extras). pip install .[gpu] (and pip install .[all]) may resolve to newer tensorflow micro/minor releases (e.g., 2.15.1) once available. This has no runtime code changes but may affect CI, packaging tests, and any automated environments that previously relied on a strict '<=2.15.0' pin; those environments may need updates if they require a specific TF version. Keep excluded version specifiers unchanged to avoid known-bad releases."
+      },
+      {
+        "operation": "Verify setup() consumption of updated extras and update surrounding comments/tests if necessary",
+        "file_to_modify": "setup.py",
+        "function_to_modify": "setup",
+        "reason": "Ensure the module-level change to extras_require propagates correctly to the setup() call (which constructs package metadata and extras like 'all'). Adjust any nearby documentation/comments or unit tests in setup.py that assume the old constraint so tests/packaging metadata remain consistent.",
+        "side_effects": "No functional change to the setup() invocation itself, but the package metadata emitted by setup() (e.g., extras metadata used by pip) will change. This can affect downstream consumers, CI jobs, release artifacts, and any scripts that parse the setup metadata. Tests that assert exact requirement strings will need updating. If CI/workflows pin TF elsewhere (outside setup.py), those should be reviewed separately."
+      }
+    ]
+  }
+}

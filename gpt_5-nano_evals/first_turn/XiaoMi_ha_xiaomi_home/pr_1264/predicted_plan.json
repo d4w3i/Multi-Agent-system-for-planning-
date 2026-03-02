@@ -1,0 +1,155 @@
+{
+  "pr_number": 1264,
+  "repository": "XiaoMi/ha_xiaomi_home",
+  "title": "feat: do not subscribe BLE device online/offline state message",
+  "body": "Summary:\n- The PR prevents subscribing to BLE device online/offline state updates and assumes BLE devices are always online. This addresses issues where BLE devices would appear unavailable despite other state changes (offline messages from MIoT cloud) and aligns with the observation that BLE online/offline state is not reliably published by the cloud.\n\nWhat changed:\n- Stop subscribing to per-BLE-device online/offline state messages and avoid propagating BLE online/offline transitions to Home Assistant entities.\n- Detect BLE devices (based on device metadata such as model) and treat them as always online for availability purposes.\n- Gate the subscription path in the MIoT client so that BLE devices are not wired through the cloud/gateway/LAN online/offline state notification pipeline.\n- Ensure that other non-BLE devices continue to use the existing online/offline subscription flow.\n\nImpact:\n- BLE devices will always be considered available in Home Assistant (subject to other connectivity checks via their actual properties).\n- Reduced network traffic and fewer spurious availability changes for BLE devices.\n- A new BLE-detection pathway is introduced to avoid misclassifying devices, and existing state propagation for non-BLE devices remains intact.\n\nNote for reviewers:\n- The change is localized to the MIoT client subscription logic and the BLE-detection path. It does not alter property/value reads or non-BLE device behaviors.\n- Consider adding tests for a BLE device model payload containing a BLE indicator (e.g., model or metadata containing 'ble' or 'bluetooth') to ensure no device-state subscriptions are created and that availability remains online.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T13:38:54.236065",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "custom_components/xiaomi_home/miot/miot_client.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "sub_device_state",
+          "class_name": "MIoTClient",
+          "full_name": "MIoTClient.sub_device_state",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "unsub_device_state",
+          "class_name": "MIoTClient",
+          "full_name": "MIoTClient.unsub_device_state",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "__update_device_msg_sub",
+          "class_name": "MIoTClient",
+          "full_name": "MIoTClient.__update_device_msg_sub",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "__sub_from",
+          "class_name": "MIoTClient",
+          "full_name": "MIoTClient.__sub_from",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "__unsub_from",
+          "class_name": "MIoTClient",
+          "full_name": "MIoTClient.__unsub_from",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "custom_components/xiaomi_home/miot/miot_device.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "__init__",
+          "class_name": "MIoTDevice",
+          "full_name": "MIoTDevice.__init__",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "is_ble_device",
+          "class_name": "MIoTDevice",
+          "full_name": "MIoTDevice.is_ble_device",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "__on_device_state_changed",
+          "class_name": null,
+          "full_name": "__on_device_state_changed",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "feat: do not subscribe BLE device online/offline state messages. BLE devices are treated as always online and excluded from the cloud/gateway/LAN online/offline subscription pipeline, while non-BLE devices retain existing behavior.",
+    "steps": [
+      {
+        "operation": "Add BLE detection flag initialization in MIoTDevice.__init__",
+        "file_to_modify": "custom_components/xiaomi_home/miot/miot_device.py",
+        "function_to_modify": "MIoTDevice.__init__",
+        "reason": "Introduce an is_ble_device flag to mark devices that should be treated as BLE and exempt from online/offline subscription handling.",
+        "side_effects": "Adds a new attribute to MIoTDevice; ensure default is False to avoid misclassification for existing devices."
+      },
+      {
+        "operation": "Add BLE detection method is_ble_device on MIoTDevice",
+        "file_to_modify": "custom_components/xiaomi_home/miot/miot_device.py",
+        "function_to_modify": "MIoTDevice.is_ble_device",
+        "reason": "Provide a centralized, testable way to identify BLE devices (e.g., via model/metadata) for gating subscription logic.",
+        "side_effects": "Other components will rely on this property/method; may require updating all call sites to use the new helper."
+      },
+      {
+        "operation": "Adjust MIoTDevice.__on_device_state_changed to ignore BLE devices",
+        "file_to_modify": "custom_components/xiaomi_home/miot/miot_device.py",
+        "function_to_modify": "MIoTDevice.__on_device_state_changed",
+        "reason": "Ensure that BLE devices do not propagate online/offline state changes to Home Assistant entities.",
+        "side_effects": "BLE devices will not trigger availability updates via this path; non-BLE devices remain unaffected."
+      },
+      {
+        "operation": "Gate per-device state subscription in MIoTClient.sub_device_state to skip BLE devices",
+        "file_to_modify": "custom_components/xiaomi_home/miot/miot_client.py",
+        "function_to_modify": "MIoTClient.sub_device_state",
+        "reason": "Do not subscribe BLE devices to online/offline state messages; reduce unnecessary traffic and avoid misleading availability changes for BLE devices.",
+        "side_effects": "BLE devices will not receive device-state subscriptions; non-BLE devices behavior remains unchanged."
+      },
+      {
+        "operation": "Ensure BLE devices unsubscribing is safe in MIoTClient.unsub_device_state",
+        "file_to_modify": "custom_components/xiaomi_home/miot/miot_client.py",
+        "function_to_modify": "MIoTClient.unsub_device_state",
+        "reason": "Maintain symmetry with sub_device_state and gracefully handle unsubscription for BLE devices that were never subscribed.",
+        "side_effects": "No effect on non-BLE devices; avoids potential errors during teardown."
+      },
+      {
+        "operation": "Gate BLE devices in MIoTClient.__update_device_msg_sub",
+        "file_to_modify": "custom_components/xiaomi_home/miot/miot_client.py",
+        "function_to_modify": "MIoTClient.__update_device_msg_sub",
+        "reason": "Prevent BLE devices from being wired through cloud/gateway/LAN state message subscriptions during update paths.",
+        "side_effects": "BLE devices remain excluded from device-msg subscription updates; non-BLE devices continue as before."
+      },
+      {
+        "operation": "Exclude BLE devices in MIoTClient.__sub_from",
+        "file_to_modify": "custom_components/xiaomi_home/miot/miot_client.py",
+        "function_to_modify": "MIoTClient.__sub_from",
+        "reason": "Respect BLE-device exclusion in internal subscribe-from logic to avoid attaching BLE devices to a state stream.",
+        "side_effects": "Non-BLE behavior unchanged; BLE devices do not subscribe to state streams."
+      },
+      {
+        "operation": "Exclude BLE devices in MIoTClient.__unsub_from",
+        "file_to_modify": "custom_components/xiaomi_home/miot/miot_client.py",
+        "function_to_modify": "MIoTClient.__unsub_from",
+        "reason": "Provide a safe unsubscription path for BLE devices that were not subscribed and maintain symmetry with __sub_from.",
+        "side_effects": "No impact on non-BLE devices; ensures clean teardown without errors for BLE devices."
+      }
+    ]
+  }
+}

@@ -1,0 +1,42 @@
+{
+  "pr_number": 235,
+  "repository": "facebookresearch/AnimatedDrawings",
+  "title": "fix: repair window size in macOS",
+  "body": "When a program is running on macOS with an external monitor connected, the values obtained through \n`glfw.get_framebuffer_size(self.win)`\nwill be larger. \nIt is more appropriate to use \n`glfw.get_window_size(self.win)`\nto retrieve the logical size.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T12:12:37.386640",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "animated_drawings/view/window_view.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "get_framebuffer_size",
+          "class_name": "WindowView",
+          "full_name": "WindowView.get_framebuffer_size",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Change WindowView.get_framebuffer_size to return glfw.get_window_size(self.win) (logical window size) instead of glfw.get_framebuffer_size(self.win) to fix macOS external/HiDPI monitor sizing issues, and update the method's docstring/comment accordingly.",
+    "steps": [
+      {
+        "operation": "Replace GLFW framebuffer-size query with window-size query and update docstring",
+        "file_to_modify": "animated_drawings/view/window_view.py",
+        "function_to_modify": "WindowView.get_framebuffer_size",
+        "reason": "On macOS with external/HiDPI monitors glfw.get_framebuffer_size returns physical framebuffer pixels which are larger than logical window coordinates; callers across WindowView (projection setup, per-frame GL viewport, background blit sizing) expect a logical size. Swapping to glfw.get_window_size centralizes the change and provides logical (point-based) dimensions appropriate for macOS external-monitor setups.",
+        "side_effects": "Behavior change from physical framebuffer pixels to logical window size: projection math, GL.glViewport calls, and background blit destination sizing will use logical coordinates. This may reduce rendered pixel density on HiDPI displays (i.e., fewer physical pixels used). No function signature/API change is introduced, but some tests or visual expectations (especially those assuming full-resolution framebuffer sizes) may need updates. MesaView (off-screen) is not affected. Recommend running rendering tests and manual checks on macOS with and without external monitors and updating any docs/comments that describe the returned units."
+      }
+    ]
+  }
+}

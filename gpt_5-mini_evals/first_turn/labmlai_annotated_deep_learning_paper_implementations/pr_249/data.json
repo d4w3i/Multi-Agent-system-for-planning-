@@ -1,0 +1,63 @@
+{
+    "repository": "labmlai/annotated_deep_learning_paper_implementations",
+    "pull_request_number": 249,
+    "title": "fix dim error in rope",
+    "body": "fix the following error when running _test_rotary():\r\n\r\n\"\"\"\r\n...\r\n    x_rope = (x_rope * self.cos_cached[:x.shape[0]]) + (neg_half_x * self.sin_cached[:x.shape[0]])\r\nRuntimeError: The size of tensor a (3) must match the size of tensor b (4) at non-singleton dimension 3\r\n\"\"\"",
+    "pr_date": "2024-03-23T23:39:46Z",
+    "source_branch": "fix/rope",
+    "language": "en",
+    "keywords_detected": {
+        "branch": [
+            "fix"
+        ],
+        "requirement": [
+            "fix"
+        ],
+        "body": [
+            "fix"
+        ]
+    },
+    "number_of_links_in_pr": 0,
+    "base_sha": "999f2036a5a7c54403352211b5d1cc0df42b83f6",
+    "last_commit_sha": "cbed162b7f5fa3a1a13042de8c066a4814785d2c",
+    "diff_between_base_and_last": [
+        {
+            "sha": "64bbd8d4da79f4b1315a0cb1eda30cb01feeef5f",
+            "filename": "labml_nn/transformers/rope/__init__.py",
+            "status": "modified",
+            "additions": 1,
+            "deletions": 1,
+            "changes": 2,
+            "blob_url": "https://github.com/labmlai/annotated_deep_learning_paper_implementations/blob/cbed162b7f5fa3a1a13042de8c066a4814785d2c/labml_nn%2Ftransformers%2Frope%2F__init__.py",
+            "raw_url": "https://github.com/labmlai/annotated_deep_learning_paper_implementations/raw/cbed162b7f5fa3a1a13042de8c066a4814785d2c/labml_nn%2Ftransformers%2Frope%2F__init__.py",
+            "contents_url": "https://api.github.com/repos/labmlai/annotated_deep_learning_paper_implementations/contents/labml_nn%2Ftransformers%2Frope%2F__init__.py?ref=cbed162b7f5fa3a1a13042de8c066a4814785d2c",
+            "patch": "@@ -185,7 +185,7 @@ def forward(self, x: torch.Tensor):\n         # \\end{align}\n         #\n         # for $i \\in {1, 2, ..., \\frac{d}{2}}$\n-        x_rope = (x_rope * self.cos_cached[:x.shape[0]]) + (neg_half_x * self.sin_cached[:x.shape[0]])\n+        x_rope = (x_rope * self.cos_cached[: x.shape[0], ..., : self.d]) + (neg_half_x * self.sin_cached[: x.shape[0], ..., : self.d])\n \n         #\n         return torch.cat((x_rope, x_pass), dim=-1)"
+        }
+    ],
+    "commits": [
+        {
+            "sha": "cbed162b7f5fa3a1a13042de8c066a4814785d2c",
+            "commit_date": "2024-03-23T23:30:19Z",
+            "message": "fix dim error in rope",
+            "number_of_links_in_commit": 0,
+            "files_changed_count": 1,
+            "files": [
+                {
+                    "sha": "64bbd8d4da79f4b1315a0cb1eda30cb01feeef5f",
+                    "filename": "labml_nn/transformers/rope/__init__.py",
+                    "status": "modified",
+                    "additions": 1,
+                    "deletions": 1,
+                    "changes": 2,
+                    "blob_url": "https://github.com/labmlai/annotated_deep_learning_paper_implementations/blob/cbed162b7f5fa3a1a13042de8c066a4814785d2c/labml_nn%2Ftransformers%2Frope%2F__init__.py",
+                    "raw_url": "https://github.com/labmlai/annotated_deep_learning_paper_implementations/raw/cbed162b7f5fa3a1a13042de8c066a4814785d2c/labml_nn%2Ftransformers%2Frope%2F__init__.py",
+                    "contents_url": "https://api.github.com/repos/labmlai/annotated_deep_learning_paper_implementations/contents/labml_nn%2Ftransformers%2Frope%2F__init__.py?ref=cbed162b7f5fa3a1a13042de8c066a4814785d2c",
+                    "patch": "@@ -185,7 +185,7 @@ def forward(self, x: torch.Tensor):\n         # \\end{align}\n         #\n         # for $i \\in {1, 2, ..., \\frac{d}{2}}$\n-        x_rope = (x_rope * self.cos_cached[:x.shape[0]]) + (neg_half_x * self.sin_cached[:x.shape[0]])\n+        x_rope = (x_rope * self.cos_cached[: x.shape[0], ..., : self.d]) + (neg_half_x * self.sin_cached[: x.shape[0], ..., : self.d])\n \n         #\n         return torch.cat((x_rope, x_pass), dim=-1)"
+                }
+            ]
+        }
+    ],
+    "pull_request_url": "https://github.com/labmlai/annotated_deep_learning_paper_implementations/pull/249",
+    "commits_url": "https://github.com/labmlai/annotated_deep_learning_paper_implementations/pull/249/commits",
+    "files_url": "https://github.com/labmlai/annotated_deep_learning_paper_implementations/pull/249/files"
+}

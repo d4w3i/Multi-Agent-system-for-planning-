@@ -1,0 +1,124 @@
+{
+  "pr_number": 152,
+  "repository": "trycua/cua",
+  "title": "[Agent] Improved drag tool and standardized UITARS response",
+  "body": "Summary of changes to support standardized AgentResponse outputs for UITARS and enhanced drag tooling:\n\n- Standardize UITARS loop responses to the AgentResponse format so the UI (Gradio) can clearly show thoughts and actions as distinct AgentResponse objects.\n- Extend drag tooling to support multi-point drag paths (drag_path) instead of only a single start->end drag. This enables dragging along a path with more than two points for upcoming agent features.\n- Add per-segment visual feedback during drag_path by capturing and annotating screenshots after each segment.\n- Keep existing drag support (click, drag, scroll) intact, but ensure drag-related actions reliably trigger screenshots and content that can be consumed by the UI.\n- Ensure backward compatibility for existing providers and tooling while introducing new multi-point drag capability.\n\nImpact areas to modify (with rationale):\n- UITARS loop (to align responses to AgentResponse format and to handle new drag_path action)\n- UITARS computer tool (to implement drag_path and per-segment results)\n- Message/AgentResponse formatting (to accommodate AgentResponse structures across providers)\n\nIf you want, I can map the exact changes to a minimal patch set per file/function next.\"",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T14:37:38.139703",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "libs/agent/agent/providers/uitars/loop.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "run",
+          "class_name": "UITARSLoop",
+          "full_name": "UITARSLoop.run",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_handle_response",
+          "class_name": "UITARSLoop",
+          "full_name": "UITARSLoop._handle_response",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "to_uitars_format",
+          "class_name": "UITARSLoop",
+          "full_name": "UITARSLoop.to_uitars_format",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "libs/agent/agent/providers/uitars/tools/computer.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "to_params",
+          "class_name": "ComputerTool",
+          "full_name": "ComputerTool.to_params",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "initialize_dimensions",
+          "class_name": "ComputerTool",
+          "full_name": "ComputerTool.initialize_dimensions",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "libs/agent/agent/core/messages.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    }
+  ],
+  "step_plan": {
+    "summary": "Standardize UITARS outputs to AgentResponse format and introduce multi-point drag_path with per-segment screenshots, while preserving existing drag actions.",
+    "steps": [
+      {
+        "operation": "Refactor UITARSLoop.run to emit AgentResponse-like payloads and initialize drag_path handling",
+        "file_to_modify": "libs/agent/agent/providers/uitars/loop.py",
+        "function_to_modify": "UITARSLoop.run",
+        "reason": "To start emitting standardized AgentResponse payloads (Thoughts and Actions) and plumb new drag_path handling into the main loop so the UI (Gradio) can render thoughts and actions as distinct AgentResponse objects and support multi-point drags.",
+        "side_effects": "May alter the asynchronous loop semantics; requires tests to verify AgentResponse shape and backward compatibility with existing responses."
+      },
+      {
+        "operation": "Enhance UITARSLoop._handle_response to parse new drag_path actions and capture per-segment screenshots",
+        "file_to_modify": "libs/agent/agent/providers/uitars/loop.py",
+        "function_to_modify": "UITARSLoop._handle_response",
+        "reason": "To process multi-point drag_path actions and trigger per-segment screenshot capture, storing these visuals in the ToolResult content for UI consumption.",
+        "side_effects": "Could impact error handling and existing action parsing; needs tests for drag_path parsing and per-segment visuals."
+      },
+      {
+        "operation": "Update UITARSLoop.to_uitars_format to preserve backward compatibility while exposing drag_path metadata",
+        "file_to_modify": "libs/agent/agent/providers/uitars/loop.py",
+        "function_to_modify": "UITARSLoop.to_uitars_format",
+        "reason": "To keep UI-facing prompt formatting compatible with existing Gradio expectations while reserving metadata for drag_path handling so downstream components can render path-based actions.",
+        "side_effects": "May require UI rendering adjustments and regression tests for non-drag actions."
+      },
+      {
+        "operation": "Add drag_path handling in BaseComputerTool.__call__ to perform multi-point drag and accumulate per-segment screenshots",
+        "file_to_modify": "libs/agent/agent/core/tools/computer.py",
+        "function_to_modify": "BaseComputerTool.__call__",
+        "reason": "To implement a new action 'drag_path' that traverses a list of points, executes segmented drags, and collects per-segment screenshots into ToolResult.content, enabling multi-point drag features end-to-end.",
+        "side_effects": "Increases complexity of core tool; ensure backward compatibility for existing actions; needs tests for multi-point drag execution and content aggregation."
+      },
+      {
+        "operation": "Extend ComputerTool.to_params to accept drag_path path data via tool_input while preserving existing parameters",
+        "file_to_modify": "libs/agent/agent/providers/uitars/tools/computer.py",
+        "function_to_modify": "ComputerTool.to_params",
+        "reason": "To pass a multi-point drag path to the core tool in a backward-compatible way, using path data in tool_input or parameters without breaking existing interfaces.",
+        "side_effects": "Parameter validation updates may be required; ensure existing consumers remain functional; update tests for drag_path parameter propagation."
+      },
+      {
+        "operation": "Enhance ComputerTool.initialize_dimensions to robustly handle multi-point drags by ensuring consistent coordinate framing",
+        "file_to_modify": "libs/agent/agent/providers/uitars/tools/computer.py",
+        "function_to_modify": "ComputerTool.initialize_dimensions",
+        "reason": "To ensure width/height initialization reliably supports multi-point drag coordinates and consistent screen-space dragging across segments.",
+        "side_effects": "Coordinate calculations may affect UI alignment and test coverage; update tests to cover path-based dragging scenarios."
+      }
+    ]
+  }
+}

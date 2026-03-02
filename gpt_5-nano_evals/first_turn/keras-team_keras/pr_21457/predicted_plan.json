@@ -1,0 +1,42 @@
+{
+  "pr_number": 21457,
+  "repository": "keras-team/keras",
+  "title": "[OpenVINO backend] fix ops.array",
+  "body": "Summary of the issue:\n- A test using the OpenVINO backend constructs logits as an OpenVINOKerasTensor and then calls ops.array(logits).\n- The current OpenVINO numpy backend implements array(x, dtype=None) by delegating to numpy.array(x, ...) and does not special-case OpenVINO tensors. When x is already an OpenVINOKerasTensor, numpy.array wraps it in a Python object instead of preserving the tensor graph, leading to incorrect behavior when the result is used in subsequent OpenVINO operations.\n- This causes tests that rely on maintaining an OpenVINO tensor graph through ops.array to fail, as seen in the linked test scenario.\n\nProposed fix:\n- Modify the OpenVINO backend implementation of array in keras/src/backend/openvino/numpy.py to short-circuit when the input is already an OpenVINOKerasTensor (or generally an OpenVINO tensor):\n  - If dtype is provided, cast the input to that dtype using the existing casting utility (e.g., cast(x, dtype))\n  - Otherwise, return the input tensor as-is to preserve the graph semantics.\n- This ensures operations like ops.array(logits) simply pass through the existing OpenVINOKerasTensor, maintaining the graph and dtype/shape information, and avoiding unwanted Python-level numpy wrapping.\n- Optionally (as a follow-up), add a targeted unit test to guard this behavior:\n  - Create an OpenVINOKerasTensor as input to ops.array and verify the output is the same object (or equivalent graph) and that dtype/shape are preserved.\n  - Validate that dtype casting via dtype parameter still works when a cast is requested.\n\nImpact and considerations:\n- This change should be low risk and align with expected semantics for array creation wrappers when dealing with OpenVINO tensors.\n- Ensure that existing non-tensor inputs (lists, NumPy arrays, scalars) continue to be converted via numpy.array as before.\n- If there are other references to ops.array that rely on numpy array wrapping, ensure they are reviewed for compatibility with this short-circuit behavior.\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T14:01:57.836389",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "keras/src/backend/openvino/numpy.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "array",
+          "class_name": null,
+          "full_name": "array",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Fix the OpenVINO backend so ops.array preserves OpenVINO tensor graphs by short-circuiting for OpenVINO tensors, casting only when a dtype is provided.",
+    "steps": [
+      {
+        "operation": "Modify array function in OpenVINO backend to short-circuit on OpenVINO/OpenVINOKerasTensor inputs",
+        "file_to_modify": "keras/src/backend/openvino/numpy.py",
+        "function_to_modify": "array",
+        "reason": "To preserve the OpenVINO tensor graph semantics when ops.array is given an OpenVINOKerasTensor, the function should return the input tensor directly (or cast to the requested dtype) instead of wrapping it with numpy.array. This avoids converting OpenVINO tensors into Python objects and ensures proper dtype/shape propagation.",
+        "side_effects": "Expected to preserve graph semantics for OpenVINO tensors; non-tensor inputs continue to be converted via numpy.array as before; potential need to adjust tests that assumed numpy-wrapped outputs; downstream code relying on tensor identity may need minor compatibility checks"
+      }
+    ]
+  }
+}

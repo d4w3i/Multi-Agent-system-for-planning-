@@ -1,0 +1,57 @@
+{
+  "pr_number": 2210,
+  "repository": "pydantic/pydantic-ai",
+  "title": "[openai] Remove incorrect tool call id from tool call delta",
+  "body": "For OpenAI responses API, the `response.function_call_arguments.delta` returns an `item_id` (docs: https://platform.openai.com/docs/api-reference/responses-streaming/response/function_call_arguments/delta). This `item_id` is actually the `id` of the tool_call, rather than the `tool_call_id`.\n\nThe problem is that when using agent_stream or more generally the parts_manager, these deltas are accumulated and the `tool_call_id` for the ToolCallNode ends up being set to the incorrect `id`. This is particularly problematic because the `id` is a longer string than is supported by some GPT models (for example, an `id` is `fc_6876aca7db8c8192af95414c6cf92796035a7a219e794395`, whereas the tool call id for the same request is `call_YHzL9zYTlauY9bw9dEoE4uA4`). \n\n`gpt-4o-mini` only allows tool call ids that are 40 characters or less, so using the longer id breaks things (and is incorrect from a tool call id perspective).\n\nExplore the source code to identify the files and functions to modify.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T14:18:09.307531",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "base_project/openai.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "_get_event_iterator",
+          "class_name": "OpenAIModel",
+          "full_name": "OpenAIModel._get_event_iterator",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_handle_response_function_call_arguments_delta",
+          "class_name": "OpenAIResponsesStreamedResponse",
+          "full_name": "OpenAIResponsesStreamedResponse._handle_response_function_call_arguments_delta",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Fix incorrect tool_call_id propagation in OpenAI streaming deltas by ensuring tool_call_id is derived from the actual tool_call identifiers in both Chat Completions and Responses API paths, preventing overly long IDs and misattribution of tool calls.",
+    "steps": [
+      {
+        "operation": "Refactor tool_call_id extraction in OpenAIModel streaming path",
+        "file_to_modify": "base_project/openai.py",
+        "function_to_modify": "OpenAIModel._get_event_iterator",
+        "reason": "The current mapping uses delta.item_id to set tool_call_id for tool calls in the Chat Completions streaming path. This can produce overly long IDs or incorrect attribution. Source tool_call_id should come from the actual tool_call identifier (e.g., the tool_call_id field) to ensure IDs stay within model constraints and correctly track tool calls across deltas.",
+        "side_effects": "Potential changes to how ToolCallNode and related delta events are wired in the Chat Completions streaming path. May require updates to unit/integration tests around streaming tool calls and could affect any downstream components that rely on tool_call_id continuity. Ensure token accounting and event ordering are preserved; verify compatibility with existing deltas for non-tool content."
+      },
+      {
+        "operation": "Refactor tool_call_id extraction in OpenAIResponsesStreamedResponse delta handler",
+        "file_to_modify": "base_project/openai.py",
+        "function_to_modify": "OpenAIResponsesStreamedResponse._handle_response_function_call_arguments_delta",
+        "reason": "The Responses API delta currently uses delta.item_id as tool_call_id, which can mismatch the actual tool_call_id and exceed ID length limits for some models. Update to derive tool_call_id from the actual tool_call identifier (or a reliable alternative) and avoid using delta.item_id to set tool_call_id. Ensure a safe fallback path if the proper field is unavailable.",
+        "side_effects": "Tests that validate ID semantics for tool calls in streaming responses should be updated or added. Need to ensure public API behavior remains stable and that non-tool-related deltas are unaffected. Potential minor adjustments to event ordering and token accounting paths that consume tool_call_id."
+      }
+    ]
+  }
+}

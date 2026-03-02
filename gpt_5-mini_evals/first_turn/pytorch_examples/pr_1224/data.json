@@ -1,0 +1,64 @@
+{
+    "repository": "pytorch/examples",
+    "pull_request_number": 1224,
+    "title": "Fixes in Imagenet training script",
+    "body": "* ngpus_per_node variable count fix\r\n* dist_backend assertion added for nccl issue",
+    "pr_date": "2024-01-30T16:11:02Z",
+    "source_branch": "fix_gpu_count",
+    "language": "en",
+    "keywords_detected": {
+        "branch": [
+            "fix"
+        ],
+        "requirement": [
+            "fix"
+        ],
+        "body": [
+            "add",
+            "fix"
+        ]
+    },
+    "number_of_links_in_pr": 0,
+    "base_sha": "76cd9d02a0669a09cb4f25809b01583461d402de",
+    "last_commit_sha": "68c4a5f2b16d1b74a22b451781870ccdc290827e",
+    "diff_between_base_and_last": [
+        {
+            "sha": "535ddbaaf2fa4d3de1ef55803611e98bc159e5d1",
+            "filename": "imagenet/main.py",
+            "status": "modified",
+            "additions": 5,
+            "deletions": 1,
+            "changes": 6,
+            "blob_url": "https://github.com/pytorch/examples/blob/68c4a5f2b16d1b74a22b451781870ccdc290827e/imagenet%2Fmain.py",
+            "raw_url": "https://github.com/pytorch/examples/raw/68c4a5f2b16d1b74a22b451781870ccdc290827e/imagenet%2Fmain.py",
+            "contents_url": "https://api.github.com/repos/pytorch/examples/contents/imagenet%2Fmain.py?ref=68c4a5f2b16d1b74a22b451781870ccdc290827e",
+            "patch": "@@ -106,8 +106,12 @@ def main():\n \n     if torch.cuda.is_available():\n         ngpus_per_node = torch.cuda.device_count()\n+        assert not (ngpus_per_node == 1 and args.dist_backend == \"nccl\"),\\\n+        \"nccl backend requires GPU count>1, see https://github.com/NVIDIA/nccl/issues/103 perhaps use 'gloo'\"\n     else:\n-        ngpus_per_node = 1\n+        ngpus_per_node = 0\n+        assert args.dist_backend != \"nccl\",\\\n+        \"nccl backend does not work without GPU, see https://pytorch.org/docs/stable/distributed.html\"\n     if args.multiprocessing_distributed:\n         # Since we have ngpus_per_node processes per node, the total world_size\n         # needs to be adjusted accordingly"
+        }
+    ],
+    "commits": [
+        {
+            "sha": "68c4a5f2b16d1b74a22b451781870ccdc290827e",
+            "commit_date": "2024-01-30T16:09:04Z",
+            "message": "Fixes\n* ngpus_per_node variable count fix\n* dist_backend assertion added for nccl issue",
+            "number_of_links_in_commit": 0,
+            "files_changed_count": 1,
+            "files": [
+                {
+                    "sha": "535ddbaaf2fa4d3de1ef55803611e98bc159e5d1",
+                    "filename": "imagenet/main.py",
+                    "status": "modified",
+                    "additions": 5,
+                    "deletions": 1,
+                    "changes": 6,
+                    "blob_url": "https://github.com/pytorch/examples/blob/68c4a5f2b16d1b74a22b451781870ccdc290827e/imagenet%2Fmain.py",
+                    "raw_url": "https://github.com/pytorch/examples/raw/68c4a5f2b16d1b74a22b451781870ccdc290827e/imagenet%2Fmain.py",
+                    "contents_url": "https://api.github.com/repos/pytorch/examples/contents/imagenet%2Fmain.py?ref=68c4a5f2b16d1b74a22b451781870ccdc290827e",
+                    "patch": "@@ -106,8 +106,12 @@ def main():\n \n     if torch.cuda.is_available():\n         ngpus_per_node = torch.cuda.device_count()\n+        assert not (ngpus_per_node == 1 and args.dist_backend == \"nccl\"),\\\n+        \"nccl backend requires GPU count>1, see https://github.com/NVIDIA/nccl/issues/103 perhaps use 'gloo'\"\n     else:\n-        ngpus_per_node = 1\n+        ngpus_per_node = 0\n+        assert args.dist_backend != \"nccl\",\\\n+        \"nccl backend does not work without GPU, see https://pytorch.org/docs/stable/distributed.html\"\n     if args.multiprocessing_distributed:\n         # Since we have ngpus_per_node processes per node, the total world_size\n         # needs to be adjusted accordingly"
+                }
+            ]
+        }
+    ],
+    "pull_request_url": "https://github.com/pytorch/examples/pull/1224",
+    "commits_url": "https://github.com/pytorch/examples/pull/1224/commits",
+    "files_url": "https://github.com/pytorch/examples/pull/1224/files"
+}

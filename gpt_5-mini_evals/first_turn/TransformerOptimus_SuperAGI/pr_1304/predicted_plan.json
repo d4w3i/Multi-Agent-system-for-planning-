@@ -1,0 +1,42 @@
+{
+  "pr_number": 1304,
+  "repository": "TransformerOptimus/SuperAGI",
+  "title": "Fix Recruitment Workflow",
+  "body": "<!-- Thank you for submitting this PR! :) -->\n<!-- Provide a general summary of your changes in the Title above ^, end with (close #<issue-no>) or (fix #<issue-no>) -->\n\n### Description\n<!-- The title might not be enough to convey how this change affects the user. -->\n<!-- Describe the changes from a user's perspective -->\nFixing the existing recruitment workflow.\n\n<!-- Changelog Section End -->\n\n### Related Issues\n<!-- Please make sure you have an issue associated with this Pull Request -->\n<!-- And then add `(close #<issue-no>)` to the pull request title -->\n<!-- Add the issue number below (e.g. #234) -->\n\n### Solution and Design\n<!-- How is this issue solved/fixed? What is the design? -->\n<!-- It's better if we elaborate -->\nFixing the existing recruitment workflow.\n\n### Test Plan\n<!-- Describe how you tested this functionality. Include steps to reproduce, relevant test cases, and any other pertinent information. -->\n\n### Type of change\n- [x] Bug fix (non-breaking change which fixes an issue)\n- [x] New feature (non-breaking change which adds functionality)\n- [x] Breaking change (fix or feature that would cause existing functionality to change)\n- [x] Docs update\n\n\n### Checklist\n- [x] My pull request is atomic and focuses on a single change.\n- [x] I have read the contributing guide and my code conforms to the guidelines.\n- [x] I have documented my changes clearly and comprehensively.\n- [x] I have added the required tests.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T11:43:02.908481",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "workflow_seed.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "build_recruitment_workflow",
+          "class_name": "AgentWorkflowSeed",
+          "full_name": "AgentWorkflowSeed.build_recruitment_workflow",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Make the Recruitment Workflow deterministic by fixing the positional argument issue for step4 and rewriting completion_prompts for TASK_QUEUE and the resume-vs-job-description match step to require strict, machine-parseable outputs (JSON array and exact YES/NO).",
+    "steps": [
+      {
+        "operation": "Fix completion_prompt parameter passing and strengthen prompts in Recruitment Workflow",
+        "file_to_modify": "workflow_seed.py",
+        "function_to_modify": "AgentWorkflowSeed.build_recruitment_workflow",
+        "reason": "The recruitment workflow currently creates step4 passing the YES/NO instruction as a positional argument (not completion_prompt=...), which likely prevents the step's completion prompt from being used. Additionally, the TASK_QUEUE (step2) and the matching step (step4) prompts are ambiguous and allow non-deterministic model outputs. Changing step4 to use completion_prompt= and tightening both prompts to require exact, machine-parseable outputs restores deterministic branching and reliable task selection.",
+        "side_effects": "Behavioral changes in the recruitment flow: downstream code that parsed the previous, ambiguous TASK_QUEUE output format may need updates. Tests that previously simulated non-strict outputs must be updated to the strict JSON array and exact YES/NO responses. Branching labels (\"YES\"/\"NO\"/\"COMPLETE\") are preserved, but the workflow will only follow branches if the model returns the exact tokens; this may reduce false positives/negatives but could require re-training or prompt-tuning. No API signature changes; only internal workflow behavior changes. "
+      }
+    ]
+  }
+}

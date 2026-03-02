@@ -1,0 +1,72 @@
+{
+  "pr_number": 6899,
+  "repository": "scrapy/scrapy",
+  "title": "Fix typing of dynamic `request` attribute on `Failure` with a cast subclass",
+  "body": "Summary:\n- Addresses a typing issue where static analyzers (e.g., mypy) flag access to a dynamically attached `request` attribute on twisted.python.failure.Failure objects.\n- Introduces a lightweight, typing-only subclass FailureWithRequest to provide a stable type for static analysis without altering runtime behavior.\n- Applies a cast-based typing approach in the engine paths that interact with Failure objects to access the attached `request` attribute safely for typing purposes, while preserving existing runtime logic.\n\nWhat changes:\n- Add a typing aid: a subclass FailureWithRequest(Failure) with a `request` attribute annotation. This subclass is intended purely for static type checking and to support typing.cast usage.\n- Update Scrapy’s engine typing in key paths to use typing.cast(FailureWithRequest, failure).request where appropriate, using getattr to avoid runtime errors if the attribute isn’t present.\n- No runtime behavior changes. The dynamic `request` attribute on Failure remains optional at runtime; the modifications only affect type-checking paths.\n\nTargets (files and functions):\n- File: scrapy/core/engine.py\n  - Add: a typing-only subclass FailureWithRequest(Failure) with an attribute annotation for `request`.\n  - Modify: ExecutionEngine._handle_downloader_output to access Failure.request via a cast to FailureWithRequest for typing, guarded with getattr to avoid runtime issues.\n  - Modify: ExecutionEngine._schedule_request (and optionally _spider_idle) to access Failure.request via a cast, using getattr when needed.\n\nRationale:\n- This approach yields better static type safety without changing runtime behavior or creating new Failure instances.\n- It provides a clear, maintainable path for static analyzers to understand that a Failure may carry a `request` attribute in certain code paths.\n- Keeps compatibility with existing signals and error handling logic that rely on twisted Failure objects.\n\nTesting guidance:\n- Run type checks (e.g., mypy) to ensure the new typing pathway is recognized and does not raise type errors.\n- Run the test suite to confirm no runtime changes or regressions in request handling, logging, or error propagation.\n- Consider adding a typing-specific test that ensures a Failure with an attached `request` can be accessed through the typing.cast pathway without runtime impact.\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T14:25:29.133350",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "scrapy/core/engine.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "_handle_downloader_output",
+          "class_name": "ExecutionEngine",
+          "full_name": "ExecutionEngine._handle_downloader_output",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_schedule_request",
+          "class_name": "ExecutionEngine",
+          "full_name": "ExecutionEngine._schedule_request",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_spider_idle",
+          "class_name": "ExecutionEngine",
+          "full_name": "ExecutionEngine._spider_idle",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Introduce a typing-only helper (FailureWithRequest) and apply a cast-based access pattern to the dynamic Failure.request attribute in engine paths (_handle_downloader_output, _schedule_request, and _spider_idle) to satisfy static analyzers without altering runtime behavior.",
+    "steps": [
+      {
+        "operation": "Add typing-only subclass FailureWithRequest(Failure) with a 'request' attribute annotation and prepare typing-safe access in _handle_downloader_output",
+        "file_to_modify": "scrapy/core/engine.py",
+        "function_to_modify": "ExecutionEngine._handle_downloader_output",
+        "reason": "Introduce a typing aid to static analyzers for dynamically attached 'request' on Failure; enable typing.cast usage in downstream code paths without runtime impact.",
+        "side_effects": "No runtime behavior changes. May require updating imports for typing.cast. Improves type-checking clarity for Failure objects that may carry a dynamic 'request' attribute."
+      },
+      {
+        "operation": "Modify ExecutionEngine._schedule_request to access Failure.request via typing.cast(FailureWithRequest, failure).request using getattr",
+        "file_to_modify": "scrapy/core/engine.py",
+        "function_to_modify": "ExecutionEngine._schedule_request",
+        "reason": "Apply typing.cast usage in the scheduling path for static analysis and guard with getattr to avoid AttributeError if the attribute isn’t present.",
+        "side_effects": "No runtime behavior changes. Type-checkers will recognize the safe access pattern; tests should remain unaffected."
+      },
+      {
+        "operation": "Modify ExecutionEngine._spider_idle to access Failure.request via typing.cast(FailureWithRequest, failure).request using getattr",
+        "file_to_modify": "scrapy/core/engine.py",
+        "function_to_modify": "ExecutionEngine._spider_idle",
+        "reason": "Maintain consistent typing approach in spider idle path for Failure handling and static analysis.",
+        "side_effects": "No runtime behavior changes. Keeps existing runtime semantics; enhances type-checking reliability."
+      }
+    ]
+  }
+}

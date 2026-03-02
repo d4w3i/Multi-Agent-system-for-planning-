@@ -1,0 +1,63 @@
+{
+  "pr_number": 2952,
+  "repository": "Mikubill/sd-webui-controlnet",
+  "title": "Fix issue with > in pip cmd causing file creation",
+  "body": "### Problem Summary\n\nWhen starting the Web UI, the `install.py` script reads `requirements.txt`. If a package version uses \">\", it is treated as a redirection in `pip install`, creating an unintended file.\n\n### Steps to Reproduce\n\nRunning `webui.bat` or `webui.sh` creates a file named \"=4.8.0\" due to \"opencv-python>=4.8.0\" in `requirements.txt` being misinterpreted.\n\n### Fix\n\nI enclosed the package and version specification in double quotes in `install.py`.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T09:44:48.465251",
+    "extractor_version": "1.0.0",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "install.py",
+      "status": "modified",
+      "additions": 4,
+      "deletions": 4,
+      "functions_modified": [
+        {
+          "function_name": "install_requirements",
+          "class_name": null,
+          "full_name": "install_requirements",
+          "start_line": 31,
+          "end_line": 73,
+          "lines_changed": [
+            41,
+            51,
+            61,
+            66
+          ]
+        }
+      ],
+      "patch": "@@ -38,7 +38,7 @@ def install_requirements(req_file):\n                     installed_version = get_installed_version(package_name)\n                     if installed_version != package_version:\n                         launch.run_pip(\n-                            f\"install -U {package}\",\n+                            f'install -U \"{package}\"',\n                             f\"sd-webui-controlnet requirement: changing {package_name} version from {installed_version} to {package_version}\",\n                         )\n                 elif \">=\" in package:\n@@ -48,7 +48,7 @@ def install_requirements(req_file):\n                         installed_version\n                     ) < comparable_version(package_version):\n                         launch.run_pip(\n-                            f\"install -U {package}\",\n+                            f'install -U \"{package}\"',\n                             f\"sd-webui-controlnet requirement: changing {package_name} version from {installed_version} to {package_version}\",\n                         )\n                 elif \"<=\" in package:\n@@ -58,12 +58,12 @@ def install_requirements(req_file):\n                         installed_version\n                     ) > comparable_version(package_version):\n                         launch.run_pip(\n-                            f\"install {package_name}=={package_version}\",\n+                            f'install \"{package_name}=={package_version}\"',\n                             f\"sd-webui-controlnet requirement: changing {package_name} version from {installed_version} to {package_version}\",\n                         )\n                 elif not launch.is_installed(extract_base_package(package)):\n                     launch.run_pip(\n-                        f\"install {package}\",\n+                        f'install \"{package}\"',\n                         f\"sd-webui-controlnet requirement: {package}\",\n                     )\n             except Exception as e:"
+    }
+  ],
+  "functions_modified": [
+    {
+      "function_name": "install_requirements",
+      "class_name": null,
+      "full_name": "install_requirements",
+      "start_line": 31,
+      "end_line": 73,
+      "lines_changed": [
+        41,
+        51,
+        61,
+        66
+      ]
+    }
+  ],
+  "step_plan": {
+    "steps": [
+      {
+        "operation": "Quote pip install specifiers passed to launch.run_pip to prevent shell redirection when requirements contain comparison operators like \">=\" or \"<=\".",
+        "file_to_modify": "install.py",
+        "function_to_modify": "install_requirements",
+        "reason": "Unquoted requirement strings (e.g., \"opencv-python>=4.8.0\") can be interpreted by the invoking shell/command processor as output redirection (\">\"), causing unintended file creation (e.g., \"=4.8.0\") instead of being treated as a single pip argument.",
+        "side_effects": "Changes how pip arguments are parsed across platforms (Windows cmd, bash/zsh). Improves safety for specifiers containing special characters, but may affect edge cases where requirements already include their own quotes or rely on shell-level expansion; also depends on how launch.run_pip constructs subprocess calls (string vs argv) and could alter behavior if it double-quotes/escapes internally."
+      }
+    ],
+    "summary": "Fixes a Web UI startup/install issue where requirement specifiers containing \">\" were treated as shell redirection by quoting package/version strings passed to pip in install.py."
+  }
+}

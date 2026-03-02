@@ -1,0 +1,33 @@
+{
+  "pr_number": 9068,
+  "repository": "pyinstaller/pyinstaller",
+  "title": "Fix for failing test_site_module_disabled on macOS and python 3.9",
+  "body": "Over the last few days, the `test_site_module_disabled` started to fail on macOS python 3.9 runner (e.g., [here](https://github.com/pyinstaller/pyinstaller/actions/runs/14001775971/job/39212391324?pr=9067)).\n\nThe failure is caused by `site` module being already imported at the start of the test, which is explicitly checking that this is not the case (as `site` module should be disabled in the interpreter config, and thus not imported during its initialization). \n\nIt turns out that this is caused by import of `setuptools` in the run-time hook for `setuptools`, but only with `setuptools` v77.0.3 that was released on Mar 20. The import chain is `pyi_rth_setuptools.py` -> `setuptools` -> `setuptools.dist` -> `setuptools.command` -> `setuptools._distutils.command` -> `setuptools._distutils.command.build_ext` -> `site`,\nand was likely brought about by https://github.com/pypa/setuptools/commit/1d120d919bd6d5cb8ba1b179c2099bd947d2c466.\n\nIt also turns out that the failing test under python 3.9 on macOS is collecting `setuptools`, while the (succeeding) tests under other versions (and OSes) are not. The offending import chain turns out to be: `pyi_site_module_disabled.py` -> `site` -> `_sitebuiltins` -> `pydoc` -> `sysconfig` -> `_osx_support` -> `distutils` (-> `setuptools`).\n\nThis is caused by a [conditional import in `_osx_support.compiler_fixup`](https://github.com/python/cpython/blob/f3994ade31a563d49806cf6a681d1b1115fccaa3/Lib/_osx_support.py#L430-L434), which itself seems to be intended to be used by `distutils`.\n\nThis explains why we are seeing this only on macOS, and only with python 3.9 - latest `setuptools` do not  support python 3.8 anymore, and the use of `distutils.log` in `_osx_support.compiler_fixup` was removed in python >= 3.10.\n\nTherefore, add a hook for `_osx_support` that excludes `distutils`. In addition to fixing the failing test, this should also ensure that `distutils` / `setuptools` do no end up pulled into basic applications that import either `site` or `sysconfig` (or a module that imports either of these) when building with python 3.8 or 3.9 on macOs.\n\nExplore the source code to identify the files and functions to modify.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T13:07:23.720547",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "PyInstaller/hooks/hook-_osx_support.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    }
+  ],
+  "step_plan": {
+    "summary": "Add a new PyInstaller hook (hook-_osx_support.py) that excludes 'distutils' from analysis of the stdlib module _osx_support to avoid pulling in distutils/setuptools transitively and to fix test_site_module_disabled on macOS + Python 3.9.",
+    "steps": [
+      {
+        "operation": "Add PyInstaller hook to exclude 'distutils' when analyzing _osx_support",
+        "file_to_modify": "PyInstaller/hooks/hook-_osx_support.py",
+        "function_to_modify": "create_hook",
+        "reason": "CPython's Lib/_osx_support.py conditionally imports distutils (which can bring in setuptools). During static analysis, PyInstaller may treat that as a required import and collect distutils/setuptools for apps that only import site or sysconfig. Adding a hook that sets excludedimports = ['distutils'] stops the analyzer from treating that conditional import as a hard dependency and prevents spurious inclusion.",
+        "side_effects": "Low risk. Fixes test_site_module_disabled on macOS + Python 3.9 and prevents accidental bundling of distutils/setuptools via _osx_support. Applications that truly require distutils will still include it if they import it explicitly; however, apps that unintentionally relied on distutils being pulled in transitively will no longer get it. Run the full test suite (especially functional tests around site/sysconfig and packaging) and validate packaging on macOS for Python 3.8/3.9. No public API changes; only static-analysis behavior changes."
+      }
+    ]
+  }
+}

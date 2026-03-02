@@ -1,0 +1,61 @@
+{
+    "repository": "XiaoMi/ha_xiaomi_home",
+    "pull_request_number": 1264,
+    "title": "feat: do not subscribe BLE device online/offline state message",
+    "body": "# Why\r\nIn the issue #1251, MIoT cloud published an offline state message when the device became offline, but did not publish an online state message when the device became online. So, even xiaomi_home got properties_changed and event_occured message, the device entities was still shown unavailable.\r\nMIoT cloud can not accurately determine the BLE device's online/offline state. Also see #1207. \r\n\r\n# Changed\r\n- Do not subscribe BLE device online/offline state message. Assume that all BLE devices are online.",
+    "pr_date": "2025-07-15T08:39:26Z",
+    "source_branch": "fix-ble-sub",
+    "language": "en",
+    "keywords_detected": {
+        "branch": [
+            "fix"
+        ],
+        "requirement": [],
+        "body": [
+            "change"
+        ]
+    },
+    "number_of_links_in_pr": 0,
+    "base_sha": "4ad040d2eaceb6b8eeb4a515f3b98673d63d62cd",
+    "last_commit_sha": "6291499c8c77d00680959db7d17b075ee09e39b4",
+    "diff_between_base_and_last": [
+        {
+            "sha": "4d43c2772fd287cfe637de3eafdbf5dab6ac0f50",
+            "filename": "custom_components/xiaomi_home/miot/miot_mips.py",
+            "status": "modified",
+            "additions": 5,
+            "deletions": 0,
+            "changes": 5,
+            "blob_url": "https://github.com/XiaoMi/ha_xiaomi_home/blob/6291499c8c77d00680959db7d17b075ee09e39b4/custom_components%2Fxiaomi_home%2Fmiot%2Fmiot_mips.py",
+            "raw_url": "https://github.com/XiaoMi/ha_xiaomi_home/raw/6291499c8c77d00680959db7d17b075ee09e39b4/custom_components%2Fxiaomi_home%2Fmiot%2Fmiot_mips.py",
+            "contents_url": "https://api.github.com/repos/XiaoMi/ha_xiaomi_home/contents/custom_components%2Fxiaomi_home%2Fmiot%2Fmiot_mips.py?ref=6291499c8c77d00680959db7d17b075ee09e39b4",
+            "patch": "@@ -994,6 +994,11 @@ def on_state_msg(topic: str, payload: str, ctx: Any) -> None:\n                 handler(\n                     did, MIoTDeviceState.ONLINE if msg['event'] == 'online'\n                     else MIoTDeviceState.OFFLINE, ctx)\n+\n+        if did.startswith('blt.'):\n+        # MIoT cloud may not publish BLE device online/offline state message.\n+        # Do not subscribe BLE device online/offline state.\n+            return True\n         return self.__reg_broadcast_external(\n             topic=topic, handler=on_state_msg, handler_ctx=handler_ctx)\n "
+        }
+    ],
+    "commits": [
+        {
+            "sha": "6291499c8c77d00680959db7d17b075ee09e39b4",
+            "commit_date": "2025-07-14T03:52:03Z",
+            "message": "feat: do not subscribe BLE device online/offline state message (#1251)",
+            "number_of_links_in_commit": 0,
+            "files_changed_count": 1,
+            "files": [
+                {
+                    "sha": "4d43c2772fd287cfe637de3eafdbf5dab6ac0f50",
+                    "filename": "custom_components/xiaomi_home/miot/miot_mips.py",
+                    "status": "modified",
+                    "additions": 5,
+                    "deletions": 0,
+                    "changes": 5,
+                    "blob_url": "https://github.com/XiaoMi/ha_xiaomi_home/blob/6291499c8c77d00680959db7d17b075ee09e39b4/custom_components%2Fxiaomi_home%2Fmiot%2Fmiot_mips.py",
+                    "raw_url": "https://github.com/XiaoMi/ha_xiaomi_home/raw/6291499c8c77d00680959db7d17b075ee09e39b4/custom_components%2Fxiaomi_home%2Fmiot%2Fmiot_mips.py",
+                    "contents_url": "https://api.github.com/repos/XiaoMi/ha_xiaomi_home/contents/custom_components%2Fxiaomi_home%2Fmiot%2Fmiot_mips.py?ref=6291499c8c77d00680959db7d17b075ee09e39b4",
+                    "patch": "@@ -994,6 +994,11 @@ def on_state_msg(topic: str, payload: str, ctx: Any) -> None:\n                 handler(\n                     did, MIoTDeviceState.ONLINE if msg['event'] == 'online'\n                     else MIoTDeviceState.OFFLINE, ctx)\n+\n+        if did.startswith('blt.'):\n+        # MIoT cloud may not publish BLE device online/offline state message.\n+        # Do not subscribe BLE device online/offline state.\n+            return True\n         return self.__reg_broadcast_external(\n             topic=topic, handler=on_state_msg, handler_ctx=handler_ctx)\n "
+                }
+            ]
+        }
+    ],
+    "pull_request_url": "https://github.com/XiaoMi/ha_xiaomi_home/pull/1264",
+    "commits_url": "https://github.com/XiaoMi/ha_xiaomi_home/pull/1264/commits",
+    "files_url": "https://github.com/XiaoMi/ha_xiaomi_home/pull/1264/files"
+}

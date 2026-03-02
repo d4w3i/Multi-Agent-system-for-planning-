@@ -1,0 +1,155 @@
+{
+  "pr_number": 2940,
+  "repository": "EleutherAI/lm-evaluation-harness",
+  "title": "Fix import error for eval_logger in score utils",
+  "body": "## 🛠 Description of the Issue\r\n\r\nSome tasks (e.g., `score` and others under `lm_eval/tasks/`) attempt to import `eval_logger` using:\r\n\r\n```python\r\nfrom lm_eval.utils import eval_logger\r\n```\r\n\r\nor:\r\n\r\n```python\r\nfrom lm_eval.loggers import eval_logger\r\n```\r\n\r\nHowever, `eval_logger` is no longer defined in those modules, resulting in the following runtime error:\r\n\r\n```\r\nImportError: cannot import name 'eval_logger' from 'lm_eval.utils'\r\n```\r\n\r\nThis prevents tasks from running correctly, including `score_robustness_agieval` and potentially others relying on similar logging mechanisms.\r\n\r\n## ✅ Fix\r\n\r\nTo resolve the issue across all affected tasks, the following replacement was made:\r\n\r\n```python\r\nimport logging\r\neval_logger = logging.getLogger(\"lm_eval.score\")\r\n```\r\n\r\nThis change restores proper logger usage by leveraging Python's standard logging infrastructure and avoids relying on deprecated or non-existent imports.\r\n\r\nThe fix has been applied consistently across all tasks that were impacted by this issue.",
+  "extraction_metadata": {
+    "extracted_at": "2026-02-25T15:50:23.533448",
+    "extractor_version": "1.0.0",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "lm_eval/tasks/aclue/_generate_configs.py",
+      "status": "modified",
+      "additions": 3,
+      "deletions": 1,
+      "functions_modified": [],
+      "patch": "@@ -3,12 +3,14 @@\n \"\"\"\n \n import argparse\n+import logging\n import os\n \n import yaml\n from tqdm import tqdm\n \n-from lm_eval.utils import eval_logger\n+\n+eval_logger = logging.getLogger(__name__)\n \n \n SUBJECTS = {"
+    },
+    {
+      "filename": "lm_eval/tasks/ceval/_generate_configs.py",
+      "status": "modified",
+      "additions": 3,
+      "deletions": 1,
+      "functions_modified": [],
+      "patch": "@@ -3,12 +3,14 @@\n \"\"\"\n \n import argparse\n+import logging\n import os\n \n import yaml\n from tqdm import tqdm\n \n-from lm_eval.utils import eval_logger\n+\n+eval_logger = logging.getLogger(__name__)\n \n \n SUBJECTS = {"
+    },
+    {
+      "filename": "lm_eval/tasks/cmmlu/_generate_configs.py",
+      "status": "modified",
+      "additions": 3,
+      "deletions": 1,
+      "functions_modified": [],
+      "patch": "@@ -3,12 +3,14 @@\n \"\"\"\n \n import argparse\n+import logging\n import os\n \n import yaml\n from tqdm import tqdm\n \n-from lm_eval.utils import eval_logger\n+\n+eval_logger = logging.getLogger(__name__)\n \n \n SUBJECTS = {"
+    },
+    {
+      "filename": "lm_eval/tasks/csatqa/_generate_configs.py",
+      "status": "modified",
+      "additions": 3,
+      "deletions": 1,
+      "functions_modified": [],
+      "patch": "@@ -3,12 +3,14 @@\n \"\"\"\n \n import argparse\n+import logging\n import os\n \n import yaml\n from tqdm import tqdm\n \n-from lm_eval.logger import eval_logger\n+\n+eval_logger = logging.getLogger(__name__)\n \n \n SUBSETS = [\"WR\", \"GR\", \"RCS\", \"RCSS\", \"RCH\", \"LI\"]"
+    },
+    {
+      "filename": "lm_eval/tasks/realtoxicityprompts/metric.py",
+      "status": "modified",
+      "additions": 3,
+      "deletions": 1,
+      "functions_modified": [],
+      "patch": "@@ -1,10 +1,12 @@\n import json\n+import logging\n import os\n \n import requests\n from requests.adapters import HTTPAdapter, Retry\n \n-from lm_eval.utils import eval_logger\n+\n+eval_logger = logging.getLogger(__name__)\n \n \n def toxicity_perspective_api("
+    },
+    {
+      "filename": "lm_eval/tasks/score/agi_eval/utils_agieval.py",
+      "status": "modified",
+      "additions": 3,
+      "deletions": 1,
+      "functions_modified": [],
+      "patch": "@@ -12,6 +12,7 @@\n # See the License for the specific language governing permissions and\n # limitations under the License.\n \n+import logging\n import os\n import re\n from functools import partial\n@@ -22,9 +23,10 @@\n \n from lm_eval.tasks.score import utils\n from lm_eval.tasks.score.utils import prompt_consistency_rate, robustness_doc_to_text\n-from lm_eval.utils import eval_logger\n \n \n+eval_logger = logging.getLogger(__name__)\n+\n TEMPLATE_FILE_PATH = os.path.join(os.path.dirname(__file__), \"prompt_templates.json\")\n \n PROMPT_ROBUSTNESS_TEMPLATE_KEY = \"prompt_robustness\""
+    },
+    {
+      "filename": "lm_eval/tasks/score/math/utils_math.py",
+      "status": "modified",
+      "additions": 3,
+      "deletions": 1,
+      "functions_modified": [],
+      "patch": "@@ -13,6 +13,7 @@\n # limitations under the License.\n \n import json\n+import logging\n import os\n from functools import partial\n from itertools import combinations\n@@ -28,9 +29,10 @@\n     normalize_answer_string,\n )\n from lm_eval.tasks.score.utils import robustness_doc_to_text\n-from lm_eval.utils import eval_logger\n \n \n+eval_logger = logging.getLogger(__name__)\n+\n TEMPLATE_FILE_PATH = os.path.join(os.path.dirname(__file__), \"prompt_templates.json\")\n \n PROMPT_ROBUSTNESS_TEMPLATE_KEY = \"prompt_robustness\""
+    },
+    {
+      "filename": "lm_eval/tasks/score/mmlu_pro/utils_mmlu_pro.py",
+      "status": "modified",
+      "additions": 3,
+      "deletions": 1,
+      "functions_modified": [],
+      "patch": "@@ -12,6 +12,7 @@\n # See the License for the specific language governing permissions and\n # limitations under the License.\n \n+import logging\n import os\n from functools import partial\n from typing import Any, Dict, List\n@@ -20,9 +21,10 @@\n \n from lm_eval.tasks.score import utils\n from lm_eval.tasks.score.utils import prompt_consistency_rate, robustness_doc_to_text\n-from lm_eval.utils import eval_logger\n \n \n+eval_logger = logging.getLogger(__name__)\n+\n TEMPLATE_FILE_PATH = os.path.join(os.path.dirname(__file__), \"prompt_templates.json\")\n \n PROMPT_ROBUSTNESS_TEMPLATE_KEY = \"prompt_robustness\""
+    },
+    {
+      "filename": "lm_eval/tasks/score/utils.py",
+      "status": "modified",
+      "additions": 3,
+      "deletions": 1,
+      "functions_modified": [],
+      "patch": "@@ -14,6 +14,7 @@\n \n import copy\n import json\n+import logging\n import re\n import string\n import sys\n@@ -24,7 +25,8 @@\n import numpy as np\n from datasets import Dataset\n \n-from lm_eval.utils import eval_logger\n+\n+eval_logger = logging.getLogger(__name__)\n \n \n NUMERALS = [\"1\", \"2\", \"3\", \"4\", \"5\", \"6\", \"7\", \"8\", \"9\", \"10\"]"
+    }
+  ],
+  "functions_modified": [],
+  "step_plan": {
+    "steps": [
+      {
+        "operation": "Replace deprecated eval_logger import with stdlib logging-based module logger",
+        "file_to_modify": "lm_eval/tasks/aclue/_generate_configs.py",
+        "function_to_modify": null,
+        "reason": "Tasks importing `eval_logger` from `lm_eval.utils` were failing at runtime because `eval_logger` is no longer exported there; defining `eval_logger = logging.getLogger(__name__)` restores logging without relying on removed symbols.",
+        "side_effects": "Logging namespace/name changes to the module’s `__name__`, which can affect log filtering/formatting and where messages appear if downstream tooling expects a specific logger name."
+      },
+      {
+        "operation": "Replace deprecated eval_logger import with stdlib logging-based module logger",
+        "file_to_modify": "lm_eval/tasks/ceval/_generate_configs.py",
+        "function_to_modify": null,
+        "reason": "Eliminate `ImportError` caused by stale `from lm_eval.utils import eval_logger` by switching to Python’s `logging` module and creating a module-scoped logger.",
+        "side_effects": "Logger identity changes to `__name__`; any tests or tooling matching on the previous logger name may need to adjust."
+      },
+      {
+        "operation": "Replace deprecated eval_logger import with stdlib logging-based module logger",
+        "file_to_modify": "lm_eval/tasks/cmmlu/_generate_configs.py",
+        "function_to_modify": null,
+        "reason": "Keep config-generation scripts runnable by removing the broken dependency on `lm_eval.utils.eval_logger` and using `logging.getLogger(__name__)` instead.",
+        "side_effects": "May slightly change verbosity/propagation depending on global logging configuration; log records will be attributed to this module."
+      },
+      {
+        "operation": "Fix incorrect logger import path and define module logger via stdlib logging",
+        "file_to_modify": "lm_eval/tasks/csatqa/_generate_configs.py",
+        "function_to_modify": null,
+        "reason": "The file attempted to import `eval_logger` from `lm_eval.logger` (also not providing `eval_logger`), so it is replaced with a local `logging.getLogger(__name__)` to prevent runtime import failures.",
+        "side_effects": "If other parts of the system relied on the old logger name or import side effects, they will no longer occur; logs now propagate per standard logging rules."
+      },
+      {
+        "operation": "Replace deprecated eval_logger import with stdlib logging-based module logger",
+        "file_to_modify": "lm_eval/tasks/realtoxicityprompts/metric.py",
+        "function_to_modify": null,
+        "reason": "`metric.py` relied on `lm_eval.utils.eval_logger`; switching to `logging.getLogger(__name__)` prevents ImportError while preserving logging capability for API/HTTP error reporting.",
+        "side_effects": "HTTP/request error logs may appear under a different logger name; log routing/handlers configured for the old logger may not capture these messages."
+      },
+      {
+        "operation": "Remove broken eval_logger import and introduce a module-scoped stdlib logger for score AGI-Eval utilities",
+        "file_to_modify": "lm_eval/tasks/score/agi_eval/utils_agieval.py",
+        "function_to_modify": null,
+        "reason": "`utils_agieval.py` imports `eval_logger` from `lm_eval.utils`, which no longer exists; defining `eval_logger` locally ensures scoring/robustness utilities can log without import-time failure.",
+        "side_effects": "Downstream callers that expected a shared/global `lm_eval` logger may see logs under the module logger; potential changes in log grouping for score tasks."
+      },
+      {
+        "operation": "Remove broken eval_logger import and introduce a module-scoped stdlib logger for score Math utilities",
+        "file_to_modify": "lm_eval/tasks/score/math/utils_math.py",
+        "function_to_modify": null,
+        "reason": "Prevent runtime failures in math score/robustness helpers by replacing the stale `lm_eval.utils.eval_logger` import with a local `logging.getLogger(__name__)`.",
+        "side_effects": "Log statements in these utilities will be attributed to this module; any centralized configuration targeting the old logger name may not apply."
+      },
+      {
+        "operation": "Remove broken eval_logger import and introduce a module-scoped stdlib logger for MMLU-Pro scoring utilities",
+        "file_to_modify": "lm_eval/tasks/score/mmlu_pro/utils_mmlu_pro.py",
+        "function_to_modify": null,
+        "reason": "Fix ImportError during task execution by dropping the invalid `eval_logger` import and using Python logging to create a module-level logger.",
+        "side_effects": "May alter log categorization for MMLU-Pro score runs; log filtering rules may need updates if they were keyed on the previous logger."
+      },
+      {
+        "operation": "Replace deprecated eval_logger import in shared score utilities with stdlib logging-based module logger",
+        "file_to_modify": "lm_eval/tasks/score/utils.py",
+        "function_to_modify": null,
+        "reason": "`lm_eval/tasks/score/utils.py` is a shared dependency for score tasks; removing the invalid `from lm_eval.utils import eval_logger` prevents cascading ImportErrors across multiple score subtasks.",
+        "side_effects": "All score utilities that emit logs via `eval_logger` will now emit under this module’s logger name, potentially changing log output structure across the score task suite."
+      }
+    ],
+    "summary": "This PR fixes runtime ImportErrors across multiple tasks by removing stale imports of `eval_logger` from `lm_eval.utils`/`lm_eval.logger` and replacing them with module-scoped loggers created via Python’s standard `logging.getLogger(__name__)`."
+  }
+}

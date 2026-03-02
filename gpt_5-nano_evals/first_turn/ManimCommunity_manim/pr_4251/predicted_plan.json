@@ -1,0 +1,169 @@
+{
+  "pr_number": 4251,
+  "repository": "ManimCommunity/manim",
+  "title": "Fix(graph): Allow any Line subclass as edge_type in Graph/DiGraph",
+  "body": "Overview\n- This change broadens edge rendering in Graph and DiGraph to support any Line subclass as edge_type, not just the default Line. This enables using specialized edge types (e.g., LabeledLine) across graphs.\n\nMotivation\n- Previously, Graph and DiGraph assumed edge_type would align with the first two arguments (start, end) in a Line-based edge. Subclasses of Line (like LabeledLine) may require different edge construction semantics or additional configuration. This PR makes edge_type extensible to arbitrary Line subclasses, improving flexibility and extensibility.\n\nWhat changes here\n- Core: Graph and DiGraph now accept and propagate an edge_type (a Line subclass) when creating edges. The default remains Line to preserve existing behavior.\n- Edge creation paths updated: _populate_edge_dict and _add_edge now instantiate edge Mobjects using self.edge_type (or a similar attribute) instead of hard-coding Line. For DiGraph, per-edge tip configurations remain supported via existing structures, and are applied to the chosen edge_type.\n- Testing: Tests in test_graph.py updated to include scenarios using LabeledLine as edge_type, ensuring both Graph and DiGraph support this usage.\n\nBackward compatibility\n- If no edge_type is provided, behavior is unchanged (Line is used by default).\n\nImpact and risk\n- Low risk to existing users due to default preserving current behavior.\n- Potential edge-case considerations include: per-edge updates for edge subclasses (e.g., LabeledLine may expose additional attributes). The update methods should ensure endpoint updates also reposition any extra per-edge elements (like labels) if applicable.\n\nFollow-ups (concise)\n- Consider adding explicit docstrings for the new edge_type parameter (PARAMETERS section) where applicable.\n- Extend tests to cover additional edge subclasses beyond LabeledLine for broader validation.\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T13:27:20.369968",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "manim/mobject/graph.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "__init__",
+          "class_name": "GenericGraph",
+          "full_name": "GenericGraph.__init__",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_add_edge",
+          "class_name": "GenericGraph",
+          "full_name": "GenericGraph._add_edge",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_populate_edge_dict",
+          "class_name": "GenericGraph",
+          "full_name": "GenericGraph._populate_edge_dict",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_populate_edge_dict",
+          "class_name": "Graph",
+          "full_name": "Graph._populate_edge_dict",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "update_edges",
+          "class_name": "Graph",
+          "full_name": "Graph.update_edges",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "__init__",
+          "class_name": "DiGraph",
+          "full_name": "DiGraph.__init__",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_populate_edge_dict",
+          "class_name": "DiGraph",
+          "full_name": "DiGraph._populate_edge_dict",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_add_edge",
+          "class_name": "DiGraph",
+          "full_name": "DiGraph._add_edge",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "update_edges",
+          "class_name": "DiGraph",
+          "full_name": "DiGraph.update_edges",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "tests/module/mobject/test_graph.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    }
+  ],
+  "step_plan": {
+    "summary": "This PR introduces a configurable edge_type for Graph and DiGraph, enabling any Line subclass to be used for edges while preserving backward compatibility with the default Line. It propagates edge_type through edge creation and updates, and requires corresponding tests to validate LabeledLine and other Line subclasses in both Graph and DiGraph.",
+    "steps": [
+      {
+        "operation": "Add edge_type parameter to GenericGraph.__init__ and store as an instance attribute",
+        "file_to_modify": "manim/mobject/graph.py",
+        "function_to_modify": "GenericGraph.__init__",
+        "reason": "Introduce a configurable edge_type (defaulting to Line) so Graph/DiGraph can render edges with any Line subclass while preserving backward compatibility.",
+        "side_effects": "Requires updating all callers that construct GenericGraph and tests to either pass a specific edge_type or rely on the default. Potentially affects object serialization/deserialization if edge_type is part of state."
+      },
+      {
+        "operation": "Update GenericGraph._add_edge to instantiate edges using self.edge_type rather than a hard-coded Line",
+        "file_to_modify": "manim/mobject/graph.py",
+        "function_to_modify": "GenericGraph._add_edge",
+        "reason": "Ensure per-edge construction uses the configured edge_type so diverse Line subclasses can be rendered (e.g., LabeledLine) with proper edge_config application.",
+        "side_effects": "Edges created for Graph may differ in subclass behavior; ensure compatibility with edge_config and potential additional attributes on edge subclasses."
+      },
+      {
+        "operation": "Modify GenericGraph._populate_edge_dict to create edges with self.edge_type for undirected graphs",
+        "file_to_modify": "manim/mobject/graph.py",
+        "function_to_modify": "GenericGraph._populate_edge_dict",
+        "reason": "Propagate the configurable edge_type when building edges from the underlying graph data, enabling using non-Line edge classes across Graph variants.",
+        "side_effects": "If edge creation relies on specific Line subclass APIs, ensure edge_type subclasses are compatible with existing edge_config structures."
+      },
+      {
+        "operation": "Extend Graph._populate_edge_dict to utilize the configured edge_type when creating undirected edges",
+        "file_to_modify": "manim/mobject/graph.py",
+        "function_to_modify": "Graph._populate_edge_dict",
+        "reason": "Apply the same edge_type customization to Graph (undirected) paths to maintain consistency with GenericGraph behavior.",
+        "side_effects": "May require coordination with DiGraph paths to avoid duplication of edge construction logic."
+      },
+      {
+        "operation": "Update Graph.update_edges to reposition edges for any Line subclass used as edge_type",
+        "file_to_modify": "manim/mobject/graph.py",
+        "function_to_modify": "Graph.update_edges",
+        "reason": "Ensure dynamic updates (e.g., vertex movement) correctly reposition edges regardless of concrete edge subclass.",
+        "side_effects": "Edge subclass internals (e.g., labels or extra visuals) must update in concert with vertex movements; may require additional hooks if subclasses differ significantly."
+      },
+      {
+        "operation": "Add edge_type parameter to DiGraph.__init__ and propagate to base GenericGraph behavior",
+        "file_to_modify": "manim/mobject/graph.py",
+        "function_to_modify": "DiGraph.__init__",
+        "reason": "Support symmetric propagation of edge_type in directed graphs, keeping default behavior unchanged when edge_type is not provided.",
+        "side_effects": "Code paths that instantiate DiGraph must pass edge_type through; ensures backward compatibility by defaulting to Line."
+      },
+      {
+        "operation": "Update DiGraph._populate_edge_dict to instantiate directed edges using self.edge_type and apply per-edge tip_config",
+        "file_to_modify": "manim/mobject/graph.py",
+        "function_to_modify": "DiGraph._populate_edge_dict",
+        "reason": "Allow any Line subclass to render directed edges with appropriate tip configuration while preserving existing per-edge configuration flows.",
+        "side_effects": "Edge subclass may require additional initialization parameters for tips; tests may need to cover LabeledLine with tip_config."
+      },
+      {
+        "operation": "Modify DiGraph._add_edge to create directed edges via self.edge_type and apply per-edge tip_config",
+        "file_to_modify": "manim/mobject/graph.py",
+        "function_to_modify": "DiGraph._add_edge",
+        "reason": "Ensure all edge creation for DiGraph respects the configured edge_type and associated per-edge configurations.",
+        "side_effects": "Possible API surface changes for edge creation; ensure consistency with Graph._add_edge and keep backward compatibility via default edge_type."
+      },
+      {
+        "operation": "Update DiGraph.update_edges to reposition edges for any Line subclass used as edge_type",
+        "file_to_modify": "manim/mobject/graph.py",
+        "function_to_modify": "DiGraph.update_edges",
+        "reason": "Maintain correct rendering when vertices move across directed graphs for any edge_type subclass.",
+        "side_effects": "If edge_type subclasses expose unique repositioning needs, ensure these are accommodated (e.g., dynamic label positions)."
+      }
+    ]
+  }
+}

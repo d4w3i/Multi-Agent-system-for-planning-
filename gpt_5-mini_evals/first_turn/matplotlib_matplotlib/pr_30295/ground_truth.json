@@ -1,0 +1,81 @@
+{
+  "pr_number": 30295,
+  "repository": "matplotlib/matplotlib",
+  "title": "DOC: clarify Annotation clipping behavior with set_clip_path after axis limit changes",
+  "body": "This PR updates the docstring for `Annotation.__init__()` to clarify that when `.set_clip_path()` is used (e.g., to clip an annotation to an `axvspan` patch), subsequent axis limit changes (like `set_xlim()`) may cause the clipping to become misaligned.\r\n\r\nThe new `Notes` section advises users to:\r\n- Set axis limits *before* applying the clip path, or\r\n- Reassign the clip path using a new patch with the appropriate transform, e.g., `ax.transData`.\r\n\r\nThis clarification was inspired by the behavior discussed in issue #28717 and related use cases.\r\n\r\n## PR summary\r\n\r\n- **Why is this change necessary?**  \r\n  The current documentation does not mention that axis limits applied after setting a clip path can lead to incorrect visual behavior. This can confuse users working with annotations clipped to spans or patches.\r\n\r\n- **What problem does it solve?**  \r\n  Prevents misunderstandings by documenting how to maintain correct clipping behavior after axis limit changes.\r\n\r\n- **What is the reasoning for this implementation?**  \r\n  A simple docstring clarification is sufficient since the behavior is not a bug but an undocumented side effect.\r\n\r\n- **Minimum reproducible example:**\r\n\r\n```python\r\nfig, ax = plt.subplots()\r\nrect = ax.axvspan(2, 3.05, ymin=0, ymax=1, color='red', alpha=0.5)\r\nann = ax.annotate(\"Hello\", xy=(3, 0.5), xycoords=(\"data\", \"axes fraction\"),\r\n                  xytext=(0, 0), textcoords=\"offset points\", va=\"center\", clip_on=True)\r\nann.set_clip_path(rect)\r\n\r\n# This causes clipping to break visually\r\nax.set_xlim(0, 3)",
+  "extraction_metadata": {
+    "extracted_at": "2026-02-26T01:09:11.120486",
+    "extractor_version": "1.0.0",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "lib/matplotlib/text.py",
+      "status": "modified",
+      "additions": 13,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "__init__",
+          "class_name": "Annotation",
+          "full_name": "Annotation.__init__",
+          "start_line": 1689,
+          "end_line": 1910,
+          "lines_changed": [
+            1860,
+            1861,
+            1862,
+            1863,
+            1864,
+            1865,
+            1866,
+            1867,
+            1868,
+            1869,
+            1870,
+            1871,
+            1872
+          ]
+        }
+      ],
+      "patch": "@@ -1857,6 +1857,19 @@ def transform(renderer) -> Transform\n         --------\n         :ref:`annotations`\n \n+        Notes\n+        -----\n+        When using `.set_clip_path()` to clip an annotation to a patch (e.g., an\n+        `axvspan`), be aware that if the axis limits (such as via `set_xlim()`)\n+        are changed *after* assigning the clip path, the clipping may no longer\n+        align visually. This is because the patch transform may change, but the\n+        annotation’s clip path remains tied to the old coordinates.\n+\n+        To avoid this issue, you should either:\n+        - Set the axis limits *before* setting the clip path, or\n+        - Reassign the clip path manually using a new patch with the correct transform\n+          (typically `transform=ax.transData`).\n+\n         \"\"\"\n         _AnnotationBase.__init__(self,\n                                  xy,"
+    }
+  ],
+  "functions_modified": [
+    {
+      "function_name": "__init__",
+      "class_name": "Annotation",
+      "full_name": "Annotation.__init__",
+      "start_line": 1689,
+      "end_line": 1910,
+      "lines_changed": [
+        1860,
+        1861,
+        1862,
+        1863,
+        1864,
+        1865,
+        1866,
+        1867,
+        1868,
+        1869,
+        1870,
+        1871,
+        1872
+      ]
+    }
+  ],
+  "step_plan": {
+    "steps": [
+      {
+        "operation": "Add a new `Notes` section to the `Annotation.__init__` docstring explaining that clip paths set via `.set_clip_path()` can become visually misaligned if axis limits (e.g., `set_xlim()`) are changed afterward, and provide guidance to set limits before clipping or to reassign the clip path with an updated transform (typically `ax.transData`).",
+        "file_to_modify": "lib/matplotlib/text.py",
+        "function_to_modify": "Annotation.__init__",
+        "reason": "The existing documentation did not warn that subsequent axis limit changes can update the patch’s effective transform while the annotation’s stored clip path remains tied to the previous coordinate mapping, leading to confusing clipping behavior; documenting this side effect prevents user misunderstanding without changing runtime behavior.",
+        "side_effects": "No functional/runtime behavior changes; affects only generated docs and user expectations. May increase supportability by reducing bug reports, and could prompt users to change call order (set limits before `set_clip_path`) or to recreate/reassign clip patches when adjusting axes limits."
+      }
+    ],
+    "summary": "Clarifies Matplotlib `Annotation.__init__` documentation to warn that annotations clipped via `.set_clip_path()` may become misaligned after axis limit changes, and provides recommended usage patterns to keep clipping correct."
+  }
+}

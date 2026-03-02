@@ -1,0 +1,80 @@
+{
+  "pr_number": 2778,
+  "repository": "eosphoros-ai/DB-GPT",
+  "title": "fix: Change plan manager prompt in order to avoid calling tools directly",
+  "body": "Related to #2777\n在默认plan manager prompt中加入了对tool直接调用的严格限制\n\n# How Has This Been Tested?\n\n经过对话测试，plan manager 成功避免直接调用 Tools\n\n# Snapshots:\n\n(images omitted)\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T12:08:58.730604",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "packages/dbgpt-core/src/dbgpt/agent/core/plan/planner_agent.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "_init_reply_message",
+          "class_name": "PlannerAgent",
+          "full_name": "PlannerAgent._init_reply_message",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "__init__",
+          "class_name": "PlannerAgent",
+          "full_name": "PlannerAgent.__init__",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "packages/dbgpt-core/src/dbgpt/agent/core/plan/plan_action.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "run",
+          "class_name": "PlanAction",
+          "full_name": "PlanAction.run",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Update the Planner/Plan Manager to prevent it from instructing the LLM to call tools directly by strengthening prompts and adding runtime safeguards. As defense-in-depth, inject a strict 'no tool calls' runtime hint and validate parsed plans to reject tool-invocation attempts.",
+    "steps": [
+      {
+        "operation": "Enforce 'no direct tool calls' in the planner profile at construction time",
+        "file_to_modify": "packages/dbgpt-core/src/dbgpt/agent/core/plan/planner_agent.py",
+        "function_to_modify": "PlannerAgent.__init__",
+        "reason": "Ensure every PlannerAgent instance uses prompt text that explicitly forbids direct tool invocation. Programmatically injecting or overriding profile fields at __init__ centralizes the restriction (English and Chinese) so class-level constants or future dynamic selection can't omit it.",
+        "side_effects": "Changes the default prompt for all PlannerAgent instances, which may alter planner output and downstream behavior. Unit/integration tests that assert exact prompt text or plan wording will need updates. No API/schema changes, but planner behaviors in existing conversations may change; validate with conversational tests to ensure plans remain acceptable and parsed correctly."
+      },
+      {
+        "operation": "Add an explicit runtime hint into the reply message context to prevent tools being invoked via rendered 'agents' content",
+        "file_to_modify": "packages/dbgpt-core/src/dbgpt/agent/core/plan/planner_agent.py",
+        "function_to_modify": "PlannerAgent._init_reply_message",
+        "reason": "The expand_prompt template renders reply_message.context['agents'] into the model prompt. Appending or adding a separate context key with a strict single-line instruction (e.g., 'Do NOT call tools or execute agents directly; only produce plan steps assigning agents to tasks.') ensures the rendered prompt always contains the restriction even if the profile text is modified or localized incorrectly.",
+        "side_effects": "Alters the content passed to the LLM, potentially changing model outputs. If templates that consume 'agents' assume a particular format, that rendering may need minor adjustments. Tests that examine full prompt text will need updating. This is prompt-level behavior only and does not change persisted data models or APIs."
+      },
+      {
+        "operation": "Add post-parse validation to detect and reject tool-invocation attempts in plans",
+        "file_to_modify": "packages/dbgpt-core/src/dbgpt/agent/core/plan/plan_action.py",
+        "function_to_modify": "PlanAction.run",
+        "reason": "Prompt instructions are the primary control but can be bypassed. Adding validation after the LLM output is parsed into PlanInput items provides defense-in-depth: detect common calling patterns (e.g., 'run', 'execute', 'call tool', code-like function calls, or tool syntax) in item.content or forbidden directives in item.agent and either sanitize or reject the plan with a clear error message.",
+        "side_effects": "May cause previously accepted plans containing tool-call phrasing to fail validation; callers must handle validation errors. Tests for PlanAction.run must be extended to cover valid plans, rejected plans, and the exact error behavior. No external API schema changes, but user-facing tooling/UIs should surfacing validation failures so operators can re-prompt the planner."
+      }
+    ]
+  }
+}

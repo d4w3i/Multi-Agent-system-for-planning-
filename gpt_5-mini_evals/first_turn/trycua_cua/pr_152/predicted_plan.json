@@ -1,0 +1,118 @@
+{
+  "pr_number": 152,
+  "repository": "trycua/cua",
+  "title": "[Agent] Improved drag tool and standardized UITARS response",
+  "body": "This PR standardizes the UITARS loop responses to use the AgentResponse format. The Gradio UI now displays AgentResponse objects more clearly to reflect the standardized output.\n\nAlso includes some bugfixes for the drag tool, and allows for dragging along a path with more than two points to support upcoming agent features",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T13:32:25.914396",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "libs/agent/agent/providers/uitars/loop.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "run",
+          "class_name": "UITARSLoop",
+          "full_name": "UITARSLoop.run",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "process_model_response",
+          "class_name": "UITARSLoop",
+          "full_name": "UITARSLoop.process_model_response",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "libs/agent/agent/providers/uitars/tools/computer.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "__call__",
+          "class_name": "ComputerTool",
+          "full_name": "ComputerTool.__call__",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "libs/agent/agent/ui/gradio/app.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "extract_synthesized_text",
+          "class_name": null,
+          "full_name": "extract_synthesized_text",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "process_agent_result",
+          "class_name": null,
+          "full_name": "process_agent_result",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Standardize UITARS loop stream outputs to the AgentResponse format and extend/fix the UITARS computer drag tool to accept multi-point paths; update Gradio UI helpers to prefer AgentResponse fields while maintaining backward compatibility.",
+    "steps": [
+      {
+        "operation": "Adapt model response helper to produce/normalize AgentResponse-compatible structure",
+        "file_to_modify": "libs/agent/agent/providers/uitars/loop.py",
+        "function_to_modify": "UITARSLoop.process_model_response",
+        "reason": "Ensure any internal helper that interprets or normalizes model/tool outputs produces or can be converted into the canonical AgentResponse shape. Making process_model_response return a consistent structure simplifies run() changes and avoids duplicated conversion logic.",
+        "side_effects": "Downstream callers of this helper (including UITARSLoop.run) will start receiving AgentResponse-like dicts; unit tests that assert the old internal shape must be updated. If other modules directly call this helper, they may need to accept the new shape or use a compatibility wrapper. No API server-level change, but internal behavior is standardized."
+      },
+      {
+        "operation": "Change UITARSLoop.run to yield AgentResponse-shaped outputs and update its annotation",
+        "file_to_modify": "libs/agent/agent/providers/uitars/loop.py",
+        "function_to_modify": "UITARSLoop.run",
+        "reason": "The run() async generator is the single public streaming interface for UITARS outputs; it must emit canonical AgentResponse objects (id, object, created_at, status, role, content/text/output, metadata, model). Updating the return type to AsyncGenerator[AgentResponse, None] and using the AgentResponse import removes the unused-import issue and standardizes outputs for all consumers.",
+        "side_effects": "All consumers of the UITARS run() stream (including the Gradio UI) will receive the new shape; tests asserting previous plain-dict shapes must be updated. Keep backward compatibility by including legacy keys or adding a short compatibility path (still yield fields like 'thought_response' as nested metadata) to avoid breaking a staged rollout. Because run() still performs the same tool executions and message_manager updates, core behavior is preserved — but integration tests should validate message insertion and tool side effects remain unchanged."
+      },
+      {
+        "operation": "Extend ComputerTool.__call__ drag branch to accept and execute multi-point paths and clean up minor bugs",
+        "file_to_modify": "libs/agent/agent/providers/uitars/tools/computer.py",
+        "function_to_modify": "ComputerTool.__call__",
+        "reason": "The drag action currently accepts only start_x/start_y and end_x/end_y; to support agent features that require dragging along a path with >2 points, accept a 'points' parameter (list of {x,y} or list of (x,y)). Implement robust validation (points length >= 2), perform a single press/hold then iterative move/drag steps or multiple drag_to calls depending on the Computer.interface capabilities, and take a final screenshot once the whole path completes. Also fix minor issues: validate 'keys' in hotkey branch, remove unreachable code after 'finished', and provide explicit failure messages for unsupported scroll directions.",
+        "side_effects": "Tool callers can now send multi-point paths; update tests to validate sequences of Computer.interface calls (move_cursor -> press/drag/move/release or move+drag_to iterations). Changing the drag semantics could affect timing-sensitive UI interactions; manual/integration tests of drag-dependent features are required. Backwards compatibility should be preserved by accepting legacy start/end parameters; add deprecation notes/tests for the legacy shape. If the Computer.interface lacks press/hold methods, the implementation should fall back to multiple drag_to calls — this may alter UI fidelity and should be tested."
+      },
+      {
+        "operation": "Update process_agent_result to prefer AgentResponse fields and maintain compatibility fallback",
+        "file_to_modify": "libs/agent/agent/ui/gradio/app.py",
+        "function_to_modify": "process_agent_result",
+        "reason": "process_agent_result decodes older output shapes; it should be updated to prioritize AgentResponse fields (content, text, output, metadata) so the Gradio UI displays standardized responses cleanly. Keep fallback logic to support legacy shapes during rollout.",
+        "side_effects": "UI behavior will change to display structured content and metadata from AgentResponse objects; tests asserting previous string-only outputs must be updated. If other UI components rely on legacy fields, they should continue to work because of the fallback. Visual layout or metadata labels (e.g., title/status) may change, so manual QA of chat rendering and screenshot handlers is recommended."
+      },
+      {
+        "operation": "Update extract_synthesized_text to decode AgentResponse content/output and surface metadata for Gradio rendering",
+        "file_to_modify": "libs/agent/agent/ui/gradio/app.py",
+        "function_to_modify": "extract_synthesized_text",
+        "reason": "This helper is responsible for extracting human-readable text or synthesized content to show in the UI. It must prefer AgentResponse['content'] or AgentResponse['output'] arrays, and use AgentResponse['metadata'] (e.g., title, status) to enrich Gradio chat entries. Ensure compatibility with older dict shapes so both forms display correctly.",
+        "side_effects": "Changes affect chat message title, status, and displayed content. Unit and integration tests for UI text extraction must be updated. The GradioChatScreenshotHandler and other UI features that expect the old shapes should be verified to ensure screenshots and attachments still render. Minor differences in text selection/formatting are possible; run manual checks."
+      }
+    ]
+  }
+}

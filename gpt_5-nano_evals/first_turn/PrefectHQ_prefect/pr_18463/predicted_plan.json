@@ -1,0 +1,42 @@
+{
+  "pr_number": 18463,
+  "repository": "PrefectHQ/prefect",
+  "title": "Fix failing unit tests",
+  "body": "These changes fix the failing tests introduced by https://github.com/PrefectHQ/prefect/pull/18450",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T13:32:01.733720",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "src/prefect/__init__.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "__getattr__",
+          "class_name": "module",
+          "full_name": "module.__getattr__",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "This PR fixes failing unit tests by hardening the module-level lazy-loading mechanism in prefect/__init__.py. It strengthens __getattr__ to distinguish missing attributes from missing submodules, caches loaded attributes to avoid repeated side effects, and aligns the public API surface and version metadata with tests.",
+    "steps": [
+      {
+        "operation": "Improve module-level __getattr__ in src/prefect/__init__.py to harden lazy-loading and error reporting",
+        "file_to_modify": "src/prefect/__init__.py",
+        "function_to_modify": "__getattr__",
+        "reason": "The failing tests are tied to how public API attributes are lazy-loaded at import time. Strengthening __getattr__ will ensure clearer AttributeError messages when attributes/submodules are genuinely missing, introduce caching to avoid repeated imports, and preserve lazy-loading semantics without triggering unintended side effects.",
+        "side_effects": "Potentially alters import-time behavior for prefect submodules; may require adjustments in tests that rely on __getattr__ timing or attribute availability; could impact __version__/metadata exposure if they are resolved during attribute access; ensure existing users do not observe unexpected eager imports."
+      }
+    ]
+  }
+}

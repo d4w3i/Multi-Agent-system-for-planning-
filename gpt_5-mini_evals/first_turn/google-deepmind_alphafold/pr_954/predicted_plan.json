@@ -1,0 +1,42 @@
+{
+  "pr_number": 954,
+  "repository": "google-deepmind/alphafold",
+  "title": "Fix deprecation warning / error from BioPython",
+  "body": "Hi,\n\n   Here is a small PR to fix a deprecation issue related to BioPython. It would be great if y'all could run this through CI to make sure it doesn't have any side effects, but BioPython _seems_ to promise it's a safe change.\n\n## Description:\nThis PR swaps the BioPython.SCOPData module import in the mmcif_parsing module for BioPython.PDBData.\n\n## Related issue:\nSee https://github.com/biopython/biopython/blob/master/DEPRECATED.rst#biodatascopdata for information about the SCOPData deprecation.\n\n## Motivation:\nSCOPData was removed in version 1.82 of BioPython, so its usage throws an error when imported. This change allows upgrading BioPython beyond version 1.79, which brings improvements in security and stability. I had been trying to use AlphaFold2 with an updated BioPython but kept receiving deprecation warnings / errors depending on which version I was using.\n\n## Verification\n  [X] Package still installs after change\n  [X] `run_alphafold_test.py` returns `ok` after this change.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T12:19:10.872033",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "alphafold/data/mmcif_parsing.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "parse",
+          "class_name": null,
+          "full_name": "parse",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Replace usage of deprecated Bio.Data.SCOPData with a compatibility shim that prefers Bio.Data.PDBData and falls back to SCOPData, and update the parse() function to use the module-local 3-to-1 amino-acid mapping alias to avoid Biopython import errors.",
+    "steps": [
+      {
+        "operation": "Add Biopython compatibility shim for 3-to-1 amino-acid mapping and update parse() to use it",
+        "file_to_modify": "alphafold/data/mmcif_parsing.py",
+        "function_to_modify": "parse",
+        "reason": "Bio.Data.SCOPData has been deprecated/removed in newer Biopython releases. To avoid import errors while retaining compatibility with older Biopython versions, import Bio.Data.PDBData when available and fall back to SCOPData; expose the mapping as a module-local alias (e.g., _AA_MAP). Replace the single runtime use of SCOPData.protein_letters_3to1 in parse() with _AA_MAP.get(...) so the function works across Biopython versions.",
+        "side_effects": "Behavior: Should be a no-op for users whose Biopython version still provides SCOPData, and fixes import errors for newer Biopython that provide PDBData. Tests: Run unit tests and CI (particularly matrix across Biopython versions) because the underlying mapping object name or contents could differ slightly between PDBData and SCOPData; this may change handling of uncommon residue codes. Dependents: No external API change; only internal import behavior is changed. Potential risks: If neither PDBData nor SCOPData exists in the environment, imports will still fail (raise ImportError) — consider ensuring Biopython is present in CI or adding a clearer error message. Recommended CI: run existing run_alphafold_test.py and mmCIF parsing tests and include Biopython versions <1.80 and >=1.82 to verify compatibility."
+      }
+    ]
+  }
+}

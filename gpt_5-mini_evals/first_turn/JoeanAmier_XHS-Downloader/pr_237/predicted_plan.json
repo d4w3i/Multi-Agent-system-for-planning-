@@ -1,0 +1,42 @@
+{
+  "pr_number": 237,
+  "repository": "JoeanAmier/XHS-Downloader",
+  "title": "fix can't run by source code",
+  "body": "the error is:    fix NoMatches: No nodes match <class 'textual.widgets._rich_log.RichLog'> on XHSDownloader\n\nExplore the source code to identify the files and functions to modify.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T11:25:44.856931",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "source/TUI/app.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "on_mount",
+          "class_name": "XHSDownloader",
+          "full_name": "XHSDownloader.on_mount",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Make XHSDownloader.on_mount robust by catching the failed query for the RichLog widget and passing None to SETTINGS.check_keys so missing widgets don't raise NoMatches and crash the app.",
+    "steps": [
+      {
+        "operation": "Wrap RichLog widget query in try/except and pass safe fallback into SETTINGS.check_keys",
+        "file_to_modify": "source/TUI/app.py",
+        "function_to_modify": "XHSDownloader.on_mount",
+        "reason": "self.screen.query_one(RichLog) can raise Textual's NoMatches when the RichLog widget is not yet mounted; this causes the app to crash during on_mount. SETTINGS.check_keys (and the logging helper it calls) already accept a falsy log and will gracefully fall back to printing to stdout. Wrapping the query and providing None when the widget is not found prevents the NoMatches exception and keeps behavior unchanged when the widget exists.",
+        "side_effects": "Prevents runtime crash when RichLog isn't available; logging will go to stdout when the widget is missing. Implementation should attempt to catch the specific NoMatches exception from Textual (to avoid masking unrelated errors); if that specific import isn't available in the environment, a guarded fallback (catch broad Exception) may be used but is less desirable. Add/adjust tests to simulate the missing RichLog case to ensure no crash. No public API changes expected; downstream code that assumes the log widget is present during on_mount should be verified (they will now receive None instead of a raised exception)."
+      }
+    ]
+  }
+}

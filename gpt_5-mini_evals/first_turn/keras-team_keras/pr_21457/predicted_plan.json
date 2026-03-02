@@ -1,0 +1,42 @@
+{
+  "pr_number": 21457,
+  "repository": "keras-team/keras",
+  "title": "[OpenVINO backend] fix ops.array",
+  "body": "@rkazants\n@fchollet \nIn https://github.com/keras-team/keras-hub/blob/master/keras_hub/src/samplers/random_sampler_test.py#L60-L74\nThis test fails due to `ops.array(logits)`,  where logits is an `OpenVINOKerasTensor`\n```python\ndef test_temperature(self):\n        def next(prompt, cache, index):\n            # Dummy hidden states.\n            hidden_states = ops.ones([self.batch_size, 5])\n            logits = ops.arange(self.vocab_size, 0, -1, dtype=\"float32\")\n            logits = ops.reshape(logits[None, :], (self.batch_size, -1))\n            return ops.array(logits), hidden_states, cache\n\n        prompt = ops.full((self.batch_size, self.length), self.char_lookup[\"z\"])\n\n        output = RandomSampler(temperature=1e-5)(\n            next=next,\n            prompt=prompt,\n        )\n        self.assertAllEqual(output, ops.zeros_like(output))\n```\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T12:44:21.615787",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "keras/src/ops/numpy.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "array",
+          "class_name": null,
+          "full_name": "array",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Modify ops.array dispatch so backend-native tensor objects (e.g., OpenVINOKerasTensor) are treated as symbolic by also checking backend.is_tensor(x), ensuring Array.symbolic_call is used instead of the imperative backend.numpy.array path.",
+    "steps": [
+      {
+        "operation": "Treat backend-native tensors as symbolic in ops.array dispatch",
+        "file_to_modify": "keras/src/ops/numpy.py",
+        "function_to_modify": "array",
+        "reason": "Currently array(...) uses any_symbolic_tensors((x,)) to decide whether to take the symbolic path (Array.symbolic_call). OpenVINOKerasTensor instances are not KerasTensor, so any_symbolic_tensors returns False and the function incorrectly takes the imperative backend.numpy.array branch. Checking backend.is_tensor(x) as well ensures backend-native symbolic tensors (e.g., OpenVINOKerasTensor) trigger Array.symbolic_call, allowing Array.compute_output_spec to use the tensor's .shape and .dtype and produce the correct symbolic KerasTensor.",
+        "side_effects": "Alters dispatch behavior only for ops.array: backend-native tensors across any backend that implements is_tensor(...) will now be treated as symbolic inputs to ops.array. This may change runtime for some callers that previously went through the imperative numpy path. Tests: the failing RandomSampler test should now pass; run the full test suite for ops and backend integration tests to detect regressions. Dependents: any code assuming ops.array with backend-native tensors returns an eager numpy array will change behavior. API: no public API change expected, but other backends' is_tensor implementations will affect dispatch. Implementation may require adding or ensuring an import for the backend in keras/src/ops/numpy.py (e.g., import backend as backend), which is a local file edit but does not change external APIs."
+      }
+    ]
+  }
+}
