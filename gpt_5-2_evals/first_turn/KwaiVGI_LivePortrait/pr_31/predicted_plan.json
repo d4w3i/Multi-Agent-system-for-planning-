@@ -1,0 +1,87 @@
+{
+  "pr_number": 31,
+  "repository": "KwaiVGI/LivePortrait",
+  "title": "Fix: add sound in generated video",
+  "body": "Amazing project!!!\r\nI found a small bug where the generated video does not have the sound of the original video.\n\nExplore the source code to identify the files and functions to modify.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T09:49:33.329820",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "src/live_portrait_pipeline.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "execute",
+          "class_name": "LivePortraitPipeline",
+          "full_name": "LivePortraitPipeline.execute",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "src/utils/video.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "merge_audio_video",
+          "class_name": null,
+          "full_name": "merge_audio_video",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "images2video",
+          "class_name": null,
+          "full_name": "images2video",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "src/config/argument_config.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    }
+  ],
+  "step_plan": {
+    "summary": "Preserve audio from the driving video by muxing its audio stream into the generated MP4 outputs. The change updates video utilities to support audio muxing via ffmpeg and integrates the behavior into the main generation pipeline for video-based driving inputs.",
+    "steps": [
+      {
+        "operation": "Extend video-writing utility to optionally mux audio from a source video after encoding frames",
+        "file_to_modify": "src/utils/video.py",
+        "function_to_modify": "images2video",
+        "reason": "The current pipeline uses images2video (imageio) which produces video-only output; adding an optional audio-source parameter centralizes the behavior and avoids duplicating temp-file/ffmpeg mux logic in the pipeline.",
+        "side_effects": "Changes the behavior of a widely used utility; ensure default remains backward-compatible (no audio mux unless requested). May require ffmpeg availability; should handle missing ffmpeg or missing audio stream gracefully (fallback to silent video)."
+      },
+      {
+        "operation": "Update ffmpeg mux helper to support taking audio from a video input and to use explicit stream mapping and safe overwrite semantics",
+        "file_to_modify": "src/utils/video.py",
+        "function_to_modify": "merge_audio_video",
+        "reason": "Existing merge_audio_video assumes a standalone audio file; to preserve original sound from the driving MP4, it must accept a video path as the audio source and map video from generated output + audio from source reliably (e.g., -map 0:v:0 -map 1:a:0? -c:v copy -c:a aac -shortest).",
+        "side_effects": "If stream mapping is incorrect, outputs may lose video/audio or fail on inputs without audio. Using -shortest may trim video if audio is shorter; conversely without it, trailing silence could occur. Requires careful temp file handling to avoid reading/writing same path."
+      },
+      {
+        "operation": "Integrate keep-audio logic in the main pipeline execution when driving input is a video",
+        "file_to_modify": "src/live_portrait_pipeline.py",
+        "function_to_modify": "LivePortraitPipeline.execute",
+        "reason": "This is where output MP4s are produced (main and concat). After frames are rendered, invoke images2video with audio muxing enabled (or call merge_audio_video after encoding) when the driving input is a video and the user flag allows it.",
+        "side_effects": "Outputs will now contain an audio stream which may affect downstream consumers expecting silent MP4s. Must ensure behavior remains unchanged for non-video driving inputs (e.g., templates/pkls). Should ensure atomic output (write temp then replace) so partially written files aren’t left behind on ffmpeg failure."
+      }
+    ]
+  }
+}

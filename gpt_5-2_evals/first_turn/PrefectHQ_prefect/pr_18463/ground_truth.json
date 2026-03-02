@@ -1,0 +1,308 @@
+{
+  "pr_number": 18463,
+  "repository": "PrefectHQ/prefect",
+  "title": "Fix failing unit tests",
+  "body": "These changes fix the failing tests introduced by https://github.com/PrefectHQ/prefect/pull/18450\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-02-26T01:06:15.365924",
+    "extractor_version": "1.0.0",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "tests/cli/test_flow.py",
+      "status": "modified",
+      "additions": 22,
+      "deletions": 7,
+      "functions_modified": [
+        {
+          "function_name": "hello",
+          "class_name": null,
+          "full_name": "hello",
+          "start_line": 15,
+          "end_line": 16,
+          "lines_changed": [
+            15,
+            16
+          ]
+        },
+        {
+          "function_name": "test_flow_serve_cli_creates_deployment",
+          "class_name": "TestFlowServe",
+          "full_name": "TestFlowServe.test_flow_serve_cli_creates_deployment",
+          "start_line": 41,
+          "end_line": 70,
+          "lines_changed": [
+            46,
+            47,
+            48,
+            49,
+            50,
+            51,
+            52,
+            65,
+            66,
+            67,
+            68
+          ]
+        },
+        {
+          "function_name": "test_flow_serve_cli_accepts_interval",
+          "class_name": "TestFlowServe",
+          "full_name": "TestFlowServe.test_flow_serve_cli_accepts_interval",
+          "start_line": 72,
+          "end_line": 93,
+          "lines_changed": [
+            80
+          ]
+        },
+        {
+          "function_name": "test_flow_serve_cli_accepts_cron",
+          "class_name": "TestFlowServe",
+          "full_name": "TestFlowServe.test_flow_serve_cli_accepts_cron",
+          "start_line": 95,
+          "end_line": 114,
+          "lines_changed": [
+            103
+          ]
+        },
+        {
+          "function_name": "test_flow_serve_cli_accepts_rrule",
+          "class_name": "TestFlowServe",
+          "full_name": "TestFlowServe.test_flow_serve_cli_accepts_rrule",
+          "start_line": 116,
+          "end_line": 135,
+          "lines_changed": [
+            124
+          ]
+        },
+        {
+          "function_name": "test_flow_serve_cli_accepts_limit",
+          "class_name": "TestFlowServe",
+          "full_name": "TestFlowServe.test_flow_serve_cli_accepts_limit",
+          "start_line": 137,
+          "end_line": 172,
+          "lines_changed": [
+            158
+          ]
+        },
+        {
+          "function_name": "test_flow_serve_cli_accepts_metadata_fields",
+          "class_name": "TestFlowServe",
+          "full_name": "TestFlowServe.test_flow_serve_cli_accepts_metadata_fields",
+          "start_line": 174,
+          "end_line": 201,
+          "lines_changed": [
+            182
+          ]
+        }
+      ],
+      "patch": "@@ -3,13 +3,19 @@\n \n import pytest\n \n+from prefect import __development_base_path__, flow\n from prefect.client.orchestration import PrefectClient\n from prefect.runner import Runner\n from prefect.testing.cli import invoke_and_assert\n from prefect.testing.utilities import AsyncMock\n from prefect.utilities.asyncutils import run_sync_in_worker_thread\n \n \n+@flow(retries=2)\n+def hello():\n+    print(\"hello\")\n+\n+\n class TestFlowServe:\n     \"\"\"\n     These tests ensure that the `prefect flow serve` interacts with Runner\n@@ -37,7 +43,13 @@ async def test_flow_serve_cli_creates_deployment(\n     ):\n         await run_sync_in_worker_thread(\n             invoke_and_assert,\n-            command=[\"flow\", \"serve\", \"flows/hello_world.py:hello\", \"--name\", \"test\"],\n+            command=[\n+                \"flow\",\n+                \"serve\",\n+                f\"{__development_base_path__}/tests/cli/test_flow.py:hello\",\n+                \"--name\",\n+                \"test\",\n+            ],\n             expected_code=0,\n             expected_output_contains=[\n                 \"Your flow 'hello' is being served and polling for scheduled runs!\",\n@@ -50,7 +62,10 @@ async def test_flow_serve_cli_creates_deployment(\n \n         assert deployment is not None\n         assert deployment.name == \"test\"\n-        assert deployment.entrypoint == \"flows/hello_world.py:hello\"\n+        assert (\n+            deployment.entrypoint\n+            == f\"{__development_base_path__}/tests/cli/test_flow.py:hello\"\n+        )\n \n         mock_runner_start.assert_called_once()\n \n@@ -62,7 +77,7 @@ async def test_flow_serve_cli_accepts_interval(\n             command=[\n                 \"flow\",\n                 \"serve\",\n-                \"flows/hello_world.py:hello\",\n+                f\"{__development_base_path__}/tests/cli/test_flow.py:hello\",\n                 \"--name\",\n                 \"test\",\n                 \"--interval\",\n@@ -85,7 +100,7 @@ async def test_flow_serve_cli_accepts_cron(\n             command=[\n                 \"flow\",\n                 \"serve\",\n-                \"flows/hello_world.py:hello\",\n+                f\"{__development_base_path__}/tests/cli/test_flow.py:hello\",\n                 \"--name\",\n                 \"test\",\n                 \"--cron\",\n@@ -106,7 +121,7 @@ async def test_flow_serve_cli_accepts_rrule(\n             command=[\n                 \"flow\",\n                 \"serve\",\n-                \"flows/hello_world.py:hello\",\n+                f\"{__development_base_path__}/tests/cli/test_flow.py:hello\",\n                 \"--name\",\n                 \"test\",\n                 \"--rrule\",\n@@ -140,7 +155,7 @@ def runner_spy_init(self: Runner, *args: Any, **kwargs: Any):\n             command=[\n                 \"flow\",\n                 \"serve\",\n-                \"flows/hello_world.py:hello\",\n+                f\"{__development_base_path__}/tests/cli/test_flow.py:hello\",\n                 \"--name\",\n                 \"test\",\n                 \"--limit\",\n@@ -164,7 +179,7 @@ async def test_flow_serve_cli_accepts_metadata_fields(\n             command=[\n                 \"flow\",\n                 \"serve\",\n-                \"flows/hello_world.py:hello\",\n+                f\"{__development_base_path__}/tests/cli/test_flow.py:hello\",\n                 \"--name\",\n                 \"test\",\n                 \"--description\","
+    },
+    {
+      "filename": "tests/cli/test_flow_run.py",
+      "status": "modified",
+      "additions": 5,
+      "deletions": 5,
+      "functions_modified": [
+        {
+          "function_name": "test_execute_flow_run_via_argument",
+          "class_name": "TestFlowRunExecute",
+          "full_name": "TestFlowRunExecute.test_execute_flow_run_via_argument",
+          "start_line": 845,
+          "end_line": 862,
+          "lines_changed": [
+            847,
+            848
+          ]
+        },
+        {
+          "function_name": "test_execute_flow_run_via_environment_variable",
+          "class_name": "TestFlowRunExecute",
+          "full_name": "TestFlowRunExecute.test_execute_flow_run_via_environment_variable",
+          "start_line": 864,
+          "end_line": 886,
+          "lines_changed": [
+            868,
+            869
+          ]
+        }
+      ],
+      "patch": "@@ -12,7 +12,7 @@\n import pytest\n \n import prefect.exceptions\n-from prefect import flow\n+from prefect import __development_base_path__, flow\n from prefect.cli.flow_run import LOGS_WITH_LIMIT_FLAG_DEFAULT_NUM_LOGS\n from prefect.client.orchestration import PrefectClient, SyncPrefectClient\n from prefect.client.schemas.actions import LogCreate\n@@ -842,10 +842,10 @@ async def test_when_num_logs_greater_than_page_size_with_tail_outputs_correct_nu\n \n \n class TestFlowRunExecute:\n-    @pytest.mark.usefixtures(\"use_hosted_api_server\")\n     async def test_execute_flow_run_via_argument(self, prefect_client: PrefectClient):\n         deployment_id = await RunnerDeployment.from_entrypoint(\n-            entrypoint=\"flows/hello_world.py:hello\", name=\"test\"\n+            entrypoint=f\"{__development_base_path__}/tests/cli/test_flow_run.py:hello_flow\",\n+            name=\"test\",\n         ).apply()\n \n         flow_run = await prefect_client.create_flow_run_from_deployment(\n@@ -861,12 +861,12 @@ async def test_execute_flow_run_via_argument(self, prefect_client: PrefectClient\n         flow_run = await prefect_client.read_flow_run(flow_run.id)\n         assert flow_run.state.is_completed()\n \n-    @pytest.mark.usefixtures(\"use_hosted_api_server\")\n     async def test_execute_flow_run_via_environment_variable(\n         self, prefect_client: PrefectClient, monkeypatch\n     ):\n         deployment = RunnerDeployment.from_entrypoint(\n-            entrypoint=\"flows/hello_world.py:hello\", name=\"test\"\n+            entrypoint=f\"{__development_base_path__}/tests/cli/test_flow_run.py:hello_flow\",\n+            name=\"test\",\n         )\n         deployment_id = await deployment.apply()\n "
+    }
+  ],
+  "functions_modified": [
+    {
+      "function_name": "hello",
+      "class_name": null,
+      "full_name": "hello",
+      "start_line": 15,
+      "end_line": 16,
+      "lines_changed": [
+        15,
+        16
+      ]
+    },
+    {
+      "function_name": "test_flow_serve_cli_creates_deployment",
+      "class_name": "TestFlowServe",
+      "full_name": "TestFlowServe.test_flow_serve_cli_creates_deployment",
+      "start_line": 41,
+      "end_line": 70,
+      "lines_changed": [
+        46,
+        47,
+        48,
+        49,
+        50,
+        51,
+        52,
+        65,
+        66,
+        67,
+        68
+      ]
+    },
+    {
+      "function_name": "test_flow_serve_cli_accepts_interval",
+      "class_name": "TestFlowServe",
+      "full_name": "TestFlowServe.test_flow_serve_cli_accepts_interval",
+      "start_line": 72,
+      "end_line": 93,
+      "lines_changed": [
+        80
+      ]
+    },
+    {
+      "function_name": "test_flow_serve_cli_accepts_cron",
+      "class_name": "TestFlowServe",
+      "full_name": "TestFlowServe.test_flow_serve_cli_accepts_cron",
+      "start_line": 95,
+      "end_line": 114,
+      "lines_changed": [
+        103
+      ]
+    },
+    {
+      "function_name": "test_flow_serve_cli_accepts_rrule",
+      "class_name": "TestFlowServe",
+      "full_name": "TestFlowServe.test_flow_serve_cli_accepts_rrule",
+      "start_line": 116,
+      "end_line": 135,
+      "lines_changed": [
+        124
+      ]
+    },
+    {
+      "function_name": "test_flow_serve_cli_accepts_limit",
+      "class_name": "TestFlowServe",
+      "full_name": "TestFlowServe.test_flow_serve_cli_accepts_limit",
+      "start_line": 137,
+      "end_line": 172,
+      "lines_changed": [
+        158
+      ]
+    },
+    {
+      "function_name": "test_flow_serve_cli_accepts_metadata_fields",
+      "class_name": "TestFlowServe",
+      "full_name": "TestFlowServe.test_flow_serve_cli_accepts_metadata_fields",
+      "start_line": 174,
+      "end_line": 201,
+      "lines_changed": [
+        182
+      ]
+    },
+    {
+      "function_name": "test_execute_flow_run_via_argument",
+      "class_name": "TestFlowRunExecute",
+      "full_name": "TestFlowRunExecute.test_execute_flow_run_via_argument",
+      "start_line": 845,
+      "end_line": 862,
+      "lines_changed": [
+        847,
+        848
+      ]
+    },
+    {
+      "function_name": "test_execute_flow_run_via_environment_variable",
+      "class_name": "TestFlowRunExecute",
+      "full_name": "TestFlowRunExecute.test_execute_flow_run_via_environment_variable",
+      "start_line": 864,
+      "end_line": 886,
+      "lines_changed": [
+        868,
+        869
+      ]
+    }
+  ],
+  "step_plan": {
+    "steps": [
+      {
+        "operation": "Add an in-test flow definition to serve/execute instead of relying on the external sample flow file",
+        "file_to_modify": "tests/cli/test_flow.py",
+        "function_to_modify": null,
+        "reason": "The previous tests referenced `flows/hello_world.py:hello`, which is brittle and can fail when the working directory / packaging context changes (as happened after the referenced PR). Defining a local `@flow` ensures a stable importable target for CLI entrypoint parsing.",
+        "side_effects": "This changes what code is executed during the CLI tests (now the flow lives in the test module), which may slightly alter logs/behavior; it also introduces a `retries=2` flow setting that could affect timing if the flow ever fails during the test."
+      },
+      {
+        "operation": "Update the `prefect flow serve` invocation in `test_flow_serve_cli_creates_deployment` to use an absolute development base path entrypoint",
+        "file_to_modify": "tests/cli/test_flow.py",
+        "function_to_modify": "test_flow_serve_cli_creates_deployment",
+        "reason": "Using `__development_base_path__` makes the entrypoint resolvable regardless of where the tests are executed from, avoiding failures due to relative-path resolution changes.",
+        "side_effects": "The CLI now receives a fully-qualified filesystem path; any assertions or downstream code that expects a relative entrypoint string must be updated accordingly."
+      },
+      {
+        "operation": "Adjust the deployment entrypoint assertion in `test_flow_serve_cli_creates_deployment` to match the new absolute entrypoint format",
+        "file_to_modify": "tests/cli/test_flow.py",
+        "function_to_modify": "test_flow_serve_cli_creates_deployment",
+        "reason": "Once the CLI command uses the absolute entrypoint, the created deployment will store that entrypoint; the assertion must reflect the new canonical value to keep the test deterministic.",
+        "side_effects": "If Prefect later normalizes/stores entrypoints differently (e.g., converting to relative paths), this assertion could become fragile and require further updates."
+      },
+      {
+        "operation": "Update `test_flow_serve_cli_accepts_interval` to pass the absolute entrypoint to the CLI",
+        "file_to_modify": "tests/cli/test_flow.py",
+        "function_to_modify": "test_flow_serve_cli_accepts_interval",
+        "reason": "Keeps this schedule-interval variant consistent with the new entrypoint resolution strategy, preventing intermittent failures caused by relative path lookup.",
+        "side_effects": "All interval-based serve behavior is now exercised against the in-test flow; any differences from the old sample flow could slightly change runtime behavior."
+      },
+      {
+        "operation": "Update `test_flow_serve_cli_accepts_cron` to pass the absolute entrypoint to the CLI",
+        "file_to_modify": "tests/cli/test_flow.py",
+        "function_to_modify": "test_flow_serve_cli_accepts_cron",
+        "reason": "Ensures the cron-scheduling test does not depend on repository-relative fixture files and remains stable across execution environments.",
+        "side_effects": "Same as other serve tests: the entrypoint string format changes and could affect any logic that parses/prints the entrypoint in assertions."
+      },
+      {
+        "operation": "Update `test_flow_serve_cli_accepts_rrule` to pass the absolute entrypoint to the CLI",
+        "file_to_modify": "tests/cli/test_flow.py",
+        "function_to_modify": "test_flow_serve_cli_accepts_rrule",
+        "reason": "Aligns the RRULE scheduling test with the absolute entrypoint approach to avoid failing due to working-directory differences.",
+        "side_effects": "Exercises RRULE scheduling with the test-module flow; if that flow definition changes, multiple tests could be impacted."
+      },
+      {
+        "operation": "Update `test_flow_serve_cli_accepts_limit` to pass the absolute entrypoint to the CLI",
+        "file_to_modify": "tests/cli/test_flow.py",
+        "function_to_modify": "test_flow_serve_cli_accepts_limit",
+        "reason": "Maintains consistency across `flow serve` option tests and avoids the brittle relative `flows/hello_world.py:hello` entrypoint.",
+        "side_effects": "None beyond the global switch to absolute entrypoints; failures may now point to path formatting issues rather than file-not-found issues."
+      },
+      {
+        "operation": "Update `test_flow_serve_cli_accepts_metadata_fields` to pass the absolute entrypoint to the CLI",
+        "file_to_modify": "tests/cli/test_flow.py",
+        "function_to_modify": "test_flow_serve_cli_accepts_metadata_fields",
+        "reason": "Prevents metadata-field validation coverage from being coupled to a sample flow file path that may not resolve in all test contexts.",
+        "side_effects": "Any metadata-related assertions that indirectly depend on the stored entrypoint could be affected if entrypoint formatting changes again."
+      },
+      {
+        "operation": "Fix flow-run execution tests to build deployments from an absolute entrypoint in the test module, and remove hosted API server fixture usage for these tests",
+        "file_to_modify": "tests/cli/test_flow_run.py",
+        "function_to_modify": null,
+        "reason": "The `RunnerDeployment.from_entrypoint` calls previously used `flows/hello_world.py:hello`, which can break path resolution; switching to `__development_base_path__` + the local test flow stabilizes deployment creation. Dropping the `use_hosted_api_server` fixture marks these tests to run against the default test API environment expected by the updated test harness.",
+        "side_effects": "These tests now depend on `hello_flow` existing in `test_flow_run.py` and on correct `__development_base_path__` behavior; removing the hosted server fixture may change networking/auth assumptions and could expose differences between hosted vs local API behavior."
+      }
+    ],
+    "summary": "Updates CLI unit tests to use absolute entrypoints rooted at Prefect’s development base path and to reference flows defined within the test modules, removing brittle dependencies on repository-relative sample flow files. This stabilizes `flow serve` and flow-run execution tests that started failing after prior path-resolution changes."
+  }
+}

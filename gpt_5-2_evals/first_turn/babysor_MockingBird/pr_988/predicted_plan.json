@@ -1,0 +1,95 @@
+{
+  "pr_number": 988,
+  "repository": "babysor/MockingBird",
+  "title": "fix-issues-963:preprocess_audio.py--The .npy file failed to save",
+  "body": "https://github.com/babysor/MockingBird/issues/963\n![image](https://github.com/babysor/MockingBird/assets/55903432/a7544cd3-8242-4008-9dbd-3b7badeaed1d)",
+  "extraction_metadata": {
+    "extracted_at": "2026-02-26T03:11:21.960036",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "models/synthesizer/preprocess_audio.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "preprocess_general",
+          "class_name": null,
+          "full_name": "preprocess_general",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_split_on_silences",
+          "class_name": null,
+          "full_name": "_split_on_silences",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_process_utterance",
+          "class_name": null,
+          "full_name": "_process_utterance",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "models/synthesizer/preprocess.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "preprocess_dataset",
+          "class_name": null,
+          "full_name": "preprocess_dataset",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Fixes issue #963 where synthesizer preprocessing fails to write `.npy` outputs by correcting an input/output path overwrite in `preprocess_general` that causes silence-splitting to try to load an output `.npy` as audio. Adds small hardening around path validation, output directory existence, and error reporting so failures are diagnosable and don’t silently prevent saving.",
+    "steps": [
+      {
+        "operation": "Fix input/output path mix-up by using separate variables for input audio filepath and output .npy filepaths, and pass the real input audio path into silence-splitting and utterance processing",
+        "file_to_modify": "models/synthesizer/preprocess_audio.py",
+        "function_to_modify": "preprocess_general",
+        "reason": "Issue #963 is consistent with `wav_fpath` being overwritten from an input audio path to an output `.npy` path before calling `_split_on_silences`, causing `librosa.load` to attempt decoding a `.npy` path and abort the pipeline before `np.save` runs.",
+        "side_effects": "Changes control flow and variable semantics inside preprocessing; may alter which files get skipped when `skip_existing` is enabled (now correctly keyed off intended output paths). If there are downstream logs or debug prints referencing the old variable name, they may change."
+      },
+      {
+        "operation": "Add defensive validation that the provided path looks like an audio file (not a .npy) and improve error message when loading fails; keep behavior otherwise identical",
+        "file_to_modify": "models/synthesizer/preprocess_audio.py",
+        "function_to_modify": "_split_on_silences",
+        "reason": "Prevents silent misuse of `_split_on_silences` by catching wrong-path bugs early (e.g., passing the output `.npy` path) and provides clearer diagnostics when librosa cannot load the file, which directly impacts whether preprocessing reaches saving steps.",
+        "side_effects": "May raise earlier (with clearer messaging) on unsupported extensions or incorrect paths; could cause previously-ignored bad inputs to be reported as explicit errors."
+      },
+      {
+        "operation": "Harden saving by ensuring output parent directories exist (audio/mels) before calling `np.save`, and wrap saves with targeted exception handling to log the failing path and continue/propagate consistently",
+        "file_to_modify": "models/synthesizer/preprocess_audio.py",
+        "function_to_modify": "_process_utterance",
+        "reason": "Even after fixing the path bug, `.npy` writes can still fail if directories are missing (e.g., if `preprocess_general` is invoked outside the usual orchestrator) or due to filesystem issues; clearer reporting helps confirm the real reason for “failed to save”.",
+        "side_effects": "Creates directories on demand (minor filesystem side effects). If exception handling is changed to continue on error, metadata counts may differ; if re-raised, multiprocessing behavior may surface errors sooner."
+      },
+      {
+        "operation": "Ensure output subdirectories are created before spawning/dispatching work, and/or add clearer propagation/logging of worker exceptions so preprocessing failures aren’t misinterpreted as ‘npy not saved’",
+        "file_to_modify": "models/synthesizer/preprocess.py",
+        "function_to_modify": "preprocess_dataset",
+        "reason": "`preprocess_dataset` is the main orchestrator and should guarantee the output layout expected by `_process_utterance` and make failures in `preprocess_general` visible (especially in multiprocessing), so users can see the real cause when outputs aren’t produced.",
+        "side_effects": "May change logging output and failure visibility during multiprocessing; if directory creation is moved/duplicated, it can be redundant but safe. If exception propagation is tightened, runs may fail fast instead of partially completing."
+      }
+    ]
+  }
+}

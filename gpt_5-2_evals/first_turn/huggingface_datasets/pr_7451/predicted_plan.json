@@ -1,0 +1,109 @@
+{
+  "pr_number": 7451,
+  "repository": "huggingface/datasets",
+  "title": "Fix resuming after `ds.set_epoch(new_epoch)`",
+  "body": "close https://github.com/huggingface/datasets/issues/7447\n\nExplore the source code to identify the files and functions to modify.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T08:32:29.668973",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "src/datasets/iterable_dataset.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "set_epoch",
+          "class_name": "IterableDataset",
+          "full_name": "IterableDataset.set_epoch",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "state_dict",
+          "class_name": "IterableDataset",
+          "full_name": "IterableDataset.state_dict",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "load_state_dict",
+          "class_name": "IterableDataset",
+          "full_name": "IterableDataset.load_state_dict",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_prepare_ex_iterable_for_iteration",
+          "class_name": "IterableDataset",
+          "full_name": "IterableDataset._prepare_ex_iterable_for_iteration",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_effective_generator",
+          "class_name": "IterableDataset",
+          "full_name": "IterableDataset._effective_generator",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "tests/test_iterable_dataset.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    }
+  ],
+  "step_plan": {
+    "summary": "Fix IterableDataset resume correctness when ds.set_epoch(new_epoch) is called by making checkpoints capture and restore the epoch/shuffle identity used for shard/source ordering, and by ensuring prepared pipeline shuffling is derived from that restored identity before applying saved offsets.",
+    "steps": [
+      {
+        "operation": "Make set_epoch coordinate with any loaded checkpoint epoch/shuffle identity (either by resetting/invalidating starting_state_dict or by recording that the effective epoch should come from the loaded state while resuming)",
+        "file_to_modify": "src/datasets/iterable_dataset.py",
+        "function_to_modify": "IterableDataset.set_epoch",
+        "reason": "Today set_epoch only mutates self._epoch; if a checkpoint was created under epoch E but set_epoch(E') is called before resuming, the prepared pipeline may shuffle data sources differently, making the saved offsets point into the wrong stream. set_epoch must not silently desynchronize the epoch-dependent shuffle order from the resume state.",
+        "side_effects": "May change semantics for users who call set_epoch after load_state_dict; could require a warning/exception or cause resume state to be cleared. Needs test updates for any code relying on the old behavior."
+      },
+      {
+        "operation": "Extend the dataset checkpoint to include epoch/shuffle-order identity needed to rebuild the same shuffling configuration when resuming",
+        "file_to_modify": "src/datasets/iterable_dataset.py",
+        "function_to_modify": "IterableDataset.state_dict",
+        "reason": "Resuming must be self-contained: the state dict should capture not only offsets within the iterable pipeline but also the epoch (or equivalent RNG/shuffle identity) that was used when computing shuffle_data_sources order, so it can be restored even if ds.set_epoch(new_epoch) happens later.",
+        "side_effects": "State dict schema changes (new keys). Must remain backward compatible with older checkpoints (missing key => fall back to current epoch or treat as incompatible). Documentation and downstream code that persists state dicts may need to tolerate extra fields."
+      },
+      {
+        "operation": "Restore epoch/shuffle identity from the state dict and ensure prepared pipeline construction uses it (and/or detect mismatch and raise/warn)",
+        "file_to_modify": "src/datasets/iterable_dataset.py",
+        "function_to_modify": "IterableDataset.load_state_dict",
+        "reason": "load_state_dict currently applies offsets to the current prepared iterable and stores starting_state_dict for later, but it doesn’t restore the epoch/shuffle identity. Without restoring (or validating) it, subsequent iteration after set_epoch can rebuild a differently shuffled pipeline and apply stale offsets incorrectly.",
+        "side_effects": "May change behavior by overriding the user-set epoch while resuming, or by throwing an explicit error on mismatch. Must handle both immediate load into an already-prepared iterable and deferred application via _starting_state_dict."
+      },
+      {
+        "operation": "When building the prepared iterable for iteration, select the shuffling generator/seed based on the checkpoint’s epoch/shuffle identity when resuming (otherwise use current epoch)",
+        "file_to_modify": "src/datasets/iterable_dataset.py",
+        "function_to_modify": "IterableDataset._prepare_ex_iterable_for_iteration",
+        "reason": "This is the point where ex_iterable.shuffle_data_sources(self._effective_generator()) is applied; the generator must be derived from the same epoch/RNG identity as the checkpoint to reproduce the same shard/source order before applying offsets. Otherwise resume will jump to a different logical position.",
+        "side_effects": "May affect ordering for resumed iterations and potentially for multi-worker/persistent-worker execution where epoch is shared. Must ensure deterministic behavior across repeated __iter__/iter calls and that applying _starting_state_dict still targets the correct prepared pipeline."
+      },
+      {
+        "operation": "Add support for deriving an effective RNG from either the current epoch or an epoch/shuffle identity stored in the starting/loaded state dict, and keep backward compatibility",
+        "file_to_modify": "src/datasets/iterable_dataset.py",
+        "function_to_modify": "IterableDataset._effective_generator",
+        "reason": "_effective_generator is the central place that turns epoch + base seed into the RNG used for shuffle_data_sources. To make resume robust to set_epoch, this function should be able to produce the generator corresponding to the checkpoint epoch (or stored RNG state) when resuming, not necessarily the current self._epoch.",
+        "side_effects": "Potentially changes determinism guarantees if not carefully scoped (e.g., only override during resume). Needs to work with torch persistent workers (shared epoch) and should not break existing shuffle behavior when no checkpoint metadata is present."
+      }
+    ]
+  }
+}

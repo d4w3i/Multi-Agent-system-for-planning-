@@ -1,0 +1,147 @@
+{
+  "pr_number": 3237,
+  "repository": "huggingface/text-generation-inference",
+  "title": "move input_ids to hpu and remove disposal of adapter_meta",
+  "body": "# What does this PR do?\n\n<!--\nCongratulations! You've made it this far! You're not quite done yet though.\n\nOnce merged, your PR is going to appear in the release notes with the title you set, so make sure it's a great title that fully reflects the extent of your awesome contribution.\n\nThen, please replace this with a description of the change and which issue is fixed (if applicable). Please also include relevant motivation and context. List any dependencies (if any) that are required for this change.\n\nOnce you're done, someone will review your PR shortly (see the section \"Who can review?\" below to tag some potential reviewers). They may suggest changes to make the code even better. If no one reviewed your PR after a week has passed, don't hesitate to post a new comment @-mentioning the same persons---sometimes notifications get lost.\n-->\n\n<!-- Remove if not applicable -->\n\nFixes # (issue)\n\n\n## Before submitting\n- [ ] This PR fixes a typo or improves the docs (you can dismiss the other checks if that's the case).\n- [ ] Did you read the [contributor guideline](https://github.com/huggingface/transformers/blob/main/CONTRIBUTING.md#start-contributing-pull-requests),\n      Pull Request section?\n- [ ] Was this discussed/approved via a Github issue or the [forum](https://discuss.huggingface.co/)? Please add a link\n      to it if that's the case.\n- [ ] Did you make sure to update the documentation with your changes? Here are the\n      [documentation guidelines](https://github.com/huggingface/transformers/tree/main/docs), and\n      [here are tips on formatting docstrings](https://github.com/huggingface/transformers/tree/main/docs#writing-source-documentation).\n- [ ] Did you write any new necessary tests?\n\n\n## Who can review?\n\nAnyone in the community is free to review the PR once the tests have passed. Feel free to tag\nmembers/contributors who may be interested in your PR.\n\n<!-- Your PR will be replied to more quickly if you can figure out the right person to tag with @\n\n\n@OlivierDehaene OR @Narsil\n\n -->\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T08:32:34.371858",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "backends/gaudi/server/text_generation_server/models/flash_causal_lm.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "prepare_for_prefill",
+          "class_name": "FlashCausalLMBatch",
+          "full_name": "FlashCausalLMBatch.prepare_for_prefill",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "forward",
+          "class_name": "FlashCausalLM",
+          "full_name": "FlashCausalLM.forward",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "generate_token",
+          "class_name": "FlashCausalLM",
+          "full_name": "FlashCausalLM.generate_token",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "prepare_for_decode",
+          "class_name": "FlashCausalLMBatch",
+          "full_name": "FlashCausalLMBatch.prepare_for_decode",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "filter",
+          "class_name": "FlashCausalLMBatch",
+          "full_name": "FlashCausalLMBatch.filter",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "concatenate",
+          "class_name": "FlashCausalLMBatch",
+          "full_name": "FlashCausalLMBatch.concatenate",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "backends/gaudi/server/text_generation_server/models/flash_vlm_causal_lm.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    },
+    {
+      "filename": "backends/gaudi/server/text_generation_server/models/causal_lm.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "from_pb",
+          "class_name": "CausalLMBatch",
+          "full_name": "CausalLMBatch.from_pb",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Ensure Gaudi flash causal LM keeps input_ids resident on HPU earlier in the pipeline to avoid redundant host↔device copies, and stop disposing/clearing adapter_meta so LoRA adapter bookkeeping remains valid across prefill and decode. Update related decode/batch-composition utilities to maintain correct device placement and adapter metadata consistency.",
+    "steps": [
+      {
+        "operation": "Move/allocate prefill input_ids directly on HPU (and keep adapter_meta intact) during batch preparation",
+        "file_to_modify": "backends/gaudi/server/text_generation_server/models/flash_causal_lm.py",
+        "function_to_modify": "FlashCausalLMBatch.prepare_for_prefill",
+        "reason": "Prefill currently tends to build CPU tensors and rely on later async H2D copies; placing input_ids on HPU at creation time avoids repeated host↔device transfers and device-mismatch issues. This is also where adapter_meta is created, so ensure no lifecycle cleanup/disposal is introduced here and that metadata remains available for later AdapterBatchData construction.",
+        "side_effects": "May change tensor device assumptions for downstream padding/reshaping; could affect HPU graph capture behavior (typically improves stability). Requires verifying that any code that expects CPU-side input_ids (e.g., for shape computations) is updated to use .cpu() copies only when strictly needed."
+      },
+      {
+        "operation": "Make forward() skip redundant async H2D copy when input_ids is already on HPU and ensure model inputs are consistently on-device",
+        "file_to_modify": "backends/gaudi/server/text_generation_server/models/flash_causal_lm.py",
+        "function_to_modify": "FlashCausalLM.forward",
+        "reason": "After moving input_ids earlier, forward should not blindly call _async_h2d_tensor_copy or otherwise re-copy, which can waste time and potentially create new tensors that break graph capture. Forward should treat input_ids as already device-resident (or conditionally move it) and keep any related tensors (e.g., attention masks/position_ids) consistent.",
+        "side_effects": "Changes execution path for both prefill and decode; may require updating/adding guard logic around device checks. Performance characteristics may change; ensure correctness for mixed scenarios (some tensors on CPU, some on HPU) is handled deterministically."
+      },
+      {
+        "operation": "Remove any disposal/clearing of adapter_meta during prefill→decode transition while preserving necessary mutations (slicing/resegmenting)",
+        "file_to_modify": "backends/gaudi/server/text_generation_server/models/flash_causal_lm.py",
+        "function_to_modify": "FlashCausalLM.generate_token",
+        "reason": "adapter_meta is required across steps to build adapter batch data and maintain LoRA segment bookkeeping. If generate_token currently clears/disposes adapter_meta (e.g., setting to None or deleting internal buffers) after prefill, subsequent decode steps can lose adapter context. Keep adapter_meta alive; only update it in-place (slice indices, recompute segments) as needed for the active batch.",
+        "side_effects": "Slightly higher retained memory if previous cleanup was reclaiming metadata; verify no reference cycles or long-lived caches. Downstream code that previously assumed adapter_meta could be None must be updated (or guarded) accordingly."
+      },
+      {
+        "operation": "Ensure decode-time padding/reshaping keeps input_ids on HPU and does not inadvertently move it back to CPU",
+        "file_to_modify": "backends/gaudi/server/text_generation_server/models/flash_causal_lm.py",
+        "function_to_modify": "FlashCausalLMBatch.prepare_for_decode",
+        "reason": "Decode preparation often pads/concats input_ids/position_ids; if these ops happen on CPU tensors, input_ids may bounce devices, negating the earlier change. Update padding/creation calls to allocate on the same device as the batch (HPU) and preserve dtype/layout expected by Gaudi kernels.",
+        "side_effects": "May require changing torch factory calls (device=...) or using in-place pad buffers. Any code relying on CPU-side indexing for token updates might need explicit small CPU copies, but should avoid moving the full tensor off-device."
+      },
+      {
+        "operation": "Keep adapter_meta consistent when filtering a batch and avoid dropping metadata as part of filtering logic",
+        "file_to_modify": "backends/gaudi/server/text_generation_server/models/flash_causal_lm.py",
+        "function_to_modify": "FlashCausalLMBatch.filter",
+        "reason": "filter() rebuilds/slices adapter_meta for the surviving requests. If previous logic disposed adapter_meta to save memory, removing that disposal must still ensure correct sliced adapter_indices/segments and that resulting metadata remains aligned with filtered tensors (including any device changes for input_ids).",
+        "side_effects": "Filtered batches may retain more metadata than before; verify correctness for both prefill and decode filter paths and ensure any callers that expect adapter_meta=None are updated. Requires validating adapter segment boundaries after filtering."
+      },
+      {
+        "operation": "Preserve adapter_meta correctness when concatenating decode batches and ensure merged batch metadata remains usable across subsequent steps",
+        "file_to_modify": "backends/gaudi/server/text_generation_server/models/flash_causal_lm.py",
+        "function_to_modify": "FlashCausalLMBatch.concatenate",
+        "reason": "concatenate() merges batches and constructs combined AdapterBatchMetadata; if metadata was previously cleaned up/disposed in some path, concatenation may have relied on regeneration. With adapter_meta preserved, ensure the merge logic still produces correct adapter_indices/segments for the combined ordering and remains compatible with HPU-resident input tensors.",
+        "side_effects": "Potential changes in memory footprint and ordering assumptions; downstream attention/adapter application depends on accurate segments. Needs validation in scenarios with heterogeneous adapters across merged requests."
+      },
+      {
+        "operation": "Audit/adjust non-flash causal batch creation so token buffers are consistently placed on HPU (including any auxiliary token history)",
+        "file_to_modify": "backends/gaudi/server/text_generation_server/models/causal_lm.py",
+        "function_to_modify": "CausalLMBatch.from_pb",
+        "reason": "Non-flash path already moves input_ids to HPU, but auxiliary buffers (e.g., all_input_ids created before the move) can remain on CPU and cause implicit transfers or mismatches. Align device placement semantics with the flash path change so Gaudi execution is consistent across model variants.",
+        "side_effects": "May increase device memory usage if additional buffers are moved to HPU. Could affect any code that reads token history on CPU; may require explicit .cpu() extraction for logging/serialization paths and updating tests that assert device placement."
+      }
+    ]
+  }
+}

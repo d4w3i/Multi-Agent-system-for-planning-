@@ -1,0 +1,102 @@
+{
+  "pr_number": 3024,
+  "repository": "soimort/you-get",
+  "title": "[YouTube] Fix 403 error and throttling",
+  "body": "Decrypting `signatureCipher` to fix the recent 403 error, as well as to solve the long-standing download speed throttling issue (#2950). This was made possible thanks to the lightweight JavaScript interpreter dukpy.",
+  "extraction_metadata": {
+    "extracted_at": "2026-02-26T03:54:51.264869",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "src/you_get/extractors/youtube.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "prepare",
+          "class_name": "YouTube",
+          "full_name": "YouTube.prepare",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "extract",
+          "class_name": "YouTube",
+          "full_name": "YouTube.extract",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "s_to_sig",
+          "class_name": "YouTube",
+          "full_name": "YouTube.s_to_sig",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "setup.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "load_source",
+          "class_name": null,
+          "full_name": "load_source",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "src/you_get/common.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    }
+  ],
+  "step_plan": {
+    "summary": "Fix YouTube 403 errors and download throttling by correctly handling `signatureCipher` (including `sp`) and by executing YouTube player JavaScript via dukpy to decipher signatures and transform throttling parameters like `n`. Update packaging to include the dukpy dependency.",
+    "steps": [
+      {
+        "operation": "Parse `signatureCipher`/`cipher` into `url`, `s`, and `sp` and persist these fields per stream entry; also surface any throttling-related query params (e.g., `n`) found in the ciphered URL so they can be rewritten later",
+        "file_to_modify": "src/you_get/extractors/youtube.py",
+        "function_to_modify": "YouTube.prepare",
+        "reason": "Recent YouTube responses frequently provide stream URLs only via `signatureCipher`. Correct final URL construction requires both the ciphered signature (`s`) and the signature parameter name (`sp`). Capturing throttling-related parameters early ensures all stream variants (formats + adaptiveFormats) can be fixed consistently.",
+        "side_effects": "Changes the internal stream dict/schema consumed by `extract()`; any code assuming only a plain `url` may need to tolerate `s`/`sp` presence. May affect DASH/adaptive stream enumeration; requires sanity checks across progressive/adaptive formats."
+      },
+      {
+        "operation": "Finalize download URLs by (1) deciphering `s` and appending it using the exact `sp` key (fallback only when missing), and (2) applying throttling parameter (`n`) transformation before returning the URL (ensure existing `ratebypass=yes` behavior is preserved where applicable)",
+        "file_to_modify": "src/you_get/extractors/youtube.py",
+        "function_to_modify": "YouTube.extract",
+        "reason": "The 403s are commonly caused by appending the deciphered signature under the wrong query key (hardcoded `sig`). Throttling is often enforced via an `n` query parameter that must be transformed using logic from the same player JS; updating it here ensures the final URL is valid and performant right before download.",
+        "side_effects": "Alters the exact query string generated for streams; could impact caching and URL comparisons. May require fetching/caching player JS once per video to avoid performance regression. Should be validated against playlist flows and any code paths that reuse extracted URLs."
+      },
+      {
+        "operation": "Replace/augment the fragile regex-based JS-to-Python `s_to_sig` decipher with a dukpy-backed JS evaluation path: extract the decipher function (and helper object) from the player JS, execute it in dukpy to compute the signature; also expose a similar JS execution hook usable for `n` transformation",
+        "file_to_modify": "src/you_get/extractors/youtube.py",
+        "function_to_modify": "YouTube.s_to_sig",
+        "reason": "YouTube frequently changes the player JS structure, breaking regex-based transpilation and causing invalid signatures (403). Using dukpy to execute the real JS logic makes deciphering resilient. The same mechanism can be reused to compute the throttling `n` transform to address download speed throttling.",
+        "side_effects": "Introduces a runtime dependency on dukpy for YouTube extraction; failures to import dukpy must be handled (either hard error with guidance or fallback to old method). JS extraction/parsing mistakes can break all YouTube downloads, so add defensive parsing and caching. Execution of remote JS increases attack surface; ensure only minimal required functions are evaluated."
+      },
+      {
+        "operation": "Declare `dukpy` as a dependency in packaging metadata (adjust `install_requires`/equivalent around setup configuration so YouTube functionality can rely on it)",
+        "file_to_modify": "setup.py",
+        "function_to_modify": "load_source",
+        "reason": "The PR’s YouTube fixes depend on dukpy at runtime; without declaring the dependency, installs from PyPI/source will continue to fail at decipher time.",
+        "side_effects": "May increase installation footprint and add platform constraints depending on dukpy availability. If made mandatory, it affects all users; if made optional, additional runtime checks and error messaging are required. Verify packaging still works for editable installs and distribution builds."
+      }
+    ]
+  }
+}

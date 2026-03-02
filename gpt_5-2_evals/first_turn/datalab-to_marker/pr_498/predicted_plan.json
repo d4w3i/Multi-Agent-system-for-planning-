@@ -1,0 +1,42 @@
+{
+  "pr_number": 498,
+  "repository": "datalab-to/marker",
+  "title": "OCR Error Detection Hotfix",
+  "body": "Fix input handling of error detection model: \r\n- Segment length is automatically handled by tokenizer, and is by `#tokens`, not `#chars`, removing the splitting logic inside `marker`\r\n- Join lines using `\\n`",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T08:28:24.067026",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "marker/models.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "create_model_dict",
+          "class_name": null,
+          "full_name": "create_model_dict",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Remove Marker-side character-based splitting for OCR error detection input and ensure the model input is built from lines joined with newline characters, delegating length handling to the tokenizer/model (token-based).",
+    "steps": [
+      {
+        "operation": "Adjust model wiring/config to rely on tokenizer-managed max token length (and remove/avoid any character-based segmentation assumptions) for the OCR error detection predictor",
+        "file_to_modify": "marker/models.py",
+        "function_to_modify": "create_model_dict",
+        "reason": "The PR’s hotfix requires that segment length be handled by the tokenizer/model in tokens rather than by Marker in characters. The model construction point is the correct place to ensure the OCRErrorPredictor is instantiated/configured without any Marker-side chunking expectations (e.g., no max-char parameters propagated, and any max_length/truncation behavior delegated to the tokenizer).",
+        "side_effects": "May change runtime behavior on long documents (fewer per-chunk calls, potentially different truncation behavior). Downstream code that expected per-chunk outputs may need alignment updates. Should re-run any inference/regression tests around OCR error detection; if no tests exist, add a minimal sanity test to ensure long inputs don’t crash and that newline-joined text is accepted."
+      }
+    ]
+  }
+}

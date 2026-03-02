@@ -1,0 +1,95 @@
+{
+  "pr_number": 15574,
+  "repository": "goauthentik/authentik",
+  "title": "enterprise/audit: fix diff with update_fields",
+  "body": "<!--\n👋 Hi there! Welcome.\n\nPlease check the Contributing guidelines: https://docs.goauthentik.io/docs/developer-docs/#how-can-i-contribute\n-->\n\n## Details\n\n<!--\nExplain what this PR changes, what the rationale behind the change is, if any new requirements are introduced or any breaking changes caused by this PR.\n\nIdeally also link an Issue for context that this PR will close using `closes #`\n-->\nREPLACE ME\n\n---\n\n## Checklist\n\n-   [ ] Local tests pass (`ak test authentik/`)\n-   [ ] The code has been formatted (`make lint-fix`)\n\nIf an API change has been made\n\n-   [ ] The API schema has been updated (`make gen-build`)\n\nIf changes to the frontend have been made\n\n-   [ ] The code has been formatted (`make web`)\n\nIf applicable\n\n-   [ ] The documentation has been updated\n-   [ ] The documentation has been formatted (`make docs`)\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-02-25T20:46:32.987645",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "middleware.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "serialize_simple",
+          "class_name": "EnterpriseAuditMiddleware",
+          "full_name": "EnterpriseAuditMiddleware.serialize_simple",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "post_save_handler",
+          "class_name": "EnterpriseAuditMiddleware",
+          "full_name": "EnterpriseAuditMiddleware.post_save_handler",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "tests.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "test_serialize_fields",
+          "class_name": "TestEnterpriseAudit",
+          "full_name": "TestEnterpriseAudit.test_serialize_fields",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "test_update",
+          "class_name": "TestEnterpriseAudit",
+          "full_name": "TestEnterpriseAudit.test_update",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Fix enterprise audit diff generation for partial model updates by ensuring before/after snapshots are filtered consistently when `update_fields` is used, and by making `update_fields` handling robust to iterable types. Add regression coverage to ensure serialization filtering and update diffs remain correct and minimal.",
+    "steps": [
+      {
+        "operation": "Harden `update_fields` handling and fix file-field serialization bug in `serialize_simple`",
+        "file_to_modify": "middleware.py",
+        "function_to_modify": "EnterpriseAuditMiddleware.serialize_simple",
+        "reason": "`serialize_simple` currently assumes `update_fields` is a list and performs membership checks directly, which can be incorrect when Django passes a set/tuple/frozenset. Additionally, it mistakenly checks `isinstance(value, File)` where `value` is always `None`, so FileFields won’t serialize to `.name` as intended. Normalizing `update_fields` to a `set[str]` and checking `field_value` for `File` ensures consistent filtering and stable diff inputs when partial updates occur.",
+        "side_effects": "May slightly change which keys appear in serialized output when callers pass non-list iterables for `update_fields`; could affect downstream diff output. Fixing FileField handling may change diffs for models that include file fields (more correct, but could update existing expectations). Must preserve no-extra-queries invariant by only reading concrete, non-deferred attributes."
+      },
+      {
+        "operation": "Align `prev_state`/`new_state` snapshots when `update_fields` is provided and preserve incoming `thread_kwargs`",
+        "file_to_modify": "middleware.py",
+        "function_to_modify": "EnterpriseAuditMiddleware.post_save_handler",
+        "reason": "Current logic snapshots `prev_state` as a full dict from `_previous_state` but computes `new_state` filtered by `update_fields`, which can produce incorrect/empty diffs for partial saves. Filter `prev_state` to the same subset when `update_fields` is provided (or compute a filtered `prev_state` via `serialize_simple`-compatible key selection) before calling `diff`. Also, `thread_kwargs` is unconditionally reset to `{}`, potentially discarding context from the base middleware; it should be initialized from the passed-in dict and then augmented with `diff`.",
+        "side_effects": "Event.context[\"diff\"] will become more accurate/minimal for `save(update_fields=...)` and any codepaths that pass `update_fields` through signals. If any consumers relied on previously incorrect diffs (e.g., missing previous values), their behavior may change. Preserving `thread_kwargs` may add additional context keys previously dropped, which could affect event payload shape (generally a bugfix)."
+      },
+      {
+        "operation": "Extend serialization test coverage to ensure `update_fields` normalization works",
+        "file_to_modify": "tests.py",
+        "function_to_modify": "TestEnterpriseAudit.test_serialize_fields",
+        "reason": "After normalizing `update_fields` handling, ensure `serialize_simple` behaves consistently for common Django forms (e.g., list and set) and still returns only the requested subset. This locks in the regression fix and prevents future reintroduction of iterable-type assumptions.",
+        "side_effects": "Test becomes stricter about supported `update_fields` input types; may require small adjustments if upstream typing changes. No runtime impact outside test suite."
+      },
+      {
+        "operation": "Add/adjust update audit test to cover partial update semantics consistent with `update_fields`-style diffs",
+        "file_to_modify": "tests.py",
+        "function_to_modify": "TestEnterpriseAudit.test_update",
+        "reason": "Current test validates a minimal diff for an API PATCH, but the regression described is specifically about `update_fields`-driven partial saves. Enhance the test to assert that only changed keys appear in the diff (and that unrelated fields are not present), and—if feasible in the test harness—exercise a path that results in `save(update_fields={...})` (direct model save or a view/serializer path that uses `update_fields`) to ensure `prev_state` filtering is applied and diff is correct.",
+        "side_effects": "May change expected diff contents if the fixed middleware now includes/excludes keys differently for partial saves (the goal is minimal, correct diffs). Could require updating fixtures or ensuring the tested update path truly uses `update_fields`; otherwise the test should focus on the diff-minimality invariant and avoid being flaky."
+      }
+    ]
+  }
+}

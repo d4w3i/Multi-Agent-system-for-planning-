@@ -1,0 +1,867 @@
+{
+  "pr_number": 7451,
+  "repository": "huggingface/datasets",
+  "title": "Fix resuming after `ds.set_epoch(new_epoch)`",
+  "body": "close https://github.com/huggingface/datasets/issues/7447",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T01:00:54.675357",
+    "extractor_version": "1.0.0",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "src/datasets/commands/convert.py",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "functions_modified": [
+        {
+          "function_name": "run",
+          "class_name": "ConvertCommand",
+          "full_name": "ConvertCommand.run",
+          "start_line": 81,
+          "end_line": 195,
+          "lines_changed": [
+            170
+          ]
+        }
+      ],
+      "patch": "@@ -167,7 +167,7 @@ def run(self):\n                 output_file = os.path.join(output_dir, f_name)\n                 os.makedirs(output_dir, exist_ok=True)\n                 self._logger.info(f\"Adding directory {output_dir}\")\n-                imports_to_builder_map.update({imp: output_dir for imp in tfds_imports})\n+                imports_to_builder_map.update(dict.fromkeys(tfds_imports, output_dir))\n             else:\n                 # Utilities will be moved at the end\n                 utils_files.append(output_file)"
+    },
+    {
+      "filename": "src/datasets/dataset_dict.py",
+      "status": "modified",
+      "additions": 10,
+      "deletions": 10,
+      "functions_modified": [
+        {
+          "function_name": "map",
+          "class_name": "DatasetDict",
+          "full_name": "DatasetDict.map",
+          "start_line": 813,
+          "end_line": 964,
+          "lines_changed": [
+            934
+          ]
+        },
+        {
+          "function_name": "filter",
+          "class_name": "DatasetDict",
+          "full_name": "DatasetDict.filter",
+          "start_line": 966,
+          "end_line": 1074,
+          "lines_changed": [
+            1054
+          ]
+        },
+        {
+          "function_name": "flatten_indices",
+          "class_name": "DatasetDict",
+          "full_name": "DatasetDict.flatten_indices",
+          "start_line": 1076,
+          "end_line": 1126,
+          "lines_changed": [
+            1112
+          ]
+        },
+        {
+          "function_name": "sort",
+          "class_name": "DatasetDict",
+          "full_name": "DatasetDict.sort",
+          "start_line": 1128,
+          "end_line": 1193,
+          "lines_changed": [
+            1179
+          ]
+        },
+        {
+          "function_name": "shuffle",
+          "class_name": "DatasetDict",
+          "full_name": "DatasetDict.shuffle",
+          "start_line": 1195,
+          "end_line": 1276,
+          "lines_changed": [
+            1257,
+            1259,
+            1261,
+            1263
+          ]
+        },
+        {
+          "function_name": "save_to_disk",
+          "class_name": "DatasetDict",
+          "full_name": "DatasetDict.save_to_disk",
+          "start_line": 1278,
+          "end_line": 1350,
+          "lines_changed": [
+            1329
+          ]
+        },
+        {
+          "function_name": "push_to_hub",
+          "class_name": "DatasetDict",
+          "full_name": "DatasetDict.push_to_hub",
+          "start_line": 1600,
+          "end_line": 1906,
+          "lines_changed": [
+            1699
+          ]
+        }
+      ],
+      "patch": "@@ -931,7 +931,7 @@ def map(\n         \"\"\"\n         self._check_values_type()\n         if cache_file_names is None:\n-            cache_file_names = {k: None for k in self}\n+            cache_file_names = dict.fromkeys(self)\n \n         dataset_dict = {}\n         for split, dataset in self.items():\n@@ -1051,7 +1051,7 @@ def filter(\n         \"\"\"\n         self._check_values_type()\n         if cache_file_names is None:\n-            cache_file_names = {k: None for k in self}\n+            cache_file_names = dict.fromkeys(self)\n         return DatasetDict(\n             {\n                 k: dataset.filter(\n@@ -1109,7 +1109,7 @@ def flatten_indices(\n         \"\"\"\n         self._check_values_type()\n         if cache_file_names is None:\n-            cache_file_names = {k: None for k in self}\n+            cache_file_names = dict.fromkeys(self)\n         return DatasetDict(\n             {\n                 k: dataset.flatten_indices(\n@@ -1176,7 +1176,7 @@ def sort(\n         \"\"\"\n         self._check_values_type()\n         if indices_cache_file_names is None:\n-            indices_cache_file_names = {k: None for k in self}\n+            indices_cache_file_names = dict.fromkeys(self)\n         return DatasetDict(\n             {\n                 k: dataset.sort(\n@@ -1254,13 +1254,13 @@ def shuffle(\n             raise ValueError(\"Please specify seed or seeds, but not both\")\n         seeds = seed if seed is not None else seeds\n         if seeds is None:\n-            seeds = {k: None for k in self}\n+            seeds = dict.fromkeys(self)\n         elif not isinstance(seeds, dict):\n-            seeds = {k: seeds for k in self}\n+            seeds = dict.fromkeys(self, seeds)\n         if generators is None:\n-            generators = {k: None for k in self}\n+            generators = dict.fromkeys(self)\n         if indices_cache_file_names is None:\n-            indices_cache_file_names = {k: None for k in self}\n+            indices_cache_file_names = dict.fromkeys(self)\n         return DatasetDict(\n             {\n                 k: dataset.shuffle(\n@@ -1326,7 +1326,7 @@ def save_to_disk(\n         fs, _ = url_to_fs(dataset_dict_path, **(storage_options or {}))\n \n         if num_shards is None:\n-            num_shards = {k: None for k in self}\n+            num_shards = dict.fromkeys(self)\n         elif not isinstance(num_shards, dict):\n             raise ValueError(\n                 \"Please provide one `num_shards` per dataset in the dataset dictionary, e.g. {{'train': 128, 'test': 4}}\"\n@@ -1696,7 +1696,7 @@ def push_to_hub(\n         ```\n         \"\"\"\n         if num_shards is None:\n-            num_shards = {k: None for k in self}\n+            num_shards = dict.fromkeys(self)\n         elif not isinstance(num_shards, dict):\n             raise ValueError(\n                 \"Please provide one `num_shards` per dataset in the dataset dictionary, e.g. {{'train': 128, 'test': 4}}\""
+    },
+    {
+      "filename": "src/datasets/formatting/formatting.py",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "functions_modified": [
+        {
+          "function_name": "__init__",
+          "class_name": "LazyDict",
+          "full_name": "LazyDict.__init__",
+          "start_line": 269,
+          "end_line": 274,
+          "lines_changed": [
+            273
+          ]
+        }
+      ],
+      "patch": "@@ -270,7 +270,7 @@ def __init__(self, pa_table: pa.Table, formatter: \"Formatter\"):\n         self.pa_table = pa_table\n         self.formatter = formatter\n \n-        self.data = {key: None for key in pa_table.column_names}\n+        self.data = dict.fromkeys(pa_table.column_names)\n         self.keys_to_format = set(self.data.keys())\n \n     def __len__(self):"
+    },
+    {
+      "filename": "src/datasets/iterable_dataset.py",
+      "status": "modified",
+      "additions": 42,
+      "deletions": 21,
+      "functions_modified": [
+        {
+          "function_name": "_init_state_dict",
+          "class_name": "ExamplesIterable",
+          "full_name": "ExamplesIterable._init_state_dict",
+          "start_line": 212,
+          "end_line": 214,
+          "lines_changed": [
+            213
+          ]
+        },
+        {
+          "function_name": "_init_state_dict",
+          "class_name": "ShuffledDataSourcesExamplesIterable",
+          "full_name": "ShuffledDataSourcesExamplesIterable._init_state_dict",
+          "start_line": 250,
+          "end_line": 252,
+          "lines_changed": [
+            251
+          ]
+        },
+        {
+          "function_name": "_init_state_dict",
+          "class_name": "ArrowExamplesIterable",
+          "full_name": "ArrowExamplesIterable._init_state_dict",
+          "start_line": 290,
+          "end_line": 292,
+          "lines_changed": [
+            291
+          ]
+        },
+        {
+          "function_name": "_init_state_dict",
+          "class_name": "ShuffledDataSourcesArrowExamplesIterable",
+          "full_name": "ShuffledDataSourcesArrowExamplesIterable._init_state_dict",
+          "start_line": 357,
+          "end_line": 359,
+          "lines_changed": [
+            358
+          ]
+        },
+        {
+          "function_name": "_init_state_dict",
+          "class_name": "RebatchedArrowExamplesIterable",
+          "full_name": "RebatchedArrowExamplesIterable._init_state_dict",
+          "start_line": 436,
+          "end_line": 445,
+          "lines_changed": [
+            438,
+            443
+          ]
+        },
+        {
+          "function_name": "_init_state_dict",
+          "class_name": "CyclingMultiSourcesExamplesIterable",
+          "full_name": "CyclingMultiSourcesExamplesIterable._init_state_dict",
+          "start_line": 676,
+          "end_line": 684,
+          "lines_changed": [
+            682
+          ]
+        },
+        {
+          "function_name": "_init_state_dict",
+          "class_name": "VerticallyConcatenatedMultiSourcesExamplesIterable",
+          "full_name": "VerticallyConcatenatedMultiSourcesExamplesIterable._init_state_dict",
+          "start_line": 777,
+          "end_line": 783,
+          "lines_changed": [
+            781
+          ]
+        },
+        {
+          "function_name": "_init_state_dict",
+          "class_name": "HorizontallyConcatenatedMultiSourcesExamplesIterable",
+          "full_name": "HorizontallyConcatenatedMultiSourcesExamplesIterable._init_state_dict",
+          "start_line": 861,
+          "end_line": 866,
+          "lines_changed": [
+            862,
+            863,
+            864,
+            865
+          ]
+        },
+        {
+          "function_name": "_init_state_dict",
+          "class_name": "RandomlyCyclingMultiSourcesExamplesIterable",
+          "full_name": "RandomlyCyclingMultiSourcesExamplesIterable._init_state_dict",
+          "start_line": 960,
+          "end_line": 969,
+          "lines_changed": [
+            967
+          ]
+        },
+        {
+          "function_name": "_init_state_dict",
+          "class_name": "MappedExamplesIterable",
+          "full_name": "MappedExamplesIterable._init_state_dict",
+          "start_line": 1060,
+          "end_line": 1068,
+          "lines_changed": [
+            1062,
+            1066
+          ]
+        },
+        {
+          "function_name": "_init_state_dict",
+          "class_name": "SkipExamplesIterable",
+          "full_name": "SkipExamplesIterable._init_state_dict",
+          "start_line": 1577,
+          "end_line": 1583,
+          "lines_changed": [
+            1578,
+            1579,
+            1580,
+            1581,
+            1582
+          ]
+        },
+        {
+          "function_name": "_init_state_dict",
+          "class_name": "RepeatExamplesIterable",
+          "full_name": "RepeatExamplesIterable._init_state_dict",
+          "start_line": 1643,
+          "end_line": 1649,
+          "lines_changed": [
+            1646,
+            1647
+          ]
+        },
+        {
+          "function_name": "__iter__",
+          "class_name": "RepeatExamplesIterable",
+          "full_name": "RepeatExamplesIterable.__iter__",
+          "start_line": 1651,
+          "end_line": 1660,
+          "lines_changed": [
+            1660
+          ]
+        },
+        {
+          "function_name": "_init_state_dict",
+          "class_name": "TakeExamplesIterable",
+          "full_name": "TakeExamplesIterable._init_state_dict",
+          "start_line": 1701,
+          "end_line": 1707,
+          "lines_changed": [
+            1702,
+            1703,
+            1704,
+            1705,
+            1706
+          ]
+        },
+        {
+          "function_name": "__init__",
+          "class_name": "IterableDataset",
+          "full_name": "IterableDataset.__init__",
+          "start_line": 1939,
+          "end_line": 1966,
+          "lines_changed": [
+            1965,
+            1966
+          ]
+        },
+        {
+          "function_name": "_iter_pytorch",
+          "class_name": "IterableDataset",
+          "full_name": "IterableDataset._iter_pytorch",
+          "start_line": 2112,
+          "end_line": 2169,
+          "lines_changed": [
+            2143,
+            2144,
+            2145,
+            2146,
+            2147,
+            2148
+          ]
+        },
+        {
+          "function_name": "_prepare_ex_iterable_for_iteration",
+          "class_name": "IterableDataset",
+          "full_name": "IterableDataset._prepare_ex_iterable_for_iteration",
+          "start_line": 2182,
+          "end_line": 2232,
+          "lines_changed": [
+            2226,
+            2227,
+            2228,
+            2229,
+            2230,
+            2231
+          ]
+        }
+      ],
+      "patch": "@@ -210,7 +210,7 @@ def __init__(self, generate_examples_fn: Callable[..., tuple[Key, dict]], kwargs\n         self.kwargs = kwargs\n \n     def _init_state_dict(self) -> dict:\n-        self._state_dict = {\"shard_idx\": 0, \"shard_example_idx\": 0}\n+        self._state_dict = {\"shard_idx\": 0, \"shard_example_idx\": 0, \"type\": self.__class__.__name__}\n         return self._state_dict\n \n     def __iter__(self):\n@@ -248,7 +248,7 @@ def __init__(\n         self.generator = deepcopy(generator)\n \n     def _init_state_dict(self) -> dict:\n-        self._state_dict = {\"shard_idx\": 0, \"shard_example_idx\": 0}\n+        self._state_dict = {\"shard_idx\": 0, \"shard_example_idx\": 0, \"type\": self.__class__.__name__}\n         return self._state_dict\n \n     def __iter__(self):\n@@ -288,7 +288,7 @@ def iter_arrow(self):\n         return self._iter_arrow\n \n     def _init_state_dict(self) -> dict:\n-        self._state_dict = {\"shard_idx\": 0, \"shard_example_idx\": 0}\n+        self._state_dict = {\"shard_idx\": 0, \"shard_example_idx\": 0, \"type\": self.__class__.__name__}\n         return self._state_dict\n \n     def __iter__(self):\n@@ -355,7 +355,7 @@ def __init__(\n         self.generator = deepcopy(generator)\n \n     def _init_state_dict(self) -> dict:\n-        self._state_dict = {\"shard_idx\": 0, \"shard_example_idx\": 0}\n+        self._state_dict = {\"shard_idx\": 0, \"shard_example_idx\": 0, \"type\": self.__class__.__name__}\n         return self._state_dict\n \n     def __iter__(self):\n@@ -435,11 +435,12 @@ def features(self):\n \n     def _init_state_dict(self) -> dict:\n         self._state_dict = {\n-            \"ex_iterable\": self.ex_iterable._init_state_dict(),\n+            \"examples_iterable\": self.ex_iterable._init_state_dict(),\n             \"previous_state\": None,\n             \"batch_idx\": 0,\n             \"num_chunks_since_previous_state\": 0,\n             \"cropped_chunk_length\": 0,\n+            \"type\": self.__class__.__name__,\n         }\n         return self._state_dict\n \n@@ -678,6 +679,7 @@ def _init_state_dict(self) -> dict:\n             \"ex_iterables\": [ex_iterable._init_state_dict() for ex_iterable in self.ex_iterables],\n             \"previous_states\": [None] * len(self.ex_iterables),\n             \"is_exhausted\": [False] * len(self.ex_iterables),\n+            \"type\": self.__class__.__name__,\n         }\n         return self._state_dict\n \n@@ -776,6 +778,7 @@ def _init_state_dict(self) -> dict:\n         self._state_dict = {\n             \"ex_iterable_idx\": 0,\n             \"ex_iterables\": [ex_iterable._init_state_dict() for ex_iterable in self.ex_iterables],\n+            \"type\": self.__class__.__name__,\n         }\n         return self._state_dict\n \n@@ -856,7 +859,10 @@ def features(self):\n         return self.ex_iterables[0].features\n \n     def _init_state_dict(self) -> dict:\n-        self._state_dict = {\"ex_iterables\": [ex_iterable._init_state_dict() for ex_iterable in self.ex_iterables]}\n+        self._state_dict = {\n+            \"ex_iterables\": [ex_iterable._init_state_dict() for ex_iterable in self.ex_iterables],\n+            \"type\": self.__class__.__name__,\n+        }\n         return self._state_dict\n \n     def __iter__(self):\n@@ -958,6 +964,7 @@ def _init_state_dict(self) -> dict:\n             \"ex_iterables\": [ex_iterable._init_state_dict() for ex_iterable in self.ex_iterables],\n             \"previous_states\": [None] * len(self.ex_iterables),\n             \"is_exhausted\": [False] * len(self.ex_iterables),\n+            \"type\": self.__class__.__name__,\n         }\n         return self._state_dict\n \n@@ -1052,10 +1059,11 @@ def features(self):\n \n     def _init_state_dict(self) -> dict:\n         self._state_dict = {\n-            \"ex_iterable\": self.ex_iterable._init_state_dict(),\n+            \"examples_iterable\": self.ex_iterable._init_state_dict(),\n             \"previous_state\": None,\n             \"num_examples_since_previous_state\": 0,\n             \"previous_state_example_idx\": 0,\n+            \"type\": self.__class__.__name__,\n         }\n         return self._state_dict\n \n@@ -1567,7 +1575,11 @@ def features(self):\n         return self.ex_iterable.features\n \n     def _init_state_dict(self) -> dict:\n-        self._state_dict = {\"skipped\": False, \"ex_iterable\": self.ex_iterable._init_state_dict()}\n+        self._state_dict = {\n+            \"skipped\": False,\n+            \"examples_iterable\": self.ex_iterable._init_state_dict(),\n+            \"type\": self.__class__.__name__,\n+        }\n         return self._state_dict\n \n     def __iter__(self):\n@@ -1631,7 +1643,8 @@ def __init__(\n     def _init_state_dict(self) -> dict:\n         self._state_dict = {\n             \"repeat_index\": 0,\n-            \"ex_iterable\": self.ex_iterable._init_state_dict(),\n+            \"examples_iterable\": self.ex_iterable._init_state_dict(),\n+            \"type\": self.__class__.__name__,\n         }\n         return self._state_dict\n \n@@ -1644,7 +1657,7 @@ def __iter__(self):\n             repeat_index += 1\n             if self._state_dict:\n                 self._state_dict[\"repeat_index\"] = repeat_index\n-                self._state_dict[\"ex_iterable\"] = self.ex_iterable._init_state_dict()\n+                self._state_dict[\"examples_iterable\"] = self.ex_iterable._init_state_dict()\n \n     def shuffle_data_sources(self, generator: np.random.Generator) -> \"RepeatExamplesIterable\":\n         \"\"\"Shuffle the underlying iterable, then repeat.\"\"\"\n@@ -1686,7 +1699,11 @@ def features(self):\n         return self.ex_iterable.features\n \n     def _init_state_dict(self) -> dict:\n-        self._state_dict = {\"num_taken\": 0, \"ex_iterable\": self.ex_iterable._init_state_dict()}\n+        self._state_dict = {\n+            \"num_taken\": 0,\n+            \"examples_iterable\": self.ex_iterable._init_state_dict(),\n+            \"type\": self.__class__.__name__,\n+        }\n         return self._state_dict\n \n     def __iter__(self):\n@@ -1945,9 +1962,8 @@ def __init__(\n         self._token_per_repo_id: dict[str, Union[str, bool, None]] = token_per_repo_id or {}\n         self._epoch: Union[int, \"torch.Tensor\"] = _maybe_share_with_torch_persistent_workers(0)\n         self._starting_state_dict: Optional[dict] = None\n-        self._prepared_ex_iterable = self._prepare_ex_iterable_for_iteration()\n-        self._state_dict = self._prepared_ex_iterable._init_state_dict()\n-        _maybe_add_torch_iterable_dataset_parent_class(self.__class__)\n+        self._prepare_ex_iterable_for_iteration()  # set state_dict\n+        _maybe_add_torch_iterable_dataset_parent_class(self.__class__)  # subclass of torch IterableDataset\n \n     def state_dict(self) -> dict:\n         \"\"\"Get the current state_dict of the dataset.\n@@ -2050,7 +2066,6 @@ def load_state_dict(self, state_dict: dict) -> None:\n         >>> dataloader.load_state_dict(state_dict)  # uses ds.load_state_dict() under the hood\n         ```\n         \"\"\"\n-        self._prepared_ex_iterable.load_state_dict(state_dict)\n         self._starting_state_dict = state_dict\n \n     def __repr__(self):\n@@ -2125,9 +2140,12 @@ def _iter_pytorch(self):\n             ex_iterable = ex_iterable.shard_data_sources(\n                 num_shards=worker_info.num_workers, index=worker_info.id, contiguous=False\n             )\n-            self._state_dict = ex_iterable._init_state_dict()\n-            if self._starting_state_dict:\n-                ex_iterable.load_state_dict(self._starting_state_dict)\n+            self._state_dict = {\n+                \"examples_iterable\": ex_iterable._init_state_dict(),\n+                \"epoch\": self.epoch,\n+            }\n+            if self._starting_state_dict and self.epoch == self._starting_state_dict[\"epoch\"]:\n+                ex_iterable.load_state_dict(self._starting_state_dict[\"examples_iterable\"])\n \n             if self._formatting and (ex_iterable.iter_arrow or self._formatting.is_table):\n                 formatter = get_formatter(self._formatting.format_type, features=self.features)\n@@ -2205,9 +2223,12 @@ def _prepare_ex_iterable_for_iteration(\n                 token_per_repo_id=self._token_per_repo_id,\n             )\n \n-        self._state_dict = ex_iterable._init_state_dict()\n-        if self._starting_state_dict:\n-            ex_iterable.load_state_dict(self._starting_state_dict)\n+        self._state_dict = {\n+            \"examples_iterable\": ex_iterable._init_state_dict(),\n+            \"epoch\": self.epoch,\n+        }\n+        if self._starting_state_dict and self.epoch == self._starting_state_dict[\"epoch\"]:\n+            ex_iterable.load_state_dict(self._starting_state_dict[\"examples_iterable\"])\n         return ex_iterable\n \n     def __iter__(self):"
+    },
+    {
+      "filename": "tests/test_iterable_dataset.py",
+      "status": "modified",
+      "additions": 11,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "test_iterable_dataset_set_epoch_resuming",
+          "class_name": null,
+          "full_name": "test_iterable_dataset_set_epoch_resuming",
+          "start_line": 1584,
+          "end_line": 1592,
+          "lines_changed": [
+            1584,
+            1585,
+            1586,
+            1587,
+            1588,
+            1589,
+            1590,
+            1591,
+            1592
+          ]
+        }
+      ],
+      "patch": "@@ -1581,6 +1581,17 @@ def test_iterable_dataset_set_epoch(dataset: IterableDataset):\n     assert dataset._epoch == 42\n \n \n+def test_iterable_dataset_set_epoch_resuming(dataset: IterableDataset):\n+    dataset_length = len(list(dataset))\n+    assert len(list(dataset)) == dataset_length > 0\n+    dataset.load_state_dict(dataset.state_dict())\n+    assert len(list(dataset)) == 0\n+    dataset.set_epoch(1)\n+    assert len(list(dataset)) == dataset_length > 0\n+    dataset.load_state_dict(dataset.state_dict())\n+    assert len(list(dataset)) == 0\n+\n+\n @pytest.mark.parametrize(\"seed\", [None, 42, 1337])\n @pytest.mark.parametrize(\"epoch\", [None, 0, 1, 10])\n def test_iterable_dataset_set_epoch_of_shuffled_dataset(dataset: IterableDataset, seed, epoch):"
+    }
+  ],
+  "functions_modified": [
+    {
+      "function_name": "run",
+      "class_name": "ConvertCommand",
+      "full_name": "ConvertCommand.run",
+      "start_line": 81,
+      "end_line": 195,
+      "lines_changed": [
+        170
+      ]
+    },
+    {
+      "function_name": "map",
+      "class_name": "DatasetDict",
+      "full_name": "DatasetDict.map",
+      "start_line": 813,
+      "end_line": 964,
+      "lines_changed": [
+        934
+      ]
+    },
+    {
+      "function_name": "filter",
+      "class_name": "DatasetDict",
+      "full_name": "DatasetDict.filter",
+      "start_line": 966,
+      "end_line": 1074,
+      "lines_changed": [
+        1054
+      ]
+    },
+    {
+      "function_name": "flatten_indices",
+      "class_name": "DatasetDict",
+      "full_name": "DatasetDict.flatten_indices",
+      "start_line": 1076,
+      "end_line": 1126,
+      "lines_changed": [
+        1112
+      ]
+    },
+    {
+      "function_name": "sort",
+      "class_name": "DatasetDict",
+      "full_name": "DatasetDict.sort",
+      "start_line": 1128,
+      "end_line": 1193,
+      "lines_changed": [
+        1179
+      ]
+    },
+    {
+      "function_name": "shuffle",
+      "class_name": "DatasetDict",
+      "full_name": "DatasetDict.shuffle",
+      "start_line": 1195,
+      "end_line": 1276,
+      "lines_changed": [
+        1257,
+        1259,
+        1261,
+        1263
+      ]
+    },
+    {
+      "function_name": "save_to_disk",
+      "class_name": "DatasetDict",
+      "full_name": "DatasetDict.save_to_disk",
+      "start_line": 1278,
+      "end_line": 1350,
+      "lines_changed": [
+        1329
+      ]
+    },
+    {
+      "function_name": "push_to_hub",
+      "class_name": "DatasetDict",
+      "full_name": "DatasetDict.push_to_hub",
+      "start_line": 1600,
+      "end_line": 1906,
+      "lines_changed": [
+        1699
+      ]
+    },
+    {
+      "function_name": "__init__",
+      "class_name": "LazyDict",
+      "full_name": "LazyDict.__init__",
+      "start_line": 269,
+      "end_line": 274,
+      "lines_changed": [
+        273
+      ]
+    },
+    {
+      "function_name": "_init_state_dict",
+      "class_name": "ExamplesIterable",
+      "full_name": "ExamplesIterable._init_state_dict",
+      "start_line": 212,
+      "end_line": 214,
+      "lines_changed": [
+        213
+      ]
+    },
+    {
+      "function_name": "_init_state_dict",
+      "class_name": "ShuffledDataSourcesExamplesIterable",
+      "full_name": "ShuffledDataSourcesExamplesIterable._init_state_dict",
+      "start_line": 250,
+      "end_line": 252,
+      "lines_changed": [
+        251
+      ]
+    },
+    {
+      "function_name": "_init_state_dict",
+      "class_name": "ArrowExamplesIterable",
+      "full_name": "ArrowExamplesIterable._init_state_dict",
+      "start_line": 290,
+      "end_line": 292,
+      "lines_changed": [
+        291
+      ]
+    },
+    {
+      "function_name": "_init_state_dict",
+      "class_name": "ShuffledDataSourcesArrowExamplesIterable",
+      "full_name": "ShuffledDataSourcesArrowExamplesIterable._init_state_dict",
+      "start_line": 357,
+      "end_line": 359,
+      "lines_changed": [
+        358
+      ]
+    },
+    {
+      "function_name": "_init_state_dict",
+      "class_name": "RebatchedArrowExamplesIterable",
+      "full_name": "RebatchedArrowExamplesIterable._init_state_dict",
+      "start_line": 436,
+      "end_line": 445,
+      "lines_changed": [
+        438,
+        443
+      ]
+    },
+    {
+      "function_name": "_init_state_dict",
+      "class_name": "CyclingMultiSourcesExamplesIterable",
+      "full_name": "CyclingMultiSourcesExamplesIterable._init_state_dict",
+      "start_line": 676,
+      "end_line": 684,
+      "lines_changed": [
+        682
+      ]
+    },
+    {
+      "function_name": "_init_state_dict",
+      "class_name": "VerticallyConcatenatedMultiSourcesExamplesIterable",
+      "full_name": "VerticallyConcatenatedMultiSourcesExamplesIterable._init_state_dict",
+      "start_line": 777,
+      "end_line": 783,
+      "lines_changed": [
+        781
+      ]
+    },
+    {
+      "function_name": "_init_state_dict",
+      "class_name": "HorizontallyConcatenatedMultiSourcesExamplesIterable",
+      "full_name": "HorizontallyConcatenatedMultiSourcesExamplesIterable._init_state_dict",
+      "start_line": 861,
+      "end_line": 866,
+      "lines_changed": [
+        862,
+        863,
+        864,
+        865
+      ]
+    },
+    {
+      "function_name": "_init_state_dict",
+      "class_name": "RandomlyCyclingMultiSourcesExamplesIterable",
+      "full_name": "RandomlyCyclingMultiSourcesExamplesIterable._init_state_dict",
+      "start_line": 960,
+      "end_line": 969,
+      "lines_changed": [
+        967
+      ]
+    },
+    {
+      "function_name": "_init_state_dict",
+      "class_name": "MappedExamplesIterable",
+      "full_name": "MappedExamplesIterable._init_state_dict",
+      "start_line": 1060,
+      "end_line": 1068,
+      "lines_changed": [
+        1062,
+        1066
+      ]
+    },
+    {
+      "function_name": "_init_state_dict",
+      "class_name": "SkipExamplesIterable",
+      "full_name": "SkipExamplesIterable._init_state_dict",
+      "start_line": 1577,
+      "end_line": 1583,
+      "lines_changed": [
+        1578,
+        1579,
+        1580,
+        1581,
+        1582
+      ]
+    },
+    {
+      "function_name": "_init_state_dict",
+      "class_name": "RepeatExamplesIterable",
+      "full_name": "RepeatExamplesIterable._init_state_dict",
+      "start_line": 1643,
+      "end_line": 1649,
+      "lines_changed": [
+        1646,
+        1647
+      ]
+    },
+    {
+      "function_name": "__iter__",
+      "class_name": "RepeatExamplesIterable",
+      "full_name": "RepeatExamplesIterable.__iter__",
+      "start_line": 1651,
+      "end_line": 1660,
+      "lines_changed": [
+        1660
+      ]
+    },
+    {
+      "function_name": "_init_state_dict",
+      "class_name": "TakeExamplesIterable",
+      "full_name": "TakeExamplesIterable._init_state_dict",
+      "start_line": 1701,
+      "end_line": 1707,
+      "lines_changed": [
+        1702,
+        1703,
+        1704,
+        1705,
+        1706
+      ]
+    },
+    {
+      "function_name": "__init__",
+      "class_name": "IterableDataset",
+      "full_name": "IterableDataset.__init__",
+      "start_line": 1939,
+      "end_line": 1966,
+      "lines_changed": [
+        1965,
+        1966
+      ]
+    },
+    {
+      "function_name": "_iter_pytorch",
+      "class_name": "IterableDataset",
+      "full_name": "IterableDataset._iter_pytorch",
+      "start_line": 2112,
+      "end_line": 2169,
+      "lines_changed": [
+        2143,
+        2144,
+        2145,
+        2146,
+        2147,
+        2148
+      ]
+    },
+    {
+      "function_name": "_prepare_ex_iterable_for_iteration",
+      "class_name": "IterableDataset",
+      "full_name": "IterableDataset._prepare_ex_iterable_for_iteration",
+      "start_line": 2182,
+      "end_line": 2232,
+      "lines_changed": [
+        2226,
+        2227,
+        2228,
+        2229,
+        2230,
+        2231
+      ]
+    },
+    {
+      "function_name": "test_iterable_dataset_set_epoch_resuming",
+      "class_name": null,
+      "full_name": "test_iterable_dataset_set_epoch_resuming",
+      "start_line": 1584,
+      "end_line": 1592,
+      "lines_changed": [
+        1584,
+        1585,
+        1586,
+        1587,
+        1588,
+        1589,
+        1590,
+        1591,
+        1592
+      ]
+    }
+  ],
+  "step_plan": {
+    "steps": [
+      {
+        "operation": "Refactor dict construction to use dict.fromkeys for mapping multiple TFDS imports to the same output directory",
+        "file_to_modify": "src/datasets/commands/convert.py",
+        "function_to_modify": "run",
+        "reason": "Simplify and standardize creation of dicts with shared values, improving readability and avoiding repeated comprehension patterns.",
+        "side_effects": "Only affects how the temporary imports-to-builder map is created during conversion; downstream conversion behavior should remain identical but could subtly affect ordering/debug output if callers relied on insertion behavior."
+      },
+      {
+        "operation": "Refactor default cache_file_names initialization to use dict.fromkeys(self)",
+        "file_to_modify": "src/datasets/dataset_dict.py",
+        "function_to_modify": "DatasetDict.map",
+        "reason": "Make default per-split dict initialization more idiomatic/consistent and slightly clearer when values are uniformly None.",
+        "side_effects": "Affects the default structure passed into per-split Dataset.map calls; behavior should be unchanged unless external code depended on the exact dict-construction style."
+      },
+      {
+        "operation": "Refactor default cache_file_names initialization to use dict.fromkeys(self)",
+        "file_to_modify": "src/datasets/dataset_dict.py",
+        "function_to_modify": "DatasetDict.filter",
+        "reason": "Keep consistent default dict initialization across DatasetDict transformation methods.",
+        "side_effects": "Only impacts default arguments plumbing into Dataset.filter per split; no expected functional change."
+      },
+      {
+        "operation": "Refactor default cache_file_names initialization to use dict.fromkeys(self)",
+        "file_to_modify": "src/datasets/dataset_dict.py",
+        "function_to_modify": "DatasetDict.flatten_indices",
+        "reason": "Improve readability and consistency for default per-split cache file naming.",
+        "side_effects": "May affect callers that introspect the passed cache_file_names object identity, but functional output remains the same."
+      },
+      {
+        "operation": "Refactor default indices_cache_file_names initialization to use dict.fromkeys(self)",
+        "file_to_modify": "src/datasets/dataset_dict.py",
+        "function_to_modify": "DatasetDict.sort",
+        "reason": "Standardize how per-split defaults are created for index caching across DatasetDict APIs.",
+        "side_effects": "Only influences how defaults are computed; sorting results and caching semantics should remain unchanged."
+      },
+      {
+        "operation": "Refactor seed/generator/index cache default dict initialization to use dict.fromkeys (including dict.fromkeys(self, seeds) when scalar seed provided)",
+        "file_to_modify": "src/datasets/dataset_dict.py",
+        "function_to_modify": "DatasetDict.shuffle",
+        "reason": "Make the default dict creation more concise and consistent while preserving behavior for None/scalar/dict seed inputs.",
+        "side_effects": "Touches argument normalization for shuffle; could affect edge cases where code relied on exact dict literal formatting, but shuffle determinism should remain identical."
+      },
+      {
+        "operation": "Refactor default num_shards initialization to use dict.fromkeys(self)",
+        "file_to_modify": "src/datasets/dataset_dict.py",
+        "function_to_modify": "DatasetDict.save_to_disk",
+        "reason": "Consistently initialize per-split num_shards defaults in a concise manner.",
+        "side_effects": "Only affects default parameter expansion; save-to-disk sharding behavior should not change."
+      },
+      {
+        "operation": "Refactor default num_shards initialization to use dict.fromkeys(self)",
+        "file_to_modify": "src/datasets/dataset_dict.py",
+        "function_to_modify": "DatasetDict.push_to_hub",
+        "reason": "Keep parity with save_to_disk and other DatasetDict methods for default dict initialization.",
+        "side_effects": "Only impacts default shard config expansion before upload; hub push output should remain the same."
+      },
+      {
+        "operation": "Refactor column-name keyed initialization to use dict.fromkeys(pa_table.column_names)",
+        "file_to_modify": "src/datasets/formatting/formatting.py",
+        "function_to_modify": "LazyBatch.__init__",
+        "reason": "Create a placeholder dict for formatted columns in a more idiomatic/compact way while preserving semantics (values initialized to None).",
+        "side_effects": "Affects internal LazyBatch.data initialization; formatting behavior should be unchanged unless some code depended on the exact comprehension construction."
+      },
+      {
+        "operation": "Extend base examples-iterable state with a 'type' discriminator field",
+        "file_to_modify": "src/datasets/iterable_dataset.py",
+        "function_to_modify": "ExamplesIterable._init_state_dict",
+        "reason": "Embed the iterable class name into the saved state to make serialized states more readable and future-proof for debugging/migrations.",
+        "side_effects": "State dict schema changes; any external tooling expecting the previous minimal schema may need to ignore/handle the new 'type' field."
+      },
+      {
+        "operation": "Extend generator-based examples-iterable state with a 'type' discriminator field",
+        "file_to_modify": "src/datasets/iterable_dataset.py",
+        "function_to_modify": "GeneratorBasedExamplesIterable._init_state_dict",
+        "reason": "Keep state dict schema consistent across iterable implementations and improve debuggability.",
+        "side_effects": "Serialized state size changes slightly; external consumers of the state dict may need to tolerate extra keys."
+      },
+      {
+        "operation": "Extend Arrow-based examples-iterable state with a 'type' discriminator field",
+        "file_to_modify": "src/datasets/iterable_dataset.py",
+        "function_to_modify": "ArrowExamplesIterable._init_state_dict",
+        "reason": "Ensure Arrow iteration path produces state dicts compatible with the new top-level schema expectations and debugging patterns.",
+        "side_effects": "May affect resuming logic if any code asserts exact key sets; otherwise benign."
+      },
+      {
+        "operation": "Extend iterable-with-shards state with a 'type' discriminator field",
+        "file_to_modify": "src/datasets/iterable_dataset.py",
+        "function_to_modify": "ShardedExamplesIterable._init_state_dict",
+        "reason": "Make sharded iterable states self-describing (useful when resuming and when nesting multiple iterables).",
+        "side_effects": "State dict schema changes for sharded iterables; downstream load_state_dict implementations must ignore unknown keys (as expected)."
+      },
+      {
+        "operation": "Rename nested state key from 'ex_iterable' to 'examples_iterable' and add 'type' field in state initialization for batched/chunked iterable wrapper",
+        "file_to_modify": "src/datasets/iterable_dataset.py",
+        "function_to_modify": "BatchExamplesIterable._init_state_dict",
+        "reason": "Align naming across the codebase (examples_iterable) and improve readability; prepares for storing wrapper state under a consistent top-level key when resuming across epochs.",
+        "side_effects": "Breaking change for any previously saved checkpoints that used 'ex_iterable' for this wrapper unless load_state_dict has backward-compat handling elsewhere; nested resume behavior is affected."
+      },
+      {
+        "operation": "Add 'type' field to the interleaving iterable wrapper state initialization",
+        "file_to_modify": "src/datasets/iterable_dataset.py",
+        "function_to_modify": "InterleaveExamplesIterable._init_state_dict",
+        "reason": "Make complex composite states easier to introspect and debug, especially with multiple child iterables.",
+        "side_effects": "State dict schema changes for interleave; older states may still load if loader ignores unknown keys."
+      },
+      {
+        "operation": "Add 'type' field to the sequential concatenation/chain iterable wrapper state initialization",
+        "file_to_modify": "src/datasets/iterable_dataset.py",
+        "function_to_modify": "ChainExamplesIterable._init_state_dict",
+        "reason": "Keep all wrappers emitting self-describing state dicts, improving traceability when resuming.",
+        "side_effects": "Schema change; potential compatibility considerations for any external state consumers."
+      },
+      {
+        "operation": "Add 'type' field to the zip/combine iterable wrapper state initialization",
+        "file_to_modify": "src/datasets/iterable_dataset.py",
+        "function_to_modify": "ZipExamplesIterable._init_state_dict",
+        "reason": "Increase readability of nested states and allow distinguishing wrapper types when debugging resume issues.",
+        "side_effects": "Schema change only; minimal runtime impact."
+      },
+      {
+        "operation": "Add 'type' field to the round-robin/mux iterable wrapper state initialization",
+        "file_to_modify": "src/datasets/iterable_dataset.py",
+        "function_to_modify": "MuxExamplesIterable._init_state_dict",
+        "reason": "Ensure muxed composite states remain self-describing for resumption and debugging.",
+        "side_effects": "Schema change; any strict key checking in tests/tools may require updates."
+      },
+      {
+        "operation": "Rename nested state key from 'ex_iterable' to 'examples_iterable' and add 'type' field in skip/take-like wrapper state initialization",
+        "file_to_modify": "src/datasets/iterable_dataset.py",
+        "function_to_modify": "SkipExamplesIterable._init_state_dict",
+        "reason": "Standardize nested iterable state naming and record wrapper type; supports the new top-level state layout used for epoch-aware resuming.",
+        "side_effects": "Potential incompatibility with previously serialized states that used 'ex_iterable' unless handled elsewhere; resume correctness depends on consistent naming."
+      },
+      {
+        "operation": "Rename nested state key from 'ex_iterable' to 'examples_iterable' and add 'type' field in repeat wrapper state initialization",
+        "file_to_modify": "src/datasets/iterable_dataset.py",
+        "function_to_modify": "RepeatExamplesIterable._init_state_dict",
+        "reason": "Ensure repeat wrapper state matches the updated schema and remains self-describing.",
+        "side_effects": "Older checkpoints for RepeatExamplesIterable may not restore without backward compatibility; impacts resuming behavior."
+      },
+      {
+        "operation": "Update repeat iteration loop to write nested state under 'examples_iterable' instead of 'ex_iterable' when resetting for next repetition",
+        "file_to_modify": "src/datasets/iterable_dataset.py",
+        "function_to_modify": "RepeatExamplesIterable.__iter__",
+        "reason": "Keep runtime state updates consistent with the renamed key so that state_dict() reflects the actual nested iterable state after changes.",
+        "side_effects": "Any code expecting the legacy 'ex_iterable' key in mid-iteration state snapshots will break; resuming correctness improves under the new schema."
+      },
+      {
+        "operation": "Rename nested state key from 'ex_iterable' to 'examples_iterable' and add 'type' field in take/limit wrapper state initialization",
+        "file_to_modify": "src/datasets/iterable_dataset.py",
+        "function_to_modify": "TakeExamplesIterable._init_state_dict",
+        "reason": "Unify state naming and make wrapper type explicit; supports correct epoch-aware resuming at higher layers.",
+        "side_effects": "Potential backward incompatibility for old saved states; affects any consumer that manually edits/reads state dicts."
+      },
+      {
+        "operation": "Refactor IterableDataset initialization to prepare iterables and state dict via _prepare_ex_iterable_for_iteration instead of caching _prepared_ex_iterable and eagerly loading state",
+        "file_to_modify": "src/datasets/iterable_dataset.py",
+        "function_to_modify": "IterableDataset.__init__",
+        "reason": "Fix resuming behavior when epoch changes: avoid binding a prepared iterable/state too early, and ensure state dict is set in an epoch-aware way during preparation.",
+        "side_effects": "Lifecycle timing changes: state is now established through preparation calls; any code relying on _prepared_ex_iterable existing immediately after __init__ may break (internal coupling risk)."
+      },
+      {
+        "operation": "Change load_state_dict to store the provided state as starting state instead of immediately loading it into a prepared iterable",
+        "file_to_modify": "src/datasets/iterable_dataset.py",
+        "function_to_modify": "IterableDataset.load_state_dict",
+        "reason": "Enable correct behavior when calling set_epoch(new_epoch): the stored checkpoint should only be applied if the epoch matches, preventing accidental resume into the wrong epoch.",
+        "side_effects": "State restoration becomes lazy; if callers expected immediate side effects on the active iterator without re-iteration, behavior may differ. Interacts with PyTorch DataLoader resume semantics."
+      },
+      {
+        "operation": "Make PyTorch worker iteration build an epoch-aware top-level state dict and only restore nested iterable state if starting epoch matches current epoch",
+        "file_to_modify": "src/datasets/iterable_dataset.py",
+        "function_to_modify": "IterableDataset._iter_pytorch",
+        "reason": "Fix the bug where resuming after ds.set_epoch(new_epoch) would incorrectly reuse an old state and result in an exhausted dataset; gating restore by epoch ensures a new epoch starts fresh.",
+        "side_effects": "Checkpoint schema changes (top-level now contains 'examples_iterable' and 'epoch'); existing checkpoints without 'epoch' may fail unless handled elsewhere. Worker sharding/resume behavior changes in PyTorch context."
+      },
+      {
+        "operation": "Update iterable preparation to set epoch-aware state dict and conditionally load starting state only when epochs match",
+        "file_to_modify": "src/datasets/iterable_dataset.py",
+        "function_to_modify": "IterableDataset._prepare_ex_iterable_for_iteration",
+        "reason": "Centralize the corrected resuming logic for both standard and PyTorch iterations: always include epoch in the state and only restore nested state when appropriate.",
+        "side_effects": "Affects all iteration paths (non-PyTorch and PyTorch if shared); changes the structure returned by state_dict() and how/when starting checkpoints are applied."
+      },
+      {
+        "operation": "Add regression test ensuring resuming works correctly across epoch changes (resume exhausts current epoch, set_epoch resets, resume works again)",
+        "file_to_modify": "tests/test_iterable_dataset.py",
+        "function_to_modify": "test_iterable_dataset_set_epoch_resuming",
+        "reason": "Prevent regressions for issue #7447 by asserting that loading the current state exhausts the dataset, and that set_epoch(new_epoch) properly restarts iteration rather than staying exhausted.",
+        "side_effects": "Test suite now enforces epoch-aware checkpoint semantics; future refactors to state_dict/load_state_dict/set_epoch must preserve these behaviors or update the test accordingly."
+      }
+    ],
+    "summary": "Fixes IterableDataset resuming semantics so that checkpoints are only applied when the saved epoch matches the current epoch, preventing datasets from staying exhausted after calling set_epoch(new_epoch). Also standardizes state dict readability (adds type fields, renames nested keys) and adds a regression test for the epoch-resume behavior."
+  }
+}

@@ -1,0 +1,1279 @@
+{
+  "pr_number": 10395,
+  "repository": "Significant-Gravitas/AutoGPT",
+  "title": "feat(block;backend):  Truncate execution update payload on large data & Improve ReadSpreadsheetBlock performance",
+  "body": "### Changes 🏗️\n\nThis PR introduces several key improvements to message handling, block functionality, and execution reliability:\n\n- **Renamed CSV block to Spreadsheet block** with enhanced CSV/Excel processing capabilities\n- **Added message size limiting and truncation** for Redis communication to prevent connection issues\n- **Optimized FileReadBlock** to yield content chunks instead of duplicated outputs for better performance\n- **Improved execution termination handling** with better timeout management and event publishing\n- **Enhanced continuous retry decorator** with async function support\n- **Implemented payload truncation** to prevent Redis connection issues from oversized messages\n\n### Checklist 📋\n\n#### For code changes:\n- [x] I have clearly listed my changes in the PR description\n- [x] I have made a test plan\n- [x] I have tested my changes according to the test plan:\n  - [x] Verified backend starts without errors\n  - [x] Confirmed message truncation works for large payloads\n  - [x] Tested spreadsheet block functionality with CSV and Excel files\n  - [x] Validated execution termination improvements\n  - [x] Checked FileReadBlock chunk processing\n\n#### For configuration changes:\n- [x] `.env.example` is updated or already compatible with my changes\n- [x] `docker-compose.yml` is updated or already compatible with my changes\n- [x] I have included a list of my configuration changes in the PR description (under **Changes**)\n\n🤖 Generated with [Claude Code](https://claude.ai/code)",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T08:18:01.608098",
+    "extractor_version": "1.0.0",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "autogpt_platform/backend/backend/blocks/spreadsheet.py",
+      "status": "renamed",
+      "additions": 21,
+      "deletions": 6,
+      "functions_modified": [
+        {
+          "function_name": "__init__",
+          "class_name": "ReadSpreadsheetBlock",
+          "full_name": "ReadSpreadsheetBlock.__init__",
+          "start_line": 63,
+          "end_line": 92,
+          "lines_changed": [
+            71,
+            72,
+            73,
+            74,
+            75,
+            76,
+            77,
+            78,
+            79,
+            80
+          ]
+        },
+        {
+          "function_name": "run",
+          "class_name": "ReadSpreadsheetBlock",
+          "full_name": "ReadSpreadsheetBlock.run",
+          "start_line": 94,
+          "end_line": 179,
+          "lines_changed": [
+            175,
+            176,
+            177,
+            178,
+            179
+          ]
+        }
+      ],
+      "patch": "@@ -12,10 +12,12 @@ class Input(BlockSchema):\n             description=\"The contents of the CSV/spreadsheet data to read\",\n             placeholder=\"a, b, c\\n1,2,3\\n4,5,6\",\n             default=None,\n+            advanced=False,\n         )\n         file_input: MediaFileType | None = SchemaField(\n             description=\"CSV or Excel file to read from (URL, data URI, or local path). Excel files are automatically converted to CSV\",\n             default=None,\n+            advanced=False,\n         )\n         delimiter: str = SchemaField(\n             description=\"The delimiter used in the CSV/spreadsheet data\",\n@@ -45,6 +47,10 @@ class Input(BlockSchema):\n             description=\"The columns to skip from the start of the row\",\n             default_factory=list,\n         )\n+        produce_singular_result: bool = SchemaField(\n+            description=\"If True, yield individual 'row' outputs only (can be slow). If False, yield both 'rows' (all data)\",\n+            default=False,\n+        )\n \n     class Output(BlockSchema):\n         row: dict[str, str] = SchemaField(\n@@ -62,9 +68,16 @@ def __init__(self):\n             description=\"Reads CSV and Excel files and outputs the data as a list of dictionaries and individual rows. Excel files are automatically converted to CSV format.\",\n             contributors=[ContributorDetails(name=\"Nicholas Tindle\")],\n             categories={BlockCategory.TEXT, BlockCategory.DATA},\n-            test_input={\n-                \"contents\": \"a, b, c\\n1,2,3\\n4,5,6\",\n-            },\n+            test_input=[\n+                {\n+                    \"contents\": \"a, b, c\\n1,2,3\\n4,5,6\",\n+                    \"produce_singular_result\": False,\n+                },\n+                {\n+                    \"contents\": \"a, b, c\\n1,2,3\\n4,5,6\",\n+                    \"produce_singular_result\": True,\n+                },\n+            ],\n             test_output=[\n                 (\n                     \"rows\",\n@@ -159,6 +172,8 @@ def process_row(row):\n \n         rows = [process_row(row) for row in reader]\n \n-        yield \"rows\", rows\n-        for processed_row in rows:\n-            yield \"row\", processed_row\n+        if input_data.produce_singular_result:\n+            for processed_row in rows:\n+                yield \"row\", processed_row\n+        else:\n+            yield \"rows\", rows"
+    },
+    {
+      "filename": "autogpt_platform/backend/backend/blocks/text.py",
+      "status": "modified",
+      "additions": 3,
+      "deletions": 15,
+      "functions_modified": [
+        {
+          "function_name": "run",
+          "class_name": "FileReadBlock",
+          "full_name": "FileReadBlock.run",
+          "start_line": 362,
+          "end_line": 433,
+          "lines_changed": [
+            420,
+            421
+          ]
+        }
+      ],
+      "patch": "@@ -341,9 +341,8 @@ class Input(BlockSchema):\n \n     class Output(BlockSchema):\n         content: str = SchemaField(\n-            description=\"The full content of the file or a chunk based on delimiter/limits\"\n+            description=\"File content, yielded as individual chunks when delimiter or size limits are applied\"\n         )\n-        chunk: str = SchemaField(description=\"Individual chunks when delimiter is used\")\n \n     def __init__(self):\n         super().__init__(\n@@ -418,19 +417,8 @@ def create_chunks(text, size_limit):\n                     chunks.append(chunk)\n             return chunks\n \n-        # Process items and yield chunks\n-        all_chunks = []\n-        for item in items:\n-            if item:  # Only process non-empty items\n-                chunks = create_chunks(item, input_data.size_limit)\n-                # Only yield as 'chunk' if we have a delimiter (multiple items)\n-                if input_data.delimiter:\n-                    for chunk in chunks:\n-                        yield \"chunk\", chunk\n-                all_chunks.extend(chunks)\n-\n-        # Yield the processed content\n-        if all_chunks:\n+        # Process items and yield as content chunks\n+        if items:\n             full_content = (\n                 input_data.delimiter.join(items)\n                 if input_data.delimiter"
+    },
+    {
+      "filename": "autogpt_platform/backend/backend/data/event_bus.py",
+      "status": "modified",
+      "additions": 38,
+      "deletions": 1,
+      "functions_modified": [
+        {
+          "function_name": "_serialize_message",
+          "class_name": "BaseRedisEventBus",
+          "full_name": "BaseRedisEventBus._serialize_message",
+          "start_line": 33,
+          "end_line": 71,
+          "lines_changed": [
+            34,
+            35,
+            36,
+            37,
+            38,
+            39,
+            40,
+            41,
+            42,
+            43,
+            44,
+            45,
+            46,
+            47,
+            48,
+            49,
+            50,
+            51,
+            52,
+            53,
+            54,
+            55,
+            56,
+            57,
+            58,
+            59,
+            60,
+            61,
+            62,
+            63,
+            64,
+            65,
+            66,
+            67,
+            68
+          ]
+        }
+      ],
+      "patch": "@@ -8,8 +8,11 @@\n from redis.client import PubSub\n \n from backend.data import redis_client as redis\n+from backend.util import json\n+from backend.util.settings import Settings\n \n logger = logging.getLogger(__name__)\n+config = Settings().config\n \n \n M = TypeVar(\"M\", bound=BaseModel)\n@@ -28,7 +31,41 @@ def Message(self) -> type[\"_EventPayloadWrapper[M]\"]:\n         return _EventPayloadWrapper[self.Model]\n \n     def _serialize_message(self, item: M, channel_key: str) -> tuple[str, str]:\n-        message = self.Message(payload=item).model_dump_json()\n+        MAX_MESSAGE_SIZE = config.max_message_size_limit\n+\n+        try:\n+            # Use backend.util.json.dumps which handles datetime and other complex types\n+            message = json.dumps(\n+                self.Message(payload=item), ensure_ascii=False, separators=(\",\", \":\")\n+            )\n+        except UnicodeError:\n+            # Fallback to ASCII encoding if Unicode causes issues\n+            message = json.dumps(\n+                self.Message(payload=item), ensure_ascii=True, separators=(\",\", \":\")\n+            )\n+            logger.warning(\n+                f\"Unicode serialization failed, falling back to ASCII for channel {channel_key}\"\n+            )\n+\n+        # Check message size and truncate if necessary\n+        message_size = len(message.encode(\"utf-8\"))\n+        if message_size > MAX_MESSAGE_SIZE:\n+            logger.warning(\n+                f\"Message size {message_size} bytes exceeds limit {MAX_MESSAGE_SIZE} bytes for channel {channel_key}. \"\n+                \"Truncating payload to prevent Redis connection issues.\"\n+            )\n+            error_payload = {\n+                \"payload\": {\n+                    \"event_type\": \"error_comms_update\",\n+                    \"error\": \"Payload too large for Redis transmission\",\n+                    \"original_size_bytes\": message_size,\n+                    \"max_size_bytes\": MAX_MESSAGE_SIZE,\n+                }\n+            }\n+            message = json.dumps(\n+                error_payload, ensure_ascii=False, separators=(\",\", \":\")\n+            )\n+\n         channel_name = f\"{self.event_bus_name}/{channel_key}\"\n         logger.debug(f\"[{channel_name}] Publishing an event to Redis {message}\")\n         return message, channel_name"
+    },
+    {
+      "filename": "autogpt_platform/backend/backend/data/execution.py",
+      "status": "modified",
+      "additions": 40,
+      "deletions": 7,
+      "functions_modified": [
+        {
+          "function_name": "publish_node_exec_update",
+          "class_name": "RedisExecutionEventBus",
+          "full_name": "RedisExecutionEventBus.publish_node_exec_update",
+          "start_line": 903,
+          "end_line": 905,
+          "lines_changed": [
+            905
+          ]
+        },
+        {
+          "function_name": "publish_graph_exec_update",
+          "class_name": "RedisExecutionEventBus",
+          "full_name": "RedisExecutionEventBus.publish_graph_exec_update",
+          "start_line": 907,
+          "end_line": 909,
+          "lines_changed": [
+            909
+          ]
+        },
+        {
+          "function_name": "_publish",
+          "class_name": "RedisExecutionEventBus",
+          "full_name": "RedisExecutionEventBus._publish",
+          "start_line": 911,
+          "end_line": 923,
+          "lines_changed": [
+            911,
+            912,
+            913,
+            914,
+            915,
+            916,
+            917,
+            918,
+            919,
+            920,
+            921,
+            922,
+            923
+          ]
+        },
+        {
+          "function_name": "publish_node_exec_update",
+          "class_name": "AsyncRedisExecutionEventBus",
+          "full_name": "AsyncRedisExecutionEventBus.publish_node_exec_update",
+          "start_line": 945,
+          "end_line": 947,
+          "lines_changed": [
+            947
+          ]
+        },
+        {
+          "function_name": "publish_graph_exec_update",
+          "class_name": "AsyncRedisExecutionEventBus",
+          "full_name": "AsyncRedisExecutionEventBus.publish_graph_exec_update",
+          "start_line": 949,
+          "end_line": 956,
+          "lines_changed": [
+            950,
+            951,
+            952,
+            953,
+            954,
+            955,
+            956
+          ]
+        },
+        {
+          "function_name": "_publish",
+          "class_name": "AsyncRedisExecutionEventBus",
+          "full_name": "AsyncRedisExecutionEventBus._publish",
+          "start_line": 958,
+          "end_line": 970,
+          "lines_changed": [
+            958,
+            959,
+            960,
+            961,
+            962,
+            963,
+            964,
+            965,
+            966,
+            967,
+            968,
+            969,
+            970
+          ]
+        }
+      ],
+      "patch": "@@ -40,6 +40,7 @@\n from backend.server.v2.store.exceptions import DatabaseError\n from backend.util import type as type_utils\n from backend.util.settings import Config\n+from backend.util.truncate import truncate\n \n from .block import (\n     BlockInput,\n@@ -866,6 +867,7 @@ def get_or_none(self) -> T | None:\n class ExecutionEventType(str, Enum):\n     GRAPH_EXEC_UPDATE = \"graph_execution_update\"\n     NODE_EXEC_UPDATE = \"node_execution_update\"\n+    ERROR_COMMS_UPDATE = \"error_comms_update\"\n \n \n class GraphExecutionEvent(GraphExecution):\n@@ -900,11 +902,25 @@ def publish(self, res: GraphExecution | NodeExecutionResult):\n \n     def publish_node_exec_update(self, res: NodeExecutionResult):\n         event = NodeExecutionEvent.model_validate(res.model_dump())\n-        self.publish_event(event, f\"{res.user_id}/{res.graph_id}/{res.graph_exec_id}\")\n+        self._publish(event, f\"{res.user_id}/{res.graph_id}/{res.graph_exec_id}\")\n \n     def publish_graph_exec_update(self, res: GraphExecution):\n         event = GraphExecutionEvent.model_validate(res.model_dump())\n-        self.publish_event(event, f\"{res.user_id}/{res.graph_id}/{res.id}\")\n+        self._publish(event, f\"{res.user_id}/{res.graph_id}/{res.id}\")\n+\n+    def _publish(self, event: ExecutionEvent, channel: str):\n+        \"\"\"\n+        truncate inputs and outputs to avoid large payloads\n+        \"\"\"\n+        limit = config.max_message_size_limit // 2\n+        if isinstance(event, GraphExecutionEvent):\n+            event.inputs = truncate(event.inputs, limit)\n+            event.outputs = truncate(event.outputs, limit)\n+        elif isinstance(event, NodeExecutionEvent):\n+            event.input_data = truncate(event.input_data, limit)\n+            event.output_data = truncate(event.output_data, limit)\n+\n+        super().publish_event(event, channel)\n \n     def listen(\n         self, user_id: str, graph_id: str = \"*\", graph_exec_id: str = \"*\"\n@@ -928,13 +944,30 @@ async def publish(self, res: GraphExecutionMeta | NodeExecutionResult):\n \n     async def publish_node_exec_update(self, res: NodeExecutionResult):\n         event = NodeExecutionEvent.model_validate(res.model_dump())\n-        await self.publish_event(\n-            event, f\"{res.user_id}/{res.graph_id}/{res.graph_exec_id}\"\n-        )\n+        await self._publish(event, f\"{res.user_id}/{res.graph_id}/{res.graph_exec_id}\")\n \n     async def publish_graph_exec_update(self, res: GraphExecutionMeta):\n-        event = GraphExecutionEvent.model_validate(res.model_dump())\n-        await self.publish_event(event, f\"{res.user_id}/{res.graph_id}/{res.id}\")\n+        # GraphExecutionEvent requires inputs and outputs fields that GraphExecutionMeta doesn't have\n+        # Add default empty values for compatibility\n+        event_data = res.model_dump()\n+        event_data.setdefault(\"inputs\", {})\n+        event_data.setdefault(\"outputs\", {})\n+        event = GraphExecutionEvent.model_validate(event_data)\n+        await self._publish(event, f\"{res.user_id}/{res.graph_id}/{res.id}\")\n+\n+    async def _publish(self, event: ExecutionEvent, channel: str):\n+        \"\"\"\n+        truncate inputs and outputs to avoid large payloads\n+        \"\"\"\n+        limit = config.max_message_size_limit // 2\n+        if isinstance(event, GraphExecutionEvent):\n+            event.inputs = truncate(event.inputs, limit)\n+            event.outputs = truncate(event.outputs, limit)\n+        elif isinstance(event, NodeExecutionEvent):\n+            event.input_data = truncate(event.input_data, limit)\n+            event.output_data = truncate(event.output_data, limit)\n+\n+        await super().publish_event(event, channel)\n \n     async def listen(\n         self, user_id: str, graph_id: str = \"*\", graph_exec_id: str = \"*\""
+    },
+    {
+      "filename": "autogpt_platform/backend/backend/executor/utils.py",
+      "status": "modified",
+      "additions": 44,
+      "deletions": 19,
+      "functions_modified": [
+        {
+          "function_name": "stop_graph_execution",
+          "class_name": null,
+          "full_name": "stop_graph_execution",
+          "start_line": 684,
+          "end_line": 774,
+          "lines_changed": [
+            688,
+            723,
+            726,
+            730,
+            731,
+            732,
+            733,
+            734,
+            735,
+            736,
+            737,
+            738,
+            739,
+            740,
+            741,
+            742,
+            743,
+            744,
+            745,
+            746,
+            747,
+            748,
+            749,
+            750,
+            751,
+            752,
+            753,
+            754,
+            755,
+            756,
+            759,
+            760,
+            761,
+            762,
+            763,
+            764,
+            765,
+            766,
+            767,
+            768,
+            771,
+            772,
+            773,
+            774
+          ]
+        }
+      ],
+      "patch": "@@ -685,7 +685,7 @@ async def stop_graph_execution(\n     user_id: str,\n     graph_exec_id: str,\n     use_db_query: bool = True,\n-    wait_timeout: float = 60.0,\n+    wait_timeout: float = 15.0,\n ):\n     \"\"\"\n     Mechanism:\n@@ -720,33 +720,58 @@ async def stop_graph_execution(\n             ExecutionStatus.FAILED,\n         ]:\n             # If graph execution is terminated/completed/failed, cancellation is complete\n+            await get_async_execution_event_bus().publish(graph_exec)\n             return\n \n-        elif graph_exec.status in [\n+        if graph_exec.status in [\n             ExecutionStatus.QUEUED,\n             ExecutionStatus.INCOMPLETE,\n         ]:\n-            # If the graph is still on the queue, we can prevent them from being executed\n-            # by setting the status to TERMINATED.\n-            node_execs = await db.get_node_executions(\n-                graph_exec_id=graph_exec_id,\n-                statuses=[ExecutionStatus.QUEUED, ExecutionStatus.INCOMPLETE],\n-                include_exec_data=False,\n-            )\n-            await db.update_node_execution_status_batch(\n+            break\n+\n+        if graph_exec.status == ExecutionStatus.RUNNING:\n+            await asyncio.sleep(0.1)\n+\n+    # Set the termination status if the graph is not stopped after the timeout.\n+    if graph_exec := await db.get_graph_execution_meta(\n+        execution_id=graph_exec_id, user_id=user_id\n+    ):\n+        # If the graph is still on the queue, we can prevent them from being executed\n+        # by setting the status to TERMINATED.\n+        node_execs = await db.get_node_executions(\n+            graph_exec_id=graph_exec_id,\n+            statuses=[\n+                ExecutionStatus.QUEUED,\n+                ExecutionStatus.RUNNING,\n+            ],\n+            include_exec_data=False,\n+        )\n+\n+        graph_exec.status = ExecutionStatus.TERMINATED\n+        for node_exec in node_execs:\n+            node_exec.status = ExecutionStatus.TERMINATED\n+\n+        await asyncio.gather(\n+            # Update node execution statuses\n+            db.update_node_execution_status_batch(\n                 [node_exec.node_exec_id for node_exec in node_execs],\n                 ExecutionStatus.TERMINATED,\n-            )\n-            await db.update_graph_execution_stats(\n+            ),\n+            # Publish node execution events\n+            *[\n+                get_async_execution_event_bus().publish(node_exec)\n+                for node_exec in node_execs\n+            ],\n+        )\n+        await asyncio.gather(\n+            # Update graph execution status\n+            db.update_graph_execution_stats(\n                 graph_exec_id=graph_exec_id,\n                 status=ExecutionStatus.TERMINATED,\n-            )\n-\n-        await asyncio.sleep(1.0)\n-\n-    raise TimeoutError(\n-        f\"Timed out waiting for graph execution #{graph_exec_id} to terminate.\"\n-    )\n+            ),\n+            # Publish graph execution event\n+            get_async_execution_event_bus().publish(graph_exec),\n+        )\n \n \n async def add_graph_execution("
+    },
+    {
+      "filename": "autogpt_platform/backend/backend/server/rest_api.py",
+      "status": "modified",
+      "additions": 14,
+      "deletions": 7,
+      "functions_modified": [
+        {
+          "function_name": "validation_error_handler",
+          "class_name": null,
+          "full_name": "validation_error_handler",
+          "start_line": 153,
+          "end_line": 180,
+          "lines_changed": [
+            155,
+            167,
+            168,
+            169,
+            170,
+            171,
+            172,
+            173,
+            174,
+            175,
+            176,
+            177,
+            179
+          ]
+        }
+      ],
+      "patch": "@@ -39,6 +39,7 @@\n from backend.integrations.providers import ProviderName\n from backend.server.external.api import external_app\n from backend.server.middleware.security import SecurityHeadersMiddleware\n+from backend.util import json\n \n settings = backend.util.settings.Settings()\n logger = logging.getLogger(__name__)\n@@ -151,7 +152,7 @@ def handler(request: fastapi.Request, exc: Exception):\n \n async def validation_error_handler(\n     request: fastapi.Request, exc: Exception\n-) -> fastapi.responses.JSONResponse:\n+) -> fastapi.responses.Response:\n     logger.error(\n         \"Validation failed for %s %s: %s. Fix the request payload and try again.\",\n         request.method,\n@@ -163,13 +164,19 @@ async def validation_error_handler(\n         errors = exc.errors()  # type: ignore[call-arg]\n     else:\n         errors = str(exc)\n-    return fastapi.responses.JSONResponse(\n+\n+    response_content = {\n+        \"message\": f\"Invalid data for {request.method} {request.url.path}\",\n+        \"detail\": errors,\n+        \"hint\": \"Ensure the request matches the API schema.\",\n+    }\n+\n+    content_json = json.dumps(response_content)\n+\n+    return fastapi.responses.Response(\n+        content=content_json,\n         status_code=422,\n-        content={\n-            \"message\": f\"Invalid data for {request.method} {request.url.path}\",\n-            \"detail\": errors,\n-            \"hint\": \"Ensure the request matches the API schema.\",\n-        },\n+        media_type=\"application/json\",\n     )\n \n "
+    },
+    {
+      "filename": "autogpt_platform/backend/backend/server/ws_api.py",
+      "status": "modified",
+      "additions": 5,
+      "deletions": 11,
+      "functions_modified": [
+        {
+          "function_name": "event_broadcaster",
+          "class_name": null,
+          "full_name": "event_broadcaster",
+          "start_line": 51,
+          "end_line": 54,
+          "lines_changed": [
+            52,
+            53,
+            54
+          ]
+        }
+      ],
+      "patch": "@@ -19,6 +19,7 @@\n     WSSubscribeGraphExecutionRequest,\n     WSSubscribeGraphExecutionsRequest,\n )\n+from backend.util.retry import continuous_retry\n from backend.util.service import AppProcess\n from backend.util.settings import AppEnvironment, Config, Settings\n \n@@ -46,18 +47,11 @@ def get_connection_manager():\n     return _connection_manager\n \n \n+@continuous_retry()\n async def event_broadcaster(manager: ConnectionManager):\n-    try:\n-        event_queue = AsyncRedisExecutionEventBus()\n-        async for event in event_queue.listen(\"*\"):\n-            await manager.send_execution_update(event)\n-    except Exception as e:\n-        logger.exception(\n-            \"Event broadcaster stopped due to error: %s. \"\n-            \"Verify the Redis connection and restart the service.\",\n-            e,\n-        )\n-        raise\n+    event_queue = AsyncRedisExecutionEventBus()\n+    async for event in event_queue.listen(\"*\"):\n+        await manager.send_execution_update(event)\n \n \n async def authenticate_websocket(websocket: WebSocket) -> str:"
+    },
+    {
+      "filename": "autogpt_platform/backend/backend/util/retry.py",
+      "status": "modified",
+      "additions": 18,
+      "deletions": 2,
+      "functions_modified": [
+        {
+          "function_name": "continuous_retry",
+          "class_name": null,
+          "full_name": "continuous_retry",
+          "start_line": 86,
+          "end_line": 120,
+          "lines_changed": [
+            88,
+            89,
+            91,
+            104,
+            105,
+            106,
+            107,
+            108,
+            109,
+            110,
+            111,
+            112,
+            113,
+            114,
+            115,
+            116,
+            117,
+            118
+          ]
+        },
+        {
+          "function_name": "decorator",
+          "class_name": null,
+          "full_name": "decorator",
+          "start_line": 87,
+          "end_line": 118,
+          "lines_changed": [
+            88,
+            89,
+            91,
+            104,
+            105,
+            106,
+            107,
+            108,
+            109,
+            110,
+            111,
+            112,
+            113,
+            114,
+            115,
+            116,
+            117,
+            118
+          ]
+        },
+        {
+          "function_name": "sync_wrapper",
+          "class_name": null,
+          "full_name": "sync_wrapper",
+          "start_line": 91,
+          "end_line": 102,
+          "lines_changed": [
+            91
+          ]
+        },
+        {
+          "function_name": "async_wrapper",
+          "class_name": null,
+          "full_name": "async_wrapper",
+          "start_line": 105,
+          "end_line": 116,
+          "lines_changed": [
+            105,
+            106,
+            107,
+            108,
+            109,
+            110,
+            111,
+            112,
+            113,
+            114,
+            115,
+            116
+          ]
+        }
+      ],
+      "patch": "@@ -85,8 +85,10 @@ async def async_wrapper(*args, **kwargs):\n \n def continuous_retry(*, retry_delay: float = 1.0):\n     def decorator(func):\n+        is_coroutine = asyncio.iscoroutinefunction(func)\n+\n         @wraps(func)\n-        def wrapper(*args, **kwargs):\n+        def sync_wrapper(*args, **kwargs):\n             while True:\n                 try:\n                     return func(*args, **kwargs)\n@@ -99,6 +101,20 @@ def wrapper(*args, **kwargs):\n                     )\n                     time.sleep(retry_delay)\n \n-        return wrapper\n+        @wraps(func)\n+        async def async_wrapper(*args, **kwargs):\n+            while True:\n+                try:\n+                    return await func(*args, **kwargs)\n+                except Exception as exc:\n+                    logger.exception(\n+                        \"%s failed with %s — retrying in %.2f s\",\n+                        func.__name__,\n+                        exc,\n+                        retry_delay,\n+                    )\n+                    await asyncio.sleep(retry_delay)\n+\n+        return async_wrapper if is_coroutine else sync_wrapper\n \n     return decorator"
+    },
+    {
+      "filename": "autogpt_platform/backend/backend/util/settings.py",
+      "status": "modified",
+      "additions": 5,
+      "deletions": 0,
+      "functions_modified": [],
+      "patch": "@@ -315,6 +315,11 @@ def validate_platform_base_url(cls, v: str, info: ValidationInfo) -> str:\n         description=\"A whitelist of trusted internal endpoints for the backend to make requests to.\",\n     )\n \n+    max_message_size_limit: int = Field(\n+        default=16 * 1024 * 1024,  # 16 MB\n+        description=\"Maximum message size limit for communication with the message bus\",\n+    )\n+\n     backend_cors_allow_origins: List[str] = Field(default_factory=list)\n \n     @field_validator(\"backend_cors_allow_origins\")"
+    },
+    {
+      "filename": "autogpt_platform/backend/backend/util/truncate.py",
+      "status": "added",
+      "additions": 128,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "_truncate_string_middle",
+          "class_name": null,
+          "full_name": "_truncate_string_middle",
+          "start_line": 9,
+          "end_line": 18,
+          "lines_changed": [
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18
+          ]
+        },
+        {
+          "function_name": "_truncate_list_middle",
+          "class_name": null,
+          "full_name": "_truncate_list_middle",
+          "start_line": 26,
+          "end_line": 52,
+          "lines_changed": [
+            26,
+            27,
+            28,
+            29,
+            30,
+            31,
+            32,
+            33,
+            34,
+            35,
+            36,
+            37,
+            38,
+            39,
+            40,
+            41,
+            42,
+            43,
+            44,
+            45,
+            46,
+            47,
+            48,
+            49,
+            50,
+            51,
+            52
+          ]
+        },
+        {
+          "function_name": "_truncate_value",
+          "class_name": null,
+          "full_name": "_truncate_value",
+          "start_line": 60,
+          "end_line": 72,
+          "lines_changed": [
+            60,
+            61,
+            62,
+            63,
+            64,
+            65,
+            66,
+            67,
+            68,
+            69,
+            70,
+            71,
+            72
+          ]
+        },
+        {
+          "function_name": "truncate",
+          "class_name": null,
+          "full_name": "truncate",
+          "start_line": 75,
+          "end_line": 128,
+          "lines_changed": [
+            75,
+            76,
+            77,
+            78,
+            79,
+            80,
+            81,
+            82,
+            83,
+            84,
+            85,
+            86,
+            87,
+            88,
+            89,
+            90,
+            91,
+            92,
+            93,
+            94,
+            95,
+            96,
+            97,
+            98,
+            99,
+            100,
+            101,
+            102,
+            103,
+            104,
+            105,
+            106,
+            107,
+            108,
+            109,
+            110,
+            111,
+            112,
+            113,
+            114,
+            115,
+            116,
+            117,
+            118,
+            119,
+            120,
+            121,
+            122,
+            123,
+            124,
+            125,
+            126,
+            127,
+            128
+          ]
+        },
+        {
+          "function_name": "measure",
+          "class_name": null,
+          "full_name": "measure",
+          "start_line": 82,
+          "end_line": 86,
+          "lines_changed": [
+            82,
+            83,
+            84,
+            85,
+            86
+          ]
+        }
+      ],
+      "patch": "@@ -0,0 +1,128 @@\n+import sys\n+from typing import Any\n+\n+# ---------------------------------------------------------------------------\n+#  String helpers\n+# ---------------------------------------------------------------------------\n+\n+\n+def _truncate_string_middle(value: str, limit: int) -> str:\n+    \"\"\"Shorten *value* to *limit* chars by removing the **middle** portion.\"\"\"\n+\n+    if len(value) <= limit:\n+        return value\n+\n+    head_len = max(1, limit // 2)\n+    tail_len = limit - head_len  # ensures total == limit\n+    omitted = len(value) - (head_len + tail_len)\n+    return f\"{value[:head_len]}… (omitted {omitted} chars)…{value[-tail_len:]}\"\n+\n+\n+# ---------------------------------------------------------------------------\n+#  List helpers\n+# ---------------------------------------------------------------------------\n+\n+\n+def _truncate_list_middle(lst: list[Any], str_lim: int, list_lim: int) -> list[Any]:\n+    \"\"\"Return *lst* truncated to *list_lim* items, removing from the middle.\n+\n+    Each retained element is itself recursively truncated via\n+    :func:`_truncate_value` so we don’t blow the budget with long strings nested\n+    inside.\n+    \"\"\"\n+\n+    if len(lst) <= list_lim:\n+        return [_truncate_value(v, str_lim, list_lim) for v in lst]\n+\n+    # If the limit is very small (<3) fall back to head‑only + sentinel to avoid\n+    # degenerate splits.\n+    if list_lim < 3:\n+        kept = [_truncate_value(v, str_lim, list_lim) for v in lst[:list_lim]]\n+        kept.append(f\"… (omitted {len(lst) - list_lim} items)…\")\n+        return kept\n+\n+    head_len = list_lim // 2\n+    tail_len = list_lim - head_len\n+\n+    head = [_truncate_value(v, str_lim, list_lim) for v in lst[:head_len]]\n+    tail = [_truncate_value(v, str_lim, list_lim) for v in lst[-tail_len:]]\n+\n+    omitted = len(lst) - (head_len + tail_len)\n+    sentinel = f\"… (omitted {omitted} items)…\"\n+    return head + [sentinel] + tail\n+\n+\n+# ---------------------------------------------------------------------------\n+#  Recursive truncation\n+# ---------------------------------------------------------------------------\n+\n+\n+def _truncate_value(value: Any, str_limit: int, list_limit: int) -> Any:\n+    \"\"\"Recursively truncate *value* using the current per‑type limits.\"\"\"\n+\n+    if isinstance(value, str):\n+        return _truncate_string_middle(value, str_limit)\n+\n+    if isinstance(value, list):\n+        return _truncate_list_middle(value, str_limit, list_limit)\n+\n+    if isinstance(value, dict):\n+        return {k: _truncate_value(v, str_limit, list_limit) for k, v in value.items()}\n+\n+    return value\n+\n+\n+def truncate(value: Any, size_limit: int) -> Any:\n+    \"\"\"\n+    Truncate the given value (recursively) so that its string representation\n+    does not exceed size_limit characters. Uses binary search to find the\n+    largest str_limit and list_limit that fit.\n+    \"\"\"\n+\n+    def measure(val):\n+        try:\n+            return len(str(val))\n+        except Exception:\n+            return sys.getsizeof(val)\n+\n+    # Reasonable bounds for string and list limits\n+    STR_MIN, STR_MAX = 8, 2**16\n+    LIST_MIN, LIST_MAX = 1, 2**12\n+\n+    # Binary search for the largest str_limit and list_limit that fit\n+    best = None\n+\n+    # We'll search str_limit first, then list_limit, but can do both together\n+    # For practical purposes, do a grid search with binary search on str_limit for each list_limit\n+    # (since lists are usually the main source of bloat)\n+    # We'll do binary search on list_limit, and for each, binary search on str_limit\n+\n+    # Outer binary search on list_limit\n+    l_lo, l_hi = LIST_MIN, LIST_MAX\n+    while l_lo <= l_hi:\n+        l_mid = (l_lo + l_hi) // 2\n+\n+        # Inner binary search on str_limit\n+        s_lo, s_hi = STR_MIN, STR_MAX\n+        local_best = None\n+        while s_lo <= s_hi:\n+            s_mid = (s_lo + s_hi) // 2\n+            truncated = _truncate_value(value, s_mid, l_mid)\n+            size = measure(truncated)\n+            if size <= size_limit:\n+                local_best = truncated\n+                s_lo = s_mid + 1  # try to increase str_limit\n+            else:\n+                s_hi = s_mid - 1  # decrease str_limit\n+\n+        if local_best is not None:\n+            best = local_best\n+            l_lo = l_mid + 1  # try to increase list_limit\n+        else:\n+            l_hi = l_mid - 1  # decrease list_limit\n+\n+    # If nothing fits, fall back to the most aggressive truncation\n+    if best is None:\n+        best = _truncate_value(value, STR_MIN, LIST_MIN)\n+\n+    return best"
+    }
+  ],
+  "functions_modified": [
+    {
+      "function_name": "__init__",
+      "class_name": "ReadSpreadsheetBlock",
+      "full_name": "ReadSpreadsheetBlock.__init__",
+      "start_line": 63,
+      "end_line": 92,
+      "lines_changed": [
+        71,
+        72,
+        73,
+        74,
+        75,
+        76,
+        77,
+        78,
+        79,
+        80
+      ]
+    },
+    {
+      "function_name": "run",
+      "class_name": "ReadSpreadsheetBlock",
+      "full_name": "ReadSpreadsheetBlock.run",
+      "start_line": 94,
+      "end_line": 179,
+      "lines_changed": [
+        175,
+        176,
+        177,
+        178,
+        179
+      ]
+    },
+    {
+      "function_name": "run",
+      "class_name": "FileReadBlock",
+      "full_name": "FileReadBlock.run",
+      "start_line": 362,
+      "end_line": 433,
+      "lines_changed": [
+        420,
+        421
+      ]
+    },
+    {
+      "function_name": "_serialize_message",
+      "class_name": "BaseRedisEventBus",
+      "full_name": "BaseRedisEventBus._serialize_message",
+      "start_line": 33,
+      "end_line": 71,
+      "lines_changed": [
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        49,
+        50,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65,
+        66,
+        67,
+        68
+      ]
+    },
+    {
+      "function_name": "publish_node_exec_update",
+      "class_name": "RedisExecutionEventBus",
+      "full_name": "RedisExecutionEventBus.publish_node_exec_update",
+      "start_line": 903,
+      "end_line": 905,
+      "lines_changed": [
+        905
+      ]
+    },
+    {
+      "function_name": "publish_graph_exec_update",
+      "class_name": "RedisExecutionEventBus",
+      "full_name": "RedisExecutionEventBus.publish_graph_exec_update",
+      "start_line": 907,
+      "end_line": 909,
+      "lines_changed": [
+        909
+      ]
+    },
+    {
+      "function_name": "_publish",
+      "class_name": "RedisExecutionEventBus",
+      "full_name": "RedisExecutionEventBus._publish",
+      "start_line": 911,
+      "end_line": 923,
+      "lines_changed": [
+        911,
+        912,
+        913,
+        914,
+        915,
+        916,
+        917,
+        918,
+        919,
+        920,
+        921,
+        922,
+        923
+      ]
+    },
+    {
+      "function_name": "publish_node_exec_update",
+      "class_name": "AsyncRedisExecutionEventBus",
+      "full_name": "AsyncRedisExecutionEventBus.publish_node_exec_update",
+      "start_line": 945,
+      "end_line": 947,
+      "lines_changed": [
+        947
+      ]
+    },
+    {
+      "function_name": "publish_graph_exec_update",
+      "class_name": "AsyncRedisExecutionEventBus",
+      "full_name": "AsyncRedisExecutionEventBus.publish_graph_exec_update",
+      "start_line": 949,
+      "end_line": 956,
+      "lines_changed": [
+        950,
+        951,
+        952,
+        953,
+        954,
+        955,
+        956
+      ]
+    },
+    {
+      "function_name": "_publish",
+      "class_name": "AsyncRedisExecutionEventBus",
+      "full_name": "AsyncRedisExecutionEventBus._publish",
+      "start_line": 958,
+      "end_line": 970,
+      "lines_changed": [
+        958,
+        959,
+        960,
+        961,
+        962,
+        963,
+        964,
+        965,
+        966,
+        967,
+        968,
+        969,
+        970
+      ]
+    },
+    {
+      "function_name": "stop_graph_execution",
+      "class_name": null,
+      "full_name": "stop_graph_execution",
+      "start_line": 684,
+      "end_line": 774,
+      "lines_changed": [
+        688,
+        723,
+        726,
+        730,
+        731,
+        732,
+        733,
+        734,
+        735,
+        736,
+        737,
+        738,
+        739,
+        740,
+        741,
+        742,
+        743,
+        744,
+        745,
+        746,
+        747,
+        748,
+        749,
+        750,
+        751,
+        752,
+        753,
+        754,
+        755,
+        756,
+        759,
+        760,
+        761,
+        762,
+        763,
+        764,
+        765,
+        766,
+        767,
+        768,
+        771,
+        772,
+        773,
+        774
+      ]
+    },
+    {
+      "function_name": "validation_error_handler",
+      "class_name": null,
+      "full_name": "validation_error_handler",
+      "start_line": 153,
+      "end_line": 180,
+      "lines_changed": [
+        155,
+        167,
+        168,
+        169,
+        170,
+        171,
+        172,
+        173,
+        174,
+        175,
+        176,
+        177,
+        179
+      ]
+    },
+    {
+      "function_name": "event_broadcaster",
+      "class_name": null,
+      "full_name": "event_broadcaster",
+      "start_line": 51,
+      "end_line": 54,
+      "lines_changed": [
+        52,
+        53,
+        54
+      ]
+    },
+    {
+      "function_name": "continuous_retry",
+      "class_name": null,
+      "full_name": "continuous_retry",
+      "start_line": 86,
+      "end_line": 120,
+      "lines_changed": [
+        88,
+        89,
+        91,
+        104,
+        105,
+        106,
+        107,
+        108,
+        109,
+        110,
+        111,
+        112,
+        113,
+        114,
+        115,
+        116,
+        117,
+        118
+      ]
+    },
+    {
+      "function_name": "decorator",
+      "class_name": null,
+      "full_name": "decorator",
+      "start_line": 87,
+      "end_line": 118,
+      "lines_changed": [
+        88,
+        89,
+        91,
+        104,
+        105,
+        106,
+        107,
+        108,
+        109,
+        110,
+        111,
+        112,
+        113,
+        114,
+        115,
+        116,
+        117,
+        118
+      ]
+    },
+    {
+      "function_name": "sync_wrapper",
+      "class_name": null,
+      "full_name": "sync_wrapper",
+      "start_line": 91,
+      "end_line": 102,
+      "lines_changed": [
+        91
+      ]
+    },
+    {
+      "function_name": "async_wrapper",
+      "class_name": null,
+      "full_name": "async_wrapper",
+      "start_line": 105,
+      "end_line": 116,
+      "lines_changed": [
+        105,
+        106,
+        107,
+        108,
+        109,
+        110,
+        111,
+        112,
+        113,
+        114,
+        115,
+        116
+      ]
+    },
+    {
+      "function_name": "_truncate_string_middle",
+      "class_name": null,
+      "full_name": "_truncate_string_middle",
+      "start_line": 9,
+      "end_line": 18,
+      "lines_changed": [
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18
+      ]
+    },
+    {
+      "function_name": "_truncate_list_middle",
+      "class_name": null,
+      "full_name": "_truncate_list_middle",
+      "start_line": 26,
+      "end_line": 52,
+      "lines_changed": [
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        49,
+        50,
+        51,
+        52
+      ]
+    },
+    {
+      "function_name": "_truncate_value",
+      "class_name": null,
+      "full_name": "_truncate_value",
+      "start_line": 60,
+      "end_line": 72,
+      "lines_changed": [
+        60,
+        61,
+        62,
+        63,
+        64,
+        65,
+        66,
+        67,
+        68,
+        69,
+        70,
+        71,
+        72
+      ]
+    },
+    {
+      "function_name": "truncate",
+      "class_name": null,
+      "full_name": "truncate",
+      "start_line": 75,
+      "end_line": 128,
+      "lines_changed": [
+        75,
+        76,
+        77,
+        78,
+        79,
+        80,
+        81,
+        82,
+        83,
+        84,
+        85,
+        86,
+        87,
+        88,
+        89,
+        90,
+        91,
+        92,
+        93,
+        94,
+        95,
+        96,
+        97,
+        98,
+        99,
+        100,
+        101,
+        102,
+        103,
+        104,
+        105,
+        106,
+        107,
+        108,
+        109,
+        110,
+        111,
+        112,
+        113,
+        114,
+        115,
+        116,
+        117,
+        118,
+        119,
+        120,
+        121,
+        122,
+        123,
+        124,
+        125,
+        126,
+        127,
+        128
+      ]
+    },
+    {
+      "function_name": "measure",
+      "class_name": null,
+      "full_name": "measure",
+      "start_line": 82,
+      "end_line": 86,
+      "lines_changed": [
+        82,
+        83,
+        84,
+        85,
+        86
+      ]
+    }
+  ],
+  "step_plan": {
+    "steps": [
+      {
+        "operation": "Add a toggle to control whether the block yields singular row outputs versus only the full rows list",
+        "file_to_modify": "autogpt_platform/backend/backend/blocks/spreadsheet.py",
+        "function_to_modify": null,
+        "reason": "Yielding both a full `rows` payload and per-`row` outputs can be expensive for large spreadsheets; adding an input flag allows callers to avoid per-row yielding for better performance and smaller downstream payloads.",
+        "side_effects": "Changes block schema and behavior; any graphs expecting per-row outputs may need `produce_singular_result=True` to preserve prior semantics. Affects UI block configuration and execution output fan-out."
+      },
+      {
+        "operation": "Update the Spreadsheet block’s test inputs to cover both output modes (aggregate vs singular)",
+        "file_to_modify": "autogpt_platform/backend/backend/blocks/spreadsheet.py",
+        "function_to_modify": "SpreadsheetBlock.__init__",
+        "reason": "Ensures both behaviors are exercised in block self-tests and documents the intended usage for the new `produce_singular_result` flag.",
+        "side_effects": "Block test harness expectations may change; CI snapshot/fixture outputs may need regeneration if they assert exact output sequences."
+      },
+      {
+        "operation": "Change the Spreadsheet block generator logic to conditionally yield either per-row outputs or only the aggregated rows output",
+        "file_to_modify": "autogpt_platform/backend/backend/blocks/spreadsheet.py",
+        "function_to_modify": "SpreadsheetBlock.run",
+        "reason": "Avoid duplicating large outputs (both list + individual rows) by default, improving runtime and memory usage on large files.",
+        "side_effects": "Downstream nodes that consumed `row` events will not receive them unless enabled; downstream nodes consuming `rows` may now be the only output in default mode."
+      },
+      {
+        "operation": "Adjust FileRead block output schema by removing the separate `chunk` output and clarifying the `content` output semantics",
+        "file_to_modify": "autogpt_platform/backend/backend/blocks/text.py",
+        "function_to_modify": null,
+        "reason": "Simplifies and standardizes output so chunked reading yields `content` chunks instead of duplicating outputs as both `chunk` and aggregated `content`. This reduces output volume and confusion.",
+        "side_effects": "Graphs referencing the `chunk` output key will break and must be updated to read from `content`. Any typed contracts or UI mappings for block outputs need to reflect the removal."
+      },
+      {
+        "operation": "Refactor FileRead block chunk emission to yield chunked data via `content` without accumulating duplicated chunk lists",
+        "file_to_modify": "autogpt_platform/backend/backend/blocks/text.py",
+        "function_to_modify": "FileReadBlock.run",
+        "reason": "The prior approach built and extended `all_chunks` (and could yield per-chunk separately), increasing memory usage and duplicating emissions; yielding content chunks directly improves performance for large files.",
+        "side_effects": "Output ordering/shape changes may affect downstream consumers; memory footprint improves, but any logic relying on a final “full_content assembled from chunks” may behave differently."
+      },
+      {
+        "operation": "Introduce configurable maximum message size and robust JSON serialization for event publishing",
+        "file_to_modify": "autogpt_platform/backend/backend/data/event_bus.py",
+        "function_to_modify": "RedisEventBus._serialize_message",
+        "reason": "Redis PubSub connections can fail or become unstable with oversized messages; enforcing a size limit and using a safer JSON serializer (handling datetime/complex types) prevents runtime failures in production.",
+        "side_effects": "Large payloads are replaced with an error payload; subscribers must handle `error_comms_update` events. Logging volume may increase due to warnings on truncation."
+      },
+      {
+        "operation": "Add a new execution event type for communication/payload errors",
+        "file_to_modify": "autogpt_platform/backend/backend/data/execution.py",
+        "function_to_modify": "ExecutionEventType",
+        "reason": "Provides a structured, explicit event type (`ERROR_COMMS_UPDATE`) so clients can distinguish truncation/comms failures from normal execution updates.",
+        "side_effects": "Clients or frontends that assume a closed set of event types may need to handle/ignore the new type."
+      },
+      {
+        "operation": "Route synchronous node execution update publishing through a truncation-aware publish helper",
+        "file_to_modify": "autogpt_platform/backend/backend/data/execution.py",
+        "function_to_modify": "RedisExecutionEventBus.publish_node_exec_update",
+        "reason": "Ensures node execution updates go through the central truncation logic before hitting Redis, preventing oversized messages for nodes with large inputs/outputs.",
+        "side_effects": "Node update payloads may be truncated, changing what WS/REST consumers see in real time."
+      },
+      {
+        "operation": "Route synchronous graph execution update publishing through a truncation-aware publish helper",
+        "file_to_modify": "autogpt_platform/backend/backend/data/execution.py",
+        "function_to_modify": "RedisExecutionEventBus.publish_graph_exec_update",
+        "reason": "Graph-level updates can include large `inputs`/`outputs`; centralizing publish ensures consistent truncation behavior across event types.",
+        "side_effects": "Graph-level payloads may be truncated; any UI expecting full `inputs/outputs` content may show elided values."
+      },
+      {
+        "operation": "Implement synchronous truncation-aware publish helper that trims execution event fields before publishing",
+        "file_to_modify": "autogpt_platform/backend/backend/data/execution.py",
+        "function_to_modify": "RedisExecutionEventBus._publish",
+        "reason": "Prevents Redis message blowups by truncating the heaviest fields (`inputs/outputs` or `input_data/output_data`) to a safe budget (half of max message size) before serialization/publish.",
+        "side_effects": "Truncation can remove detail needed for debugging; must be balanced by other storage (DB) or log retrieval for full data."
+      },
+      {
+        "operation": "Route async node execution update publishing through the truncation-aware async publish helper",
+        "file_to_modify": "autogpt_platform/backend/backend/data/execution.py",
+        "function_to_modify": "AsyncRedisExecutionEventBus.publish_node_exec_update",
+        "reason": "Mirrors the synchronous bus behavior so websocket/async consumers benefit from the same size protections.",
+        "side_effects": "Async update payloads may be truncated similarly; any tests asserting exact payload contents may need updates."
+      },
+      {
+        "operation": "Make async graph execution update publishing compatible with GraphExecutionMeta by defaulting missing fields before validation",
+        "file_to_modify": "autogpt_platform/backend/backend/data/execution.py",
+        "function_to_modify": "AsyncRedisExecutionEventBus.publish_graph_exec_update",
+        "reason": "`GraphExecutionEvent` requires `inputs` and `outputs`; async paths sometimes publish `GraphExecutionMeta` without them. Adding defaults avoids validation errors while still allowing truncation/publishing.",
+        "side_effects": "Consumers will always see `inputs/outputs` keys (possibly empty) on async graph updates; could slightly change client rendering."
+      },
+      {
+        "operation": "Implement async truncation-aware publish helper that trims execution event fields before publishing",
+        "file_to_modify": "autogpt_platform/backend/backend/data/execution.py",
+        "function_to_modify": "AsyncRedisExecutionEventBus._publish",
+        "reason": "Ensures truncation is applied in async publishing paths consistently to avoid oversized Redis messages.",
+        "side_effects": "Same as sync truncation: less detail in live event payloads; relies on DB/logs for full fidelity."
+      },
+      {
+        "operation": "Reduce the default wait timeout for stopping graph executions to improve responsiveness",
+        "file_to_modify": "autogpt_platform/backend/backend/executor/utils.py",
+        "function_to_modify": "stop_graph_execution",
+        "reason": "A 60s default can delay shutdown flows and user feedback; lowering to 15s improves perceived responsiveness while still allowing graceful termination attempts.",
+        "side_effects": "May terminate executions more aggressively in slow environments; could increase incidence of forced termination behavior."
+      },
+      {
+        "operation": "Publish execution events immediately when a graph is already terminated/completed/failed during stop requests",
+        "file_to_modify": "autogpt_platform/backend/backend/executor/utils.py",
+        "function_to_modify": "stop_graph_execution",
+        "reason": "Ensures clients receive up-to-date terminal status events even when stop logic detects completion early, improving UI synchronization.",
+        "side_effects": "Increases event traffic; if clients already received terminal updates, they may see redundant events."
+      },
+      {
+        "operation": "Refactor stop logic to break out on queued/incomplete and poll briefly on running, then force termination after timeout",
+        "file_to_modify": "autogpt_platform/backend/backend/executor/utils.py",
+        "function_to_modify": "stop_graph_execution",
+        "reason": "Improves termination reliability by avoiding long sleeps/raising a timeout error, and by providing a deterministic forced termination path when cancellation does not complete promptly.",
+        "side_effects": "Forced termination may leave in-flight node work inconsistent if workers don’t respect termination; requires downstream worker logic to handle TERMINATED status correctly."
+      },
+      {
+        "operation": "Batch update node execution statuses to TERMINATED and publish per-node termination events concurrently",
+        "file_to_modify": "autogpt_platform/backend/backend/executor/utils.py",
+        "function_to_modify": "stop_graph_execution",
+        "reason": "Ensures both persistence and real-time notifications are consistent for nodes when a graph is force-terminated, and reduces overall latency via `asyncio.gather`.",
+        "side_effects": "Higher burst load on DB and Redis/WS; possible reordering of events due to concurrency."
+      },
+      {
+        "operation": "Update graph execution status to TERMINATED and publish the graph termination event concurrently",
+        "file_to_modify": "autogpt_platform/backend/backend/executor/utils.py",
+        "function_to_modify": "stop_graph_execution",
+        "reason": "Completes the forced-termination flow by persisting the terminal graph state and notifying subscribers promptly.",
+        "side_effects": "Event consumers may receive graph termination before some node termination events because of concurrency; clients should handle out-of-order updates."
+      },
+      {
+        "operation": "Switch validation error handler to manual JSON serialization and return a generic Response for more control over encoding/size",
+        "file_to_modify": "autogpt_platform/backend/backend/server/rest_api.py",
+        "function_to_modify": "validation_error_handler",
+        "reason": "Using the project’s JSON utility provides consistent handling of complex types and encoding; returning `Response` gives explicit control over the serialized JSON payload and media type (and can help avoid serialization edge cases).",
+        "side_effects": "Error response formatting may differ slightly (ordering/escaping) from FastAPI’s JSONResponse; tests that assert exact response bytes may need updates."
+      },
+      {
+        "operation": "Wrap websocket event broadcaster with continuous retry so it self-heals on Redis or runtime failures",
+        "file_to_modify": "autogpt_platform/backend/backend/server/ws_api.py",
+        "function_to_modify": "event_broadcaster",
+        "reason": "Previously the broadcaster would crash on exceptions, requiring manual restarts. Continuous retry improves reliability for long-running WS services under intermittent Redis outages.",
+        "side_effects": "Persistent failures could lead to tight retry loops (mitigated by delay); logs may grow due to repeated exception traces."
+      },
+      {
+        "operation": "Enhance the continuous_retry decorator to support both sync and async callables",
+        "file_to_modify": "autogpt_platform/backend/backend/util/retry.py",
+        "function_to_modify": "continuous_retry",
+        "reason": "WS broadcaster is async; adding coroutine detection and an async retry loop allows reuse of the same decorator across async and sync contexts.",
+        "side_effects": "Behavior changes for decorated functions (now may return async wrapper); any code introspecting wrapper types or expecting sync-only semantics must adapt."
+      },
+      {
+        "operation": "Add a configuration setting for maximum message size limit used by event bus truncation/guardrails",
+        "file_to_modify": "autogpt_platform/backend/backend/util/settings.py",
+        "function_to_modify": null,
+        "reason": "Makes the Redis message size ceiling configurable (default 16MB), enabling environment-specific tuning without code changes.",
+        "side_effects": "If set too low, more frequent truncation/error payloads; if set too high, Redis connection risks return. Requires config management awareness across environments."
+      },
+      {
+        "operation": "Add a generic recursive truncation utility to shrink nested structures and long strings to a target size budget",
+        "file_to_modify": "autogpt_platform/backend/backend/util/truncate.py",
+        "function_to_modify": null,
+        "reason": "Execution events can contain deeply nested dict/list payloads. A reusable truncation module enables safe size reduction prior to publishing to Redis without custom logic per event type.",
+        "side_effects": "Truncation modifies data shape/content (sentinel strings, elided middles); must not be used for persisted data integrity. Any logging/debugging relying on full payloads may need alternative access paths."
+      }
+    ],
+    "summary": "Implements payload-size guardrails for Redis event publishing by truncating oversized execution update data and introducing a max message size setting, while also improving Spreadsheet/FileRead block performance and making websocket event broadcasting resilient via async-compatible continuous retry."
+  }
+}

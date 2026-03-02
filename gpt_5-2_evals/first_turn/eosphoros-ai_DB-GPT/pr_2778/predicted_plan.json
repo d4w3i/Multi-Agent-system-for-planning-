@@ -1,0 +1,86 @@
+{
+  "pr_number": 2778,
+  "repository": "eosphoros-ai/DB-GPT",
+  "title": "fix: Change plan manager prompt in order to avoid calling tools directly",
+  "body": "# Description\n\nRelated to #2777 \n在默认plan manager prompt中加入了对tool直接调用的严格限制\n\n# How Has This Been Tested?\n\n经过对话测试，plan manager 成功避免直接调用 Tools\n\n![final](https://github.com/user-attachments/assets/c7a3095f-1b34-4495-a597-15d6dfebda8d)\n\n# Snapshots:\n\n![en prompt](https://github.com/user-attachments/assets/3d8cac34-7764-4461-8ca8-964a0099b9ef)\n![cnprompt](https://github.com/user-attachments/assets/b6896063-382d-4203-b194-27e1f4ebc357)\n\n\n# Checklist:\n\n- [x] My code follows the style guidelines of this project\n- [x] I have already rebased the commits and make the commit message conform to the project standard.\n- [x] I have performed a self-review of my own code\n- [x] I have commented my code, particularly in hard-to-understand areas\n- [x] I have made corresponding changes to the documentation\n- [x] Any dependent changes have been merged and published in downstream modules",
+  "extraction_metadata": {
+    "extracted_at": "2026-02-26T03:16:07.069210",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "packages/dbgpt-core/src/dbgpt/agent/core/plan/planner_agent.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "__init__",
+          "class_name": "PlannerAgent",
+          "full_name": "PlannerAgent.__init__",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_init_reply_message",
+          "class_name": "PlannerAgent",
+          "full_name": "PlannerAgent._init_reply_message",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "profile",
+          "class_name": "PlannerAgent",
+          "full_name": "PlannerAgent.profile",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "docs/docs/agents/modules/plan/plan.md",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    },
+    {
+      "filename": "examples/agents/auto_plan_agent_dialogue_example.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    }
+  ],
+  "step_plan": {
+    "summary": "Update the default Planner/Plan Manager prompt to strictly prohibit direct tool calls and enforce producing only a delegating, PlanAction-parsable plan (with aligned EN/ZH prompt text). Reinforce the behavior via planner reply context and confirm the planner’s initialization exposes only planning actions, not tool execution.",
+    "steps": [
+      {
+        "operation": "Tighten the PlannerAgent default prompt constraints (EN + ZH) to explicitly forbid direct tool invocation and require delegating execution to other agents",
+        "file_to_modify": "packages/dbgpt-core/src/dbgpt/agent/core/plan/planner_agent.py",
+        "function_to_modify": "PlannerAgent.profile",
+        "reason": "The PR goal is prompt-level policy: ensure the plan manager/planner outputs only a PlanAction-parsable plan and never emits tool-call payloads or attempts to execute tools directly. This belongs in the profile’s constraints/goal/examples (including Chinese variants) so it applies by default.",
+        "side_effects": "May change the structure/verbosity of planner outputs; overly strict wording could reduce plan quality or omit needed details. Requires verifying PlanAction parsing still succeeds and that no downstream prompt templates/examples encourage tool JSON."
+      },
+      {
+        "operation": "Inject/adjust reply message context to clearly separate “agents available for delegation” from “tools”, reinforcing that only agents should perform tool usage",
+        "file_to_modify": "packages/dbgpt-core/src/dbgpt/agent/core/plan/planner_agent.py",
+        "function_to_modify": "PlannerAgent._init_reply_message",
+        "reason": "If the expanded prompt lists available agents, adding clarifying context (e.g., an explicit note that the planner must only assign tasks to these agents and must not call tools) helps the LLM follow the new restriction consistently across languages and configurations.",
+        "side_effects": "Changes the prompt context payload; could affect prompt token length and planner behavior. Must ensure any consumers of reply_message.context[\"agents\"] remain compatible (no schema changes that break formatting/templating)."
+      },
+      {
+        "operation": "Audit planner initialization to ensure only planning actions are registered and no tool-enabled actions are exposed for the planner role; add/adjust any guardrails/comments as needed",
+        "file_to_modify": "packages/dbgpt-core/src/dbgpt/agent/core/plan/planner_agent.py",
+        "function_to_modify": "PlannerAgent.__init__",
+        "reason": "While the fix is primarily prompt-based, the init path is the control point for what actions the planner can emit/trigger. Verifying it registers only PlanAction (and does not accidentally enable tool execution paths) aligns runtime capabilities with the new prompt restrictions.",
+        "side_effects": "If action registration changes, it can impact auto-plan flows that expect certain actions. Requires running the existing auto-plan dialogue example and any plan-manager related tests to ensure the planner still produces and persists plans correctly."
+      }
+    ]
+  }
+}

@@ -1,0 +1,79 @@
+{
+  "pr_number": 1362,
+  "repository": "maurosoria/dirsearch",
+  "title": "python cleanup",
+  "body": "Description\n---------------\n\n`lib/core/dictionary.py` -> fix typo, remove redundant parenthesis since you are returning a tuple anyway\n`lib/core/structures.py` -> remove redundant class parenthesis (not needed in python3)\n`lib/reports/html_report.py` -> simplify comparison statements",
+  "extraction_metadata": {
+    "extracted_at": "2026-02-26T03:30:14.199718",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "lib/core/dictionary.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "__getstate__",
+          "class_name": "Dictionary",
+          "full_name": "Dictionary.__getstate__",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "lib/core/structures.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    },
+    {
+      "filename": "lib/reports/html_report.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "generate",
+          "class_name": "HTMLReport",
+          "full_name": "HTMLReport.generate",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Applies small Python 3 code cleanups across core and reporting modules: fix a typo and simplify tuple return in `Dictionary` state export, modernize an `OrderedSet` class declaration, and replace verbose status-range checks in HTML report generation with chained comparisons.",
+    "steps": [
+      {
+        "operation": "Fix typo and simplify tuple return in pickling state export",
+        "file_to_modify": "lib/core/dictionary.py",
+        "function_to_modify": "Dictionary.__getstate__",
+        "reason": "The PR targets a typo in this module and removes redundant parentheses in a tuple return; `__getstate__` is the canonical place where a tuple is explicitly returned for serialization/pickling, so returning `self._items, self._index` preserves the same tuple structure while improving readability.",
+        "side_effects": "Must keep the returned state shape identical to what `Dictionary.__setstate__` expects (order and arity). Any external code relying on pickling/unpickling `Dictionary` instances could break if the state format changes; verify no behavioral changes with existing serialization tests (if present)."
+      },
+      {
+        "operation": "Remove redundant empty parentheses from Python 3 class declaration",
+        "file_to_modify": "lib/core/structures.py",
+        "function_to_modify": "OrderedSet",
+        "reason": "In Python 3, `class OrderedSet():` and `class OrderedSet:` are equivalent when there is no base class list; removing the parentheses is a no-op refactor that aligns with modern style and the PR request.",
+        "side_effects": "No runtime behavior change expected. Ensure there is no metaclass/base-class declaration implied elsewhere; run any unit tests that exercise `OrderedSet` construction, iteration, and membership to confirm identical behavior."
+      },
+      {
+        "operation": "Simplify verbose status-code comparisons into chained comparisons",
+        "file_to_modify": "lib/reports/html_report.py",
+        "function_to_modify": "HTMLReport.generate",
+        "reason": "Replace patterns like `status >= 200 and status <= 299` with idiomatic chained comparisons `200 <= status <= 299` to reduce repetition and improve readability while preserving the same boolean logic used to select CSS classes/labels in the generated HTML report.",
+        "side_effects": "Classification boundaries must remain identical (inclusive lower/upper bounds). If `status` can be `None` or non-int, chained comparisons may raise earlier/differently than the existing logic; confirm `status` typing/normalization upstream and run report-generation tests (or generate a sample report) to ensure HTML output and CSS class assignment are unchanged."
+      }
+    ]
+  }
+}

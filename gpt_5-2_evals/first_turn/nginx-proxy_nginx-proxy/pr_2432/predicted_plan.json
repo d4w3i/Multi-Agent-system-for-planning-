@@ -1,0 +1,42 @@
+{
+  "pr_number": 2432,
+  "repository": "nginx-proxy/nginx-proxy",
+  "title": "fix: tests webserver syntaxwarning",
+  "body": "> Changed in Python version 3.12: Unrecognized escape sequences produce a SyntaxWarning. In a future Python version they will be eventually a SyntaxError.\r\n[2.4.1.1. Escape sequences](https://docs.python.org/3/reference/lexical_analysis.html#index-23)\r\n\r\nChange to raw string literal to fix:\r\n```\r\n/webserver.py:17: SyntaxWarning: invalid escape sequence '\\d'\r\n  elif re.match(\"/status/(\\d+)\", self.path):\r\n/webserver.py:18: SyntaxWarning: invalid escape sequence '\\d'\r\n  result = re.match(\"/status/(\\d+)\", self.path)\r\n```",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T08:35:33.198914",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "test/requirements/web/webserver.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "do_GET",
+          "class_name": "Handler",
+          "full_name": "Handler.do_GET",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Update the test webserver’s `/status/<code>` route matching to use a raw-string regex literal so Python 3.12+ no longer emits `SyntaxWarning: invalid escape sequence '\\d'`, while keeping the route behavior unchanged.",
+    "steps": [
+      {
+        "operation": "Fix invalid escape sequence in /status/<code> route regex by converting the pattern to a raw string literal (and reuse the match object to avoid duplicate re.match calls).",
+        "file_to_modify": "test/requirements/web/webserver.py",
+        "function_to_modify": "Handler.do_GET",
+        "reason": "Python 3.12+ emits a SyntaxWarning for unrecognized escape sequences like '\\d' inside non-raw string literals; using a raw string (e.g., r\"/status/(\\d+)\") preserves the intended regex semantics and prevents the warning (and future SyntaxError). Reusing the match object keeps behavior identical while removing redundant work.",
+        "side_effects": "No intended behavior change for routing; `/status/<digits>` should continue to return the parsed status code. Affects only the test webserver; may require adjusting/confirming any tests that depend on exact matching semantics, but `re.match` with the same pattern should behave the same. Running tests under Python 3.12 should no longer show the SyntaxWarning from this file."
+      }
+    ]
+  }
+}

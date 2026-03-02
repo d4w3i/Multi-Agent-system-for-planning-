@@ -1,0 +1,42 @@
+{
+  "pr_number": 2210,
+  "repository": "pydantic/pydantic-ai",
+  "title": "[openai] Remove incorrect tool call id from tool call delta",
+  "body": "For OpenAI responses API, the `response.function_call_arguments.delta` returns an `item_id` [(docs)](https://platform.openai.com/docs/api-reference/responses-streaming/response/function_call_arguments/delta) . This item_id is actually the `id` of the tool_call, rather than the `tool_call_id`. \n\nThe problem is that when using agent_stream or more generally the parts_manager, these deltas are accumulated and the `tool_call_id` for the ToolCallNode ends up being set to the incorrect `id`. This is particularly problematic because the `id` is a longer string than is supported by some gpt models (for example, an id is `fc_6876aca7db8c8192af95414c6cf92796035a7a219e794395`, whereas the tool call id for the same request is `call_YHzL9zYTlauY9bw9dEoE4uA4`. \n\n`gpt-4o-mini` only allows tool call ids that are 40 characters or less, so using the longer id breaks things (and is incorrect from a tool call id perspective).\n\nExplore the source code to identify the files and functions to modify.",
+  "extraction_metadata": {
+    "extracted_at": "2026-02-25T20:49:28.048647",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "openai.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "_get_event_iterator",
+          "class_name": "OpenAIResponsesStreamedResponse",
+          "full_name": "OpenAIResponsesStreamedResponse._get_event_iterator",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Fix OpenAI Responses API streaming so that `response.function_call_arguments.delta` events no longer incorrectly set `tool_call_id` from `item_id` (fc_...). Instead, deltas are correlated via `vendor_part_id`, and the correct tool call id (call_...) is applied when the tool-call item is received, preventing invalid/oversized tool-call ids.",
+    "steps": [
+      {
+        "operation": "Stop propagating Responses API `item_id` as `tool_call_id` when handling streamed function-call-arguments deltas; use `item_id` only as the vendor correlation key and let the later tool-call item event provide the real `call_id`.",
+        "file_to_modify": "openai.py",
+        "function_to_modify": "OpenAIResponsesStreamedResponse._get_event_iterator",
+        "reason": "In `responses.ResponseFunctionCallArgumentsDeltaEvent`, OpenAI’s `item_id` corresponds to the output item id (e.g. `fc_...`), not the tool call’s `call_id` (e.g. `call_...`). Passing `item_id` into `tool_call_id` causes the parts manager to accumulate/lock in an invalid and potentially too-long tool id, breaking models with tool-call-id length limits (e.g. `gpt-4o-mini`). The correct behavior is to correlate deltas via `vendor_part_id=chunk.item_id` and only set the true `tool_call_id` when `responses.ResponseOutputItemAddedEvent` provides `ResponseFunctionToolCall.call_id`.",
+        "side_effects": "Changes streamed Responses tool-call aggregation behavior: ToolCall nodes/parts should now end up keyed with the correct `call_...` id rather than `fc_...`. If the parts manager previously relied on `tool_call_id` being non-null during delta accumulation, this may surface as missing/late tool_call_id until the `ResponseOutputItemAddedEvent` arrives; verify that the manager tolerates `tool_call_id=None` (or omission) and that the later `handle_tool_call_part(... tool_call_id=chunk.item.call_id)` overwrites/sets the id correctly. Add/adjust streaming tests (or integration coverage) for both event orderings (deltas-before-item and item-before-deltas) to ensure no regressions."
+      }
+    ]
+  }
+}

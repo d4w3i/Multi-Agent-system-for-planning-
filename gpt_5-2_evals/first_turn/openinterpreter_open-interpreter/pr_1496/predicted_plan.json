@@ -1,0 +1,56 @@
+{
+  "pr_number": 1496,
+  "repository": "openinterpreter/open-interpreter",
+  "title": "Fix: Change date format string for Windows compatibility",
+  "body": "# Fix date format string for Windows compatibility\r\n\r\n## Problem\r\nWhen running `interpreter --os` on Windows, the program crashes with a ValueError due to an incompatible date format string (`%-d`).\r\n\r\n## Solution\r\nChanged the date format string from `%-d` to `%d` to ensure compatibility with Windows systems.\r\n\r\n## Changes\r\n- Modified `interpreter/computer_use/loop.py` to use Windows-compatible date format\r\n- Replaced `%-d` with `%d` in `strftime()` call\r\n\r\n## Testing\r\nTested on:\r\n- Windows 11\r\n- Python 3.11\r\n- open-interpreter 0.4.1\r\n\r\nThe fix allows the program to start normally with the `--os` flag on Windows.\r\n\r\nFixes #1495",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T08:36:52.533242",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "interpreter/computer_use/loop.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "(module level) SYSTEM_PROMPT initialization",
+          "class_name": null,
+          "full_name": "(module level) SYSTEM_PROMPT initialization",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "tests/test_interpreter.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    }
+  ],
+  "step_plan": {
+    "summary": "Fixes a Windows crash in `interpreter --os` by making the module-level date formatting in `interpreter/computer_use/loop.py` Windows-compatible (replacing '%-d' with '%d') and adds a regression test to ensure the module can be imported without errors.",
+    "steps": [
+      {
+        "operation": "Replace Windows-incompatible strftime day format in SYSTEM_PROMPT construction (and any other module-level prompt/date strings) by changing '%-d' to '%d' so import-time evaluation cannot raise ValueError on Windows",
+        "file_to_modify": "interpreter/computer_use/loop.py",
+        "function_to_modify": "<module>",
+        "reason": "On Windows, Python's strftime does not support the GNU extension '%-d'. Because the prompt string is built at import time via an f-string, the exception prevents `interpreter --os` (and any import chain including this module) from starting at all. Updating the format string eliminates the import-time crash.",
+        "side_effects": "Date formatting will now include a leading zero for days 1–9 (e.g., 'March 03' instead of 'March 3'), which is a minor user-visible text change in the system prompt. Any downstream logic relying on exact prompt text snapshots (if any) could be affected."
+      },
+      {
+        "operation": "Add a regression test that imports the OS/computer-use loop module to ensure no import-time exception is raised (especially guarding against Windows-only strftime incompatibilities)",
+        "file_to_modify": "tests/test_interpreter.py",
+        "function_to_modify": "test_import_computer_use_loop_does_not_crash",
+        "reason": "This bug is an import-time failure that existing tests may not catch. A simple import test provides durable coverage and prevents reintroduction of '%-d' (or similar platform-specific directives) in module-level prompt initialization.",
+        "side_effects": "May slightly increase test runtime due to importing the module and its dependencies. If the module import has side effects (e.g., heavy initialization), the test could become flaky; if so, the import may need to be isolated/mocked or the module refactored to defer work until runtime."
+      }
+    ]
+  }
+}

@@ -1,0 +1,79 @@
+{
+  "pr_number": 9710,
+  "repository": "encode/django-rest-framework",
+  "title": "Fix serializer method field hidden unique together (#9700)",
+  "body": "Fix: SerializerMethodField as HiddenField in unique_together\n\nCorrects an issue where a `SerializerMethodField` that shares its name\nwith a model field involved in a `unique_together` constraint (or\n`UniqueConstraint`) could be incorrectly treated as a `HiddenField`.\n\nThis typically occurred if the underlying model field was nullable or had\na default value, and the `SerializerMethodField` was not being correctly\nprioritized during the uniqueness metadata processing.\n\nThe `ModelSerializer.get_uniqueness_extra_kwargs` method has been updated\nto ensure that if a field name corresponding to a model field in a\nuniqueness constraint is explicitly declared as a `SerializerMethodField`\non the serializer, it is not converted into a `HiddenField`.\n\nA test case has been added to `tests/test_model_serializer.py`\n(`TestSerializerMethodFieldInUniqueTogether`) to verify this behavior.",
+  "extraction_metadata": {
+    "extracted_at": "2026-02-26T03:14:25.671651",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "rest_framework/serializers.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "get_uniqueness_extra_kwargs",
+          "class_name": "ModelSerializer",
+          "full_name": "ModelSerializer.get_uniqueness_extra_kwargs",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_get_model_fields",
+          "class_name": "ModelSerializer",
+          "full_name": "ModelSerializer._get_model_fields",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "get_fields",
+          "class_name": "ModelSerializer",
+          "full_name": "ModelSerializer.get_fields",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "tests/test_model_serializer.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    }
+  ],
+  "step_plan": {
+    "summary": "Prevent `ModelSerializer` uniqueness processing from injecting a `HiddenField` that overwrites an explicitly declared `SerializerMethodField` whose name matches a model field in `unique_together`/`UniqueConstraint`, and add regression coverage to ensure the declared method field remains intact.",
+    "steps": [
+      {
+        "operation": "Guard uniqueness hidden-field injection when a name is explicitly declared as SerializerMethodField",
+        "file_to_modify": "rest_framework/serializers.py",
+        "function_to_modify": "ModelSerializer.get_uniqueness_extra_kwargs",
+        "reason": "`get_uniqueness_extra_kwargs` may decide a uniqueness-participating model field is “missing” from the serializer and inject `HiddenField(default=...)` under that name. When the serializer explicitly declares a `SerializerMethodField` with the same name, that injection incorrectly overrides/breaks the declared field. Add a check against `declared_fields` (specifically `SerializerMethodField`) before adding to `hidden_fields` so declared method fields are never replaced.",
+        "side_effects": "Changes behavior for serializers that declare `SerializerMethodField` names matching `unique_together`/`UniqueConstraint` fields: those fields will remain read-only method fields and uniqueness validation may rely on other fields/validators. Ensure existing uniqueness behavior remains unchanged for truly-omitted fields. May require updating/adding tests that assert no HiddenField is created in this case."
+      },
+      {
+        "operation": "Review and, if needed, adjust model-field mapping so declared method fields are not treated as model-backed fields",
+        "file_to_modify": "rest_framework/serializers.py",
+        "function_to_modify": "ModelSerializer._get_model_fields",
+        "reason": "The bug is triggered because `SerializerMethodField` typically does not map to a model field and therefore is absent from `model_fields`, pushing uniqueness logic into the HiddenField-injection branch. Confirm `_get_model_fields` does not incorrectly include/exclude declared fields in a way that would reintroduce the problem, and ensure any mapping logic doesn’t misclassify declared method fields as missing model fields for uniqueness processing.",
+        "side_effects": "Any change here can affect how `ModelSerializer` detects model-backed fields across the board (field generation, extra_kwargs application, uniqueness logic). Could impact serializers with renamed fields (`source=...`), read-only fields, or explicitly declared fields. Run the full serializer test suite to catch regressions."
+      },
+      {
+        "operation": "Ensure HiddenField merge logic cannot override explicitly declared SerializerMethodField names",
+        "file_to_modify": "rest_framework/serializers.py",
+        "function_to_modify": "ModelSerializer.get_fields",
+        "reason": "`get_fields` is the integration point where computed `hidden_fields` are merged into the final `fields` dict (commonly via `fields.update(hidden_fields)`). Verify/adjust merge ordering or filtering so even if `hidden_fields` contains a colliding key, it will not overwrite an already-declared field (especially `SerializerMethodField`). This acts as a defense-in-depth in addition to the `get_uniqueness_extra_kwargs` fix.",
+        "side_effects": "Altering merge precedence can change long-standing behavior where injected hidden fields might have overridden auto-generated fields. Must ensure legitimate HiddenField injection still occurs when the serializer truly lacks the field. May require adjusting or adding tests for hidden field injection ordering and uniqueness validation."
+      }
+    ]
+  }
+}

@@ -1,0 +1,162 @@
+{
+  "pr_number": 1895,
+  "repository": "Acly/krita-ai-diffusion",
+  "title": "feat: Switch to enum queue mode, add 'replace' mode.",
+  "body": "Follow up to https://github.com/Acly/krita-ai-diffusion/pull/1879\r\n\r\nKind of janky because of the fact that job queue tasks are split up before the client- I make clear-queue a property of the first job.\r\n\r\nNot sure if the enum is in the right place.\r\n\r\nTentatively planning to implement ctrl-click as \"Alternate queue mode\".",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T08:22:17.557751",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "ai_diffusion/model.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "generate",
+          "class_name": "Model",
+          "full_name": "Model.generate",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "enqueue_jobs",
+          "class_name": "Model",
+          "full_name": "Model.enqueue_jobs",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_enqueue_job",
+          "class_name": "Model",
+          "full_name": "Model._enqueue_job",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "cancel",
+          "class_name": "Model",
+          "full_name": "Model.cancel",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "ai_diffusion/ui/widget.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "model",
+          "class_name": "QueuePopup",
+          "full_name": "QueuePopup.model",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "__init__",
+          "class_name": "QueuePopup",
+          "full_name": "QueuePopup.__init__",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "ai_diffusion/properties.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    },
+    {
+      "filename": "ai_diffusion/connection.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "clear_queue",
+          "class_name": "Connection",
+          "full_name": "Connection.clear_queue",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "ai_diffusion/ui/generation.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    }
+  ],
+  "step_plan": {
+    "summary": "Replace the boolean queue insertion flag with an enum-based queue mode and add a new 'replace' mode that clears queued work once per generation action. Update the model enqueue pipeline and queue UI to support the new modes while preserving correct behavior when a single action is split into multiple jobs.",
+    "steps": [
+      {
+        "operation": "Introduce enum-based queue mode property and migrate from boolean queue_front; implement replace-mode prelude handling for a generation action",
+        "file_to_modify": "ai_diffusion/model.py",
+        "function_to_modify": "Model.generate",
+        "reason": "generate() is the top-level user entry point; switching to an enum here centralizes interpretation of queue policy (back/front/replace) and allows replace semantics (clear queue once per user action) to run before batch splitting/enqueueing begins.",
+        "side_effects": "Requires updating any callers/tests that set/read Model.queue_front; persisted settings may need migration/compat (old boolean -> new enum). Replace mode may clear queued work more aggressively than before; ensure UI and status indicators remain consistent."
+      },
+      {
+        "operation": "Apply replace semantics exactly once across batch splitting (clear only once, not per split job) and propagate chosen QueueMode through the enqueue pipeline",
+        "file_to_modify": "ai_diffusion/model.py",
+        "function_to_modify": "Model.enqueue_jobs",
+        "reason": "enqueue_jobs() performs batch splitting into multiple Job submissions; this is where you must ensure replace clears the backend/local queued jobs only once for the overall action (e.g., before the first split job) rather than repeating per job, which would be incorrect/janky.",
+        "side_effects": "Ordering changes may affect timing (clear_queue vs first enqueue). If the backend clear is async, you may need to wait/sequence to prevent races where old jobs still run. Local job list manipulation must remain consistent with Queue UI."
+      },
+      {
+        "operation": "Translate QueueMode into client enqueue parameters (front/back) and ensure replace-specific behavior does not leak into per-job enqueue calls",
+        "file_to_modify": "ai_diffusion/model.py",
+        "function_to_modify": "Model._enqueue_job",
+        "reason": "_enqueue_job() is the per-job bridge to client.enqueue(..., front=...). After replacing queue_front with QueueMode, this method must map enum -> boolean front/back and avoid triggering replace actions per job (replace should be handled once upstream).",
+        "side_effects": "Any code paths that assumed a bool property may break; enqueue ordering will change when QueueMode=FRONT. If QueueMode is extended later, this mapping becomes a central compatibility point."
+      },
+      {
+        "operation": "Refactor/extend cancel(queued=True) logic for reuse by replace mode to clear remote queue and reconcile local queued jobs consistently",
+        "file_to_modify": "ai_diffusion/model.py",
+        "function_to_modify": "Model.cancel",
+        "reason": "cancel(queued=True) already contains the canonical logic to clear the backend queue and remove locally queued jobs. Replace mode should reuse the same behavior to avoid duplicated logic and to ensure local/remote queue state stays in sync.",
+        "side_effects": "Behavioral changes to cancel could impact the existing Cancel UI actions. Must ensure cancel(active vs queued) semantics remain intact; tests around job list updates may need adjustment."
+      },
+      {
+        "operation": "Update QueuePopup binding to use the new enum property (queue_mode) instead of the old boolean (queue_front)",
+        "file_to_modify": "ai_diffusion/ui/widget.py",
+        "function_to_modify": "QueuePopup.model",
+        "reason": "QueuePopup.model currently binds a combo to Model.queue_front. With enum-based queue modes, binding must point to Model.queue_mode and correctly round-trip selection changes into the persisted Property.",
+        "side_effects": "UI state persistence changes (stored value becomes enum/string/int depending on serialization). Any other widgets referencing queue_front will need updating; ensure combo selection updates do not break when loading older configs."
+      },
+      {
+        "operation": "Populate QueuePopup combo entries for enum modes and add the new 'replace' mode option with appropriate labels and ordering",
+        "file_to_modify": "ai_diffusion/ui/widget.py",
+        "function_to_modify": "QueuePopup.__init__",
+        "reason": "The UI must expose all queue modes (e.g., Back, Front, Replace). __init__ constructs the combo items; it must be updated to reflect the enum values and include the new replace mode so users can select it.",
+        "side_effects": "Label changes can affect translations/strings if i18n exists. Users may see a new default or reordered options; ensure default selection matches previous behavior (likely 'back')."
+      },
+      {
+        "operation": "Ensure backend queue clearing is correctly sequenced/awaited so replace mode can safely clear before first enqueue without race conditions",
+        "file_to_modify": "ai_diffusion/connection.py",
+        "function_to_modify": "Connection.clear_queue",
+        "reason": "Replace mode relies on clear_queue being reliable and ordered relative to subsequent enqueues. If clear_queue is asynchronous or buffered, adjust implementation/contract so a clear request completes (or is guaranteed ordered) before the next enqueue proceeds.",
+        "side_effects": "May change timing and concurrency characteristics of queue clearing for existing Cancel/Clear Queue actions. Could require updating any callers that assumed fire-and-forget semantics; might necessitate additional tests around ordering and queue state."
+      }
+    ]
+  }
+}

@@ -1,0 +1,87 @@
+{
+  "pr_number": 12679,
+  "repository": "TheAlgorithms/Python",
+  "title": "Fix: Correct time-and-a-half pay calculation logic",
+  "body": "### Describe your change:\r\n\r\n- [x] Fix a bug or typo in an existing algorithm  \r\n\r\nThis pull request fixes the logic for calculating time-and-a-half pay in the `financial/time_and_half_pay.py` file.\r\n\r\nPreviously, the overtime calculation was incorrect. The fix correctly applies the time-and-a-half formula:\r\n```python\r\novertime_pay = overtime_hours * pay_rate * 1.5\r\n```\r\n\r\n\r\n### Checklist:\r\n* [x] I have read [CONTRIBUTING.md](https://github.com/TheAlgorithms/Python/blob/master/CONTRIBUTING.md).\r\n* [x] This pull request is all my own work -- I have not plagiarized.\r\n* [x] I know that pull requests will not be merged if they fail the automated tests.\r\n* [x] This PR only changes one algorithm file.  To ease review, please open separate PRs for separate algorithms.\r\n* [x] All new Python files are placed inside an existing directory.\r\n* [x] All filenames are in all lowercase characters with no spaces or dashes.\r\n* [x] All functions and variable names follow Python naming conventions.\r\n* [x] All function parameters and return values are annotated with Python [type hints](https://docs.python.org/3/library/typing.html).\r\n* [x] All functions have [doctests](https://docs.python.org/3/library/doctest.html) that pass the automated testing.\r\n* [ ] All new algorithms include at least one URL that points to Wikipedia or another similar explanation.\r\n* [ ] If this pull request resolves one or more open issues then the description above includes the issue number(s) with a [closing keyword](https://docs.github.com/en/issues/tracking-your-work-with-issues/linking-a-pull-request-to-an-issue): \"Fixes #ISSUE-NUMBER\".\r\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T09:45:09.270706",
+    "extractor_version": "1.0.0",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "financial/time_and_half_pay.py",
+      "status": "modified",
+      "additions": 17,
+      "deletions": 8,
+      "functions_modified": [
+        {
+          "function_name": "pay",
+          "class_name": null,
+          "full_name": "pay",
+          "start_line": 6,
+          "end_line": 42,
+          "lines_changed": [
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            36,
+            37,
+            38,
+            39,
+            40,
+            41,
+            42
+          ]
+        }
+      ],
+      "patch": "@@ -5,9 +5,15 @@\n \n def pay(hours_worked: float, pay_rate: float, hours: float = 40) -> float:\n     \"\"\"\n-    hours_worked = The total hours worked\n-    pay_rate = Amount of money per hour\n-    hours = Number of hours that must be worked before you receive time and a half\n+    Calculate total pay including time-and-a-half for overtime.\n+\n+    Parameters:\n+    hours_worked: Total number of hours worked.\n+    pay_rate: Pay rate per hour.\n+    hours: Number of hours to work before overtime applies (default 40).\n+\n+    Returns:\n+    Total pay including overtime compensation.\n \n     >>> pay(41, 1)\n     41.5\n@@ -27,14 +33,17 @@ def pay(hours_worked: float, pay_rate: float, hours: float = 40) -> float:\n         \"Parameter 'hours' must be of type 'int' or 'float'\"\n     )\n \n-    normal_pay = hours_worked * pay_rate\n-    over_time = max(0, hours_worked - hours)\n-    over_time_pay = over_time * pay_rate / 2\n-    return normal_pay + over_time_pay\n+    regular_hours = min(hours_worked, hours)\n+    overtime_hours = max(0, hours_worked - hours)\n+\n+    regular_pay = regular_hours * pay_rate\n+    overtime_pay = overtime_hours * pay_rate * 1.5\n+\n+    return regular_pay + overtime_pay\n \n \n if __name__ == \"__main__\":\n-    # Test\n+    # Run doctests\n     import doctest\n \n     doctest.testmod()"
+    }
+  ],
+  "functions_modified": [
+    {
+      "function_name": "pay",
+      "class_name": null,
+      "full_name": "pay",
+      "start_line": 6,
+      "end_line": 42,
+      "lines_changed": [
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42
+      ]
+    }
+  ],
+  "step_plan": {
+    "steps": [
+      {
+        "operation": "Fix overtime calculation by separating regular vs overtime hours and applying the correct time-and-a-half formula (overtime_hours * pay_rate * 1.5), and update the docstring/doctest runner comment accordingly.",
+        "file_to_modify": "financial/time_and_half_pay.py",
+        "function_to_modify": "pay",
+        "reason": "The previous implementation computed `normal_pay` for all hours and then added only an extra half-rate premium (`pay_rate/2`) for overtime hours, which does not correctly implement time-and-a-half in a clear, auditable way. Splitting hours into `regular_hours` and `overtime_hours` and calculating `regular_pay` and `overtime_pay` explicitly enforces the intended formula and improves readability/maintainability.",
+        "side_effects": "Any callers or tests relying on the previous (potentially incorrect) overtime behavior may observe different totals for hours_worked > hours. The doctest expectations in this module must match the corrected logic; downstream financial calculations that aggregate this pay output could change accordingly."
+      }
+    ],
+    "summary": "Corrects the time-and-a-half overtime pay logic in `financial/time_and_half_pay.py` by explicitly calculating regular and overtime pay and applying a 1.5x rate for overtime hours, along with docstring clarifications."
+  }
+}

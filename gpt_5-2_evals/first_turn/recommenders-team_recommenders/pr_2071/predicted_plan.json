@@ -1,0 +1,79 @@
+{
+  "pr_number": 2071,
+  "repository": "recommenders-team/recommenders",
+  "title": "Fixing TF to < 2.16",
+  "body": "### Description\n<!--- Describe your changes in detail -->\n<!--- Why is this change required? What problem does it solve? -->\n\n\n### Related Issues\n<!--- If it fixes an open issue, please link to the issue here. -->\n#2073\n\n### References\n<!--- References would be helpful to understand the changes. -->\n<!--- References can be books, links, etc. -->\n\n\n### Checklist:\n<!--- Go over all the following points, and put an `x` in all the boxes that apply. -->\n<!--- If you're unsure about any of these, don't hesitate to ask. We're here to help! -->\n- [ ] I have followed the [contribution guidelines](CONTRIBUTING.md) and code style for this project.\n- [ ] I have added tests covering my contributions.\n- [ ] I have updated the documentation accordingly.\n- [ ] I have [signed the commits](https://github.com/recommenders-team/recommenders/wiki/How-to-sign-commits), e.g. `git commit -s -m \"your commit message\"`.\n- [ ] This PR is being made to `staging branch` AND NOT TO `main branch`.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T08:39:35.099347",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "setup.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "setup invocation / dependency strings in extras_require)",
+          "class_name": "setup (setuptools",
+          "full_name": "setup (setuptools.setup invocation / dependency strings in extras_require)",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "tests/regression/test_compatibility_tf.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "test_compatibility_tf",
+          "class_name": null,
+          "full_name": "test_compatibility_tf",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "README.md",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    },
+    {
+      "filename": "NEWS.md",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    }
+  ],
+  "step_plan": {
+    "summary": "Pins TensorFlow to versions below 2.16 in project extras to avoid breakages introduced by TF 2.16+, and updates the TensorFlow regression compatibility test to explicitly enforce/communicate that supported version range.",
+    "steps": [
+      {
+        "operation": "Update TensorFlow extra requirement to explicitly cap TF to <2.16 (and ensure the cap propagates through the `all` extra if it aggregates `gpu`)",
+        "file_to_modify": "setup.py",
+        "function_to_modify": "setup",
+        "reason": "The primary fix for #2073 is to prevent dependency resolution from selecting TensorFlow 2.16+. The authoritative place to enforce this is the TensorFlow requirement string under `extras_require['gpu']` (and any meta-extra like `all` that includes it). Using an explicit `<2.16` constraint makes the support policy clear and keeps installs/CI from pulling incompatible TF versions.",
+        "side_effects": "Changes the environment produced by `pip install .[gpu]`/`.[all]`, which may alter CI lockstep behavior and downstream user environments. If the project previously pinned `<=2.15.0`, loosening to `<2.16` may allow newer 2.15.x patch releases; verify tests still pass on the highest allowed TF. Packaging checks (sdist/wheel) should be rerun."
+      },
+      {
+        "operation": "Make TensorFlow compatibility test explicitly enforce/communicate the supported TF range (<2.16) via a guard (skip or assert with actionable message)",
+        "file_to_modify": "tests/regression/test_compatibility_tf.py",
+        "function_to_modify": "test_compatibility_tf",
+        "reason": "Even with packaging pins, users/CI can still run the test suite in an environment that already has TF>=2.16 installed. Adding a version guard ensures failures are explained (or the test is skipped) rather than producing confusing downstream API errors, and it codifies the project’s declared support range in tests.",
+        "side_effects": "Test behavior changes under TF>=2.16 (likely skip or explicit failure). If CI matrices include multiple TF versions, update expectations accordingly. May require importing a version parser (e.g., `packaging.version`) or using `tf.__version__` parsing logic; ensure this does not add unintended heavy dependencies beyond what tests already have."
+      }
+    ]
+  }
+}

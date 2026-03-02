@@ -1,0 +1,200 @@
+{
+  "pr_number": 2380,
+  "repository": "pyecharts/pyecharts",
+  "title": "fix and update",
+  "body": "* 修复 `timeline` 的 bug，关联：https://github.com/pyecharts/pyecharts/issues/2361\n* 更新一些配置的引用位置和方式\n    * `markline`, `markarea` 增加动画配置项：https://github.com/pyecharts/pyecharts/issues/2362",
+  "extraction_metadata": {
+    "extracted_at": "2026-02-26T03:46:01.929118",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "pyecharts/charts/composite_charts/timeline.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "__init__",
+          "class_name": "Timeline",
+          "full_name": "Timeline.__init__",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "add_schema",
+          "class_name": "Timeline",
+          "full_name": "Timeline.add_schema",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "add",
+          "class_name": "Timeline",
+          "full_name": "Timeline.add",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "__check_components",
+          "class_name": "Timeline",
+          "full_name": "Timeline.__check_components",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "pyecharts/options/series_options.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "__init__",
+          "class_name": "MarkLineOpts",
+          "full_name": "MarkLineOpts.__init__",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "__init__",
+          "class_name": "MarkAreaOpts",
+          "full_name": "MarkAreaOpts.__init__",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "__init__",
+          "class_name": "MarkLineItem",
+          "full_name": "MarkLineItem.__init__",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "__init__",
+          "class_name": "MarkAreaItem",
+          "full_name": "MarkAreaItem.__init__",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "pyecharts/options/__init__.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    },
+    {
+      "filename": "pyecharts/charts/base.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "get_options",
+          "class_name": "Base",
+          "full_name": "Base.get_options",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "dump_options",
+          "class_name": "Base",
+          "full_name": "Base.dump_options",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Fixes Timeline option assembly/merging so baseOption and per-frame options are generated correctly without overwrites or duplicated components (issue #2361). Extends markLine/markArea option models to support animation configuration and updates markLine/markArea item reference mapping to match the revised configuration style (issue #2362).",
+    "steps": [
+      {
+        "operation": "Fix Timeline option initialization to ensure correct baseOption/options schema and safe defaults",
+        "file_to_modify": "pyecharts/charts/composite_charts/timeline.py",
+        "function_to_modify": "Timeline.__init__",
+        "reason": "Issue #2361 is commonly caused by malformed or partially-initialized Timeline option structure (e.g., missing baseOption/options keys, incorrect default container types). Ensuring the schema is initialized predictably prevents later merging logic from producing invalid JSON or mutating shared defaults across frames.",
+        "side_effects": "May change the exact emitted option JSON shape for edge cases (empty timeline, first add). Requires re-validating existing timeline snapshots and any downstream code that assumes specific default keys exist/absent."
+      },
+      {
+        "operation": "Adjust timeline schema application so timeline component config is placed consistently under baseOption and does not conflict with per-frame options",
+        "file_to_modify": "pyecharts/charts/composite_charts/timeline.py",
+        "function_to_modify": "Timeline.add_schema",
+        "reason": "If timeline settings (e.g., autoPlay/currentIndex/playInterval) are written inconsistently or into the wrong level, ECharts may ignore them or Timeline.add may later overwrite them. Centralizing and normalizing schema placement reduces the risk of the bug resurfacing when multiple charts are added.",
+        "side_effects": "Behavioral changes to timeline playback/visual defaults are possible for users relying on previous (buggy) placement. Requires rerunning any timeline rendering tests/examples."
+      },
+      {
+        "operation": "Fix Timeline frame assembly so baseOption is not incorrectly overwritten by the last added chart and per-frame options remain independent",
+        "file_to_modify": "pyecharts/charts/composite_charts/timeline.py",
+        "function_to_modify": "Timeline.add",
+        "reason": "A key hotspot described in the MASCA: Timeline.add often copies chart components/series into baseOption and options[i]; if baseOption.series (or other shared components) is replaced with the last chart’s series, earlier frames can render incorrectly (“last frame wins”) or create conflicts between baseOption.series and options[].series. This step should ensure: (1) per-frame series live in options[i].series, (2) baseOption contains only truly shared components, and (3) copying/merging does not mutate source chart options.",
+        "side_effects": "May affect how shared components (legend/axis/grid) are deduced across frames; could change output JSON ordering. Requires verifying issue #2361 reproducer and checking multi-series/multi-axis timelines."
+      },
+      {
+        "operation": "Fix shared-component merge logic to avoid duplicated/invalid component lists across frames",
+        "file_to_modify": "pyecharts/charts/composite_charts/timeline.py",
+        "function_to_modify": "Timeline.__check_components",
+        "reason": "The current merge approach (notably use of extend() for sequences) can cause duplication or unintended growth when multiple frames are added, and can also produce invalid shapes if the target container isn’t a list of dicts. This step should make merging idempotent and type-safe (dict merge vs list append/extend) so baseOption does not accumulate duplicates.",
+        "side_effects": "May remove previously duplicated components from baseOption in emitted JSON, which can change rendering when users depended on accidental duplicates. Needs regression coverage for repeated add() calls and mixed component types."
+      },
+      {
+        "operation": "Add animation-related fields to MarkLineOpts and serialize them into the markLine container config",
+        "file_to_modify": "pyecharts/options/series_options.py",
+        "function_to_modify": "MarkLineOpts.__init__",
+        "reason": "Per issue #2362, markLine needs animation configuration at the markLine level (ECharts supports animation knobs for components). Extending MarkLineOpts to accept animation parameters (e.g., animation, animationDuration, animationEasing, animationDelay and update variants if applicable) allows users to configure these options through the existing Python API.",
+        "side_effects": "Expands public API surface of MarkLineOpts; may require updating docs/type hints and ensuring None-stripping doesn’t remove required defaults. Existing code should remain compatible because new parameters are optional."
+      },
+      {
+        "operation": "Add animation-related fields to MarkAreaOpts and serialize them into the markArea container config",
+        "file_to_modify": "pyecharts/options/series_options.py",
+        "function_to_modify": "MarkAreaOpts.__init__",
+        "reason": "Same as markLine: markArea should support animation configuration (issue #2362). Implementing this in MarkAreaOpts keeps the option model consistent and ensures Base serialization emits correct keys for ECharts.",
+        "side_effects": "Expands public API surface of MarkAreaOpts; requires verifying markArea rendering across chart types and ensuring nested BasicOpts/JsCode serialize correctly."
+      },
+      {
+        "operation": "Update MarkLineItem position/reference mapping to support revised “reference position/way” expectations while maintaining backward compatibility",
+        "file_to_modify": "pyecharts/options/series_options.py",
+        "function_to_modify": "MarkLineItem.__init__",
+        "reason": "The PR body mentions “更新一些配置的引用位置和方式”, which often corresponds to how markLine points are specified (xAxis/yAxis vs coord/x/y). MarkLineItem is the constructor that maps user inputs into ECharts’ expected structure; adjust mapping/normalization so new reference styles work and old ones still serialize to valid ECharts config.",
+        "side_effects": "Could change the emitted JSON for certain MarkLineItem combinations; may impact user code that relied on the previous (possibly incorrect) mapping. Needs targeted tests for xAxis/yAxis, coord, and mixed forms."
+      },
+      {
+        "operation": "Update MarkAreaItem boundary reference mapping (two-point structure) to support revised reference styles and correct serialization",
+        "file_to_modify": "pyecharts/options/series_options.py",
+        "function_to_modify": "MarkAreaItem.__init__",
+        "reason": "MarkAreaItem builds the two endpoints that define an area; any changes to reference “positions/ways” must be reflected here so that (min/max, axis indices, coord forms) are mapped correctly into ECharts’ markArea.data item format.",
+        "side_effects": "May alter markArea JSON for some inputs; requires checking compatibility with existing markArea examples and ensuring errors are raised (or normalized) for ambiguous inputs."
+      },
+      {
+        "operation": "Harden Timeline-related serialization in get_options (only if timeline reproducer indicates None-stripping or option-cleaning breaks schema)",
+        "file_to_modify": "pyecharts/charts/base.py",
+        "function_to_modify": "Base.get_options",
+        "reason": "Timeline bugs can surface after Base.get_options removes None values or normalizes nested options, potentially stripping required containers like baseOption/options or timeline/data keys when empty. If the #2361 reproducer shows schema-breaking cleanup, adjust get_options to preserve required structural keys for Timeline charts.",
+        "side_effects": "Any change here affects all charts, not just Timeline. Requires broad regression testing across chart types and ensuring output remains minimal but valid."
+      },
+      {
+        "operation": "Fix dump_options serialization for nested Timeline frames and option objects if JSON emission differs from intended structure",
+        "file_to_modify": "pyecharts/charts/base.py",
+        "function_to_modify": "Base.dump_options",
+        "reason": "If the timeline fix requires changes to how nested BasicOpts/JsCode are serialized within options[] frames (or if placeholder replacement/encoding breaks timeline output), dump_options is the centralized choke point to ensure stable JSON emission for composite charts.",
+        "side_effects": "Global impact on JSON output formatting/encoding across all chart types; may affect snapshot tests and consumers expecting exact JSON formatting."
+      }
+    ]
+  }
+}

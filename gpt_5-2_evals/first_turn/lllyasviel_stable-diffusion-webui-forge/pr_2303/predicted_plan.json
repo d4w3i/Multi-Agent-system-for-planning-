@@ -1,0 +1,57 @@
+{
+  "pr_number": 2303,
+  "repository": "lllyasviel/stable-diffusion-webui-forge",
+  "title": "fix for Florence-2 space",
+  "body": "previously Florence2 had flash attention as a requirement due to an error in *transformers* (issue with packages Forge uses rather than in Forge itself) (https://huggingface.co/microsoft/Florence-2-base/discussions/4#6673ffb9436907f83a8aaf2d); the workaround was to patch the imports to remove it (https://huggingface.co/microsoft/phi-1_5/discussions/72#65a0339f64520347aa3d703c).\r\nAt some point, an update has made this patch unnecessary. And turned it into an error.\r\n\r\nThis PR simply removes the patch.\r\n\r\nNow the Space loads again; tested a couple of functions as working correctly too.\r\n\r\n#2299",
+  "extraction_metadata": {
+    "extracted_at": "2026-02-26T03:25:51.339986",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "extensions-builtin/forge_space_florence_2/forge_app.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "fixed_get_imports",
+          "class_name": null,
+          "full_name": "fixed_get_imports",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "from_pretrained patch block>",
+          "class_name": "<module initialization: AutoModelForCausalLM",
+          "full_name": "<module initialization: AutoModelForCausalLM.from_pretrained patch block>",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Remove the Florence-2-specific monkeypatch that alters Transformers dynamic import resolution to drop `flash_attn`, and load Florence-2 using the standard `AutoModelForCausalLM.from_pretrained(..., trust_remote_code=True)` path again.",
+    "steps": [
+      {
+        "operation": "Remove the Florence-2 transformers dynamic import workaround by deleting `fixed_get_imports` (and any related helper logic) so we no longer alter `transformers.dynamic_module_utils.get_imports` behavior.",
+        "file_to_modify": "extensions-builtin/forge_space_florence_2/forge_app.py",
+        "function_to_modify": "fixed_get_imports",
+        "reason": "Upstream Transformers/Florence-2 no longer requires the historical `flash_attn`-removal workaround; keeping the monkeypatch now causes the Space to error during remote-code module import resolution.",
+        "side_effects": "Florence-2 will use the stock Transformers dynamic import logic; if the upstream `flash_attn` dependency issue reappears in older environments, model loading could regress. Removing this function may also require deleting now-unused imports or references elsewhere in the module."
+      },
+      {
+        "operation": "Remove the `unittest.mock.patch(\"transformers.dynamic_module_utils.get_imports\", ...)` context manager around `AutoModelForCausalLM.from_pretrained(..., trust_remote_code=True)` (and any now-unused `patch`/`get_imports` imports), keeping the rest of the model initialization flow unchanged.",
+        "file_to_modify": "extensions-builtin/forge_space_florence_2/forge_app.py",
+        "function_to_modify": "<module initialization: AutoModelForCausalLM.from_pretrained patch block>",
+        "reason": "The model should load with normal Transformers behavior; the patch was a temporary workaround and is now the direct source of failures when the Space starts.",
+        "side_effects": "Startup/import-time behavior changes (no interception of dynamic imports). Confirm the model still loads inside any existing GPU/object capture context and that inference entry points continue to work; if tests/CI cover Space startup, they may need updating only if they asserted patched behavior."
+      }
+    ]
+  }
+}

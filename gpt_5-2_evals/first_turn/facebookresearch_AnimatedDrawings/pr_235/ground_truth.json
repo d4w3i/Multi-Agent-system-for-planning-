@@ -1,0 +1,329 @@
+{
+  "pr_number": 235,
+  "repository": "facebookresearch/AnimatedDrawings",
+  "title": "fix: repair window size in macOS",
+  "body": "When a program is running on macOS with an external monitor connected, the values obtained through \r\n`glfw.get_framebuffer_size(self.win)`\r\nwill be larger. \r\nIt is more appropriate to use \r\n`glfw.get_window_size(self.win)`\r\nto retrieve the logical size.",
+  "extraction_metadata": {
+    "extracted_at": "2026-02-26T01:08:04.998776",
+    "extractor_version": "1.0.0",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "animated_drawings/view/window_view.py",
+      "status": "modified",
+      "additions": 37,
+      "deletions": 18,
+      "functions_modified": [
+        {
+          "function_name": "__init__",
+          "class_name": "WindowView",
+          "full_name": "WindowView.__init__",
+          "start_line": 26,
+          "end_line": 45,
+          "lines_changed": [
+            34,
+            35,
+            44,
+            45
+          ]
+        },
+        {
+          "function_name": "_prep_background_image",
+          "class_name": "WindowView",
+          "full_name": "WindowView._prep_background_image",
+          "start_line": 47,
+          "end_line": 72,
+          "lines_changed": [
+            55,
+            56,
+            65,
+            66,
+            71,
+            72
+          ]
+        },
+        {
+          "function_name": "_prep_shaders",
+          "class_name": "WindowView",
+          "full_name": "WindowView._prep_shaders",
+          "start_line": 74,
+          "end_line": 89,
+          "lines_changed": [
+            81,
+            82,
+            84,
+            85,
+            86,
+            87,
+            88,
+            89
+          ]
+        },
+        {
+          "function_name": "_update_shaders_view_transform",
+          "class_name": "WindowView",
+          "full_name": "WindowView._update_shaders_view_transform",
+          "start_line": 91,
+          "end_line": 104,
+          "lines_changed": [
+            93,
+            94,
+            102,
+            103
+          ]
+        },
+        {
+          "function_name": "_initiatize_shader",
+          "class_name": "WindowView",
+          "full_name": "WindowView._initiatize_shader",
+          "start_line": 112,
+          "end_line": 120,
+          "lines_changed": [
+            114,
+            115
+          ]
+        },
+        {
+          "function_name": "_create_window",
+          "class_name": "WindowView",
+          "full_name": "WindowView._create_window",
+          "start_line": 122,
+          "end_line": 145,
+          "lines_changed": [
+            138,
+            139,
+            140,
+            141,
+            142,
+            143,
+            144,
+            145
+          ]
+        },
+        {
+          "function_name": "render",
+          "class_name": "WindowView",
+          "full_name": "WindowView.render",
+          "start_line": 150,
+          "end_line": 163,
+          "lines_changed": [
+            158,
+            159
+          ]
+        },
+        {
+          "function_name": "get_framebuffer_size",
+          "class_name": "WindowView",
+          "full_name": "WindowView.get_framebuffer_size",
+          "start_line": 165,
+          "end_line": 167,
+          "lines_changed": [
+            167
+          ]
+        },
+        {
+          "function_name": "clear_window",
+          "class_name": "WindowView",
+          "full_name": "WindowView.clear_window",
+          "start_line": 172,
+          "end_line": 174,
+          "lines_changed": [
+            173,
+            174
+          ]
+        }
+      ],
+      "patch": "@@ -31,7 +31,8 @@ def __init__(self, cfg: ViewConfig) -> None:\n         self.camera: Camera = Camera(cfg.camera_pos, cfg.camera_fwd)\n \n         self.win: glfw._GLFWwindow\n-        self._create_window(*cfg.window_dimensions)  # pyright: ignore[reportGeneralTypeIssues]\n+        # pyright: ignore[reportGeneralTypeIssues]\n+        self._create_window(*cfg.window_dimensions)\n \n         self.shaders: Dict[str, Shader] = {}\n         self.shader_ids: Dict[str, int] = {}\n@@ -40,7 +41,8 @@ def __init__(self, cfg: ViewConfig) -> None:\n         self.fboId: GL.GLint\n         self._prep_background_image()\n \n-        self._set_shader_projections(get_projection_matrix(*self.get_framebuffer_size()))\n+        self._set_shader_projections(\n+            get_projection_matrix(*self.get_framebuffer_size()))\n \n     def _prep_background_image(self) -> None:\n         \"\"\" Initialize framebuffer object for background image, if specified. \"\"\"\n@@ -50,7 +52,8 @@ def _prep_background_image(self) -> None:\n             return\n \n         # load background image\n-        _txtr: npt.NDArray[np.uint8] = read_background_image(self.cfg.background_image)\n+        _txtr: npt.NDArray[np.uint8] = read_background_image(\n+            self.cfg.background_image)\n \n         # create the opengl texture and send it data\n         self.txtr_h, self.txtr_w, _ = _txtr.shape\n@@ -59,12 +62,14 @@ def _prep_background_image(self) -> None:\n         GL.glBindTexture(GL.GL_TEXTURE_2D, self.txtr_id)\n         GL.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_BASE_LEVEL, 0)\n         GL.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MAX_LEVEL, 0)\n-        GL.glTexImage2D(GL.GL_TEXTURE_2D, 0, GL.GL_RGBA, self.txtr_w, self.txtr_h, 0, GL.GL_RGBA, GL.GL_UNSIGNED_BYTE, _txtr)\n+        GL.glTexImage2D(GL.GL_TEXTURE_2D, 0, GL.GL_RGBA, self.txtr_w,\n+                        self.txtr_h, 0, GL.GL_RGBA, GL.GL_UNSIGNED_BYTE, _txtr)\n \n         # make framebuffer object\n         self.fboId: GL.GLint = GL.glGenFramebuffers(1)\n         GL.glBindFramebuffer(GL.GL_READ_FRAMEBUFFER, self.fboId)\n-        GL.glFramebufferTexture2D(GL.GL_READ_FRAMEBUFFER, GL.GL_COLOR_ATTACHMENT0, GL.GL_TEXTURE_2D, self.txtr_id, 0)\n+        GL.glFramebufferTexture2D(\n+            GL.GL_READ_FRAMEBUFFER, GL.GL_COLOR_ATTACHMENT0, GL.GL_TEXTURE_2D, self.txtr_id, 0)\n \n     def _prep_shaders(self) -> None:\n         BVH_VERT = Path(resource_filename(__name__, \"shaders/bvh.vert\"))\n@@ -73,23 +78,29 @@ def _prep_shaders(self) -> None:\n \n         COLOR_VERT = Path(resource_filename(__name__, \"shaders/color.vert\"))\n         COLOR_FRAG = Path(resource_filename(__name__, \"shaders/color.frag\"))\n-        self._initiatize_shader('color_shader', str(COLOR_VERT), str(COLOR_FRAG))\n+        self._initiatize_shader(\n+            'color_shader', str(COLOR_VERT), str(COLOR_FRAG))\n \n-        TEXTURE_VERT = Path(resource_filename(__name__, \"shaders/texture.vert\"))\n-        TEXTURE_FRAG = Path(resource_filename(__name__, \"shaders/texture.frag\"))\n-        self._initiatize_shader('texture_shader', str(TEXTURE_VERT), str(TEXTURE_FRAG), texture=True)\n+        TEXTURE_VERT = Path(resource_filename(\n+            __name__, \"shaders/texture.vert\"))\n+        TEXTURE_FRAG = Path(resource_filename(\n+            __name__, \"shaders/texture.frag\"))\n+        self._initiatize_shader('texture_shader', str(\n+            TEXTURE_VERT), str(TEXTURE_FRAG), texture=True)\n \n     def _update_shaders_view_transform(self, camera: Camera) -> None:\n         try:\n-            view_transform: npt.NDArray[np.float32] = np.linalg.inv(camera.get_world_transform())\n+            view_transform: npt.NDArray[np.float32] = np.linalg.inv(\n+                camera.get_world_transform())\n         except Exception as e:\n             msg = f'Error inverting camera world transform: {e}'\n             logging.critical(msg)\n             assert False, msg\n \n         for shader_name in self.shaders:\n             GL.glUseProgram(self.shader_ids[shader_name])\n-            view_loc = GL.glGetUniformLocation(self.shader_ids[shader_name], \"view\")\n+            view_loc = GL.glGetUniformLocation(\n+                self.shader_ids[shader_name], \"view\")\n             GL.glUniformMatrix4fv(view_loc, 1, GL.GL_FALSE, view_transform.T)\n \n     def _set_shader_projections(self, proj_m: npt.NDArray[np.float32]) -> None:\n@@ -100,7 +111,8 @@ def _set_shader_projections(self, proj_m: npt.NDArray[np.float32]) -> None:\n \n     def _initiatize_shader(self, shader_name: str, vert_path: str, frag_path: str, **kwargs) -> None:\n         self.shaders[shader_name] = Shader(vert_path, frag_path)\n-        self.shader_ids[shader_name] = self.shaders[shader_name].glid  # pyright: ignore[reportGeneralTypeIssues]\n+        # pyright: ignore[reportGeneralTypeIssues]\n+        self.shader_ids[shader_name] = self.shaders[shader_name].glid\n \n         if 'texture' in kwargs and kwargs['texture'] is True:\n             GL.glUseProgram(self.shader_ids[shader_name])\n@@ -123,9 +135,14 @@ def _create_window(self, width: int, height: int) -> None:\n         GL.glEnable(GL.GL_DEPTH_TEST)\n         GL.glClearColor(*self.cfg.clear_color)\n \n-        logging.info(f'OpenGL Version: {GL.glGetString(GL.GL_VERSION).decode()}')  # pyright: ignore[reportGeneralTypeIssues]\n-        logging.info(f'GLSL: { GL.glGetString(GL.GL_SHADING_LANGUAGE_VERSION).decode()}')  # pyright: ignore[reportGeneralTypeIssues]\n-        logging.info(f'Renderer: {GL.glGetString(GL.GL_RENDERER).decode()}')  # pyright: ignore[reportGeneralTypeIssues]\n+        # pyright: ignore[reportGeneralTypeIssues]\n+        logging.info(\n+            f'OpenGL Version: {GL.glGetString(GL.GL_VERSION).decode()}')\n+        # pyright: ignore[reportGeneralTypeIssues]\n+        logging.info(\n+            f'GLSL: { GL.glGetString(GL.GL_SHADING_LANGUAGE_VERSION).decode()}')\n+        # pyright: ignore[reportGeneralTypeIssues]\n+        logging.info(f'Renderer: {GL.glGetString(GL.GL_RENDERER).decode()}')\n \n     def set_scene(self, scene: Scene) -> None:\n         self.scene = scene\n@@ -138,21 +155,23 @@ def render(self, scene: Transform) -> None:\n             GL.glBindFramebuffer(GL.GL_DRAW_FRAMEBUFFER, 0)\n             GL.glBindFramebuffer(GL.GL_READ_FRAMEBUFFER, self.fboId)\n             win_w, win_h = self.get_framebuffer_size()\n-            GL.glBlitFramebuffer(0, 0, self.txtr_w, self.txtr_h, 0, 0, win_w, win_h, GL.GL_COLOR_BUFFER_BIT, GL.GL_LINEAR)\n+            GL.glBlitFramebuffer(0, 0, self.txtr_w, self.txtr_h, 0,\n+                                 0, win_w, win_h, GL.GL_COLOR_BUFFER_BIT, GL.GL_LINEAR)\n \n         self._update_shaders_view_transform(self.camera)\n \n         scene.draw(shader_ids=self.shader_ids, viewer_cfg=self.cfg)\n \n     def get_framebuffer_size(self) -> Tuple[int, int]:\n         \"\"\" Return (width, height) of view's window. \"\"\"\n-        return glfw.get_framebuffer_size(self.win)\n+        return glfw.get_window_size(self.win)\n \n     def swap_buffers(self) -> None:\n         glfw.swap_buffers(self.win)\n \n     def clear_window(self) -> None:\n-        GL.glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT)  # type: ignore\n+        GL.glClear(GL.GL_COLOR_BUFFER_BIT |\n+                   GL.GL_DEPTH_BUFFER_BIT)  # type: ignore\n \n     def cleanup(self) -> None:\n         \"\"\" Destroy the window when it's no longer being used. \"\"\""
+    }
+  ],
+  "functions_modified": [
+    {
+      "function_name": "__init__",
+      "class_name": "WindowView",
+      "full_name": "WindowView.__init__",
+      "start_line": 26,
+      "end_line": 45,
+      "lines_changed": [
+        34,
+        35,
+        44,
+        45
+      ]
+    },
+    {
+      "function_name": "_prep_background_image",
+      "class_name": "WindowView",
+      "full_name": "WindowView._prep_background_image",
+      "start_line": 47,
+      "end_line": 72,
+      "lines_changed": [
+        55,
+        56,
+        65,
+        66,
+        71,
+        72
+      ]
+    },
+    {
+      "function_name": "_prep_shaders",
+      "class_name": "WindowView",
+      "full_name": "WindowView._prep_shaders",
+      "start_line": 74,
+      "end_line": 89,
+      "lines_changed": [
+        81,
+        82,
+        84,
+        85,
+        86,
+        87,
+        88,
+        89
+      ]
+    },
+    {
+      "function_name": "_update_shaders_view_transform",
+      "class_name": "WindowView",
+      "full_name": "WindowView._update_shaders_view_transform",
+      "start_line": 91,
+      "end_line": 104,
+      "lines_changed": [
+        93,
+        94,
+        102,
+        103
+      ]
+    },
+    {
+      "function_name": "_initiatize_shader",
+      "class_name": "WindowView",
+      "full_name": "WindowView._initiatize_shader",
+      "start_line": 112,
+      "end_line": 120,
+      "lines_changed": [
+        114,
+        115
+      ]
+    },
+    {
+      "function_name": "_create_window",
+      "class_name": "WindowView",
+      "full_name": "WindowView._create_window",
+      "start_line": 122,
+      "end_line": 145,
+      "lines_changed": [
+        138,
+        139,
+        140,
+        141,
+        142,
+        143,
+        144,
+        145
+      ]
+    },
+    {
+      "function_name": "render",
+      "class_name": "WindowView",
+      "full_name": "WindowView.render",
+      "start_line": 150,
+      "end_line": 163,
+      "lines_changed": [
+        158,
+        159
+      ]
+    },
+    {
+      "function_name": "get_framebuffer_size",
+      "class_name": "WindowView",
+      "full_name": "WindowView.get_framebuffer_size",
+      "start_line": 165,
+      "end_line": 167,
+      "lines_changed": [
+        167
+      ]
+    },
+    {
+      "function_name": "clear_window",
+      "class_name": "WindowView",
+      "full_name": "WindowView.clear_window",
+      "start_line": 172,
+      "end_line": 174,
+      "lines_changed": [
+        173,
+        174
+      ]
+    }
+  ],
+  "step_plan": {
+    "steps": [
+      {
+        "operation": "Adjust window creation callsite formatting and relocate the pyright ignore to apply cleanly to the typed glfw window handle usage",
+        "file_to_modify": "animated_drawings/view/window_view.py",
+        "function_to_modify": "__init__",
+        "reason": "The window handle is stored as a glfw-specific type that can trip static analysis; moving the ignore comment and reformatting keeps typing checks quiet while preserving readability.",
+        "side_effects": "No runtime behavior change expected; affects static type checking output and may influence lint/format consistency for future edits in the constructor."
+      },
+      {
+        "operation": "Reformat the initial projection setup invocation to conform to the updated multi-line call style",
+        "file_to_modify": "animated_drawings/view/window_view.py",
+        "function_to_modify": "__init__",
+        "reason": "Keeps the projection initialization readable after changing how size is computed elsewhere and aligns with project formatting expectations.",
+        "side_effects": "No functional change; only affects code style and potential merge conflicts with nearby edits."
+      },
+      {
+        "operation": "Wrap background image loading call across lines for consistency with other long calls",
+        "file_to_modify": "animated_drawings/view/window_view.py",
+        "function_to_modify": "_prep_background_image",
+        "reason": "The background image path argument can be long; reformatting reduces line length and improves maintainability around subsequent OpenGL setup code.",
+        "side_effects": "No runtime behavior change; only formatting."
+      },
+      {
+        "operation": "Reformat OpenGL texture upload and framebuffer attachment calls to multi-line statements",
+        "file_to_modify": "animated_drawings/view/window_view.py",
+        "function_to_modify": "_prep_background_image",
+        "reason": "These calls are long and easy to misread; breaking them across lines improves clarity when reasoning about texture dimensions and framebuffer wiring.",
+        "side_effects": "No behavior change; however, future diffs around these calls may be cleaner and less error-prone."
+      },
+      {
+        "operation": "Reformat shader initialization calls (color/texture) and shader resource path construction",
+        "file_to_modify": "animated_drawings/view/window_view.py",
+        "function_to_modify": "_prep_shaders",
+        "reason": "Shader paths and initialization parameters can exceed typical line limits; the change standardizes readability and reduces chance of mistakes when adding new shaders.",
+        "side_effects": "No functional effect; impacts only formatting and potential diffs for shader-related changes."
+      },
+      {
+        "operation": "Reformat view transform inversion and uniform location retrieval calls to multi-line style",
+        "file_to_modify": "animated_drawings/view/window_view.py",
+        "function_to_modify": "_update_shaders_view_transform",
+        "reason": "Improves readability around camera matrix math and uniform updates, which are critical for debugging rendering issues.",
+        "side_effects": "No runtime behavior change; makes future debugging/edits to shader uniform updates less error-prone."
+      },
+      {
+        "operation": "Move pyright ignore to the specific shader ID assignment and reformat OpenGL capability/version logging into multi-line statements",
+        "file_to_modify": "animated_drawings/view/window_view.py",
+        "function_to_modify": "_create_window",
+        "reason": "Static analysis can complain about OpenGL/glfw bindings and shader id types; the ignore placement narrows the suppression while keeping verbose logging readable.",
+        "side_effects": "No functional change; affects type-checker noise and readability of startup logs-related code."
+      },
+      {
+        "operation": "Reformat the framebuffer blit call to multi-line for clarity around source/destination rectangles",
+        "file_to_modify": "animated_drawings/view/window_view.py",
+        "function_to_modify": "render",
+        "reason": "The blit arguments are positional and easy to mix up; multi-line formatting clarifies intent when copying background textures to the window framebuffer.",
+        "side_effects": "No behavior change; may reduce future bugs when modifying background compositing."
+      },
+      {
+        "operation": "Fix macOS external-monitor sizing by switching from physical framebuffer size to logical window size when reporting view dimensions",
+        "file_to_modify": "animated_drawings/view/window_view.py",
+        "function_to_modify": "get_framebuffer_size",
+        "reason": "On macOS (especially with external monitors/HiDPI), glfw.get_framebuffer_size can return scaled pixel dimensions larger than the logical window size; using glfw.get_window_size yields the correct logical size expected by projection/setup code.",
+        "side_effects": "Any code relying on pixel-accurate framebuffer dimensions (e.g., high-DPI rendering, texture blit scaling, or viewport setup) may now operate in logical units; if true pixel sizes are needed elsewhere, a new dedicated method (e.g., get_pixel_framebuffer_size) may be required."
+      }
+    ],
+    "summary": "This PR fixes incorrect window dimension reporting on macOS with external monitors by using GLFW logical window size instead of framebuffer size. It also includes several readability-focused reformatting and tighter type-check suppression adjustments in the window view implementation."
+  }
+}

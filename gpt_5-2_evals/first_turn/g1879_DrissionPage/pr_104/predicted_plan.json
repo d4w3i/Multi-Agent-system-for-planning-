@@ -1,0 +1,42 @@
+{
+  "pr_number": 104,
+  "repository": "g1879/DrissionPage",
+  "title": "fixed json decoding bug in daemon thread",
+  "body": "fixed bug in daemon thread that is triggered when trying to convert an empty message_json to dict. Still raising the JSONDecodeError in case decoding fails for any other reason",
+  "extraction_metadata": {
+    "extracted_at": "2026-02-26T03:20:20.210157",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "DrissionPage/chromium_driver.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "_recv_loop",
+          "class_name": "ChromiumDriver",
+          "full_name": "ChromiumDriver._recv_loop",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Prevent the ChromiumDriver WebSocket receiver daemon thread from calling `json.loads()` on empty payloads, avoiding spurious `JSONDecodeError` crashes while keeping `JSONDecodeError` behavior for other invalid non-empty JSON messages.",
+    "steps": [
+      {
+        "operation": "Guard against empty/whitespace WebSocket payloads before JSON-decoding in the receiver daemon loop",
+        "file_to_modify": "DrissionPage/chromium_driver.py",
+        "function_to_modify": "ChromiumDriver._recv_loop",
+        "reason": "`json.loads()` raises `JSONDecodeError` on empty strings (and typically whitespace-only strings). The receiver daemon thread should skip decoding when `_ws.recv()` returns an empty/falsey payload, while preserving the current behavior of raising `JSONDecodeError` for any other non-empty invalid JSON payloads.",
+        "side_effects": "Prevents background thread crashes caused by empty frames, improving CDP stability. If upstream websocket uses empty payloads to signal closure/keepalive, this change will now silently `continue` (or equivalent) rather than erroring; ensure this doesn’t mask intended shutdown behavior. Existing behavior for malformed non-empty JSON remains (thread may still terminate with `JSONDecodeError`, as required by the PR). Add/adjust any tests that simulate `_ws.recv()` returning `''`, `'   '`, and invalid JSON like `'{'`."
+      }
+    ]
+  }
+}

@@ -1,0 +1,132 @@
+{
+  "pr_number": 18463,
+  "repository": "PrefectHQ/prefect",
+  "title": "Fix failing unit tests",
+  "body": "These changes fix the failing tests introduced by https://github.com/PrefectHQ/prefect/pull/18450",
+  "extraction_metadata": {
+    "extracted_at": "2026-02-26T03:07:16.786345",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "src/prefect/deployments/runner.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "_get_deployment_version_info",
+          "class_name": "RunnerDeployment",
+          "full_name": "RunnerDeployment._get_deployment_version_info",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_set_defaults_from_flow",
+          "class_name": "RunnerDeployment",
+          "full_name": "RunnerDeployment._set_defaults_from_flow",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "apply",
+          "class_name": "RunnerDeployment",
+          "full_name": "RunnerDeployment.apply",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_create",
+          "class_name": "RunnerDeployment",
+          "full_name": "RunnerDeployment._create",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_update",
+          "class_name": "RunnerDeployment",
+          "full_name": "RunnerDeployment._update",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "tests/cli/deploy/test_deploy_versioning.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    },
+    {
+      "filename": "src/prefect/_versioning.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "get_inferred_version_info",
+          "class_name": null,
+          "full_name": "get_inferred_version_info",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Restore passing CLI deploy versioning tests by correcting how RunnerDeployment resolves and propagates `version` and `version_info` across `--version` and `--version-type` combinations, ensuring inferred VCS metadata is preserved while allowing explicit overrides. The plan focuses on runner.py’s precedence logic and consistent payloads to client create/update calls, with minimal inference-layer changes only if required by other failing tests.",
+    "steps": [
+      {
+        "operation": "Fix version_info precedence and override rules for deploy versioning",
+        "file_to_modify": "src/prefect/deployments/runner.py",
+        "function_to_modify": "RunnerDeployment._get_deployment_version_info",
+        "reason": "The failing CLI deploy versioning tests assert specific behavior for how `--version` and `--version-type` combine: (1) `--version` alone must yield `VersionInfo(type='prefect:simple', version=<provided>)`; (2) `--version-type vcs:git` must call the runner-module-imported `get_inferred_version_info` (so test patching works) and return the inferred `VersionInfo`; (3) `--version-type vcs:git --version X` must preserve inferred metadata while overriding only the `version` field; (4) `--version-type prefect:simple` with no `--version` must use the flow-derived version. Centralizing these precedence rules here aligns runner behavior to the tests introduced/regressed by PR #18450.",
+        "side_effects": "Changes the effective version metadata sent on deployment create/update; may affect users relying on previous precedence. Ensure the call to `get_inferred_version_info` remains referenced from `prefect.deployments.runner` (not re-imported inside the function) so unit tests can patch it. May require updating/adding unit assertions for edge cases (inference returning None, unsupported version types)."
+      },
+      {
+        "operation": "Ensure flow-derived version is applied only when appropriate and flagged correctly",
+        "file_to_modify": "src/prefect/deployments/runner.py",
+        "function_to_modify": "RunnerDeployment._set_defaults_from_flow",
+        "reason": "Tests expect that when `--version-type prefect:simple` is selected and no explicit `--version` is provided, the deployment uses the flow’s computed version (e.g., flow file hash). This method is responsible for defaulting `self.version` from `flow.version` and setting `_version_from_flow`; it must not override an explicit CLI `--version`, and it must leave enough state for `_get_deployment_version_info`/`apply` to distinguish flow-derived vs user-provided version.",
+        "side_effects": "May alter defaulting behavior for deployments created from flows, potentially impacting any code paths that rely on `self.version` being unset/None. If `_version_from_flow` is used elsewhere, ensure its semantics remain consistent."
+      },
+      {
+        "operation": "Make apply() consistently compute and pass version_info based on resolved version/version_type",
+        "file_to_modify": "src/prefect/deployments/runner.py",
+        "function_to_modify": "RunnerDeployment.apply",
+        "reason": "The CLI path forwards `version`/`version_type` into `RunnerDeployment.apply()`, which decides what `version_info` to use and then calls create/update. If `apply()` currently bypasses `_get_deployment_version_info`, caches stale values, or passes mismatched `version` vs `version_info`, the mocked assertions in `tests/cli/deploy/test_deploy_versioning.py` will fail. Ensure `apply()` uses `_get_deployment_version_info(self.version_type)` (or equivalent) after defaults are set, and that it passes both `version` and `version_info` coherently downstream.",
+        "side_effects": "May change behavior for both create and update paths; could impact idempotency if version computation is moved earlier/later. Ensure any async/sync client calls still receive identical resolved kwargs for the same inputs."
+      },
+      {
+        "operation": "Align create payload so PrefectClient.create_deployment receives expected version and version_info kwargs",
+        "file_to_modify": "src/prefect/deployments/runner.py",
+        "function_to_modify": "RunnerDeployment._create",
+        "reason": "The CLI tests assert the exact kwargs sent to `PrefectClient.create_deployment`, including `version` and `version_info`. After fixing resolution logic, ensure `_create()` passes `version=<resolved string>` and `version_info=<resolved VersionInfo or None>` exactly as expected (including when `prefect:simple` is used and when inference metadata exists).",
+        "side_effects": "May affect API payload shape for deployment creation and downstream server-side validation. Requires re-running unit tests that mock `create_deployment` to confirm call signatures match expectations."
+      },
+      {
+        "operation": "Mirror create behavior in update payload so update calls propagate version and version_info consistently",
+        "file_to_modify": "src/prefect/deployments/runner.py",
+        "function_to_modify": "RunnerDeployment._update",
+        "reason": "Even if current failures are in create-path tests, update should follow identical semantics for `version`/`version_info` propagation to prevent future regressions and keep RunnerDeployment behavior consistent. Ensure `_update()` uses the same resolved values (from `apply()` or computed similarly) and passes them to the client update method in the same way create does.",
+        "side_effects": "Could change version metadata for updated deployments compared to prior behavior; may require adjusting any tests that assert update call kwargs or server-side compatibility expectations."
+      },
+      {
+        "operation": "Keep inference behavior compatible with runner expectations (optional minimal adjustment if other tests fail)",
+        "file_to_modify": "src/prefect/_versioning.py",
+        "function_to_modify": "get_inferred_version_info",
+        "reason": "While the CLI versioning tests patch `prefect.deployments.runner.get_inferred_version_info`, other unit tests may exercise the real inference function. Ensure `get_inferred_version_info` behavior remains consistent with runner’s fallback rules (e.g., returns None when inference is not possible or when SIMPLE is requested, rather than raising unexpectedly), and that any version type mapping used by runner remains stable after PR #18450.",
+        "side_effects": "Adjusting inference behavior can affect any callers beyond deployments (e.g., packaging/version reporting). If changed, re-run broader unit suite and verify that non-git environments still behave gracefully without requiring a real VCS checkout."
+      }
+    ]
+  }
+}

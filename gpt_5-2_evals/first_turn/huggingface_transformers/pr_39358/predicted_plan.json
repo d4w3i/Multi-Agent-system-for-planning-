@@ -1,0 +1,102 @@
+{
+  "pr_number": 39358,
+  "repository": "huggingface/transformers",
+  "title": "fix(siglip2): improve pooled output logic in modular file",
+  "body": "Fixes # (issue)\n\nThe PR description is largely a template and does not specify the exact bug/behavior change desired, beyond “improve pooled output logic in modular file”. Given the codebase, “pooled output” most directly refers to `pooler_output` produced by the vision/text encoders and consumed by `Siglip2Model` (contrastive) and by `Siglip2ForImageClassification` (classification, but it currently does its own pooling).",
+  "extraction_metadata": {
+    "extracted_at": "2026-02-25T20:48:13.584753",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "modular_siglip2.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "forward",
+          "class_name": "Siglip2VisionTransformer",
+          "full_name": "Siglip2VisionTransformer.forward",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "forward",
+          "class_name": "Siglip2MultiheadAttentionPoolingHead",
+          "full_name": "Siglip2MultiheadAttentionPoolingHead.forward",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "forward",
+          "class_name": "Siglip2ForImageClassification",
+          "full_name": "Siglip2ForImageClassification.forward",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "get_image_features",
+          "class_name": "Siglip2Model",
+          "full_name": "Siglip2Model.get_image_features",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "forward",
+          "class_name": "Siglip2Model",
+          "full_name": "Siglip2Model.forward",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Improve SigLIP2 pooled output handling so vision pooler_output properly respects padding masks and is used consistently across contrastive and image-classification paths. Add robustness so feature extraction and forward passes behave predictably even when masks/head configuration would otherwise produce invalid pooled outputs.",
+    "steps": [
+      {
+        "operation": "Fix attention-mask expansion and semantics in probe-based pooling so padded tokens cannot influence the pooled embedding",
+        "file_to_modify": "modular_siglip2.py",
+        "function_to_modify": "Siglip2MultiheadAttentionPoolingHead.forward",
+        "reason": "The pooling head currently converts a 2D mask to 4D and then repeats/reshapes it; this is a common source of shape/broadcast mistakes (especially with target_len=1 probe) and can accidentally unmask padded tokens or produce an incorrect attn_mask shape for the underlying attention module.",
+        "side_effects": "May change numerical outputs for models using pixel_attention_mask (expected improvement). Needs verification for both FlashAttention2 and non-FA paths, and for attention implementations that expect specific attn_mask shapes/dtypes."
+      },
+      {
+        "operation": "Ensure vision encoder always produces a correct, mask-aware pooler_output (and uses consistent mask form)",
+        "file_to_modify": "modular_siglip2.py",
+        "function_to_modify": "Siglip2VisionTransformer.forward",
+        "reason": "This is where pooler_output is created. To “improve pooled output logic”, the forward pass should pass the correct mask representation into the pooling head (and handle edge cases like missing/empty masks) so pooled embeddings remain invariant to padding and have stable shape/dtype.",
+        "side_effects": "Downstream consumers (Siglip2Model and image classification) will receive updated pooler_output values. If any callers relied on previous (buggy) padding influence, behavior will change. Should re-run vision forward with/without pixel_attention_mask and with FA2 enabled/disabled."
+      },
+      {
+        "operation": "Make image-classification pooling consistent by reusing outputs.pooler_output when available (fallback to masked mean only when needed)",
+        "file_to_modify": "modular_siglip2.py",
+        "function_to_modify": "Siglip2ForImageClassification.forward",
+        "reason": "The classification head currently ignores the model’s pooler_output and does its own masked mean pooling, which can disagree with the contrastive pathway and can mishandle padding depending on mask shape. Reusing pooler_output aligns semantics across heads and centralizes pooling correctness in the pooling head.",
+        "side_effects": "Classification logits will change (expected, more consistent pooling). Must ensure classifier input dimension matches pooler_output hidden size. Add/adjust tests or at least sanity checks for both masked and unmasked inputs; ensure no division-by-zero if fallback mean pooling is used with fully-masked inputs."
+      },
+      {
+        "operation": "Stabilize public image feature extraction by handling missing pooler_output (e.g., when head disabled) with a safe, mask-aware fallback",
+        "file_to_modify": "modular_siglip2.py",
+        "function_to_modify": "Siglip2Model.get_image_features",
+        "reason": "get_image_features currently returns vision_outputs.pooler_output directly. If pooled output logic changes or if use_head can be false in some configs, returning None would break the public API. Provide a fallback pooling strategy (consistent with classification/vision) to guarantee a (batch, hidden_size) tensor.",
+        "side_effects": "Changes behavior for configs where pooler_output would be None; could affect downstream pipelines that assumed head always exists. Requires careful handling of pixel_attention_mask to avoid padded-token leakage and to prevent NaNs for empty masks."
+      },
+      {
+        "operation": "Harden contrastive forward against None/invalid pooled outputs and ensure embeddings are normalized safely",
+        "file_to_modify": "modular_siglip2.py",
+        "function_to_modify": "Siglip2Model.forward",
+        "reason": "Siglip2Model.forward assumes vision_outputs.pooler_output and text_outputs.pooler_output are non-None and normalizes them. If pooled output computation is adjusted (or fallback paths are introduced), add validation and/or consistent fallback to prevent runtime errors and NaNs during normalization (especially when masks could produce degenerate vectors).",
+        "side_effects": "May introduce explicit error messages or fallback pooling for robustness. Any change affects contrastive logits and loss numerics; should validate that logits remain finite for padded inputs and that gradients still flow as expected."
+      }
+    ]
+  }
+}

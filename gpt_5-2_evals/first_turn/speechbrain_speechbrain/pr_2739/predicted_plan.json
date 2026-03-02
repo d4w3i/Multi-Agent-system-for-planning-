@@ -1,0 +1,57 @@
+{
+  "pr_number": 2739,
+  "repository": "speechbrain/speechbrain",
+  "title": "Allow importing model params with `convs_intermedite` typo in `PostNet`",
+  "body": "This fixes importing some (older?) models that were failing to import otherwise.\nPutting it as a PR to make it easier to find but not bothering with review since this is a very minor fix that shouldn't be functionally different (`convs_intermedite` no longer has any reference in codebase)",
+  "extraction_metadata": {
+    "extracted_at": "2026-02-26T03:58:52.961722",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "speechbrain/utils/checkpoints.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "hook_on_loading_state_dict_checkpoint",
+          "class_name": null,
+          "full_name": "hook_on_loading_state_dict_checkpoint",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "map_old_state_dict_weights",
+          "class_name": null,
+          "full_name": "map_old_state_dict_weights",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Add a backward-compatible state_dict key rewrite so older Tacotron2 PostNet checkpoints containing the `convs_intermedite` typo can be imported. The fix is implemented centrally in the checkpoint-loading compatibility mapping so it affects all model-load paths without changing runtime model behavior.",
+    "steps": [
+      {
+        "operation": "Extend legacy key mapping to rewrite `convs_intermedite` → `convs_intermediate` during checkpoint loading",
+        "file_to_modify": "speechbrain/utils/checkpoints.py",
+        "function_to_modify": "hook_on_loading_state_dict_checkpoint",
+        "reason": "Older Tacotron2 PostNet checkpoints may contain the misspelled parameter-name substring `convs_intermedite`, which causes `load_state_dict()` to fail with unexpected/missing keys. Adding a targeted mapping in the centralized load hook ensures keys are normalized before `obj.load_state_dict(...)` is called, without changing any model/runtime behavior.",
+        "side_effects": "Changes load-time behavior for any checkpoint whose keys contain the mapped substring. Must ensure the mapping is specific enough (e.g., include a leading dot if keys look like `...postnet.convs_intermedite...`) to avoid unintended renames in unrelated modules. May require updating/adding a small regression test if the repo has checkpoint-mapping tests."
+      },
+      {
+        "operation": "Ensure the substring-replacement logic correctly applies the new mapping and does not introduce over-broad replacements",
+        "file_to_modify": "speechbrain/utils/checkpoints.py",
+        "function_to_modify": "map_old_state_dict_weights",
+        "reason": "The new compatibility rule will be applied via the generic substring replacement performed here; confirm/adjust implementation assumptions so the mapping is applied deterministically (e.g., ordering, repeated replacements, and handling of nested keys) and remains safe for global state_dict key normalization.",
+        "side_effects": "If any logic is adjusted (even slightly) it can affect all backward-compat mappings for checkpoint loads, parameter transfer, and checkpoint averaging; could change which keys are rewritten in edge cases. Should be validated by running existing loading-related tests and/or a minimal synthetic state_dict mapping test."
+      }
+    ]
+  }
+}

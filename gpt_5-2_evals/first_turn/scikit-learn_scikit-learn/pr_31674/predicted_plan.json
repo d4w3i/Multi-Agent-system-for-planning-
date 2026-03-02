@@ -1,0 +1,49 @@
+{
+  "pr_number": 31674,
+  "repository": "scikit-learn/scikit-learn",
+  "title": "fix(docs): Fix glossary FIXME tags",
+  "body": "<!--\r\nThanks for contributing a pull request! Please ensure you have taken a look at\r\nthe contribution guidelines: https://github.com/scikit-learn/scikit-learn/blob/main/CONTRIBUTING.md\r\n-->\r\n\r\n#### Reference Issues/PRs\r\nFixes #31628 \r\n\r\n#### What does this implement/fix? Explain your changes.\r\n\r\n\r\n#### Any other comments?\r\nWhile working on [#31628](https://github.com/scikit-learn/scikit-learn/issues/31628), I encountered a `ModuleNotFoundError` due to a misnamed Sphinx extension (`sphinx-prompt` instead of `sphinx_prompt`). This PR also fixes that to ensure local doc builds (`make`) work correctly.\r\n\r\n#### Setup\r\n```\r\nPython 3.13.3\r\n\r\n   machine: macOS-15.5-arm64-arm-64bit-Mach-O\r\n\r\nPython dependencies:\r\n      sklearn: 1.8.dev0\r\n          pip: 25.0.1\r\n   setuptools: None\r\n        numpy: 2.3.1\r\n        scipy: 1.16.0\r\n       Cython: 3.1.2\r\n       pandas: 2.3.0\r\n   matplotlib: 3.10.3\r\n       joblib: 1.5.1\r\nthreadpoolctl: 3.6.0\r\n\r\nBuilt with OpenMP: False\r\n```\r\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T09:50:22.916632",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "doc/conf.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "setup",
+          "class_name": null,
+          "full_name": "setup",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "doc/glossary.rst",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    }
+  ],
+  "step_plan": {
+    "summary": "Fix the documentation build by correcting the Sphinx extension import name and remove user-facing `FIXME` placeholders from the glossary so published docs are clean and local `make -C doc html` succeeds.",
+    "steps": [
+      {
+        "operation": "Fix the Sphinx extension module name in the docs build configuration",
+        "file_to_modify": "doc/conf.py",
+        "function_to_modify": "setup",
+        "reason": "Local doc builds fail with `ModuleNotFoundError` because Sphinx tries to import the extension by the string listed in `extensions`; the importable module name is `sphinx_prompt` (underscore), not `sphinx-prompt` (hyphen). Updating the extensions list (at module scope) ensures `make -C doc html` can import the extension successfully.",
+        "side_effects": "Docs builds will now require that the `sphinx-prompt` *distribution* (PyPI package) provides the `sphinx_prompt` module as expected; if CI/build images pin different doc requirements, they may need to be aligned. No effect on scikit-learn runtime code, only documentation build configuration."
+      }
+    ]
+  }
+}

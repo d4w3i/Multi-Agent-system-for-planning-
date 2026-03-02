@@ -1,0 +1,56 @@
+{
+  "pr_number": 8500,
+  "repository": "stanfordnlp/dspy",
+  "title": "feat: add test for nested stream and check value has predict_id",
+  "body": "This PR is to add test for nested streaming where we have an agent streaming its response and its tools to run some dspy programs.\n\n- I added the test to validate the use case\n- I add check the predict_id before attempt to response to client\n\nRelated issue: https://github.com/stanfordnlp/dspy/issues/8454\n\ncc @chenmoneygithub, @okhat",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T08:42:20.727521",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "tests/streaming/test_streaming.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    },
+    {
+      "filename": "dspy/streaming/streamify.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "streamify",
+          "class_name": null,
+          "full_name": "streamify",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Adds a regression test for nested streaming (outer agent streaming while a tool runs a streaming DSPy Predict) and hardens stream routing to safely handle LiteLLM stream chunks that are missing `predict_id` or have an unrecognized `predict_id`, preventing crashes in nested contexts.",
+    "steps": [
+      {
+        "operation": "Harden ModelResponseStream routing in nested streaming by validating predict_id before listener lookup",
+        "file_to_modify": "dspy/streaming/streamify.py",
+        "function_to_modify": "streamify",
+        "reason": "Nested streaming can yield LiteLLM ModelResponseStream chunks without a predict_id (or with an unknown one). The current logic assumes `value.predict_id` exists and is present in `predict_id_to_listener`, which can raise (e.g., AttributeError/KeyError) and break outer streaming. Add a defensive gate: only route to a listener when `hasattr(value, 'predict_id')` and `value.predict_id in predict_id_to_listener`; otherwise ignore (or safely fall back) so nested streams do not crash.",
+        "side_effects": "Changes behavior for malformed/unexpected stream chunks: they will no longer crash routing and may be dropped or bypass listener routing depending on the chosen fallback. Ensure existing listener-based streaming tests still pass and that non-listener streaming (direct yielding) is not impacted."
+      },
+      {
+        "operation": "Add a regression test that reproduces nested streaming (agent stream + tool invokes streaming Predict) and asserts no crash under missing/unknown predict_id conditions",
+        "file_to_modify": "tests/streaming/test_streaming.py",
+        "function_to_modify": "test_nested_streaming_predict_id_handling",
+        "reason": "Create a failing-on-main, passing-after-fix test that exercises the reported scenario: an outer streaming program calls a tool that runs a DSPy Predict which also streams. The test should validate that streaming completes without exceptions and that the system tolerates chunks lacking predict_id or having a predict_id not registered in the current stream listener map (per issue #8454).",
+        "side_effects": "May require constructing a minimal mock/stub LM stream generator (or monkeypatching) to emit ModelResponseStream-like objects with/without `predict_id`, and may increase test runtime/flakiness if it depends on real networked LMs. Prefer deterministic mocks to keep CI stable."
+      }
+    ]
+  }
+}

@@ -1,0 +1,103 @@
+{
+  "pr_number": 21457,
+  "repository": "keras-team/keras",
+  "title": "[OpenVINO backend] fix ops.array",
+  "body": "@rkazants\n@fchollet \nIn https://github.com/keras-team/keras-hub/blob/master/keras_hub/src/samplers/random_sampler_test.py#L60-L74\nThis test fails due to `ops.array(logits)`,  where logits is an `OpenVINOKerasTensor`\n```python\ndef test_temperature(self):\n        def next(prompt, cache, index):\n            # Dummy hidden states.\n            hidden_states = ops.ones([self.batch_size, 5])\n            logits = ops.arange(self.vocab_size, 0, -1, dtype=\"float32\")\n            logits = ops.reshape(logits[None, :], (self.batch_size, -1))\n            return ops.array(logits), hidden_states, cache\n\n        prompt = ops.full((self.batch_size, self.length), self.char_lookup[\"z\"])\n\n        output = RandomSampler(temperature=1e-5)(\n            next=next,\n            prompt=prompt,\n        )\n        self.assertAllEqual(output, ops.zeros_like(output))\n```\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T08:34:46.988971",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "keras/src/backend/openvino/numpy.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "array",
+          "class_name": null,
+          "full_name": "array",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "keras/src/ops/numpy.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "array",
+          "class_name": null,
+          "full_name": "array",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "keras/src/backend/openvino/core.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "cast",
+          "class_name": null,
+          "full_name": "cast",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "convert_to_tensor",
+          "class_name": null,
+          "full_name": "convert_to_tensor",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Fixes `keras.ops.array` on the OpenVINO backend so that passing an existing `OpenVINOKerasTensor` no longer triggers NumPy conversion, returning the tensor unchanged or casted as needed. This resolves failures such as the RandomSampler test case where `ops.array(logits)` is called on symbolic OpenVINO tensors.",
+    "steps": [
+      {
+        "operation": "Fix OpenVINO backend `array()` to treat `OpenVINOKerasTensor` inputs as identity/cast instead of NumPy materialization",
+        "file_to_modify": "keras/src/backend/openvino/numpy.py",
+        "function_to_modify": "array",
+        "reason": "Current implementation calls `np.array(x, dtype=...)`, which attempts to materialize/convert symbolic `OpenVINOKerasTensor` values and fails (as in `ops.array(logits)` in the sampler test). For OpenVINO, `ops.array(tensor)` should be a safe conversion utility: return the same tensor when possible, or apply a graph cast when `dtype` is provided.",
+        "side_effects": "Changes behavior of `keras.ops.array` under OpenVINO: (1) avoids host NumPy conversion for symbolic tensors, (2) may change return type for Python/numpy inputs if you route them through OpenVINO constants. Downstream code that accidentally relied on NumPy arrays may now receive OpenVINO tensors; ensure OpenVINO backend tests still pass."
+      },
+      {
+        "operation": "Adjust `keras.ops.array` wrapper/dispatch to ensure OpenVINO path reliably uses backend conversion semantics for symbolic OpenVINO tensors (avoid accidental eager NumPy paths)",
+        "file_to_modify": "keras/src/ops/numpy.py",
+        "function_to_modify": "array",
+        "reason": "Even with a backend fix, the frontend wrapper must correctly recognize OpenVINO symbolic tensors and dispatch to the backend implementation without triggering any generic NumPy coercion. If `any_symbolic_tensors`/dispatch logic misclassifies OpenVINO tensors, `ops.array(OpenVINOKerasTensor)` can still incorrectly attempt host conversion.",
+        "side_effects": "May affect dispatch behavior for other backends if logic is changed too broadly; keep any conditional narrowly scoped to OpenVINO tensor types/paths. Might require updating/adding unit coverage for `ops.array` on symbolic tensors."
+      },
+      {
+        "operation": "Ensure OpenVINO `cast()` supports the dtype conversions needed by `ops.array(..., dtype=...)` and returns a valid `OpenVINOKerasTensor`",
+        "file_to_modify": "keras/src/backend/openvino/core.py",
+        "function_to_modify": "cast",
+        "reason": "OpenVINO backend `numpy.array()` should implement dtype changes as a graph operation. Reusing `core.cast` is the cleanest way, but it must accept inputs like `OpenVINOKerasTensor` (and possibly OpenVINO outputs), map Keras dtype strings to OpenVINO element types, and preserve shape/dtype metadata on the returned `OpenVINOKerasTensor`.",
+        "side_effects": "Any improvements/changes to dtype mapping can affect other OpenVINO ops that call `cast`. Adds/changes supported dtypes; verify no regressions in OpenVINO backend numeric ops and that dtype inference remains consistent."
+      },
+      {
+        "operation": "Update/extend `convert_to_tensor()` so OpenVINO `array()` can safely create constants from Python/numpy inputs with correct dtype handling",
+        "file_to_modify": "keras/src/backend/openvino/core.py",
+        "function_to_modify": "convert_to_tensor",
+        "reason": "To make `backend.openvino.numpy.array(x)` robust for non-tensor inputs (lists/scalars/np.ndarray) without relying on `np.array()` for symbolic types, `array()` will likely delegate constant creation to `convert_to_tensor`. This function should correctly handle `dtype=None` (infer), explicit dtype casts, and produce an `OpenVINOKerasTensor` constant (or compatible OpenVINO output) with stable metadata.",
+        "side_effects": "May change how constants are created in OpenVINO backend across multiple call sites; could affect constant folding, dtype defaults (e.g., float64 vs float32), and shape inference. Ensure OpenVINO backend tests (and any downstream projects like keras-hub) don’t see unexpected dtype changes."
+      }
+    ]
+  }
+}

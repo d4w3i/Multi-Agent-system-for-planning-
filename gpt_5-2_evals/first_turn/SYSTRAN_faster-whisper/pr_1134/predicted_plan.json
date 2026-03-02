@@ -1,0 +1,64 @@
+{
+  "pr_number": 1134,
+  "repository": "SYSTRAN/faster-whisper",
+  "title": "change `language_detection_threshold` default value",
+  "body": "the current value of `language_detection_threshold` means that `language_detection_segments` will be 1 regardless of the user set value, the new value will ensure that `language_detection_segments` is respected",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T09:49:14.509318",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "faster_whisper/transcribe.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "transcribe",
+          "class_name": "WhisperModel",
+          "full_name": "WhisperModel.transcribe",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "transcribe",
+          "class_name": "BatchedInferencePipeline",
+          "full_name": "BatchedInferencePipeline.transcribe",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "tests/test_transcribe.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    }
+  ],
+  "step_plan": {
+    "summary": "Update the default `language_detection_threshold` so multi-segment language detection honors `language_detection_segments` by default in `WhisperModel.transcribe`, and clarify related documentation in the batched transcription API to prevent confusion.",
+    "steps": [
+      {
+        "operation": "Change the default value of `language_detection_threshold` to a numeric value (e.g., 0.7) and ensure the multi-segment language detection loop respects `language_detection_segments` under the new default; update the docstring in the same method to reflect the new behavior/default.",
+        "file_to_modify": "faster_whisper/transcribe.py",
+        "function_to_modify": "WhisperModel.transcribe",
+        "reason": "With the current default `language_detection_threshold=None`, the code path for language detection breaks unconditionally after the first segment, making `language_detection_segments` effectively behave like 1 unless users explicitly set a threshold. Setting a numeric default enables scanning multiple segments and early-stopping only when confidence exceeds the threshold, so user-provided `language_detection_segments > 1` is respected by default.",
+        "side_effects": "Public API behavior changes: multilingual, `language=None` calls may use more than the first 30s window for language detection by default (potentially more compute/latency and possibly different detected language in edge cases). Any downstream code/docs that assumed first-window-only detection might need adjustment."
+      },
+      {
+        "operation": "Clarify `BatchedInferencePipeline.transcribe` documentation regarding `language_detection_threshold`/`language_detection_segments` (still unused) and avoid implying the new default applies to this pipeline; keep signature/behavior unchanged.",
+        "file_to_modify": "faster_whisper/transcribe.py",
+        "function_to_modify": "BatchedInferencePipeline.transcribe",
+        "reason": "The PR changes the default/behavior for `WhisperModel.transcribe`, but the batched pipeline explicitly does not use these parameters. Its docstring should be updated/clarified to prevent user confusion about whether multi-segment language detection and the new default threshold apply in batched mode.",
+        "side_effects": "Documentation-only change, but could affect user expectations and reduce support issues. No runtime behavior change expected; ensure no accidental signature change that would be a breaking API change."
+      }
+    ]
+  }
+}

@@ -1,0 +1,49 @@
+{
+  "pr_number": 6295,
+  "repository": "skypilot-org/skypilot",
+  "title": "Fix hyperbolic unit test",
+  "body": "The `1x-T4-4-17` instance type were missing in the latest catalog (commit 06cb4087855609446f3ce9739d863ffd92cdbcd6), causing this unit test to fail, as it's explicitly looking for that type.\n\nThis PR fixes it by switching to a valid instance type which exist on the latest catalog.\n\nWe probably should still investigate though why `1x-T4-4-17` went missing.\n\nTested:\n- formatting\n- relevant individual tests\n\nNot run:\n- all smoke tests\n- backward compatibility",
+  "extraction_metadata": {
+    "extracted_at": "2026-02-26T03:52:25.057293",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "tests/unit_tests/test_hyperbolic.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "test_hyperbolic_resource_feasibility",
+          "class_name": null,
+          "full_name": "test_hyperbolic_resource_feasibility",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Fixes a broken Hyperbolic unit test caused by a removed catalog SKU by updating the test to use a currently valid instance type (preferably discovered dynamically from the catalog). Ensures the test continues to exercise `Hyperbolic._get_feasible_launchable_resources()` without being brittle to catalog churn.",
+    "steps": [
+      {
+        "operation": "Update Hyperbolic feasibility unit test to avoid hardcoded removed SKU by deriving a valid instance type from the current catalog (or switching to an explicitly known-valid SKU present in the latest catalog).",
+        "file_to_modify": "tests/unit_tests/test_hyperbolic.py",
+        "function_to_modify": "test_hyperbolic_resource_feasibility",
+        "reason": "The test currently hardcodes `instance_type='1x-T4-4-17'`, which no longer exists in the latest catalog; `Hyperbolic._get_feasible_launchable_resources()` validates explicit instance types against the catalog and correctly fails. Making the test discover (or use) a valid instance type ensures it exercises the feasibility logic without coupling to a specific SKU that can disappear.",
+        "side_effects": "May slightly change what exact instance type the test asserts/uses; ensure assertions are updated to validate behavior (feasible resources returned / no exception) rather than an exact SKU string. Test becomes more resilient to future catalog changes but now depends on catalog lookup helpers being available in unit-test environment."
+      },
+      {
+        "operation": "Confirm (and, if needed, minimally adjust) Hyperbolic feasibility logic so the test’s chosen path matches the intended contract: either explicit instance_type validation or accelerator-to-instance mapping; keep behavior unchanged aside from aligning the test with the provider’s validation rules.",
+        "file_to_modify": "sky/clouds/hyperbolic.py",
+        "function_to_modify": "Hyperbolic._get_feasible_launchable_resources",
+        "reason": "This method enforces catalog validation for explicit instance types, which is what caused the failure. While the PR intent is mainly test-only, reviewing this method ensures the test update is consistent with the method’s expected inputs (e.g., explicit instance types must exist; accelerator-based requests should be resolved via catalog mapping) and avoids introducing brittle test assumptions.",
+        "side_effects": "Any behavioral change here could affect real scheduling/launchability checks for Hyperbolic and other tests that depend on feasibility behavior. If changed, run the Hyperbolic-related unit tests and any provider feasibility tests to ensure no regressions; avoid widening acceptance of invalid SKUs unless explicitly desired."
+      }
+    ]
+  }
+}

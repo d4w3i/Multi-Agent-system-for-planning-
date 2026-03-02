@@ -1,0 +1,174 @@
+{
+  "pr_number": 6837,
+  "repository": "psf/requests",
+  "title": "Fix handling of non-latin credentials in HTTPDigestAuth",
+  "body": "Fixes #6102\r\n\r\nUpdate `HTTPDigestAuth` to handle non-latin credentials correctly.\r\n\r\n* Change `_basic_auth_str` in `src/requests/auth.py` to encode `username` and `password` using `utf-8` instead of `latin1`.\r\n* Update `build_digest_header` in `src/requests/auth.py` to correctly format the string for the header with non-latin characters.\r\n* Add tests in `tests/test_requests.py` to verify correct handling of non-latin credentials in `HTTPDigestAuth`.",
+  "extraction_metadata": {
+    "extracted_at": "2026-02-26T01:10:03.476036",
+    "extractor_version": "1.0.0",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "src/requests/auth.py",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 2,
+      "functions_modified": [
+        {
+          "function_name": "_basic_auth_str",
+          "class_name": null,
+          "full_name": "_basic_auth_str",
+          "start_line": 25,
+          "end_line": 66,
+          "lines_changed": [
+            57,
+            60
+          ]
+        }
+      ],
+      "patch": "@@ -54,10 +54,10 @@ def _basic_auth_str(username, password):\n     # -- End Removal --\n \n     if isinstance(username, str):\n-        username = username.encode(\"latin1\")\n+        username = username.encode(\"utf-8\")\n \n     if isinstance(password, str):\n-        password = password.encode(\"latin1\")\n+        password = password.encode(\"utf-8\")\n \n     authstr = \"Basic \" + to_native_string(\n         b64encode(b\":\".join((username, password))).strip()"
+    },
+    {
+      "filename": "tests/test_requests.py",
+      "status": "modified",
+      "additions": 32,
+      "deletions": 4,
+      "functions_modified": [
+        {
+          "function_name": "test_http_digest_auth_non_latin_credentials",
+          "class_name": "TestRequests",
+          "full_name": "TestRequests.test_http_digest_auth_non_latin_credentials",
+          "start_line": 2219,
+          "end_line": 2232,
+          "lines_changed": [
+            2219,
+            2220,
+            2221,
+            2222,
+            2223,
+            2224,
+            2225,
+            2226,
+            2227,
+            2228,
+            2229,
+            2230,
+            2231,
+            2232
+          ]
+        },
+        {
+          "function_name": "test_http_digest_auth_non_latin_credentials_with_bytes",
+          "class_name": "TestRequests",
+          "full_name": "TestRequests.test_http_digest_auth_non_latin_credentials_with_bytes",
+          "start_line": 2234,
+          "end_line": 2247,
+          "lines_changed": [
+            2234,
+            2235,
+            2236,
+            2237,
+            2238,
+            2239,
+            2240,
+            2241,
+            2242,
+            2243,
+            2244,
+            2245,
+            2246,
+            2247
+          ]
+        }
+      ],
+      "patch": "@@ -2216,6 +2216,36 @@ def get_redirect_target(self, resp):\n         assert not r.history[1].is_redirect\n         assert r.url == urls_test[2]\n \n+    def test_http_digest_auth_non_latin_credentials(self, httpbin):\n+        auth = HTTPDigestAuth(\"Сергей_Ласточкин\", \"1234\")\n+        url = httpbin(\"digest-auth\", \"auth\", \"Сергей_Ласточкин\", \"1234\", \"MD5\", \"never\")\n+\n+        r = requests.get(url, auth=auth)\n+        assert r.status_code == 200\n+\n+        r = requests.get(url)\n+        assert r.status_code == 401\n+\n+        s = requests.session()\n+        s.auth = HTTPDigestAuth(\"Сергей_Ласточкин\", \"1234\")\n+        r = s.get(url)\n+        assert r.status_code == 200\n+\n+    def test_http_digest_auth_non_latin_credentials_with_bytes(self, httpbin):\n+        auth = HTTPDigestAuth(\"Сергей_Ласточкин\".encode(\"utf-8\"), \"1234\".encode(\"utf-8\"))\n+        url = httpbin(\"digest-auth\", \"auth\", \"Сергей_Ласточкин\", \"1234\", \"MD5\", \"never\")\n+\n+        r = requests.get(url, auth=auth)\n+        assert r.status_code == 200\n+\n+        r = requests.get(url)\n+        assert r.status_code == 401\n+\n+        s = requests.session()\n+        s.auth = HTTPDigestAuth(\"Сергей_Ласточкин\".encode(\"utf-8\"), \"1234\".encode(\"utf-8\"))\n+        r = s.get(url)\n+        assert r.status_code == 200\n+\n \n class TestCaseInsensitiveDict:\n     @pytest.mark.parametrize(\n@@ -2713,10 +2743,8 @@ def test_redirecting_to_bad_url(self, httpbin, url, exception):\n     @pytest.mark.parametrize(\n         \"input, expected\",\n         (\n-            (\n-                b\"http+unix://%2Fvar%2Frun%2Fsocket/path%7E\",\n-                \"http+unix://%2Fvar%2Frun%2Fsocket/path~\",\n-            ),\n+            b\"http+unix://%2Fvar%2Frun%2Fsocket/path%7E\",\n+            \"http+unix://%2Fvar%2Frun%2Fsocket/path~\",\n             (\n                 \"http+unix://%2Fvar%2Frun%2Fsocket/path%7E\",\n                 \"http+unix://%2Fvar%2Frun%2Fsocket/path~\","
+    }
+  ],
+  "functions_modified": [
+    {
+      "function_name": "_basic_auth_str",
+      "class_name": null,
+      "full_name": "_basic_auth_str",
+      "start_line": 25,
+      "end_line": 66,
+      "lines_changed": [
+        57,
+        60
+      ]
+    },
+    {
+      "function_name": "test_http_digest_auth_non_latin_credentials",
+      "class_name": "TestRequests",
+      "full_name": "TestRequests.test_http_digest_auth_non_latin_credentials",
+      "start_line": 2219,
+      "end_line": 2232,
+      "lines_changed": [
+        2219,
+        2220,
+        2221,
+        2222,
+        2223,
+        2224,
+        2225,
+        2226,
+        2227,
+        2228,
+        2229,
+        2230,
+        2231,
+        2232
+      ]
+    },
+    {
+      "function_name": "test_http_digest_auth_non_latin_credentials_with_bytes",
+      "class_name": "TestRequests",
+      "full_name": "TestRequests.test_http_digest_auth_non_latin_credentials_with_bytes",
+      "start_line": 2234,
+      "end_line": 2247,
+      "lines_changed": [
+        2234,
+        2235,
+        2236,
+        2237,
+        2238,
+        2239,
+        2240,
+        2241,
+        2242,
+        2243,
+        2244,
+        2245,
+        2246,
+        2247
+      ]
+    }
+  ],
+  "step_plan": {
+    "steps": [
+      {
+        "operation": "Change Basic auth credential encoding from latin-1 to UTF-8 before base64 encoding",
+        "file_to_modify": "src/requests/auth.py",
+        "function_to_modify": "_basic_auth_str",
+        "reason": "Using latin-1 to encode `str` usernames/passwords fails or produces incorrect bytes for non‑Latin characters; UTF‑8 is the standard encoding for representing Unicode credentials as bytes prior to base64 encoding.",
+        "side_effects": "Affects the generated `Authorization: Basic ...` header for any non-ASCII credentials (and potentially changes output bytes for some characters compared to latin-1), which could impact interoperability with servers that incorrectly assume latin-1; existing tests/fixtures that assert exact Basic header values may need updating."
+      },
+      {
+        "operation": "Add regression tests to ensure HTTPDigestAuth works with non-Latin credentials (both `str` and pre-encoded `bytes`) and validate 200/401 behavior",
+        "file_to_modify": "tests/test_requests.py",
+        "function_to_modify": "TestRequests.test_http_digest_auth_non_latin_credentials",
+        "reason": "Digest auth must correctly handle Unicode usernames when constructing the digest header and responding to the server challenge; this test verifies successful authentication for Cyrillic credentials and confirms unauthenticated requests still return 401.",
+        "side_effects": "Introduces dependency on httpbin’s digest-auth endpoint accepting the provided Unicode username; may increase test runtime slightly and could be sensitive to environment/encoding issues if the test runner or httpbin fixture mishandles Unicode."
+      },
+      {
+        "operation": "Add companion regression test for HTTPDigestAuth when credentials are provided as UTF-8 encoded bytes",
+        "file_to_modify": "tests/test_requests.py",
+        "function_to_modify": "TestRequests.test_http_digest_auth_non_latin_credentials_with_bytes",
+        "reason": "Requests supports passing credentials as bytes; this test ensures the digest auth path does not incorrectly re-encode or mis-handle already-encoded UTF‑8 byte strings, maintaining parity with the `str` credential behavior.",
+        "side_effects": "Ensures both code paths remain supported; if future changes normalize credentials differently (e.g., always decoding bytes), this test will fail and require revisiting credential-type handling across auth implementations."
+      }
+    ],
+    "summary": "Updates Requests auth handling to correctly support non-Latin (Unicode) credentials by switching credential encoding to UTF-8 and adding regression tests that validate HTTPDigestAuth works with both Unicode strings and UTF-8 encoded bytes."
+  }
+}

@@ -1,0 +1,42 @@
+{
+  "pr_number": 745,
+  "repository": "fishaudio/fish-speech",
+  "title": "fix: no-play argument for API client",
+  "body": "Fix BUG.\n\nCurrently, `--play` has no effect because its default value is `True`. The parser does not recognize anything like `--play False`. It only detect whether the argument exists.\n\nTherefore, we can use BooleanOptionalAction, which automatically add the `--no-play` option, so that the play argument can be set to `False`.\n\nCompatibility: This change does not break the existing behaviors because it adds a new option.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T08:25:19.876652",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "tools/api_client.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "parse_args",
+          "class_name": null,
+          "full_name": "parse_args",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Add proper boolean flag handling for audio playback in the API client by replacing the broken `--play type=bool` argument with `BooleanOptionalAction`, which introduces `--no-play` while preserving default behavior.",
+    "steps": [
+      {
+        "operation": "Fix CLI boolean parsing for playback by switching --play to BooleanOptionalAction (enabling --no-play) and ensure the parsed value remains default-True for backward compatibility",
+        "file_to_modify": "tools/api_client.py",
+        "function_to_modify": "parse_args",
+        "reason": "argparse does not handle `type=bool` as users expect for flags; using `argparse.BooleanOptionalAction` provides correct presence/absence semantics and automatically adds `--no-play` while keeping existing `--play` behavior and default playback enabled.",
+        "side_effects": "Users gain a new `--no-play` flag; existing invocations without `--play` continue to play by default. If callers previously attempted `--play False`, behavior will change to the correct interpretation (the recommended usage becomes `--no-play`). Requires Python 3.9+ (BooleanOptionalAction) or a compatibility fallback if the project supports older versions; manual CLI verification should cover both streaming and non-streaming modes to confirm playback suppression works end-to-end."
+      }
+    ]
+  }
+}

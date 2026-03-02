@@ -1,0 +1,395 @@
+{
+  "pr_number": 1270,
+  "repository": "NVIDIA/Megatron-LM",
+  "title": "[ENHANCEMENT] Add z-loss",
+  "body": "z-loss regularization was shown to stabilize training by preventing logits in the last layer to explode: https://arxiv.org/abs/2309.14322\r\n\r\nThis PR: \r\n- allows one to add zloss regularization\r\n- since the total loss is not cross entropy anymore but cross entropy + zloss, this PR also allows one to additionally log the original cross-entropy and the z-loss",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T00:57:36.734679",
+    "extractor_version": "1.0.0",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "megatron/core/models/common/language_module/language_module.py",
+      "status": "modified",
+      "additions": 14,
+      "deletions": 2,
+      "functions_modified": [
+        {
+          "function_name": "compute_language_model_loss",
+          "class_name": "LanguageModule",
+          "full_name": "LanguageModule.compute_language_model_loss",
+          "start_line": 26,
+          "end_line": 57,
+          "lines_changed": [
+            39,
+            40,
+            41,
+            42,
+            43,
+            45,
+            47,
+            48,
+            51,
+            53,
+            54,
+            55,
+            56,
+            57
+          ]
+        }
+      ],
+      "patch": "@@ -36,13 +36,25 @@ def compute_language_model_loss(self, labels: Tensor, logits: Tensor) -> Tensor:\n         # [b s] => [s b]\n         labels = labels.transpose(0, 1).contiguous()\n         if self.config.cross_entropy_loss_fusion:\n+            if self.config.z_loss_weight > 0.0:\n+                raise NotImplementedError(\n+                    \"z-loss is not yet implemented when enabling cross_entropy_loss_fusion, so \"\n+                    \"it cannot be computed and/or logged. Use z-loss-weight: 0.0, or remove the flag.\"\n+                    )\n             loss = fused_vocab_parallel_cross_entropy(logits, labels)\n+            losses = (loss, {'ce_loss': None, 'z_loss': None})\n         else:\n-            loss = tensor_parallel.vocab_parallel_cross_entropy(logits, labels)\n+            losses = tensor_parallel.vocab_parallel_cross_entropy(\n+                logits, labels, z_loss_weight=self.config.z_loss_weight)\n \n         # [s b] => [b, s]\n+        loss, extra_logs = losses\n         loss = loss.transpose(0, 1).contiguous()\n-        return loss\n+        extra_logs['ce_loss'] = extra_logs['ce_loss'].transpose(0, 1).contiguous() \\\n+            if extra_logs['ce_loss'] is not None else None\n+        extra_logs['z_loss'] = extra_logs['z_loss'].transpose(0, 1).contiguous() \\\n+            if extra_logs['z_loss'] is not None else None\n+        return loss, extra_logs\n \n     def setup_embeddings_and_output_layer(self) -> None:\n         \"\"\"Sets up embedding layer in first stage and output layer in last stage."
+    },
+    {
+      "filename": "megatron/core/tensor_parallel/cross_entropy.py",
+      "status": "modified",
+      "additions": 43,
+      "deletions": 14,
+      "functions_modified": [
+        {
+          "function_name": "forward",
+          "class_name": "_VocabParallelCrossEntropy",
+          "full_name": "_VocabParallelCrossEntropy.forward",
+          "start_line": 132,
+          "end_line": 212,
+          "lines_changed": [
+            132,
+            168,
+            169,
+            170,
+            171,
+            172,
+            173,
+            195,
+            196,
+            197,
+            198,
+            199,
+            200,
+            201,
+            202,
+            203,
+            204,
+            205,
+            206,
+            207,
+            210,
+            212
+          ]
+        },
+        {
+          "function_name": "backward",
+          "class_name": "_VocabParallelCrossEntropy",
+          "full_name": "_VocabParallelCrossEntropy.backward",
+          "start_line": 215,
+          "end_line": 244,
+          "lines_changed": [
+            215,
+            219,
+            220,
+            221,
+            222,
+            223,
+            224,
+            225,
+            244
+          ]
+        },
+        {
+          "function_name": "vocab_parallel_cross_entropy",
+          "class_name": null,
+          "full_name": "vocab_parallel_cross_entropy",
+          "start_line": 247,
+          "end_line": 261,
+          "lines_changed": [
+            247,
+            259,
+            261
+          ]
+        }
+      ],
+      "patch": "@@ -16,7 +16,15 @@\n class VocabParallelCrossEntropy:\n     \"\"\"\n     Computes the Cross Entropy Loss splitting the Vocab size across tensor parallel\n-    ranks. This implementation is used in both fused and unfused cross entropy implementations\n+    ranks. This implementation is used in both fused and unfused cross entropy implementations.\n+    From T5X (https://github.com/google-research/t5x/blob/main/t5x/losses.py):\n+    If z_loss_factor > 0, then an auxiliary loss equal to z_loss_factor*log(z)^2\n+    will be added to the cross entropy loss (z = softmax normalization constant).\n+    This z loss is also encouraged in https://arxiv.org/abs/2309.14322.\n+    The two uses of z_loss are:\n+    1. To keep the logits from drifting too far from zero, which can cause\n+        unacceptable roundoff errors in bfloat16.\n+    2. To encourage the logits to be normalized log-probabilities.\n     \"\"\"\n \n     @staticmethod\n@@ -121,7 +129,7 @@ def calculate_gradients(\n \n class _VocabParallelCrossEntropy(torch.autograd.Function):\n     @staticmethod\n-    def forward(ctx, vocab_parallel_logits, target, label_smoothing=0.0):\n+    def forward(ctx, vocab_parallel_logits, target, label_smoothing=0.0, z_loss_weight=0.0):\n         \"\"\"Vocab parallel cross entropy forward function.\"\"\"\n \n         vocab_parallel_logits, logits_max = VocabParallelCrossEntropy.calculate_logits_max(\n@@ -157,9 +165,12 @@ def forward(ctx, vocab_parallel_logits, target, label_smoothing=0.0):\n             group=get_tensor_model_parallel_group(),\n         )\n \n-        exp_logits, loss = VocabParallelCrossEntropy.calculate_cross_entropy_loss(\n-            exp_logits, predicted_logits, sum_exp_logits\n-        )\n+        log_sum_exp_logits = torch.log(sum_exp_logits)\n+        loss = log_sum_exp_logits - predicted_logits\n+\n+        # Normalize and optionally smooth logits\n+        exp_logits.div_(sum_exp_logits.unsqueeze(dim=-1))\n+\n \n         vocab_size = exp_logits.size(-1)\n         if label_smoothing > 0:\n@@ -181,20 +192,37 @@ def forward(ctx, vocab_parallel_logits, target, label_smoothing=0.0):\n             mean_log_probs = log_probs.mean(dim=-1)\n             loss = (1.0 - smoothing) * loss - smoothing * mean_log_probs\n \n-        ctx.label_smoothing, ctx.vocab_size = label_smoothing, vocab_size\n+        cloned_z_loss, cloned_ce_loss, log_z = None, None, None\n+        if z_loss_weight > 0.0:\n+            # before computing the actual loss for backprop (with added zloss),\n+            # we store the original cross-entropy loss for logging purposes\n+            cloned_ce_loss = loss.clone().detach()\n+            # z_loss = 10^(-4) * log(Z)^2\n+            log_z = log_sum_exp_logits + logits_max\n+            z_loss = torch.square(log_z)\n+            cloned_z_loss = z_loss.clone().detach()\n+            loss = loss + z_loss_weight * z_loss\n+\n+        ctx.label_smoothing, ctx.vocab_size, ctx.z_loss_weight = (\n+            label_smoothing, vocab_size, z_loss_weight)\n \n         # Store softmax, target-mask and masked-target for backward pass.\n-        ctx.save_for_backward(exp_logits, target_mask, masked_target_1d)\n+        ctx.save_for_backward(exp_logits, target_mask, masked_target_1d, log_z)\n \n-        return loss\n+        return loss, {'ce_loss': cloned_ce_loss, 'z_loss': cloned_z_loss}\n \n     @staticmethod\n-    def backward(ctx, grad_output):\n+    def backward(ctx, grad_output, etra_logs_grad=None):\n         \"\"\"Vocab parallel cross entropy backward function.\"\"\"\n \n         # Retreive tensors from the forward path.\n-        softmax, target_mask, masked_target_1d = ctx.saved_tensors\n-        label_smoothing, vocab_size = ctx.label_smoothing, ctx.vocab_size\n+        softmax, target_mask, masked_target_1d, log_z = ctx.saved_tensors\n+        label_smoothing, vocab_size, z_loss_weight = (\n+            ctx.label_smoothing, ctx.vocab_size, ctx.z_loss_weight)\n+\n+        if z_loss_weight > 0.0:\n+            # z-loss term adds the (2 * z_loss * log_z) factor.\n+            softmax *= (1.0 + 2.0 * z_loss_weight * log_z).unsqueeze(-1)\n \n         (grad_2d, arange_1d, softmax_update, grad_input) = (\n             VocabParallelCrossEntropy.prepare_gradient_calculation_operands(softmax, target_mask)\n@@ -213,10 +241,10 @@ def backward(ctx, grad_output):\n                 grad_2d, arange_1d, masked_target_1d, softmax_update, grad_input, grad_output\n             )\n \n-        return grad_input, None, None\n+        return grad_input, None, None, None\n \n \n-def vocab_parallel_cross_entropy(vocab_parallel_logits, target, label_smoothing=0.0):\n+def vocab_parallel_cross_entropy(vocab_parallel_logits, target, label_smoothing=0.0, z_loss_weight=0.0):\n     \"\"\"\n     Performs cross entropy loss when logits are split across tensor parallel ranks\n \n@@ -228,5 +256,6 @@ def vocab_parallel_cross_entropy(vocab_parallel_logits, target, label_smoothing=\n \n         label_smoothing: smoothing factor, must be in range [0.0, 1.0)\n                          default is no smoothing (=0.0)\n+        z_loss_weight: weight of the z_loss term\n     \"\"\"\n-    return _VocabParallelCrossEntropy.apply(vocab_parallel_logits, target, label_smoothing)\n+    return _VocabParallelCrossEntropy.apply(vocab_parallel_logits, target, label_smoothing, z_loss_weight)"
+    },
+    {
+      "filename": "megatron/core/transformer/transformer_config.py",
+      "status": "modified",
+      "additions": 6,
+      "deletions": 0,
+      "functions_modified": [],
+      "patch": "@@ -110,6 +110,12 @@ class TransformerConfig(ModelParallelConfig):\n     \"\"\"Whether cross entropy loss is calculated over the actual number of non-padded tokens in the\n     global batch, versus the default behavior of assuming all tokens are non-padded.\"\"\"\n \n+    z_loss_weight: float = 0.0\n+    \"\"\"Weight for the z-loss in the loss function.\"\"\"\n+\n+    z_loss_weight: float = 0.0\n+    \"\"\"Weight for the z-loss in the loss function.\"\"\"\n+\n     multi_latent_attention: bool = False\n     \"\"\"Whether to use multi-latent attention.\"\"\"\n "
+    },
+    {
+      "filename": "megatron/training/arguments.py",
+      "status": "modified",
+      "additions": 5,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "_add_logging_args",
+          "class_name": null,
+          "full_name": "_add_logging_args",
+          "start_line": 953,
+          "end_line": 1025,
+          "lines_changed": [
+            956,
+            957,
+            958
+          ]
+        },
+        {
+          "function_name": "_add_regularization_args",
+          "class_name": null,
+          "full_name": "_add_regularization_args",
+          "start_line": 1028,
+          "end_line": 1059,
+          "lines_changed": [
+            1057,
+            1058
+          ]
+        }
+      ],
+      "patch": "@@ -953,6 +953,9 @@ def _add_config_logger_args(parser):\n def _add_logging_args(parser):\n     group = parser.add_argument_group(title='logging')\n \n+    group.add_argument('--log-z-loss', action='store_true',\n+                        help='Log z and c.e losses, in addition to total loss. '\n+                        'Only if z-loss-weight > 0.')\n     group.add_argument('--log-params-norm', action='store_true',\n                        help='If set, calculate and log parameters norm.')\n     group.add_argument('--log-num-zeros-in-grad', action='store_true',\n@@ -1051,6 +1054,8 @@ def _add_regularization_args(parser):\n                        'numerical stability')\n     group.add_argument('--sgd-momentum', type=float, default=0.9,\n                        help='Momentum factor for sgd')\n+    group.add_argument('--z-loss-weight', type=float, default=0.0,\n+                       help='Weight for z-loss applied to output logits.')\n     return parser\n \n "
+    },
+    {
+      "filename": "pretrain_gpt.py",
+      "status": "modified",
+      "additions": 21,
+      "deletions": 4,
+      "functions_modified": [
+        {
+          "function_name": "loss_func",
+          "class_name": null,
+          "full_name": "loss_func",
+          "start_line": 131,
+          "end_line": 188,
+          "lines_changed": [
+            145,
+            146,
+            147,
+            148,
+            168,
+            169,
+            170,
+            171,
+            172,
+            173,
+            174,
+            175,
+            176,
+            177,
+            178,
+            179,
+            180,
+            181,
+            182,
+            183,
+            187
+          ]
+        }
+      ],
+      "patch": "@@ -142,8 +142,10 @@ def loss_func(loss_mask: torch.Tensor, output_tensor: torch.Tensor):\n             the data parallel ranks\n     \"\"\"\n     args = get_args()\n-\n-    losses = output_tensor.float()\n+    \n+    total_losses, losses_for_logging = output_tensor\n+    ce_losses, z_losses = losses_for_logging['ce_loss'], losses_for_logging['z_loss']\n+    losses = total_losses.float()        \n     loss_mask = loss_mask.view(-1).float()\n     total_tokens = loss_mask.sum()\n     loss = torch.cat([torch.sum(losses.view(-1) * loss_mask).view(1), total_tokens.view(1)])\n@@ -162,12 +164,27 @@ def loss_func(loss_mask: torch.Tensor, output_tensor: torch.Tensor):\n     # Reduce loss for logging.\n     reporting_loss = loss.clone().detach()\n     torch.distributed.all_reduce(reporting_loss, group=mpu.get_data_parallel_group())\n-\n     local_num_tokens = loss[1].clone().detach().to(torch.int)\n+\n+    log_dict = {'lm loss': (reporting_loss[0], reporting_loss[1])}\n+    if args.log_z_loss and (z_losses is not None):\n+        # ce_loss and z_loss are already detached in cross_entropy.py. No need to detach\n+        # them here like reporting_loss.\n+        z_losses, ce_losses = z_losses.float(), ce_losses.float()\n+        z_loss = torch.cat([torch.sum(z_losses.view(-1) * loss_mask).view(1), total_tokens.view(1)])\n+        ce_loss = torch.cat([torch.sum(ce_losses.view(-1) * loss_mask).view(1), total_tokens.view(1)])\n+        if args.context_parallel_size > 1:\n+            torch.distributed.all_reduce(z_loss, group=mpu.get_context_parallel_group())\n+            torch.distributed.all_reduce(ce_loss, group=mpu.get_context_parallel_group())\n+        torch.distributed.all_reduce(z_loss, group=mpu.get_data_parallel_group())\n+        torch.distributed.all_reduce(ce_loss, group=mpu.get_data_parallel_group())\n+        log_dict['ce-loss'] = (ce_loss[0], ce_loss[1])\n+        log_dict['z-loss'] = (z_loss[0], z_loss[1])\n+\n     return (\n         loss[0] * args.context_parallel_size,\n         local_num_tokens,\n-        {'lm loss': (reporting_loss[0], reporting_loss[1])},\n+        log_dict\n     )\n \n "
+    }
+  ],
+  "functions_modified": [
+    {
+      "function_name": "compute_language_model_loss",
+      "class_name": "LanguageModule",
+      "full_name": "LanguageModule.compute_language_model_loss",
+      "start_line": 26,
+      "end_line": 57,
+      "lines_changed": [
+        39,
+        40,
+        41,
+        42,
+        43,
+        45,
+        47,
+        48,
+        51,
+        53,
+        54,
+        55,
+        56,
+        57
+      ]
+    },
+    {
+      "function_name": "forward",
+      "class_name": "_VocabParallelCrossEntropy",
+      "full_name": "_VocabParallelCrossEntropy.forward",
+      "start_line": 132,
+      "end_line": 212,
+      "lines_changed": [
+        132,
+        168,
+        169,
+        170,
+        171,
+        172,
+        173,
+        195,
+        196,
+        197,
+        198,
+        199,
+        200,
+        201,
+        202,
+        203,
+        204,
+        205,
+        206,
+        207,
+        210,
+        212
+      ]
+    },
+    {
+      "function_name": "backward",
+      "class_name": "_VocabParallelCrossEntropy",
+      "full_name": "_VocabParallelCrossEntropy.backward",
+      "start_line": 215,
+      "end_line": 244,
+      "lines_changed": [
+        215,
+        219,
+        220,
+        221,
+        222,
+        223,
+        224,
+        225,
+        244
+      ]
+    },
+    {
+      "function_name": "vocab_parallel_cross_entropy",
+      "class_name": null,
+      "full_name": "vocab_parallel_cross_entropy",
+      "start_line": 247,
+      "end_line": 261,
+      "lines_changed": [
+        247,
+        259,
+        261
+      ]
+    },
+    {
+      "function_name": "_add_logging_args",
+      "class_name": null,
+      "full_name": "_add_logging_args",
+      "start_line": 953,
+      "end_line": 1025,
+      "lines_changed": [
+        956,
+        957,
+        958
+      ]
+    },
+    {
+      "function_name": "_add_regularization_args",
+      "class_name": null,
+      "full_name": "_add_regularization_args",
+      "start_line": 1028,
+      "end_line": 1059,
+      "lines_changed": [
+        1057,
+        1058
+      ]
+    },
+    {
+      "function_name": "loss_func",
+      "class_name": null,
+      "full_name": "loss_func",
+      "start_line": 131,
+      "end_line": 188,
+      "lines_changed": [
+        145,
+        146,
+        147,
+        148,
+        168,
+        169,
+        170,
+        171,
+        172,
+        173,
+        174,
+        175,
+        176,
+        177,
+        178,
+        179,
+        180,
+        181,
+        182,
+        183,
+        187
+      ]
+    }
+  ],
+  "step_plan": {
+    "steps": [
+      {
+        "operation": "Wire z-loss support into the language model loss computation and change return signature to include extra loss logs",
+        "file_to_modify": "megatron/core/models/common/language_module/language_module.py",
+        "function_to_modify": "compute_language_model_loss",
+        "reason": "To make the model loss be `cross_entropy + z_loss` (when enabled) and to propagate per-token CE and z-loss tensors for optional logging downstream; also to explicitly block unsupported `cross_entropy_loss_fusion` mode when z-loss is requested.",
+        "side_effects": "Call sites expecting only a single `loss` tensor must now handle a tuple `(loss, extra_logs)`; training scripts/loops that use fused CE must either disable fusion or keep `z_loss_weight=0.0`; any downstream reduction/logging code must tolerate `None` for extra logs."
+      },
+      {
+        "operation": "Extend the tensor-parallel cross entropy autograd forward pass to compute z-loss, clone detached CE/z-loss for logging, and return `(loss, extra_logs)`",
+        "file_to_modify": "megatron/core/tensor_parallel/cross_entropy.py",
+        "function_to_modify": "_VocabParallelCrossEntropy.forward",
+        "reason": "To add the z-loss regularization term based on the softmax normalization constant while preserving the original cross-entropy values for logging; returning extra logs enables training code to log CE and z-loss separately from the total loss.",
+        "side_effects": "Changes the autograd Function’s forward return type from a Tensor to a tuple, which requires all callers to be updated; adds memory overhead for storing detached clones when `z_loss_weight>0`; introduces additional saved tensor(s) (`log_z`) for backward."
+      },
+      {
+        "operation": "Update the tensor-parallel cross entropy backward pass to incorporate the z-loss gradient contribution and accept the extra output’s gradient placeholder",
+        "file_to_modify": "megatron/core/tensor_parallel/cross_entropy.py",
+        "function_to_modify": "_VocabParallelCrossEntropy.backward",
+        "reason": "Because the forward now adds `z_loss_weight * log(Z)^2`, the gradient w.r.t. logits must include the z-loss term; additionally, autograd will pass an extra gradient argument for the returned `extra_logs` object which must be accepted/ignored.",
+        "side_effects": "Alters gradient scaling of logits when `z_loss_weight>0`, which can change optimization dynamics; any subtle mismatch in saved tensors/shapes could affect numerical stability; typo in arg name (`etra_logs_grad`) is harmless but could reduce clarity."
+      },
+      {
+        "operation": "Expose a public API parameter for z-loss weight in the vocab-parallel cross entropy wrapper and pass it through to the autograd Function",
+        "file_to_modify": "megatron/core/tensor_parallel/cross_entropy.py",
+        "function_to_modify": "vocab_parallel_cross_entropy",
+        "reason": "To allow higher-level model code to enable/disable and tune z-loss without directly calling the autograd Function, keeping the z-loss addition configurable via model/training configuration.",
+        "side_effects": "Signature change may affect any external callers of `vocab_parallel_cross_entropy` (though default preserves old behavior); downstream code must be aware that the return value may now be a tuple depending on the implementation path."
+      },
+      {
+        "operation": "Add transformer configuration field for z-loss weighting (as implemented in this PR, duplicated definition)",
+        "file_to_modify": "megatron/core/transformer/transformer_config.py",
+        "function_to_modify": null,
+        "reason": "To make z-loss weight a first-class configuration option available to model components (e.g., `LanguageModule`) so the loss computation can be toggled and parameterized from config/args.",
+        "side_effects": "Duplicate `z_loss_weight` field/docstring may cause dataclass/config validation issues or confusion about which one is used; config serialization and help text may include duplicates; any code reflecting over config fields might be impacted."
+      },
+      {
+        "operation": "Add CLI logging flag to optionally emit CE and z-loss metrics alongside total loss",
+        "file_to_modify": "megatron/training/arguments.py",
+        "function_to_modify": "_add_logging_args",
+        "reason": "Since total loss becomes `CE + z_loss`, users may still want visibility into the underlying CE and the magnitude of the z-loss term; this flag gates extra metric reductions/logging to avoid overhead when not needed.",
+        "side_effects": "Introduces a new user-facing argument `--log-z-loss`; logging code paths must handle cases where z-loss tensors are `None` (e.g., fusion path or `z_loss_weight=0`)."
+      },
+      {
+        "operation": "Add CLI regularization argument to control z-loss strength from the command line",
+        "file_to_modify": "megatron/training/arguments.py",
+        "function_to_modify": "_add_regularization_args",
+        "reason": "To make z-loss tunable without code changes, aligning with other regularization knobs and enabling experimentation with different weights.",
+        "side_effects": "New argument `--z-loss-weight` must be propagated into the model/TransformerConfig construction path; misconfiguration (nonzero weight with fused CE) will now trigger a runtime `NotImplementedError` in loss computation."
+      },
+      {
+        "operation": "Update GPT pretraining loss function to consume `(total_loss, extra_logs)` output and optionally all-reduce/log CE and z-loss separately",
+        "file_to_modify": "pretrain_gpt.py",
+        "function_to_modify": "loss_func",
+        "reason": "Because the model now returns both total loss and optional per-token CE/z-loss for logging, the training script must unpack the tuple, reduce masked losses across context/data parallel groups, and build an expanded `log_dict` when `--log-z-loss` is enabled.",
+        "side_effects": "Assumes `output_tensor` is a tuple; if other model variants still return a single tensor, this would break unless they were updated similarly; adds extra all-reduces when `--log-z-loss` is enabled, increasing communication overhead; relies on CE/z-loss tensors being detached upstream (as implemented)."
+      }
+    ],
+    "summary": "Adds optional z-loss regularization to the vocab-parallel cross entropy path to stabilize training by discouraging large logits, and extends the training pipeline to optionally log total loss, raw cross-entropy, and z-loss separately via new CLI flags."
+  }
+}

@@ -1,0 +1,300 @@
+{
+  "pr_number": 2127,
+  "repository": "DLR-RM/stable-baselines3",
+  "title": "Feature/batch norm",
+  "body": "Added a boolean `use_batch_norm` flag to the CNN and MLP feature extractors.\n- In **NatureCNN**, each convolutional block now conditionally inserts an `nn.BatchNorm2d` layer (before the ReLU) when `use_batch_norm=True`.\n- In **create_mlp**, an initial `nn.BatchNorm1d` may be applied to the inputs, and batch-norm modules can wrap each linear layer.\nAll defaults remain unchanged (batch norm off), and existing behavior is fully preserved.\n\nMotivation: optional batch normalization can improve stability and speed convergence (reported better PPO on Breakout). Changelog/tests/docs updated per checklist.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T08:49:08.667650",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "stable_baselines3/common/torch_layers.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "__init__",
+          "class_name": "NatureCNN",
+          "full_name": "NatureCNN.__init__",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "create_mlp",
+          "class_name": null,
+          "full_name": "create_mlp",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "__init__",
+          "class_name": "CombinedExtractor",
+          "full_name": "CombinedExtractor.__init__",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "stable_baselines3/common/policies.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "__init__",
+          "class_name": "ContinuousCritic",
+          "full_name": "ContinuousCritic.__init__",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "stable_baselines3/sac/policies.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "__init__",
+          "class_name": "Actor",
+          "full_name": "Actor.__init__",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_get_constructor_parameters",
+          "class_name": "Actor",
+          "full_name": "Actor._get_constructor_parameters",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "__init__",
+          "class_name": "SACPolicy",
+          "full_name": "SACPolicy.__init__",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_get_constructor_parameters",
+          "class_name": "SACPolicy",
+          "full_name": "SACPolicy._get_constructor_parameters",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "stable_baselines3/td3/policies.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "__init__",
+          "class_name": "Actor",
+          "full_name": "Actor.__init__",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_get_constructor_parameters",
+          "class_name": "Actor",
+          "full_name": "Actor._get_constructor_parameters",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "__init__",
+          "class_name": "TD3Policy",
+          "full_name": "TD3Policy.__init__",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_get_constructor_parameters",
+          "class_name": "TD3Policy",
+          "full_name": "TD3Policy._get_constructor_parameters",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "stable_baselines3/dqn/policies.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "__init__",
+          "class_name": "QNetwork",
+          "full_name": "QNetwork.__init__",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_get_constructor_parameters",
+          "class_name": "QNetwork",
+          "full_name": "QNetwork._get_constructor_parameters",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "tests/test_cnn.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "test_cnn",
+          "class_name": null,
+          "full_name": "test_cnn",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "test_features_extractor_target_net",
+          "class_name": null,
+          "full_name": "test_features_extractor_target_net",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "docs/misc/changelog.rst",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    }
+  ],
+  "step_plan": {
+    "summary": "Add an opt-in `use_batch_norm` flag to SB3’s NatureCNN and MLP builder so users can enable BatchNorm in CNN conv blocks and MLP stacks without changing default behavior. Propagate and serialize the option across key policy components to preserve save/load compatibility and consistent target/online network architectures.",
+    "steps": [
+      {
+        "operation": "Extend NatureCNN to optionally insert BatchNorm2d layers in each conv block (Conv2d -> optional BN -> ReLU) controlled by a new use_batch_norm flag defaulting to False",
+        "file_to_modify": "stable_baselines3/common/torch_layers.py",
+        "function_to_modify": "NatureCNN.__init__",
+        "reason": "Implements opt-in batch normalization for the image feature extractor while preserving identical module topology when use_batch_norm=False (backward compatible).",
+        "side_effects": "Adds BN parameters and running-stat buffers to the CNN state_dict when enabled; may affect tests that assume a specific parameter count/order; train/eval mode behavior now matters for running stats."
+      },
+      {
+        "operation": "Add optional MLP batch normalization controlled by a use_batch_norm flag (default False), inserting BatchNorm1d on inputs and/or between Linear and activation for hidden layers while keeping the previous layer list unchanged when disabled",
+        "file_to_modify": "stable_baselines3/common/torch_layers.py",
+        "function_to_modify": "create_mlp",
+        "reason": "Provides an opt-in BN capability for all MLPs built through the central factory, enabling improved stability without changing default behavior.",
+        "side_effects": "BN introduces extra parameters and buffers; any call sites expecting exact layer sequences may need updates; requires that MLP inputs are shaped (N, features) (SB3 typically satisfies this)."
+      },
+      {
+        "operation": "Propagate the new CNN batch-norm option when creating per-key image extractors so MultiInput policies can enable BN consistently via features_extractor_kwargs",
+        "file_to_modify": "stable_baselines3/common/torch_layers.py",
+        "function_to_modify": "CombinedExtractor.__init__",
+        "reason": "CombinedExtractor is responsible for instantiating NatureCNN for image subspaces; without plumbing the flag, dict observations cannot benefit from the new option.",
+        "side_effects": "Changes constructor behavior only when the new kwarg is provided; incorrect forwarding could break MultiInputPolicy construction if kwargs are not handled carefully."
+      },
+      {
+        "operation": "Plumb MLP batch-norm configuration into critic MLP construction by passing the new create_mlp flag/kwargs when building ContinuousCritic Q-networks",
+        "file_to_modify": "stable_baselines3/common/policies.py",
+        "function_to_modify": "ContinuousCritic.__init__",
+        "reason": "ContinuousCritic is a key create_mlp call site for SAC/TD3-style critics; to make BN usable for critics (and keep architectures consistent between construction and reload), the option must be forwarded.",
+        "side_effects": "If a new constructor argument is introduced to ContinuousCritic, it may require updating policy wrappers and serialization elsewhere; BN will add parameters/buffers and slightly change runtime behavior during training."
+      },
+      {
+        "operation": "Enable SAC actor trunk to use optional MLP batch norm by forwarding the flag/kwargs to create_mlp when building latent_pi",
+        "file_to_modify": "stable_baselines3/sac/policies.py",
+        "function_to_modify": "Actor.__init__",
+        "reason": "SAC’s Actor uses create_mlp for its main trunk; forwarding the option allows BN for the policy network while keeping existing default architecture intact.",
+        "side_effects": "BN changes parameterization and train/eval semantics; if the flag is exposed via policy kwargs, mismatches between actor/critic configs could impact performance and must be reflected in saved models."
+      },
+      {
+        "operation": "Ensure SAC Actor serialization includes any new BN-related constructor arguments so save/load reconstructs identical modules",
+        "file_to_modify": "stable_baselines3/sac/policies.py",
+        "function_to_modify": "Actor._get_constructor_parameters",
+        "reason": "SB3 relies on _get_constructor_parameters to recreate modules on load; new BN settings must be included to avoid loading into a different architecture.",
+        "side_effects": "Alters saved metadata for new models; old checkpoints remain loadable as long as defaults match prior behavior."
+      },
+      {
+        "operation": "Expose/propagate BN configuration at the SACPolicy level (if policy-level kwargs are the chosen API) so actor/critic receive consistent MLP BN settings",
+        "file_to_modify": "stable_baselines3/sac/policies.py",
+        "function_to_modify": "SACPolicy.__init__",
+        "reason": "SACPolicy orchestrates actor/critic construction and splits kwargs; adding BN as a user-facing option typically requires plumbing here to avoid forcing users to manually patch submodule kwargs.",
+        "side_effects": "Adds/changes accepted policy_kwargs; must keep defaults unchanged; incorrect propagation could break custom net_arch or features extractor configs."
+      },
+      {
+        "operation": "Serialize SACPolicy-level BN configuration (if introduced) so full policy reconstruction on load preserves the BN setting across actor/critic",
+        "file_to_modify": "stable_baselines3/sac/policies.py",
+        "function_to_modify": "SACPolicy._get_constructor_parameters",
+        "reason": "Policy-level constructor parameters must include any new BN configuration to make load() deterministic and architecture-preserving.",
+        "side_effects": "Saved model constructor metadata changes for new models; ensure backward compatibility by providing defaults when fields are absent."
+      },
+      {
+        "operation": "Enable TD3 actor MLP to use optional batch norm by forwarding the flag/kwargs to create_mlp during actor network construction",
+        "file_to_modify": "stable_baselines3/td3/policies.py",
+        "function_to_modify": "Actor.__init__",
+        "reason": "TD3 Actor is another core create_mlp call site; forwarding the option ensures feature parity with SAC and supports improved training stability when enabled.",
+        "side_effects": "BN adds params/buffers and modifies behavior between train/eval; must ensure the target/online actor architecture remains identical for Polyak updates."
+      },
+      {
+        "operation": "Include BN-related TD3 Actor args in serialization so load() recreates the same actor architecture",
+        "file_to_modify": "stable_baselines3/td3/policies.py",
+        "function_to_modify": "Actor._get_constructor_parameters",
+        "reason": "Without serializing new constructor options, reloaded TD3 models could instantiate actors without BN, causing state_dict mismatches or silent architecture drift.",
+        "side_effects": "New metadata fields for new checkpoints; older checkpoints must still work via defaults."
+      },
+      {
+        "operation": "Propagate policy-level BN configuration through TD3Policy initialization (if a user-facing option is added) to ensure actor/critic are built consistently",
+        "file_to_modify": "stable_baselines3/td3/policies.py",
+        "function_to_modify": "TD3Policy.__init__",
+        "reason": "TD3Policy is responsible for assembling actor/critic kwargs; BN configuration must be passed here to make the feature usable through policy_kwargs and to keep actor/critic aligned.",
+        "side_effects": "Potential API surface expansion (new kwargs); must avoid breaking custom policies; ensure defaults preserve pre-PR behavior."
+      },
+      {
+        "operation": "Serialize any new TD3Policy BN configuration so reloading preserves actor/critic batch-norm settings",
+        "file_to_modify": "stable_baselines3/td3/policies.py",
+        "function_to_modify": "TD3Policy._get_constructor_parameters",
+        "reason": "Constructor parameter serialization is required for reproducible load/save of policies when new architectural flags are introduced.",
+        "side_effects": "Saved constructor metadata changes for new models; maintain backward compatibility by falling back to defaults if absent."
+      },
+      {
+        "operation": "Allow DQN QNetwork MLP head to use optional batch norm by forwarding the flag/kwargs to create_mlp when building the Q-value network",
+        "file_to_modify": "stable_baselines3/dqn/policies.py",
+        "function_to_modify": "QNetwork.__init__",
+        "reason": "DQN’s QNetwork is a primary create_mlp consumer; forwarding BN makes the feature available for value networks while keeping default behavior identical.",
+        "side_effects": "BN changes parameter count/order, which can affect tests and target-network sync assumptions; ensure online and target networks are constructed with identical flags to avoid load_state_dict mismatches."
+      },
+      {
+        "operation": "Update QNetwork serialization to include any BN-related constructor args so saved DQN models reload with matching Q-network architecture",
+        "file_to_modify": "stable_baselines3/dqn/policies.py",
+        "function_to_modify": "QNetwork._get_constructor_parameters",
+        "reason": "Ensures DQN models saved with BN enabled can be reloaded and reconstructed deterministically with identical module graphs.",
+        "side_effects": "New metadata for new models; must keep legacy loading behavior through defaults."
+      }
+    ]
+  }
+}

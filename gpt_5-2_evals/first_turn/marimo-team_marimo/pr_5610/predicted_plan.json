@@ -1,0 +1,124 @@
+{
+  "pr_number": 5610,
+  "repository": "marimo-team/marimo",
+  "title": "Feat/add force capability on export",
+  "body": "## 📝 Summary\n\nThis pull request introduces a --force / -f flag to the marimo export subcommands. This allows users to overwrite existing output files, which is essential for automation and scripting use cases.\n\nFixes #5523\n\n## 🔍 Description of Changes\n\nCurrently, when marimo export is used with an --output argument that points to an existing file, it interactively prompts the user for confirmation before overwriting. While this is a safe default for manual use, it blocks non-interactive workflows, such as in CI/CD pipelines or automated scripts.\n\nThis PR resolves the issue by:\n\nAdding a --force and -f option to all relevant export commands (html, script, md, ipynb, and html_wasm).\n\nUpdating the watch_and_export function to check for this flag. If force is True, the prompt_to_overwrite confirmation step is skipped, and the file is overwritten directly.\n\nAdding a new pytest test case (test_cli_export_html_force_overwrite) to ensure the new functionality works as expected. The test verifies that:\n\nAttempting to export to an existing file without the flag does not overwrite it.\n\nUsing --force successfully overwrites the existing file.\n\nUsing the short alias -f also works correctly.\n\nThese changes make the export feature more versatile and friendly for automated environments without altering the safe default behavior for interactive users.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T08:35:19.052794",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "marimo/_cli/export/commands.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "watch_and_export",
+          "class_name": null,
+          "full_name": "watch_and_export",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "html",
+          "class_name": null,
+          "full_name": "html",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "script",
+          "class_name": null,
+          "full_name": "script",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "md",
+          "class_name": null,
+          "full_name": "md",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "ipynb",
+          "class_name": null,
+          "full_name": "ipynb",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "html_wasm",
+          "class_name": null,
+          "full_name": "html_wasm",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "tests/_cli/test_cli_export.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    }
+  ],
+  "step_plan": {
+    "summary": "Add a `--force/-f` flag to all `marimo export` subcommands and plumb it through the shared `watch_and_export` helper so existing output files can be overwritten without interactive prompts. This preserves the current safe default while enabling non-interactive automation workflows.",
+    "steps": [
+      {
+        "operation": "Add a `force: bool = False` parameter to the shared export helper and bypass overwrite confirmation when enabled",
+        "file_to_modify": "marimo/_cli/export/commands.py",
+        "function_to_modify": "watch_and_export",
+        "reason": "`watch_and_export` centralizes writing to `--output` and currently gates overwriting behind `prompt_to_overwrite(output_path)`. Adding a `force` switch here ensures all export subcommands get consistent overwrite behavior and that `--watch` mode also skips the one-time prompt when `--force` is set.",
+        "side_effects": "Changes the helper’s call signature; all callers must be updated to pass `force` (or rely on the default). Behavior change only when `force=True`; otherwise prompts/guards remain. Any tests that mock or assert overwrite prompting may need updates."
+      },
+      {
+        "operation": "Add `--force/-f` Click option to HTML export and thread it into the helper call",
+        "file_to_modify": "marimo/_cli/export/commands.py",
+        "function_to_modify": "html",
+        "reason": "Expose the new overwrite control to users for `marimo export html` and ensure it reaches `watch_and_export` so the prompt is skipped and the file is overwritten when requested.",
+        "side_effects": "CLI surface change (new flag). Help text/option parsing changes; downstream automation can now use `--force/-f`. Must ensure option ordering/Click decorators remain consistent with existing options."
+      },
+      {
+        "operation": "Add `--force/-f` Click option to script export and pass through to `watch_and_export`",
+        "file_to_modify": "marimo/_cli/export/commands.py",
+        "function_to_modify": "script",
+        "reason": "Keep feature parity across export formats; `marimo export script` must support non-interactive overwrites the same way as HTML.",
+        "side_effects": "CLI surface change for this subcommand; requires updating the call to `watch_and_export` to include `force=force` (or equivalent), otherwise the option would be ignored."
+      },
+      {
+        "operation": "Add `--force/-f` Click option to markdown export and pass through to `watch_and_export`",
+        "file_to_modify": "marimo/_cli/export/commands.py",
+        "function_to_modify": "md",
+        "reason": "Enable overwrite-without-prompt for `marimo export md`, consistent with other exporters and necessary for scripted docs generation.",
+        "side_effects": "CLI option addition; ensure `--output` + `--force` works both for stdout vs file outputs and does not alter default prompting when `--force` is absent."
+      },
+      {
+        "operation": "Add `--force/-f` Click option to ipynb export and pass through to `watch_and_export`",
+        "file_to_modify": "marimo/_cli/export/commands.py",
+        "function_to_modify": "ipynb",
+        "reason": "Allow automation that regenerates notebooks to overwrite existing `.ipynb` outputs without interactive confirmation.",
+        "side_effects": "CLI surface change; update helper invocation accordingly. If there are any ipynb-specific validations, ensure they still run before overwriting occurs."
+      },
+      {
+        "operation": "Add `--force/-f` Click option to html-wasm export and ensure the computed output HTML path uses the `force` behavior",
+        "file_to_modify": "marimo/_cli/export/commands.py",
+        "function_to_modify": "html_wasm",
+        "reason": "`html_wasm` may derive the final HTML file path from an output directory and also writes additional assets. The force flag must be applied to the final HTML write (via `watch_and_export`) so users can overwrite existing wasm HTML outputs without prompts.",
+        "side_effects": "May change behavior when output HTML already exists: with `--force` it will overwrite without confirmation. Ensure any pre-write asset generation doesn’t unintentionally clobber directories/files unexpectedly; if assets are written before the final HTML overwrite check, consider whether they should also respect force semantics."
+      }
+    ]
+  }
+}

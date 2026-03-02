@@ -1,0 +1,64 @@
+{
+  "pr_number": 5006,
+  "repository": "OctoPrint/OctoPrint",
+  "title": "fix netmask",
+  "body": "  * [x] Your changes are not possible to do through a plugin and relevant\r\n    to a large audience (ideally all users of OctoPrint)\r\n  * [x] If your changes are large or otherwise disruptive: You have\r\n    made sure your changes don't interfere with current development by\r\n    talking it through with the maintainers, e.g. through a\r\n    Brainstorming ticket\r\n  * [ ] Your PR targets OctoPrint's `devel` branch if it's a completely\r\n    new feature, or `maintenance` if it's a bug fix or improvement of\r\n    existing functionality for the current stable version (no PRs\r\n    against `master` or anything else please)\r\n  * [ ] Your PR was opened from a custom branch on your repository\r\n    (no PRs from your version of `master`, `maintenance`, or `devel`\r\n    please), e.g. `dev/my_new_feature` or `fix/my_bugfix`\r\n  * [x] Your PR only contains relevant changes: no unrelated files,\r\n    no dead code, ideally only one commit - rebase and squash your PR\r\n    if necessary!\r\n  * [x] Your changes follow the existing coding style\r\n  * [ ] If your changes include style sheets: You have modified the\r\n    `.less` source files, not the `.css` files (those are generated\r\n    with `lessc`)\r\n  * [x] You have tested your changes (please state how!) - ideally you\r\n    have added unit tests\r\n  * [ ] You have run the existing unit tests against your changes and\r\n    nothing broke\r\n  * [x] You have added yourself to the `AUTHORS.md` file :)\r\n\r\n\r\n#### What does this PR do and why is it necessary?\r\nin netifaces2 netmask was replaced with mask\r\n#### How was it tested? How can it be tested by the reviewer?\r\nmanually modified in local deployment and ran OctoPrint\r\n#### Any background context you want to provide?\r\n\r\n#### What are the relevant tickets if any?\r\n#5005\r\n#### Screenshots (if appropriate)\r\n\r\n#### Further notes\r\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-02-26T03:05:12.904962",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "src/octoprint/util/net.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "get_lan_ranges",
+          "class_name": null,
+          "full_name": "get_lan_ranges",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "is_lan_address",
+          "class_name": null,
+          "full_name": "is_lan_address",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "setup.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    }
+  ],
+  "step_plan": {
+    "summary": "Update OctoPrint’s LAN range detection to work with `netifaces2` by reading interface masks from `mask` instead of only `netmask`, while keeping backwards compatibility. Ensure `is_lan_address` remains robust when ranges are computed from mixed/partial interface data.",
+    "steps": [
+      {
+        "operation": "Update LAN range computation to accept netifaces2 address dictionaries using the `mask` key (with fallback to legacy `netmask`)",
+        "file_to_modify": "src/octoprint/util/net.py",
+        "function_to_modify": "get_lan_ranges",
+        "reason": "`netifaces2` replaced the address dict key `netmask` with `mask`, so the current lookup (`address[\"netmask\"]`) can raise a KeyError and break LAN range detection. Supporting both keys preserves compatibility across netifaces/netifaces2 variants and avoids regressions.",
+        "side_effects": "Changes the resulting `IPNetwork` construction only when the key mismatch previously caused failure; may slightly alter behavior for malformed interface dicts (should now fail with a clearer error or be skipped, depending on existing error-handling). Any downstream callers of `get_lan_ranges()` (including `is_lan_address`) will stop seeing exceptions caused by missing `netmask`."
+      },
+      {
+        "operation": "Harden/adjust `is_lan_address` behavior to gracefully handle cases where `get_lan_ranges()` returns an empty/partial set due to missing or unparsable masks, and ensure it continues to work with the updated range computation",
+        "file_to_modify": "src/octoprint/util/net.py",
+        "function_to_modify": "is_lan_address",
+        "reason": "`is_lan_address` depends on `get_lan_ranges()` output; with key changes and fallback logic, edge cases (no mask, IPv6 prefix formatting) should not bubble up as unhandled exceptions during address classification. Reviewing and aligning error handling ensures stable behavior for callers.",
+        "side_effects": "May change how strictly LAN detection fails (e.g., returning `False` instead of raising if ranges cannot be computed). Could affect any feature relying on LAN/private detection, so should be validated by running OctoPrint and, if available, unit tests for LAN classification."
+      }
+    ]
+  }
+}

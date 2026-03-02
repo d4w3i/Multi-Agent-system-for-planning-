@@ -1,0 +1,65 @@
+{
+  "pr_number": 5485,
+  "repository": "facebookresearch/fairseq",
+  "title": "The cause of the error has been fixed: \"NameError: name 'help' is not…",
+  "body": "… defined\"\n\n# Before submitting\n\n- [-] Was this discussed/approved via a Github issue? (no need for typos, doc improvements)\n- [+] Did you read the [contributor guideline](https://github.com/pytorch/fairseq/blob/main/CONTRIBUTING.md)?\n- [+] Did you make sure to update the docs?\n- [+] Did you write any new necessary tests?\n\n## What does this PR do?\nA typo in the code causing an error in the operation of File \"fairseq\\dataclass\\configs.py\", line 1080, in EMAConfig has been fixed\nNameError: name 'help' is not defined.\n\n## PR review\nAnyone in the community is free to review the PR once the tests have passed.\nIf we didn't discuss your PR in Github issues there's a high chance it will not be merged.\n\n## Did you have fun?\nMake sure you had fun coding 🙃\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-02-26T03:18:57.441560",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "fairseq/dataclass/configs.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "EMAConfig (dataclass field: store_ema)",
+          "class_name": null,
+          "full_name": "EMAConfig (dataclass field: store_ema)",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "tests/test_dataclass_utils.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": ", test_import_ema_config_or_gen_parser)",
+          "class_name": "TestDataclassUtils",
+          "full_name": "TestDataclassUtils.test_* (add new test, e.g., test_import_ema_config_or_gen_parser)",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Fix an import-time `NameError` in `EMAConfig` caused by using an unbound name `help` as a dataclass field metadata key, and add a regression test to ensure config imports and dataclass-driven parser/help generation remain robust.",
+    "steps": [
+      {
+        "operation": "Fix EMAConfig.store_ema dataclass field metadata key from an unbound name to a string literal",
+        "file_to_modify": "fairseq/dataclass/configs.py",
+        "function_to_modify": "EMAConfig",
+        "reason": "`metadata={help: ...}` evaluates `help` as a variable at import time, raising `NameError` and preventing `fairseq.dataclass.configs` (and downstream CLI/config generation) from importing. Using `metadata={\"help\": \"...\"}` matches the convention used across the config dataclasses and what help-generation utilities expect.",
+        "side_effects": "Unblocks import-time failures across any code path that imports `fairseq.dataclass.configs` (Hydra config composition, argparse/Hydra help generation, Fairseq CLIs). Very low behavioral risk aside from changing the help text key to be correctly discoverable."
+      },
+      {
+        "operation": "Add a regression unit test that imports EMAConfig (or FairseqConfig) and exercises parser/help generation on it",
+        "file_to_modify": "tests/test_dataclass_utils.py",
+        "function_to_modify": "TestDataclassUtils.test_import_ema_config_or_gen_parser",
+        "reason": "The bug is an import-time evaluation error, so a regression test should fail if `fairseq.dataclass.configs` cannot be imported or if dataclass metadata access during parser generation crashes. Creating a parser from `EMAConfig` (or from a parent config that includes it) exercises the `metadata[\"help\"]` path and prevents recurrence of `metadata={help: ...}` typos.",
+        "side_effects": "May require importing `gen_parser_from_dataclass` and/or other dataclass utilities in the test file; could slightly increase test runtime. If the test constructs a parser, ensure it doesn’t depend on global argparse state or optional dependencies; otherwise, it might need minimal isolation (e.g., fresh ArgumentParser instance)."
+      }
+    ]
+  }
+}

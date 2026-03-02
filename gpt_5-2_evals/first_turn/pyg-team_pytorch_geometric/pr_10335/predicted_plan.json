@@ -1,0 +1,200 @@
+{
+  "pr_number": 10335,
+  "repository": "pyg-team/pytorch_geometric",
+  "title": "Fixes to WebQSP Indexer and GRetriever so that unnecessary disk writes are reduced.",
+  "body": "Quick fix to webqsp and gretriever to help with unnecessary cruft on disk and out of date api in examples.",
+  "extraction_metadata": {
+    "extracted_at": "2026-02-26T03:48:27.938681",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "torch_geometric/datasets/web_qsp_dataset.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "download",
+          "class_name": "KGQABaseDataset",
+          "full_name": "KGQABaseDataset.download",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "process",
+          "class_name": "KGQABaseDataset",
+          "full_name": "KGQABaseDataset.process",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_build_graph",
+          "class_name": "KGQABaseDataset",
+          "full_name": "KGQABaseDataset._build_graph",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_retrieve_subgraphs",
+          "class_name": "KGQABaseDataset",
+          "full_name": "KGQABaseDataset._retrieve_subgraphs",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "torch_geometric/data/large_graph_indexer.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "save",
+          "class_name": "LargeGraphIndexer",
+          "full_name": "LargeGraphIndexer.save",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "from_disk",
+          "class_name": "LargeGraphIndexer",
+          "full_name": "LargeGraphIndexer.from_disk",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "examples/llm/g_retriever.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "train",
+          "class_name": null,
+          "full_name": "train",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "save_params_dict",
+          "class_name": null,
+          "full_name": "save_params_dict",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "get_loss",
+          "class_name": null,
+          "full_name": "get_loss",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "inference_step",
+          "class_name": null,
+          "full_name": "inference_step",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "examples/llm/nvtx_examples/nvtx_webqsp_example.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    }
+  ],
+  "step_plan": {
+    "summary": "Reduce unnecessary disk writes in the WebQSP/CWQ dataset pipeline by making raw/processed artifacts and the LargeGraphIndexer cache more idempotent, and update the GRetriever example to avoid unconditional saves and align with the current model API.",
+    "steps": [
+      {
+        "operation": "Make raw dataset download idempotent by skipping HuggingFace `save_to_disk(...)` when raw cache already exists (unless `force_reload` is requested), and avoid rewriting the same raw artifact directory.",
+        "file_to_modify": "torch_geometric/datasets/web_qsp_dataset.py",
+        "function_to_modify": "KGQABaseDataset.download",
+        "reason": "`download()` currently materializes the HF dataset on disk, which can create redundant artifacts and overwrite an existing raw cache even when unchanged; guarding this reduces unnecessary disk churn.",
+        "side_effects": "May change behavior for users relying on implicit re-download/refresh; ensure `force_reload` (or equivalent) still triggers a rebuild and that partial/corrupt raw dirs are handled (e.g., by detecting incomplete cache and re-downloading)."
+      },
+      {
+        "operation": "Tighten the process decision logic to reuse existing processed artifacts (indexer + split files) and only trigger `_build_graph()`/`_retrieve_subgraphs()` when outputs are missing or `force_reload` is enabled.",
+        "file_to_modify": "torch_geometric/datasets/web_qsp_dataset.py",
+        "function_to_modify": "KGQABaseDataset.process",
+        "reason": "`process()` is the central orchestration point; it should short-circuit when processed paths exist to prevent repeated rebuilding and subsequent writes on every dataset instantiation.",
+        "side_effects": "Incorrect existence checks could lead to stale outputs being reused; add robust checks (e.g., verify required files for a split) and ensure behavior remains correct when users request a different split/config that changes the processed filename set."
+      },
+      {
+        "operation": "Avoid rebuilding/resaving the large graph indexer when an on-disk indexer already exists and is compatible; load via `LargeGraphIndexer.from_disk(...)` and only call `save(...)` when newly built or explicitly overwriting is requested.",
+        "file_to_modify": "torch_geometric/datasets/web_qsp_dataset.py",
+        "function_to_modify": "KGQABaseDataset._build_graph",
+        "reason": "`_build_graph()` triggers expensive indexer construction and calls `indexer.save(...)`; skipping rebuild/resave when cache exists directly reduces the main source of unnecessary writes.",
+        "side_effects": "Requires that `from_disk()` can reliably determine compatibility; if embeddings/model config changes, you may need a version/hash check to force rebuild, which can affect cache invalidation semantics and reproducibility."
+      },
+      {
+        "operation": "Make subgraph retrieval caching-aware by skipping `self.save(results_graphs, path)` when the processed split file(s) already exist (unless `force_reload`), and avoid generating/saving splits that are not requested.",
+        "file_to_modify": "torch_geometric/datasets/web_qsp_dataset.py",
+        "function_to_modify": "KGQABaseDataset._retrieve_subgraphs",
+        "reason": "`_retrieve_subgraphs()` writes processed per-split artifacts; preventing re-saving identical outputs and limiting to the requested split reduces disk cruft and speeds repeated runs.",
+        "side_effects": "If upstream retrieval parameters change without changing the output path, stale files could be reused; consider embedding key configuration into filenames or storing minimal metadata for invalidation."
+      },
+      {
+        "operation": "Refactor indexer persistence to be non-destructive by default: add a safe save strategy (e.g., `overwrite=False` default, early return if target exists, or atomic write to temp + rename) instead of unconditional `shutil.rmtree(...)` and full rewrite.",
+        "file_to_modify": "torch_geometric/data/large_graph_indexer.py",
+        "function_to_modify": "LargeGraphIndexer.save",
+        "reason": "Current `save()` deletes and rewrites the entire directory, producing unnecessary I/O and churn even when nothing changed; making saves idempotent/atomic directly addresses the PR goal.",
+        "side_effects": "Changing defaults can affect callers that expect a fresh rewrite; ensure callers can still request overwrite explicitly. Atomic rename may behave differently on some filesystems; add cleanup of temp dirs on failure."
+      },
+      {
+        "operation": "Keep disk loading compatible with the adjusted save behavior by handling both existing layout and any new atomic/temp strategy; add validation/error messaging when the indexer directory is incomplete or mid-write.",
+        "file_to_modify": "torch_geometric/data/large_graph_indexer.py",
+        "function_to_modify": "LargeGraphIndexer.from_disk",
+        "reason": "If `save()` becomes non-destructive/atomic, `from_disk()` must tolerate partially written states (e.g., temp directories) and provide robust checks so datasets can safely reuse cached indexers without surprises.",
+        "side_effects": "Stricter validation could surface errors that previously went unnoticed (but would later cause subtle runtime issues). Ensure any new compatibility logic does not silently load wrong/stale artifacts."
+      },
+      {
+        "operation": "Gate all end-of-run writes behind a user option (e.g., `--save_checkpoint`, `--output_dir`, or `--no_save`): only call `save_params_dict(...)` and `torch.save(...)` when explicitly enabled, and default to not writing to CWD.",
+        "file_to_modify": "examples/llm/g_retriever.py",
+        "function_to_modify": "train",
+        "reason": "The example currently saves model params and evaluation outputs unconditionally, producing unnecessary disk artifacts during routine runs; making saving opt-in aligns with “reduce unnecessary disk writes”.",
+        "side_effects": "Example behavior changes (no artifacts by default). Update documentation/CLI help accordingly. Downstream users relying on implicit saved files will need to pass the new flag."
+      },
+      {
+        "operation": "Update the saving helper to support the new save policy: accept an output directory/path, create directories as needed, and no-op cleanly when saving is disabled (or when path is None).",
+        "file_to_modify": "examples/llm/g_retriever.py",
+        "function_to_modify": "save_params_dict",
+        "reason": "Centralizing the “optional save” behavior in `save_params_dict` reduces duplication and ensures consistent, minimal disk writes across checkpoints/final saves.",
+        "side_effects": "Call sites must be updated to pass the new arguments; ensure backward compatibility if the helper is used elsewhere in the examples. If directory creation is added, it may affect relative path assumptions."
+      },
+      {
+        "operation": "Modernize the training loss computation to match the current `GRetriever`/LLM forward API (argument names/return shape), ensuring the example does not rely on deprecated signatures.",
+        "file_to_modify": "examples/llm/g_retriever.py",
+        "function_to_modify": "get_loss",
+        "reason": "The PR mentions “out of date api in examples”; `get_loss` is the key adapter between the example loop and model APIs, so it should be updated to the current expected call contract.",
+        "side_effects": "May require adjusting batch structure assumptions and metrics logging. A change here can break the example at runtime if not aligned with the actual model output types; validate by running the example after updates."
+      },
+      {
+        "operation": "Modernize the inference path to match the current inference/generation API (e.g., `GRetriever.inference(...)` or model callable signature), and ensure it does not trigger any implicit saving/logging to disk.",
+        "file_to_modify": "examples/llm/g_retriever.py",
+        "function_to_modify": "inference_step",
+        "reason": "`inference_step` is the other main API touchpoint; updating it prevents runtime errors due to signature drift and helps keep the example free of unintended side effects.",
+        "side_effects": "May change the structure of returned predictions/eval outputs; ensure downstream evaluation code in the example still works and that optional saving in `train` serializes the correct object when enabled."
+      }
+    ]
+  }
+}

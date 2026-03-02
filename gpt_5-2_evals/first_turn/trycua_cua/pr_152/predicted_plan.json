@@ -1,0 +1,156 @@
+{
+  "pr_number": 152,
+  "repository": "trycua/cua",
+  "title": "[Agent] Improved drag tool and standardized UITARS response",
+  "body": "This PR standardizes the UITARS loop responses to use the AgentResponse format. The Gradio UI now displays AgentResponse objects more clearly to reflect the standardized output.\n\nAlso includes some bugfixes for the drag tool, and allows for dragging along a path with more than two points to support upcoming agent features",
+  "extraction_metadata": {
+    "extracted_at": "2026-02-26T04:00:53.514326",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "libs/agent/agent/providers/uitars/loop.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "run",
+          "class_name": "UITARSLoop",
+          "full_name": "UITARSLoop.run",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_handle_response",
+          "class_name": "UITARSLoop",
+          "full_name": "UITARSLoop._handle_response",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "process_model_response",
+          "class_name": "UITARSLoop",
+          "full_name": "UITARSLoop.process_model_response",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "libs/agent/agent/providers/uitars/tools/computer.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "__call__",
+          "class_name": "ComputerTool",
+          "full_name": "ComputerTool.__call__",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "libs/agent/agent/providers/uitars/utils.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "parse_action_parameters",
+          "class_name": null,
+          "full_name": "parse_action_parameters",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "libs/agent/agent/ui/gradio/app.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "process_agent_result",
+          "class_name": null,
+          "full_name": "process_agent_result",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "extract_synthesized_text",
+          "class_name": null,
+          "full_name": "extract_synthesized_text",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Standardize UITARS streaming outputs so the provider loop yields `AgentResponse`-compatible objects throughout, and update the Gradio UI to render these responses (including UITARS thoughts/actions) consistently. Also fix and enhance the UITARS computer drag tool to support multi-point drag paths and resolve existing drag-related bugs.",
+    "steps": [
+      {
+        "operation": "Refactor streaming loop yields to emit standardized AgentResponse objects for thoughts/actions/errors (and optionally populate `output` blocks) instead of ad-hoc dicts",
+        "file_to_modify": "libs/agent/agent/providers/uitars/loop.py",
+        "function_to_modify": "UITARSLoop.run",
+        "reason": "`UITARSLoop.run` is the streaming contract boundary (passed through by `ComputerAgent.run`), so standardization must occur here to ensure *all* streamed yields conform to `AgentResponse` and can be rendered consistently by the UI.",
+        "side_effects": "Changes the streamed payload shape for UITARS consumers; downstream code that expects `{role, content, metadata}` dicts may break unless they already tolerate AgentResponse-like dicts. Requires updating UI rendering accordingly and validating any tests/snapshots for streaming output."
+      },
+      {
+        "operation": "Standardize how model responses are converted into structured thought/action/tool-call information that can be attached to AgentResponse (e.g., as metadata + typed `output` entries)",
+        "file_to_modify": "libs/agent/agent/providers/uitars/loop.py",
+        "function_to_modify": "UITARSLoop._handle_response",
+        "reason": "This is where raw model text is parsed into actions and executed; it’s the best point to normalize “thought”/“action” blocks and tool execution results into a consistent internal representation that `run()` can stream as AgentResponse.",
+        "side_effects": "May change internal state and the sequence/timing of emitted thought/action/tool-result messages. Can affect error handling semantics (e.g., whether partial actions still stream). Ensure tool exceptions are converted to AgentResponse error blocks instead of raising."
+      },
+      {
+        "operation": "Adjust model-response parsing to return structures aligned with the standardized AgentResponse representation (e.g., parsed actions, parameters, and any UITARS-specific sections)",
+        "file_to_modify": "libs/agent/agent/providers/uitars/loop.py",
+        "function_to_modify": "UITARSLoop.process_model_response",
+        "reason": "If `process_model_response` currently returns loosely-typed text/dicts, it should evolve to produce structured data that `_handle_response` and `run` can map deterministically into AgentResponse `text/metadata/output` fields.",
+        "side_effects": "May require updating any callers/tests that assume the previous return type. Parsing changes can alter how malformed model output is treated (e.g., stricter schema vs. best-effort)."
+      },
+      {
+        "operation": "Extend action-parameter parsing to support multi-point drag paths (N>2 points) while preserving start/end drag compatibility",
+        "file_to_modify": "libs/agent/agent/providers/uitars/utils.py",
+        "function_to_modify": "parse_action_parameters",
+        "reason": "The computer tool needs a richer representation than `start_box/end_box` to support dragging along a path; parsing is the normalization layer that should accept both legacy drag syntax and upcoming path-based syntax and emit tool args accordingly.",
+        "side_effects": "Could change parsed output for ambiguous drag inputs; ensure backward compatibility by continuing to produce existing parameters when only start/end are present. Add/update unit coverage for both formats (2-point and N-point)."
+      },
+      {
+        "operation": "Update drag execution to accept either start/end coordinates or a `path=[{x,y}, ...]` (>=2) and perform sequential drag segments; fix existing control-flow issues (e.g., unreachable code in `finished` branch)",
+        "file_to_modify": "libs/agent/agent/providers/uitars/tools/computer.py",
+        "function_to_modify": "ComputerTool.__call__",
+        "reason": "Tool execution must match the extended parser output and implement path-based dragging for upcoming agent features; also remove buggy/unreachable code to avoid inconsistent results and make completion status reliable.",
+        "side_effects": "Behavioral change in drag timing and number of low-level events (multiple drags for multi-point paths). Could impact UI automation stability; may require adjusting delays/step size. Verify existing actions (click/type/scroll/etc.) remain unchanged and add regression tests for simple 2-point drags."
+      },
+      {
+        "operation": "Update Gradio streaming renderer to correctly detect and render standardized AgentResponse objects from UITARS (including UITARS-specific titles/status and any `output` blocks)",
+        "file_to_modify": "libs/agent/agent/ui/gradio/app.py",
+        "function_to_modify": "process_agent_result",
+        "reason": "Once UITARS yields AgentResponse-shaped objects, the UI must prefer standardized fields (`text`, `metadata`, `output`) rather than provider-specific dict fields, and it should display UITARS thoughts/actions with stable grouping and clear labels.",
+        "side_effects": "May change how messages appear in chat (grouping, titles, ordering). Ensure other providers’ payloads still render correctly. Could require updating any UI snapshot/manual test expectations."
+      },
+      {
+        "operation": "Enhance synthesis/extraction logic to build readable text from AgentResponse `output` blocks (including UITARS thought/action/tool-call blocks) consistently",
+        "file_to_modify": "libs/agent/agent/ui/gradio/app.py",
+        "function_to_modify": "extract_synthesized_text",
+        "reason": "If UITARS uses richer `output` entries (for thoughts/actions/tool calls), synthesized display text must be derived from these standardized blocks to avoid losing content and to keep the UI consistent across streaming updates.",
+        "side_effects": "May change summarization/concatenation of streamed text; ensure it doesn’t duplicate content between `text` and `output`. Confirm compatibility with any logging/export features that rely on synthesized text."
+      }
+    ]
+  }
+}

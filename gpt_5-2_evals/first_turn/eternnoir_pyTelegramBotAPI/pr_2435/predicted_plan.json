@@ -1,0 +1,65 @@
+{
+  "pr_number": 2435,
+  "repository": "eternnoir/pyTelegramBotAPI",
+  "title": "Fixed \"subscription_period\" docstring",
+  "body": "## Description\nFixed method docstring for \"subscription_period\"\n\nPython version: 3.10\n\nOS: macOS Sonoma 14.7\n\n## Checklist:\n- Just minor change of param docstring",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T08:25:53.977173",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "telebot/__init__.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "create_invoice_link",
+          "class_name": "TeleBot",
+          "full_name": "TeleBot.create_invoice_link",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "telebot/async_telebot.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "create_invoice_link",
+          "class_name": "AsyncTeleBot",
+          "full_name": "AsyncTeleBot.create_invoice_link",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Fixes incorrect Sphinx/reST docstring markup for the `subscription_period` parameter in invoice-link creation wrappers so documentation generators correctly recognize and render the parameter, keeping sync and async docstrings consistent.",
+    "steps": [
+      {
+        "operation": "Fix Sphinx/reST parameter field markup for `subscription_period` in the sync invoice-link wrapper docstring",
+        "file_to_modify": "telebot/__init__.py",
+        "function_to_modify": "TeleBot.create_invoice_link",
+        "reason": "The docstring currently uses malformed Sphinx syntax (`:subscription_period:`) which prevents documentation tools (e.g., Sphinx) from recognizing and rendering `subscription_period` as a parameter; updating to `:param subscription_period:` matches the project’s established docstring convention and fixes generated docs without changing runtime behavior.",
+        "side_effects": "Documentation output will change (parameter will be correctly listed/rendered). No API/signature/runtime behavior changes. If the project has docstring linting or docs-build CI, it may start passing where it previously warned/failed (or vice versa if the project expected the incorrect tag)."
+      },
+      {
+        "operation": "Mirror the same docstring fix for `subscription_period` in the async invoice-link wrapper to keep sync/async docs aligned",
+        "file_to_modify": "telebot/async_telebot.py",
+        "function_to_modify": "AsyncTeleBot.create_invoice_link",
+        "reason": "The async wrapper is intended to be a parity equivalent of the sync wrapper; fixing the same malformed docstring field ensures consistent public documentation across both entry points and avoids confusing discrepancies for users.",
+        "side_effects": "Documentation output for async API will change similarly (correct parameter rendering). No runtime behavior changes. May affect any docs snapshots or doctool outputs that compare sync/async docstrings."
+      }
+    ]
+  }
+}

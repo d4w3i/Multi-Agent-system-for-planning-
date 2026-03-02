@@ -1,0 +1,65 @@
+{
+  "pr_number": 40,
+  "repository": "langchain-ai/local-deep-researcher",
+  "title": "convert max_web_research_loops to int to make sure comparison works",
+  "body": "This PR fixes a bug introduced by my previous PR and the getting the max_web_research_loops from the environment variable. I'm not sure why it is a string value when doing the `if state.research_loop_count <= int(configurable.max_web_research_loops):` compare, I fixed it with just another `int()` around it.\n\nSorry for that!",
+  "extraction_metadata": {
+    "extracted_at": "2026-02-26T03:24:58.192823",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "src/assistant/configuration.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "from_runnable_config",
+          "class_name": "Configuration",
+          "full_name": "Configuration.from_runnable_config",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "src/assistant/graph.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "route_research",
+          "class_name": null,
+          "full_name": "route_research",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Fixes loop-gating logic by ensuring `max_web_research_loops` is always an integer when loaded from environment variables or RunnableConfig overrides, preventing invalid `int` vs `str` comparisons during research routing.",
+    "steps": [
+      {
+        "operation": "Coerce max_web_research_loops override values to int (env + RunnableConfig) before constructing Configuration",
+        "file_to_modify": "src/assistant/configuration.py",
+        "function_to_modify": "Configuration.from_runnable_config",
+        "reason": "`os.environ.get()` and `RunnableConfig['configurable']` values can be strings; dataclasses don’t coerce types, so `Configuration(**values)` can end up with `max_web_research_loops` as `str`, breaking numeric comparisons elsewhere. Normalizing here makes the Configuration object the single source of truth and fixes all downstream uses.",
+        "side_effects": "If the provided value is non-numeric (e.g., 'three'), `int(...)` will raise `ValueError` unless handled; this may surface configuration errors earlier. Any callers relying on string values (unlikely/incorrect) will now receive an int."
+      },
+      {
+        "operation": "Remove/avoid ad-hoc casting at the comparison site and rely on Configuration typing for loop gating",
+        "file_to_modify": "src/assistant/graph.py",
+        "function_to_modify": "route_research",
+        "reason": "Once `Configuration.from_runnable_config` guarantees `max_web_research_loops` is an int, `route_research` should compare `state.research_loop_count` directly to `configurable.max_web_research_loops` to prevent scattered type patches and keep logic clean.",
+        "side_effects": "If some code path bypasses `Configuration.from_runnable_config` and supplies an untyped `configurable` object, the comparison could still fail; consider ensuring all graph entrypoints build config via `from_runnable_config`. Update/adjust any unit/integration tests that previously expected an extra `int()` cast here."
+      }
+    ]
+  }
+}

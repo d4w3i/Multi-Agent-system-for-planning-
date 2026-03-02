@@ -1,0 +1,86 @@
+{
+  "pr_number": 242,
+  "repository": "microsoft/BitNet",
+  "title": "Fix build error with GCC by forcing Clang in CMake on android/aarch64",
+  "body": "GCC does not recognize Clang-specific warning flags like -Wunreachable-code-break and -Wunreachable-code-return, which are passed by upstream submodules (e.g., ggml). This patch forces CMake to use Clang via command-line arguments, avoiding the need to patch nested submodules.\n\nThis resolves compiler errors without modifying submodule source code.",
+  "extraction_metadata": {
+    "extracted_at": "2026-02-26T03:31:30.914066",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "setup_env.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "compile",
+          "class_name": null,
+          "full_name": "compile",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "parse_args",
+          "class_name": null,
+          "full_name": "parse_args",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "system_info",
+          "class_name": null,
+          "full_name": "system_info",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "README.md",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    },
+    {
+      "filename": "CMakeLists.txt",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    }
+  ],
+  "step_plan": {
+    "summary": "Fixes Android/aarch64 build failures caused by GCC rejecting Clang-only warning flags by updating the Python build driver to configure CMake with the Android NDK Clang toolchain (via command-line arguments) instead of patching upstream submodules.",
+    "steps": [
+      {
+        "operation": "Extend CLI to accept Android/NDK build parameters (target enablement + NDK path + ABI/API) that can be forwarded into the CMake configure invocation",
+        "file_to_modify": "setup_env.py",
+        "function_to_modify": "parse_args",
+        "reason": "Forcing Clang “via command-line arguments” requires a user-facing way to declare an Android/aarch64 build and provide the minimum Android toolchain inputs (NDK, ABI, platform/API) so `compile()` can construct the correct `cmake -B ...` arguments.",
+        "side_effects": "Adds/changes CLI surface area; callers/CI scripts may need updates. Must maintain backward compatibility for existing non-Android invocations and validate inputs (e.g., missing NDK path)."
+      },
+      {
+        "operation": "Adjust system/arch detection logic to support Android cross-build mode (avoid treating the Android target as host arch, map aarch64 to Android ABI arm64-v8a when requested)",
+        "file_to_modify": "setup_env.py",
+        "function_to_modify": "system_info",
+        "reason": "Current host-centric arch detection (e.g., arm64 vs x86_64) can mis-drive feature toggles and build flags when cross-compiling. Android/aarch64 should be handled as a target configuration (ABI) rather than relying on host architecture, and it must line up with the toolchain inputs used by CMake.",
+        "side_effects": "May affect any downstream logic that uses `system_info()` for selecting options (e.g., BitNet-related toggles). Ensure non-Android behavior remains unchanged; add conservative defaults so existing host builds do not regress."
+      },
+      {
+        "operation": "Inject Android toolchain + Clang-forcing CMake configure arguments when targeting Android/aarch64 (e.g., android.toolchain.cmake + ANDROID_ABI/ANDROID_PLATFORM + explicit C/CXX compiler overrides if needed)",
+        "file_to_modify": "setup_env.py",
+        "function_to_modify": "compile",
+        "reason": "The build failure occurs at CMake configure/build time when GCC is selected and upstream submodules add Clang-only warning flags. The most targeted fix is to ensure the Android NDK Clang toolchain is used by passing the Android toolchain file and (defensively) `-DCMAKE_C_COMPILER=clang` / `-DCMAKE_CXX_COMPILER=clang++` (or NDK-prefixed clang binaries) as command-line `-D` arguments for Android arm64 builds.",
+        "side_effects": "Changes the generated CMake cache for Android builds; may require clearing the build directory when switching between toolchains. Could impact users who intentionally used non-NDK toolchains; document override behavior and ensure the new flags are only applied for Android/aarch64 mode. May require CI to install/point to Android NDK and set API level/ABI."
+      }
+    ]
+  }
+}

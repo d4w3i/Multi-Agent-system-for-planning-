@@ -1,0 +1,140 @@
+{
+  "pr_number": 996,
+  "repository": "sshuttle/sshuttle",
+  "title": "Revert \"Support Windows11 As A sshuttle Server\"",
+  "body": "Reverts sshuttle/sshuttle#993\r\n\r\nThis change was made in error. See discussion in #993.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T08:51:36.947902",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "sshuttle/server.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "main",
+          "class_name": "sshuttle",
+          "full_name": "sshuttle.server.main",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "list_routes",
+          "class_name": "sshuttle",
+          "full_name": "sshuttle.server.list_routes",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_route_windows",
+          "class_name": "sshuttle",
+          "full_name": "sshuttle.server._route_windows",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "sshuttle/ssh.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "connect",
+          "class_name": "sshuttle",
+          "full_name": "sshuttle.ssh.connect",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "sshuttle/helpers.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "__init__",
+          "class_name": "sshuttle",
+          "full_name": "sshuttle.helpers.SocketRWShim.__init__",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "makefiles",
+          "class_name": "sshuttle",
+          "full_name": "sshuttle.helpers.SocketRWShim.makefiles",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "docs/windows.rst",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    }
+  ],
+  "step_plan": {
+    "summary": "Revert the previously-added capability to run sshuttle’s remote server component on Windows 11 by removing Windows-specific server entrypoint behavior, route discovery, and SSH remote-launch support. Keep Windows supported as a client while restoring the pre-change expectation that the sshuttle server runs on a POSIX-like remote host.",
+    "steps": [
+      {
+        "operation": "Remove/disable Windows-remote-server stdio shimming and deferred-exit behavior in the remote entrypoint, restoring the pre-#993 POSIX-only server startup expectations (or explicitly erroring on win32 when running as a server).",
+        "file_to_modify": "sshuttle/server.py",
+        "function_to_modify": "main",
+        "reason": "#996 is a revert of Windows 11 *server* support; the main remote entrypoint is where Windows-specific mux/stdin-stdout adaptations and termination hooks were added to make the server run on Windows.",
+        "side_effects": "Windows will no longer be a supported *remote server* target; ensure Windows client mode remains unaffected. May change failure mode when attempting to run server on win32 (e.g., earlier explicit error). Verify POSIX remote server operation over SSH still works."
+      },
+      {
+        "operation": "Remove/guard the Windows route-table discovery path (e.g., `route PRINT -4`) so server-side `--auto-nets` no longer attempts Windows route parsing when running on win32; restore prior behavior (likely non-Windows parsing only, or an unsupported-platform error).",
+        "file_to_modify": "sshuttle/server.py",
+        "function_to_modify": "list_routes",
+        "reason": "Windows route parsing is part of enabling Windows as a remote server with `--auto-nets`. Reverting Windows server support should remove or disable Windows-only route discovery on the server side.",
+        "side_effects": "`--auto-nets` will not work on a Windows remote server (by design after revert). Ensure non-Windows route discovery continues to function and that callers handle unsupported platform behavior cleanly."
+      },
+      {
+        "operation": "Remove the Windows-specific route parsing helper or make it unreachable behind an explicit unsupported-platform guard (consistent with the revert), and clean up any now-dead references.",
+        "file_to_modify": "sshuttle/server.py",
+        "function_to_modify": "_route_windows",
+        "reason": "If Windows server mode is no longer supported, `_route_windows` becomes dead code or a maintenance burden; reverting should either delete it or prevent it from being used.",
+        "side_effects": "Any internal references from `list_routes` must be updated accordingly. If left in place but unreachable, confirm it does not trigger lint/test failures for unused code in this repo’s tooling."
+      },
+      {
+        "operation": "Revert remote-launch behavior that enables Windows as the *remote server* (e.g., cmd/powershell remote shell handling and/or Windows-specific stdio plumbing), restoring prior restriction that remote servers are POSIX-like, or explicitly erroring when a Windows remote-shell/server is requested.",
+        "file_to_modify": "sshuttle/ssh.py",
+        "function_to_modify": "connect",
+        "reason": "`connect()` constructs the remote command line and transport for running `sshuttle.server`. Windows-server enablement commonly requires cmd/powershell quoting and pipe semantics; reverting should remove that support path and prevent Windows remote server execution.",
+        "side_effects": "Users relying on `--remote-shell cmd|powershell` for Windows remote targets will lose that functionality (intended by revert). Ensure this does not break normal OpenSSH usage on Windows as a *client* connecting to a POSIX server."
+      },
+      {
+        "operation": "Adjust the shim initialization contract so it no longer contains Windows-server-specific behavior (e.g., special `on_end`/deferred-exit expectations), and ensure it is only used where still needed (likely Windows client-side pipe selectability, not remote server).",
+        "file_to_modify": "sshuttle/helpers.py",
+        "function_to_modify": "SocketRWShim.__init__",
+        "reason": "`SocketRWShim` is a key enabling utility for Windows pipe/stdin-stdout bridging. Reverting Windows server support may require removing server-specific shutdown hacks or narrowing the shim’s intended use back to client-side needs.",
+        "side_effects": "If other modules still rely on the shim (especially Windows client code paths), behavior must remain compatible. Threading/cleanup semantics changes may affect process shutdown timing; run existing tests and perform a basic Windows-client smoke check if available."
+      },
+      {
+        "operation": "Update shim file-wrapper behavior if it was modified to satisfy Windows server muxing (e.g., binary/text modes, buffering, close semantics) so it aligns with remaining supported use cases; ensure callers can still pass the returned file objects into mux code reliably.",
+        "file_to_modify": "sshuttle/helpers.py",
+        "function_to_modify": "SocketRWShim.makefiles",
+        "reason": "`makefiles()` is the handoff point to the mux layer; Windows-server support may have required specific file-like behavior. After reverting, keep only what’s necessary for supported platforms/modes and avoid server-only hacks.",
+        "side_effects": "May impact mux I/O behavior on Windows client or other environments using the shim. Validate that mux framing still works and that no regressions occur in normal POSIX remote server operation."
+      }
+    ]
+  }
+}

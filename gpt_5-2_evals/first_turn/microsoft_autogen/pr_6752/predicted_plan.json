@@ -1,0 +1,222 @@
+{
+  "pr_number": 6752,
+  "repository": "microsoft/autogen",
+  "title": "Fix GraphFlowManager termination to prevent _StopAgent from polluting conversation context",
+  "body": "## Problem\n\nThe `GraphFlowManager` was allowing `_StopAgent` to speak and add termination messages to the conversation context, which polluted the message history that other agents could see. This violated the principle of clean agent interactions.\n\n**Before this fix:**\n```python\n# _StopAgent would produce messages like this in the conversation:\nresult.messages = [\n    TextMessage(source=\"user\", content=\"Task\"),\n    TextMessage(source=\"A\", content=\"Response from A\"),\n    TextMessage(source=\"B\", content=\"Response from B\"), \n    StopMessage(source=\"DiGraphStopAgent\", content=\"Digraph execution is complete\")  # ❌ Pollutes context\n]\n```\n\n**After this fix:**\n```python\n# Clean conversation with no stop agent messages:\nresult.messages = [\n    TextMessage(source=\"user\", content=\"Task\"),\n    TextMessage(source=\"A\", content=\"Response from A\"),\n    TextMessage(source=\"B\", content=\"Response from B\")  # ✅ Clean context\n]\n# Termination still occurs but without polluting conversation\n```\n\n## Solution\n\n1. **Removed `_StopAgent` entirely** - No longer added to participants list\n2. **Updated `GraphFlowManager.select_speaker()`** - Directly signals termination when `self._ready` is empty instead of selecting stop agent\n3. **Simplified `GraphFlow` constructor** - Removed `StopMessageTermination` and stop agent logic\n4. **Preserved all functionality** - Same termination behavior and message content, just without the polluting agent message\n\n## Key Changes\n\n- **`GraphFlowManager.select_speaker()`**: Now handles termination directly when no ready agents remain\n- **`GraphFlow.__init__()`**: No longer adds `_StopAgent` to participants or uses `StopMessageTermination`\n- **Removed unused code**: Deleted `_StopAgent` class and cleaned up imports\n- **Updated tests**: All tests now expect clean conversation history without stop agent messages\n\n## Benefits\n\n✅ **Clean conversation context** - No stop agent messages pollute agent contexts  \n✅ **Same termination behavior** - Graph execution still stops correctly when complete  \n✅ **Preserved functionality** - All existing features work exactly the same  \n✅ **Better performance** - One fewer participant to manage  \n✅ **Cleaner codebase** - Removed unnecessary `_StopAgent` complexity  \n\n## Verification\n\nCreated comprehensive tests that verify:\n- No `StopMessage` instances appear in conversation history\n- Agents don't see stop agent messages in their context  \n- Termination still occurs at the correct time\n- All existing functionality preserved (resume, state management, etc.)\n\nFixes #6751.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T08:34:59.831299",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "python/packages/autogen-agentchat/src/autogen_agentchat/teams/_group_chat/_graph/_digraph_group_chat.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "select_speaker",
+          "class_name": "GraphFlowManager",
+          "full_name": "GraphFlowManager.select_speaker",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "__init__",
+          "class_name": "GraphFlow",
+          "full_name": "GraphFlow.__init__",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "python/packages/autogen-agentchat/src/autogen_agentchat/teams/_group_chat/_base_group_chat_manager.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "_transition_to_next_speakers",
+          "class_name": "BaseGroupChatManager",
+          "full_name": "BaseGroupChatManager._transition_to_next_speakers",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "handle_start",
+          "class_name": "BaseGroupChatManager",
+          "full_name": "BaseGroupChatManager.handle_start",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "handle_agent_response",
+          "class_name": "BaseGroupChatManager",
+          "full_name": "BaseGroupChatManager.handle_agent_response",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "python/packages/autogen-agentchat/tests/test_group_chat_graph.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "test_digraph_group_chat_sequential_execution",
+          "class_name": null,
+          "full_name": "test_digraph_group_chat_sequential_execution",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "test_digraph_group_chat_parallel_fanout",
+          "class_name": null,
+          "full_name": "test_digraph_group_chat_parallel_fanout",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "test_digraph_group_chat_parallel_join_all",
+          "class_name": null,
+          "full_name": "test_digraph_group_chat_parallel_join_all",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "test_digraph_group_chat_parallel_join_any",
+          "class_name": null,
+          "full_name": "test_digraph_group_chat_parallel_join_any",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "test_digraph_group_chat_multiple_start_nodes",
+          "class_name": null,
+          "full_name": "test_digraph_group_chat_multiple_start_nodes",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "test_digraph_group_chat_disconnected_graph",
+          "class_name": null,
+          "full_name": "test_digraph_group_chat_disconnected_graph",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "test_digraph_group_chat_loop_with_exit_condition",
+          "class_name": null,
+          "full_name": "test_digraph_group_chat_loop_with_exit_condition",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "test_digraph_group_chat_loop_with_self_cycle",
+          "class_name": null,
+          "full_name": "test_digraph_group_chat_loop_with_self_cycle",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "test_digraph_group_chat_loop_with_two_cycles",
+          "class_name": null,
+          "full_name": "test_digraph_group_chat_loop_with_two_cycles",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "test_graph_flow_serialize_deserialize",
+          "class_name": null,
+          "full_name": "test_graph_flow_serialize_deserialize",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "test_graph_flow_stateful_pause_and_resume_with_termination",
+          "class_name": null,
+          "full_name": "test_graph_flow_stateful_pause_and_resume_with_termination",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "test_digraph_group_chat_multiple_task_execution",
+          "class_name": null,
+          "full_name": "test_digraph_group_chat_multiple_task_execution",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "test_digraph_group_chat_resume_with_termination_condition",
+          "class_name": null,
+          "full_name": "test_digraph_group_chat_resume_with_termination_condition",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Remove the injected `_StopAgent` and change GraphFlow termination to occur via a “natural completion” signal when the digraph has no runnable nodes, so runs still terminate with the same stop semantics but without appending a synthetic `StopMessage` to the shared conversation history.",
+    "steps": [
+      {
+        "operation": "Change graph completion behavior to signal natural termination (without scheduling a stop agent) when there are no runnable nodes left, and ensure execution state is reset on completion",
+        "file_to_modify": "python/packages/autogen-agentchat/src/autogen_agentchat/teams/_group_chat/_graph/_digraph_group_chat.py",
+        "function_to_modify": "GraphFlowManager.select_speaker",
+        "reason": "`select_speaker()` currently returns the injected `_StopAgent` when `self._ready` is empty, which causes a synthetic `StopMessage` to be appended to the shared conversation. Instead, the manager must indicate “no next speakers” (e.g., return an empty list or a sentinel) so the base manager can terminate the run without adding any message to history, while still resetting graph execution state for subsequent runs.",
+        "side_effects": "Requires a corresponding change in `BaseGroupChatManager` to interpret the “no speakers” signal as completion; changes termination path for digraph runs; may affect any downstream code that assumed a non-empty speaker list."
+      },
+      {
+        "operation": "Remove stop-agent wiring from GraphFlow construction: do not prepend `_StopAgent` to participants and do not OR in `StopMessageTermination`; keep user-provided termination conditions intact",
+        "file_to_modify": "python/packages/autogen-agentchat/src/autogen_agentchat/teams/_group_chat/_graph/_digraph_group_chat.py",
+        "function_to_modify": "GraphFlow.__init__",
+        "reason": "The `_StopAgent` participant and `StopMessageTermination` are the mechanism that injects a terminal `StopMessage` into `TaskResult.messages`. Eliminating them ensures the conversation context remains limited to real participant messages, while still allowing termination via natural graph completion, max_turns, or user termination conditions.",
+        "side_effects": "GraphFlow serialization/deserialization and participant lists change (one fewer participant); tests that assert `_DIGRAPH_STOP_AGENT_NAME` presence must be updated; any code relying on `StopMessageTermination` being always present for GraphFlow must be adjusted."
+      },
+      {
+        "operation": "Teach the base manager transition logic to treat “no next speakers” from `select_speaker()` as a natural completion and signal termination without appending a message to the thread",
+        "file_to_modify": "python/packages/autogen-agentchat/src/autogen_agentchat/teams/_group_chat/_base_group_chat_manager.py",
+        "function_to_modify": "BaseGroupChatManager._transition_to_next_speakers",
+        "reason": "Today the base manager terminates only via termination conditions/max_turns, and it assumes `select_speaker()` returns valid participant names. To support GraphFlow natural completion, `_transition_to_next_speakers()` must detect the subclass signal (e.g., `[]`/`None`) and call `_signal_termination(StopMessage(...))` (or an equivalent termination event) to set stop_reason while keeping `TaskResult.messages` clean.",
+        "side_effects": "Alters a core control-flow path for all group chat managers; must ensure other subclasses never unintentionally return an empty speaker set (or handle it safely); may require updating type hints/validation around `select_speaker()` return values."
+      },
+      {
+        "operation": "Allow immediate natural completion at start when `select_speaker()` indicates there are no runnable participants after initial setup; terminate cleanly without scheduling any participant",
+        "file_to_modify": "python/packages/autogen-agentchat/src/autogen_agentchat/teams/_group_chat/_base_group_chat_manager.py",
+        "function_to_modify": "BaseGroupChatManager.handle_start",
+        "reason": "If the graph is trivially complete (e.g., no start nodes, disconnected graph with no runnable nodes, or state loaded into a completed configuration), `handle_start()` currently proceeds into scheduling speakers. It must rely on the updated transition logic to terminate immediately when no next speakers exist, producing a stop_reason but no extra message in history.",
+        "side_effects": "May change behavior for edge cases where a team previously would have scheduled a stop agent; ensures early termination works consistently; requires tests for empty/immediate completion scenarios to validate behavior."
+      },
+      {
+        "operation": "After processing agent responses, allow natural completion when no next speakers remain; ensure termination is signaled and that graph execution state is reset appropriately for subsequent runs/resume flows",
+        "file_to_modify": "python/packages/autogen-agentchat/src/autogen_agentchat/teams/_group_chat/_base_group_chat_manager.py",
+        "function_to_modify": "BaseGroupChatManager.handle_agent_response",
+        "reason": "Most digraph completions occur after the last runnable agent responds. After applying termination conditions, the manager transitions to the next speakers; it must now correctly terminate if the transition finds no speakers (instead of attempting to run a stop agent), and ensure the resulting TaskResult contains only real messages while still indicating completion via stop_reason/termination metadata.",
+        "side_effects": "Could affect resume semantics: must ensure that custom termination conditions still stop early and allow continuation, while natural completion resets internal scheduling state; may require updating any tests that assumed a terminal StopMessage exists in the message list."
+      }
+    ]
+  }
+}

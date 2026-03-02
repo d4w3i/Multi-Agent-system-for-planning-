@@ -1,0 +1,108 @@
+{
+  "pr_number": 1535,
+  "repository": "wkentaro/labelme",
+  "title": "feat: support AI-generated masks in shape_to_mask",
+  "body": "Updated the export functionality to support AI-generated masks. The function now handles mask data from JSON files, including AI-generated mask formats (list/array and base64 encoded images).",
+  "extraction_metadata": {
+    "extracted_at": "2026-02-26T01:12:49.671321",
+    "extractor_version": "1.0.0",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "labelme/utils/shape.py",
+      "status": "modified",
+      "additions": 16,
+      "deletions": 4,
+      "functions_modified": [
+        {
+          "function_name": "shape_to_mask",
+          "class_name": null,
+          "full_name": "shape_to_mask",
+          "start_line": 22,
+          "end_line": 60,
+          "lines_changed": [
+            22,
+            45,
+            46,
+            47,
+            48,
+            49,
+            50,
+            51,
+            52,
+            53,
+            54,
+            55
+          ]
+        },
+        {
+          "function_name": "shapes_to_label",
+          "class_name": null,
+          "full_name": "shapes_to_label",
+          "start_line": 62,
+          "end_line": 86,
+          "lines_changed": [
+            73,
+            82
+          ]
+        }
+      ],
+      "patch": "@@ -8,6 +8,8 @@\n import PIL.Image\n import PIL.ImageDraw\n from loguru import logger\n+import base64\n+import io\n \n \n def polygons_to_mask(img_shape, polygons, shape_type=None):\n@@ -17,7 +19,7 @@ def polygons_to_mask(img_shape, polygons, shape_type=None):\n     return shape_to_mask(img_shape, points=polygons, shape_type=shape_type)\n \n \n-def shape_to_mask(img_shape, points, shape_type=None, line_width=10, point_size=5):\n+def shape_to_mask(img_shape, points, shape_type=None, line_width=10, point_size=5, mask_data=None):\n     mask = np.zeros(img_shape[:2], dtype=np.uint8)\n     mask = PIL.Image.fromarray(mask)\n     draw = PIL.ImageDraw.Draw(mask)\n@@ -40,13 +42,23 @@ def shape_to_mask(img_shape, points, shape_type=None, line_width=10, point_size=\n         cx, cy = xy[0]\n         r = point_size\n         draw.ellipse([cx - r, cy - r, cx + r, cy + r], outline=1, fill=1)\n+    elif shape_type == \"mask\" and mask_data is not None:\n+        if isinstance(mask_data, (list, np.ndarray)):\n+            mask_array = np.array(mask_data)\n+        else:\n+            mask_img = PIL.Image.open(io.BytesIO(base64.b64decode(mask_data)))\n+            mask_array = np.array(mask_img)\n+        mask = PIL.Image.fromarray(mask_array)\n+        x, y = map(int, points[0])\n+        final_mask = PIL.Image.new('L', img_shape[:2][::-1], 0)\n+        final_mask.paste(mask, (x, y))\n+        return np.array(final_mask, dtype=bool)\n     else:\n         assert len(xy) > 2, \"Polygon must have points more than 2\"\n         draw.polygon(xy=xy, outline=1, fill=1)\n     mask = np.array(mask, dtype=bool)\n     return mask\n \n-\n def shapes_to_label(img_shape, shapes, label_name_to_value):\n     cls = np.zeros(img_shape[:2], dtype=np.int32)\n     ins = np.zeros_like(cls)\n@@ -58,7 +70,7 @@ def shapes_to_label(img_shape, shapes, label_name_to_value):\n         if group_id is None:\n             group_id = uuid.uuid1()\n         shape_type = shape.get(\"shape_type\", None)\n-\n+        mask_data = shape.get(\"mask\", None)\n         cls_name = label\n         instance = (cls_name, group_id)\n \n@@ -67,7 +79,7 @@ def shapes_to_label(img_shape, shapes, label_name_to_value):\n         ins_id = instances.index(instance) + 1\n         cls_id = label_name_to_value[cls_name]\n \n-        mask = shape_to_mask(img_shape[:2], points, shape_type)\n+        mask = shape_to_mask(img_shape[:2], points, shape_type, mask_data=mask_data)\n         cls[mask] = cls_id\n         ins[mask] = ins_id\n "
+    }
+  ],
+  "functions_modified": [
+    {
+      "function_name": "shape_to_mask",
+      "class_name": null,
+      "full_name": "shape_to_mask",
+      "start_line": 22,
+      "end_line": 60,
+      "lines_changed": [
+        22,
+        45,
+        46,
+        47,
+        48,
+        49,
+        50,
+        51,
+        52,
+        53,
+        54,
+        55
+      ]
+    },
+    {
+      "function_name": "shapes_to_label",
+      "class_name": null,
+      "full_name": "shapes_to_label",
+      "start_line": 62,
+      "end_line": 86,
+      "lines_changed": [
+        73,
+        82
+      ]
+    }
+  ],
+  "step_plan": {
+    "steps": [
+      {
+        "operation": "Extend `shape_to_mask` to accept and render AI-generated mask payloads (array/list or base64-encoded image) when `shape_type == \"mask\"`",
+        "file_to_modify": "labelme/utils/shape.py",
+        "function_to_modify": "shape_to_mask",
+        "reason": "Export/import workflows can include AI-generated masks stored in JSON (either as raw arrays or base64-encoded images). The existing implementation only rasterized geometric shapes, so it needed a path to decode/convert provided mask data and composite it into the correct image-space location using the provided top-left `points[0]` offset.",
+        "side_effects": "Changes the function signature (adds `mask_data`) which may affect any external callers expecting the old signature; introduces decoding/IO dependencies (base64, BytesIO, PIL open) that can raise errors on malformed data; the early return for mask shapes bypasses the previous draw-to-mask flow and may alter behavior if callers relied on prior handling of `shape_type == \"mask\"`."
+      },
+      {
+        "operation": "Plumb per-shape `mask` data from JSON shape dictionaries into mask generation during label rasterization",
+        "file_to_modify": "labelme/utils/shape.py",
+        "function_to_modify": "shapes_to_label",
+        "reason": "Even with `shape_to_mask` supporting `mask_data`, label generation must actually pass the mask payload from each shape entry (e.g., `shape[\"mask\"]`) so that AI-generated mask shapes are correctly converted into `cls`/`ins` arrays during export/label creation.",
+        "side_effects": "Shapes that include a `mask` field will now take precedence for `shape_type == \"mask\"`, which can change results compared to polygon fallback behavior; downstream consumers of `cls`/`ins` may see different instance extents for mask-based shapes; any shapes missing `mask` while declaring `shape_type == \"mask\"` will continue to follow the non-mask codepath and may still assert/fail depending on point count."
+      }
+    ],
+    "summary": "Adds support for AI-generated masks by allowing `shape_to_mask` to decode mask data from JSON (arrays or base64 images) and updating label rasterization to pass that mask payload through when processing shapes of type \"mask\"."
+  }
+}

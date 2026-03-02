@@ -1,0 +1,42 @@
+{
+  "pr_number": 11766,
+  "repository": "pydantic/pydantic",
+  "title": "Fix example in `populate_by_name` documentation",
+  "body": "## Change Summary\n\nfix the docstring of ConfigDict's populate_by_name.\n\n## Related issue number\n\nfix #11765 \n\n- #11765",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T08:38:05.155342",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "pydantic/config.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "populate_by_name",
+          "class_name": "ConfigDict",
+          "full_name": "ConfigDict.populate_by_name",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Fix the incorrect `populate_by_name` documentation example in `pydantic/config.py` so it correctly shows populating a model by alias and by field name, matching the intended behavior and resolving #11765.",
+    "steps": [
+      {
+        "operation": "Correct the docstring example under `ConfigDict.populate_by_name` to demonstrate population by alias vs population by field name (fix the duplicated `Model(my_alias='foo')` call, updating the second to use the field name, e.g. `Model(my_field='foo')`) and ensure the numbered comments match the code shown.",
+        "file_to_modify": "pydantic/config.py",
+        "function_to_modify": "ConfigDict.populate_by_name",
+        "reason": "Issue #11765 reports the example is internally inconsistent and misleading; fixing the example clarifies how `populate_by_name` affects whether input data can be provided using the field name in addition to the alias.",
+        "side_effects": "Documentation output generated via mkdocstrings/MkDocs will change; no runtime behavior changes. If the project runs docstring/doctest-style validation, the updated snippet must remain syntactically valid and aligned with actual alias/name semantics."
+      }
+    ]
+  }
+}

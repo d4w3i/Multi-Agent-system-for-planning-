@@ -1,0 +1,54 @@
+{
+  "pr_number": 3597,
+  "repository": "piskvorky/gensim",
+  "title": "Clarify BM25 Documentation in Gensim Core Tutorials (Document Fix)",
+  "body": "This pull request corrects the documentation for the BM25 algorithm within the core tutorials of the Gensim library. The previous documentation misleadingly implied that BM25 transforms vectors into other vectors while altering their values based on feature rarity. This update provides an accurate description of BM25, highlighting its actual function as a scoring algorithm that does not manipulate the dimensionality of its input data.\n\nWhy needed: to avoid misconceptions; BM25 is a relevance scoring mechanism rather than a dimensionality-changing vector transform.\n\nFile mentioned: gensim/docs/src/gallery/core/run_topics_and_transformations.py",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T08:37:01.408276",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "docs/src/gallery/core/run_topics_and_transformations.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    },
+    {
+      "filename": "docs/src/auto_examples/core/run_topics_and_transformations.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    }
+  ],
+  "step_plan": {
+    "summary": "Fix the BM25 description in Gensim’s core “Topics and Transformations” tutorial to reflect that Gensim implements BM25 as a term-weighting transformation producing a BM25-weighted sparse vector in the same feature space (no dimensionality change), and that full relevance scoring typically involves combining these weights with a query representation.",
+    "steps": [
+      {
+        "operation": "Use BM25ABC.__getitem__ as the authoritative reference for what the BM25 transformation returns (BM25-weighted sparse vector with unchanged term IDs) and incorporate that into the tutorial wording (no dimensionality change; still a transformation in Gensim’s API).",
+        "file_to_modify": "gensim/models/bm25model.py",
+        "function_to_modify": "BM25ABC.__getitem__",
+        "reason": "The PR is a documentation fix, but the tutorial text must be aligned with actual behavior: applying a BM25 model to a BoW document yields a list of (term_id, bm25_weight) in the same feature space, not a dimensionality-changing transform or a standalone scoring engine.",
+        "side_effects": "No runtime behavior changes expected if code remains unchanged; however, the clarified semantics may require updating downstream docs/examples that previously described BM25 as producing “another vector” in a potentially misleading way. If any doctests reference this behavior textually, they may need re-baselining."
+      },
+      {
+        "operation": "Confirm and, if needed, annotate/document internally (via comments or docstrings referenced by docs authors) how IDF is computed and floored/adjusted so the tutorial avoids oversimplified “rare features increased like TF‑IDF” phrasing; then mirror the accurate description in the BM25 bullet in the tutorials.",
+        "file_to_modify": "gensim/models/bm25model.py",
+        "function_to_modify": "OkapiBM25Model.precompute_idfs",
+        "reason": "The prior tutorial text focused on “rarity boosts” and implied TF‑IDF equivalence. This function defines the repo’s precise notion of rarity/IDF (including any epsilon flooring for negative IDF), which should be reflected in the new prose to avoid misconceptions.",
+        "side_effects": "No behavioral change intended; if any comments/docstrings are added, they may become part of public developer-facing documentation and should be kept stable. Any future refactors to IDF computation should also update tutorial prose."
+      },
+      {
+        "operation": "Confirm and, if needed, annotate/document internally the BM25 term-weighting mechanics (term-frequency saturation and document-length normalization parameters k1/b) so the tutorials can accurately state BM25 is a term-reweighting scheme used for IR scoring/ranking and not a dimensionality transform; then rewrite the BM25 bullet in both tutorial source files accordingly.",
+        "file_to_modify": "gensim/models/bm25model.py",
+        "function_to_modify": "OkapiBM25Model.get_term_weights",
+        "reason": "This function encodes the key distinctions from TF‑IDF (TF saturation + length normalization). The updated docs should highlight these aspects and clarify that the output stays in the same vector space (term IDs unchanged) and is typically used as part of scoring/ranking when combined with a query representation.",
+        "side_effects": "No runtime behavior changes expected; documentation updates may prompt reviewers to request matching edits in multiple Sphinx-Gallery sources (gallery vs auto_examples) and may require a docs build to validate rendered output consistency."
+      }
+    ]
+  }
+}

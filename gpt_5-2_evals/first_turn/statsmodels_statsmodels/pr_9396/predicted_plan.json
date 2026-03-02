@@ -1,0 +1,65 @@
+{
+  "pr_number": 9396,
+  "repository": "statsmodels/statsmodels",
+  "title": "BUG: Remove method setting in summary2 of genmod",
+  "body": "- [X] closes #9315 \n- [X] tests added / passed. \n- [X] code/documentation is well formatted.  \n- [X] properly formatted commit message. See \n      [NumPy's guide](https://docs.scipy.org/doc/numpy-1.15.1/dev/gitwash/development_workflow.html#writing-the-commit-message). \n\n<details>\n\n\n**Notes**:\n\n* It is essential that you add a test when making code changes. Tests are not \n  needed for doc changes.\n* When adding a new function, test values should usually be verified in another package (e.g., R/SAS/Stata).\n* When fixing a bug, you must add a test that would produce the bug in main and\n  then show that it is fixed with the new code.\n* New code additions must be well formatted. Changes should pass flake8. If on Linux or OSX, you can\n  verify you changes are well formatted by running \n  ```\n  git diff upstream/main -u -- \"*.py\" | flake8 --diff --isolated\n  ```\n  assuming `flake8` is installed. This command is also available on Windows \n  using the Windows System for Linux once `flake8` is installed in the \n  local Linux environment. While passing this test is not required, it is good practice and it help \n  improve code quality in `statsmodels`.\n* Docstring additions must render correctly, including escapes and LaTeX.\n\n</details>\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T08:42:02.743445",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "statsmodels/genmod/generalized_linear_model.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "summary2",
+          "class_name": "GLMResults",
+          "full_name": "GLMResults.summary2",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "statsmodels/genmod/tests/test_glm.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "test_glm_irls_method",
+          "class_name": null,
+          "full_name": "test_glm_irls_method",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Fixes a GLM reporting bug where `GLMResults.summary2()` mutated `res.method` by forcibly setting it to 'IRLS'. Adds a regression test to ensure `summary2()` is side-effect free and preserves the optimizer method used during fitting.",
+    "steps": [
+      {
+        "operation": "Remove the side-effecting overwrite of the fitted optimizer method inside the summary2 renderer (stop forcing `self.method = 'IRLS'` and instead use the already-populated `self.method` value from the fitting routine).",
+        "file_to_modify": "statsmodels/genmod/generalized_linear_model.py",
+        "function_to_modify": "GLMResults.summary2",
+        "reason": "`summary2()` should be a pure reporting method; unconditionally setting `self.method` corrupts `GLMResults.method` for gradient-optimizer fits (e.g., bfgs/newton) and can cause subsequent summaries to misreport the optimizer (bug #9315).",
+        "side_effects": "Displayed method in `summary2` will now reflect the actual fit path (IRLS vs gradient). Any downstream code that (incorrectly) relied on calling `summary2()` to set `res.method` to 'IRLS' will change behavior; regression risk is low and aligns with expected API semantics."
+      },
+      {
+        "operation": "Extend the existing optimizer/method regression test to ensure calling `summary2()` does not mutate `res.method` for non-IRLS fits (e.g., fit with `method='bfgs'`, call `res.summary2()`, assert `res.method` remains 'bfgs'; optionally also validate `res.summary()` still reports the correct method after `summary2()`).",
+        "file_to_modify": "statsmodels/genmod/tests/test_glm.py",
+        "function_to_modify": "test_glm_irls_method",
+        "reason": "Add a targeted regression test that reproduces the mutation bug on main (method flips to 'IRLS' after `summary2()`) and verifies the fix by asserting `summary2()` is side-effect free for gradient optimizers.",
+        "side_effects": "Test suite will now cover a previously untested interaction between fitting method selection and `summary2()` rendering; may require small test adjustments if the expected method string casing/format differs across optimizers/platforms."
+      }
+    ]
+  }
+}

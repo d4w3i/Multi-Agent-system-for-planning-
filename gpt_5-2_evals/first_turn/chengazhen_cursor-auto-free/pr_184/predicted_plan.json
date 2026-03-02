@@ -1,0 +1,42 @@
+{
+  "pr_number": 184,
+  "repository": "chengazhen/cursor-auto-free",
+  "title": "update build.py as to use env prioritized",
+  "body": "Developers would prefer to build the src locally thus taking their own `.env` (if not exists then use env.example) to build the final `CursorPro` executable. Do you like it @chengazhen ?",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T08:24:09.563214",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "build.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "build",
+          "class_name": null,
+          "full_name": "build",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Adjust build.py so local builds copy the developer’s repo-root .env into the built CursorPro bundle when present, otherwise fall back to copying .env.example (optionally also env.example) into the output as .env, with clear warnings if no source env file is found.",
+    "steps": [
+      {
+        "operation": "Update post-build env-file selection to prioritize a local .env (fallback to .env.example / env.example) and copy the chosen file into the dist bundle as .env, emitting clear logs/warnings when missing",
+        "file_to_modify": "build.py",
+        "function_to_modify": "build",
+        "reason": "Current build behavior always copies .env.example into the output, preventing developers from using their own local .env settings when building a local CursorPro executable. Implementing source selection inside build() preserves runtime expectations (the frozen app reads a neighboring .env) while enabling developer overrides.",
+        "side_effects": "Build outputs may differ between machines depending on presence/contents of repo-root .env (intended). If neither .env nor .env.example(/env.example) exists, build may still succeed but the packaged app will likely fail at runtime unless a .env is provided; add a warning to make this explicit. If the build folder already contains a .env from a prior run, deciding whether to overwrite it can affect incremental builds (ensure behavior is intentional and documented via log output)."
+      }
+    ]
+  }
+}

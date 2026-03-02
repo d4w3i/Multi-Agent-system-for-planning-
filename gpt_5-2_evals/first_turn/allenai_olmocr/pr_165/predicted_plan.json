@@ -1,0 +1,78 @@
+{
+  "pr_number": 165,
+  "repository": "allenai/olmocr",
+  "title": "fix jsonl_to_markdown",
+  "body": "Fixes #162\n\nChanges proposed in this pull request:\n- Add `jsonl_to_markdown.py` utility script to convert JSONL files to Markdown format\n- Script extracts the 'text' field from each line in a JSONL file and saves it as a separate Markdown file\n- Include proper error handling for JSON decoding and file operations\n- Add example usage and documentation\n\nChecklist:\n- Read contributing docs\n- Updated docstrings\n- Added tests",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T08:23:24.985942",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "scripts/jsonl_to_markdown.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "jsonl_to_markdown",
+          "class_name": null,
+          "full_name": "jsonl_to_markdown",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "__main__ (module entrypoint block)",
+          "class_name": null,
+          "full_name": "__main__ (module entrypoint block)",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "tests/test_jsonl_to_markdown.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    },
+    {
+      "filename": "docs/source/index.md",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    },
+    {
+      "filename": "docs/source/jsonl_to_markdown.md",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    }
+  ],
+  "step_plan": {
+    "summary": "Fix and solidify the existing `jsonl_to_markdown` utility by making conversion behavior explicit and resilient to malformed input and I/O failures, and by improving the CLI UX and exit-code semantics.",
+    "steps": [
+      {
+        "operation": "Harden JSONL→Markdown conversion logic: validate inputs, create output directory, skip blank lines, handle JSON decoding errors with counters, and define behavior for missing/empty `text` (e.g., skip vs write empty) while returning a structured summary (written/skipped/failed).",
+        "file_to_modify": "scripts/jsonl_to_markdown.py",
+        "function_to_modify": "jsonl_to_markdown",
+        "reason": "Issue #162 and PR description indicate current behavior is fragile (print-based errors, unclear semantics, potential empty files). A clear contract plus robust exception handling makes the utility reliable and testable.",
+        "side_effects": "May change output file count and naming compared to previous behavior (e.g., skipping records without `text`). Tests and docs must reflect the chosen contract; downstream users relying on empty-file outputs may need adjustment."
+      },
+      {
+        "operation": "Replace the ad-hoc argv length check with an argparse-based CLI that supports `--help`, positional `input_file`/`output_dir`, optional flags (e.g., `--text-key`, `--prefix`, `--fail-fast`, `--skip-empty` as decided), and uses exit codes based on fatal vs non-fatal errors; print a concise end-of-run summary to stderr/stdout.",
+        "file_to_modify": "scripts/jsonl_to_markdown.py",
+        "function_to_modify": "__main__",
+        "reason": "Current CLI is not discoverable and provides weak error semantics. Argparse improves usability and aligns with “proper error handling” and “example usage” requirements.",
+        "side_effects": "CLI interface/behavior may change (flags, output, exit codes). Any automation calling the script may need updates; add/adjust tests if CLI behavior is asserted."
+      }
+    ]
+  }
+}

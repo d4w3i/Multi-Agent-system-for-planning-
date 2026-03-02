@@ -1,0 +1,57 @@
+{
+  "pr_number": 8861,
+  "repository": "borgbackup/borg",
+  "title": "tests: fix diff cmd test on macOS HFS+, fixes #8860",
+  "body": "If we touch too quickly after file creation, it would not noticably update the timestamp.\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T08:23:54.476989",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "src/borg/testsuite/archiver/diff_cmd_test.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "test_time_diffs",
+          "class_name": null,
+          "full_name": "test_time_diffs",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "test_basic_functionality",
+          "class_name": null,
+          "full_name": "test_basic_functionality",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Fixes macOS HFS+ flakiness in `borg diff` command tests by making timestamp-dependent assertions robust: ensure filesystem timestamps actually advance between operations (touch, delete/recreate, chmod) before creating archives and checking `borg diff` output.",
+    "steps": [
+      {
+        "operation": "Add a filesystem-tick wait helper and use it around delete/recreate+chmod operations to guarantee mtime/ctime advance before creating the next archive and asserting time-diff output",
+        "file_to_modify": "src/borg/testsuite/archiver/diff_cmd_test.py",
+        "function_to_modify": "test_time_diffs",
+        "reason": "On macOS HFS+ (and other coarse timestamp filesystems), operations done within the same timestamp granularity can keep identical mtime/ctime, making `borg create` record equal times in both archives and causing `borg diff` to omit the expected `{mtime}` / `{ctime}` changes. Replacing/augmenting fixed sleeps with a poll-until-stat-changes approach makes the test deterministic while keeping it fast when the FS tick advances quickly.",
+        "side_effects": "Slightly increases test runtime in worst-case (up to the helper timeout) but should reduce flakiness. Must ensure the helper has a bounded timeout and emits a clear failure message if timestamps don’t advance. May alter exact sequencing assumptions in the test; verify assertions still match `borg diff` output across platforms."
+      },
+      {
+        "operation": "Ensure the 'touch-only' modification in the basic diff test results in a distinct timestamp by waiting for the FS tick (or explicitly sleeping/polling) before/after `Path.touch()` and before creating the second archive",
+        "file_to_modify": "src/borg/testsuite/archiver/diff_cmd_test.py",
+        "function_to_modify": "test_basic_functionality",
+        "reason": "`Path('input/file_touched').touch()` can be too fast after file creation or prior operations, producing no observable mtime/ctime change on coarse-granularity filesystems. The test expects `[cm]time:` changes for the touched file (unless `--content-only`), which will be missing if the timestamp didn’t advance; enforcing a tick change prevents intermittent failures.",
+        "side_effects": "May add small conditional delay/polling to the test, with minimal impact on overall suite time. Needs to avoid making content-change scenarios flaky (i.e., keep assertions focused on time-only change and ensure the tick-wait doesn’t inadvertently modify file content). If implemented via polling, ensure the helper doesn’t depend on platform-specific stat fields beyond mtime/ctime."
+      }
+    ]
+  }
+}

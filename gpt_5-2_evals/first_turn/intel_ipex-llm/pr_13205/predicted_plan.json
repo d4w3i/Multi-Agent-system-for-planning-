@@ -1,0 +1,140 @@
+{
+  "pr_number": 13205,
+  "repository": "intel/ipex-llm",
+  "title": "Fix internvl fp16 error",
+  "body": "## Description\r\n\r\n<!-- For small changes (<=3 files and <=50 lines of codes in the source folder), -->\r\n<!-- you may remove Sections 1-4 below and just provide a simple description here -->\r\n\r\n### 1. Why the change?\r\n\r\n<!-- Provide the related github issue link if available -->\r\n\r\n### 2. User API changes\r\n\r\n<!-- Describe API changes (i.e., how users will use the feature) if any; -->\r\n<!-- alternatively, provide a link to the github issue for the design -->\r\n\r\n### 3. Summary of the change \r\n\r\n<!-- Provide the design for the implementation; -->\r\n<!-- alternatively, provide a link to the github issue for the design -->\r\n\r\n### 4. How to test?\r\n- [ ] N/A\r\n- [ ] Unit test: Please manually trigger the PR Validation [here](https://github.com/intel-analytics/ipex-llm-workflow/actions/workflows/llm-PR-validation.yml) by inputting the PR number (e.g., `1234`). And paste your action link here once it has been successfully finished.\r\n- [ ] Application test\r\n- [ ] Document test\r\n- [ ] ...\r\n\r\n### 5. New dependencies\r\n\r\n<!-- If no new dependency is introduced, remove this section -->\r\n\r\n- [ ] New Python dependencies\r\n       - Dependency1 \r\n       - Dependency2\r\n       - ...\r\n- [ ] New Java/Scala dependencies and their license\r\n       - Dependency1 and license1\r\n       - Dependency2 and license2\r\n       - ...",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T08:31:55.825242",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "python/llm/src/ipex_llm/transformers/models/internvl.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "_get_pos_embed",
+          "class_name": null,
+          "full_name": "_get_pos_embed",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "internvl_chat",
+          "class_name": null,
+          "full_name": "internvl_chat",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "internvl_batch_chat",
+          "class_name": null,
+          "full_name": "internvl_batch_chat",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "intern_attention_forward",
+          "class_name": null,
+          "full_name": "intern_attention_forward",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "python/llm/src/ipex_llm/transformers/models/utils.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "use_sdp_non_causal",
+          "class_name": null,
+          "full_name": "use_sdp_non_causal",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "python/llm/src/ipex_llm/transformers/models/common.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "scaled_dot_product_attention",
+          "class_name": null,
+          "full_name": "scaled_dot_product_attention",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "python/llm/example/GPU/HuggingFace/Multimodal/internvl2/README.md",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    }
+  ],
+  "step_plan": {
+    "summary": "Fixes InternVL/InternVL2 FP16 runtime errors by making vision positional-embedding resizing and image dtype handling safe under half precision, and by hardening attention SDP fastpath selection/dispatch to avoid unsupported fp16 kernel routes and reliably fall back when needed.",
+    "steps": [
+      {
+        "operation": "Make positional-embedding resize safe for fp16 by upcasting for interpolation and preserving device/dtype on return",
+        "file_to_modify": "python/llm/src/ipex_llm/transformers/models/internvl.py",
+        "function_to_modify": "_get_pos_embed",
+        "reason": "FP16 failures frequently occur in interpolation/reshape paths (especially when moving tensors to CPU). Ensure the interpolation runs in fp32 (and on a supported device) and only cast back to the requested dtype at the end, with explicit device placement and contiguous layout to avoid backend-specific half-precision limitations.",
+        "side_effects": "Slight extra compute/memory due to fp32 temporary buffers; may change numerical results minimally. Affects any InternVL run that resizes pos-embeds (different image resolutions). Should be validated on both XPU and CPU/CUDA fallback paths."
+      },
+      {
+        "operation": "Adjust image tensor casting so InternVL vision inputs avoid unsupported fp16 ops (keep pixel_values in fp32/bf16 or conditionally cast based on backend)",
+        "file_to_modify": "python/llm/src/ipex_llm/transformers/models/internvl.py",
+        "function_to_modify": "internvl_chat",
+        "reason": "The current `pixel_values = pixel_values.to(dtype=self.dtype)` can force fp16 images even when parts of the vision stack (e.g., normalization/conv/interpolate) are not robust in fp16 on the target backend. Introduce a safer casting rule (e.g., keep pixel_values in fp32, or cast to bf16 on XPU, or only cast if dtype is supported) while leaving model weights unchanged.",
+        "side_effects": "Potential performance regression from higher-precision vision compute; may increase memory use. Could change end-to-end throughput for multimodal inference. Needs consistency with batch path and should not alter text-only usage."
+      },
+      {
+        "operation": "Mirror the safer image-dtype handling from single-chat path in the batch chat helper",
+        "file_to_modify": "python/llm/src/ipex_llm/transformers/models/internvl.py",
+        "function_to_modify": "internvl_batch_chat",
+        "reason": "Batch path must apply the same fp16-safe pixel_values policy as `internvl_chat` to prevent inconsistent behavior (single works, batch fails) and to keep dtype/device handling uniform for InternVL2 workflows.",
+        "side_effects": "Same performance/memory considerations as `internvl_chat`. Might affect users who relied on previous implicit fp16 pixel casting for speed; should be communicated in release notes if behavior changes."
+      },
+      {
+        "operation": "Harden InternVL attention override to avoid fp16-only SDP fastpaths when constraints are not met; ensure QKV layout/contiguity and provide safe fallback",
+        "file_to_modify": "python/llm/src/ipex_llm/transformers/models/internvl.py",
+        "function_to_modify": "intern_attention_forward",
+        "reason": "FP16 runtime errors can arise when routing to XPU SDP kernels with shapes/head_dims/layouts that are not supported, or when fp16 softmax/matmul hits backend constraints. Add stricter checks (dtype/device/head_dim/sequence conditions), enforce contiguous Q/K/V where required, and/or upcast attention computation when fp16 is problematic, while keeping correctness via a fallback attention implementation.",
+        "side_effects": "May reduce usage of the optimized SDP kernel (performance impact) but improves stability. Could change which kernel path is taken for certain head dimensions or sequence lengths. Must be validated for both prefill and decode phases."
+      },
+      {
+        "operation": "Tighten non-causal SDP gating for fp16 on XPU (or add additional guards) to prevent selecting unsupported kernels for InternVL-like shapes",
+        "file_to_modify": "python/llm/src/ipex_llm/transformers/models/utils.py",
+        "function_to_modify": "use_sdp_non_causal",
+        "reason": "`intern_attention_forward` relies on `use_sdp_non_causal(...)` to decide whether to use the XPU SDP fastpath. If the gating is too permissive for fp16 (e.g., allows head_dims/seq shapes/layouts that the kernel can’t handle), it will consistently trigger fp16-only crashes. Add constraints (supported dtypes/head_dims, alignment, min/max seq, device capability checks) or make fp16 gating more conservative.",
+        "side_effects": "Impacts any model using this shared gating function (not just InternVL). Could reduce optimization coverage on XPU for some configurations; requires running broader attention-related regression checks."
+      },
+      {
+        "operation": "Make the SDP wrapper more defensive for fp16: validate inputs, fix layout, and reliably fall back when xe_addons path is unsafe",
+        "file_to_modify": "python/llm/src/ipex_llm/transformers/models/common.py",
+        "function_to_modify": "scaled_dot_product_attention",
+        "reason": "If fp16 failures originate inside the XPU SDP dispatch, improve robustness by (1) checking contiguity/strides and calling `.contiguous()` when needed, (2) guarding unsupported shapes/head_dims/dtypes, (3) catching/avoiding known-failing fp16 configurations, and (4) cleanly falling back to a safe PyTorch implementation (possibly with temporary upcast) while maintaining correctness.",
+        "side_effects": "Potential performance regression when falling back more often; may slightly change numerics if upcasting is introduced. Because this function is shared, changes can affect multiple transformer models; needs targeted testing on XPU and non-XPU backends."
+      }
+    ]
+  }
+}

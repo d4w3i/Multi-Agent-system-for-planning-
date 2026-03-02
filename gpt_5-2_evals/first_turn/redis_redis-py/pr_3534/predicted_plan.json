@@ -1,0 +1,88 @@
+{
+  "pr_number": 3534,
+  "repository": "redis/redis-py",
+  "title": "fix(lock): Fix LockError message when releasing a lock.",
+  "body": "Fix #3535 \n\n### Pull Request check-list\n\n_Please make sure to review and check all of these items:_\n\n- [ ] Do tests and lints pass with this change?\n- [ ] Do the CI tests pass with this change (enable it first in your forked repo and wait for the github action build to finish)?\n- [ ] Is the new or changed code fully tested?\n- [ ] Is a documentation update included (if this change modifies existing APIs, or introduces new ones)?\n- [ ] Is there an example added to the examples folder (if applicable)?\n- [ ] Was the change added to CHANGES file?\n\n_NOTE: these things are not required to open a PR and can be done\nafterwards / while the PR is open._\n\n### Description of change\n\nWe can get expect result for the test code in #3535  with this implementation:\n```\nThread 2: Lock error: Cannot release a lock that's no longer owned\n```",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T08:39:47.879838",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "redis/exceptions.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "__init__",
+          "class_name": "LockError",
+          "full_name": "LockError.__init__",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "tests/test_lock.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "test_releasing_lock_no_longer_owned_raises_error",
+          "class_name": "TestLock",
+          "full_name": "TestLock.test_releasing_lock_no_longer_owned_raises_error",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "tests/test_asyncio/test_lock.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "test_releasing_lock_no_longer_owned_raises_error",
+          "class_name": "TestLock",
+          "full_name": "TestLock.test_releasing_lock_no_longer_owned_raises_error",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Ensure LockError/LockNotOwnedError exceptions stringify to their intended human-readable messages by properly initializing the base Exception with the message. Add sync and asyncio regression assertions so releasing a lock that is no longer owned prints 'Cannot release a lock that's no longer owned' as expected in #3535.",
+    "steps": [
+      {
+        "operation": "Fix LockError message propagation by initializing the base Exception with the provided message (and preserving existing attributes like lock_name) so str(exc) renders the human-readable text",
+        "file_to_modify": "redis/exceptions.py",
+        "function_to_modify": "LockError.__init__",
+        "reason": "Lock release paths already raise LockNotOwnedError with the correct message, but if LockError does not populate Exception.args (or otherwise define stringification), logging/printing the exception may omit the intended message. Ensuring super().__init__(message) (or setting args) makes str(e) include the message expected by #3535.",
+        "side_effects": "Changes the stringification/args of LockError and its subclasses; downstream code that inspects exc.args may now see the message where it was previously empty. Exception types and raising sites remain unchanged; run full test suite to ensure no assertions depend on the previous args behavior."
+      },
+      {
+        "operation": "Add/adjust the sync lock regression test to assert the exception message text for the 'release when no longer owned' scenario using str(excinfo.value) (and keep asserting the exception type)",
+        "file_to_modify": "tests/test_lock.py",
+        "function_to_modify": "TestLock.test_releasing_lock_no_longer_owned_raises_error",
+        "reason": "Provides a targeted regression for #3535 by verifying that the thrown LockNotOwnedError not only occurs, but also stringifies to 'Cannot release a lock that's no longer owned' when surfaced to users.",
+        "side_effects": "Test becomes stricter about the exact message; future message changes will require updating this assertion. May reveal other code paths where message propagation is inconsistent."
+      },
+      {
+        "operation": "Add/adjust the asyncio lock regression test to assert the same exception message text for parity with sync behavior in the 'release when no longer owned' scenario",
+        "file_to_modify": "tests/test_asyncio/test_lock.py",
+        "function_to_modify": "TestLock.test_releasing_lock_no_longer_owned_raises_error",
+        "reason": "Async lock code should present identical exception messages to sync locks; asserting the same string output prevents regressions that only affect asyncio users.",
+        "side_effects": "Async tests become stricter about message content; may require aligning any async-only exception wrapping/raising to keep the message unchanged. Ensure CI runs asyncio tests in the same environments as sync tests."
+      }
+    ]
+  }
+}

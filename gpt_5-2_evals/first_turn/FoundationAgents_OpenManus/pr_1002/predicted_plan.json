@@ -1,0 +1,57 @@
+{
+  "pr_number": 1002,
+  "repository": "FoundationAgents/OpenManus",
+  "title": "remove unnecessary actions while ensuring required tool calls",
+  "body": "**Features**\n- remove unnecessary actions while ensuring required tool calls\n\n**Feature Docs**\nI am struggling to understand the rationale behind handing over the decision to continue processing to the act method and throwing an exception when `tool_choices` is set to `required` and `tool_calls` is empty. In my opinion, it would be more appropriate to simply return `False` in this scenario, as the current approach seems unnecessary and could potentially be removed.\n\n**Influence**\nno influence",
+  "extraction_metadata": {
+    "extracted_at": "2026-02-25T20:40:04.225720",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "toolcall.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "think",
+          "class_name": "ToolCallAgent",
+          "full_name": "ToolCallAgent.think",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "act",
+          "class_name": "ToolCallAgent",
+          "full_name": "ToolCallAgent.act",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Adjust ToolCallAgent control flow so REQUIRED tool usage doesn’t force an unnecessary act() call and no longer throws when the model returns no tool_calls. Enforcement moves from exception-based behavior in act() to a clean stop condition in think(), with act() made safe if called anyway.",
+    "steps": [
+      {
+        "operation": "Stop the loop early when ToolChoice.REQUIRED produces no tool calls, instead of continuing into act()",
+        "file_to_modify": "base_project/toolcall.py",
+        "function_to_modify": "ToolCallAgent.think",
+        "reason": "Today think() returns True for the REQUIRED+empty-tool-calls case (“Will be handled in act()”), which forces the outer agent loop (think→act) to call act() even though there is nothing to execute. Changing think() to return False in this scenario removes the unnecessary action and makes the gating boolean the single source of truth for whether tool execution should occur.",
+        "side_effects": "Changes control flow: the agent loop will stop cleanly instead of raising later. Depending on upstream expectations, callers that relied on ValueError(TOOL_CALL_REQUIRED) for observability may now need to check state/memory/logs instead. Consider ensuring an explanatory assistant message is already present (it is added before the REQUIRED check) and/or adding a warning log in this branch."
+      },
+      {
+        "operation": "Make act() tolerant of REQUIRED+empty-tool-calls by avoiding exception-based enforcement and returning a safe no-op/last-message result",
+        "file_to_modify": "base_project/toolcall.py",
+        "function_to_modify": "ToolCallAgent.act",
+        "reason": "Even after tightening think(), act() may still be invoked defensively or by alternative orchestration paths. Removing the ValueError(TOOL_CALL_REQUIRED) aligns with the PR’s intent to avoid exception-driven control flow and prevents crashes when no tool calls are present despite tool_choices being REQUIRED.",
+        "side_effects": "Behavioral change: REQUIRED mode will no longer hard-fail inside act(); downstream error handling/tests expecting TOOL_CALL_REQUIRED will need updates. Returning the last message content (or a clear fallback string) may change user-visible outputs; add logging if needed to keep diagnosability."
+      }
+    ]
+  }
+}

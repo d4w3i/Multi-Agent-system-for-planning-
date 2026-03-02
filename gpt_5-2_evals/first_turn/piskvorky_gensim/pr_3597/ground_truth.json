@@ -1,0 +1,35 @@
+{
+  "pr_number": 3597,
+  "repository": "piskvorky/gensim",
+  "title": "Clarify BM25 Documentation in Gensim Core Tutorials (Document Fix)",
+  "body": "**What changes were proposed in this pull request?**\r\n\r\nThis pull request corrects the documentation for the BM25 algorithm within the core tutorials of the Gensim library. The previous documentation misleadingly implied that BM25 transforms vectors into other vectors while altering their values based on feature rarity. This update provides an accurate description of BM25, highlighting its actual function as a scoring algorithm that does not manipulate the dimensionality of its input data.\r\n\r\n**Why are these changes needed?**\r\n\r\nThe correction ensures the Gensim documentation accurately reflects the true nature of BM25 as a relevance scoring mechanism, not a vector transformation tool. It rectifies misconceptions and provides clarity, which is vital for users and developers relying on the Gensim documentation for implementing and understanding BM25.\r\n\r\n**File Modified**\r\n\r\n- gensim/docs/src/gallery/core/run_topics_and_transformations.py\r\n\r\n\r\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T01:04:03.315072",
+    "extractor_version": "1.0.0",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "docs/src/gallery/core/run_topics_and_transformations.py",
+      "status": "modified",
+      "additions": 6,
+      "deletions": 5,
+      "functions_modified": [],
+      "patch": "@@ -189,11 +189,12 @@\n #     model = models.TfidfModel(corpus, normalize=True)\n #\n # * `Okapi Best Matching, Okapi BM25 <https://en.wikipedia.org/wiki/Okapi_BM25>`_\n-#   expects a bag-of-words (integer values) training corpus during initialization.\n-#   During transformation, it will take a vector and return another vector of the\n-#   same dimensionality, except that features which were rare in the training corpus\n-#   will have their value increased. It therefore converts integer-valued\n-#   vectors into real-valued ones, while leaving the number of dimensions intact.\n+#   operates on a bag-of-words (integer values) representation of the corpus during initialization.\n+#   BM25 does not transform vectors but rather computes a relevance score for each document \n+#   relative to a specific query. This score is derived using a formula that incorporates term \n+#   frequency, inverse document frequency, and length normalization of the documents.\n+#   The function calculates a single score per document, indicating its relevance to the query,\n+#   without altering the dimensionality or converting the integer-valued vectors into real-valued ones.\n #\n #   Okapi BM25 is the standard ranking function used by search engines to estimate\n #   the relevance of documents to a given search query."
+    }
+  ],
+  "functions_modified": [],
+  "step_plan": {
+    "steps": [
+      {
+        "operation": "Update the BM25 tutorial narrative to accurately describe BM25 as a relevance scoring function (query-to-document scoring) rather than a vector transformation that reweights features and returns a same-dimensional vector.",
+        "file_to_modify": "docs/src/gallery/core/run_topics_and_transformations.py",
+        "function_to_modify": null,
+        "reason": "The prior wording incorrectly implied BM25 behaves like a corpus transformation model (e.g., TF-IDF) that outputs transformed vectors; BM25 instead computes per-document relevance scores given a query, so the documentation needed correction to prevent user confusion and misuse.",
+        "side_effects": "Only documentation/tutorial text is impacted: it may change users’ understanding and downstream code they write based on the tutorial; no runtime/library behavior changes, but any references or derived docs/snippets that quote this section may need to be kept in sync."
+      }
+    ],
+    "summary": "Corrected the Gensim core tutorial documentation to describe BM25 as a relevance scoring algorithm (per-document scores vs. a query) rather than a vector-transforming model that reweights features."
+  }
+}

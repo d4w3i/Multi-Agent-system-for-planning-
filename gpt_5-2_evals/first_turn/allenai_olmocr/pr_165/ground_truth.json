@@ -1,0 +1,81 @@
+{
+  "pr_number": 165,
+  "repository": "allenai/olmocr",
+  "title": "fix jsonl_to_markdown",
+  "body": "\r\n<!-- To ensure we can review your pull request promptly please complete this template entirely. -->\r\n\r\n<!-- Please reference the issue number here. You can replace \"Fixes\" with \"Closes\" if it makes more sense. -->\r\nFixes #162\r\n\r\nChanges proposed in this pull request:\r\n<!-- Please list all changes/additions here. -->\r\n- Add `jsonl_to_markdown.py` utility script to convert JSONL files to Markdown format\r\n- Script extracts the 'text' field from each line in a JSONL file and saves it as a separate Markdown file\r\n- Include proper error handling for JSON decoding and file operations\r\n- Add example usage and documentation\r\n\r\n## Before submitting\r\n\r\n<!-- Please complete this checklist BEFORE submitting your PR to speed along the review process. -->\r\n- [x] I've read and followed all steps in the [Making a pull request](https://github.com/allenai/olmocr/blob/main/.github/CONTRIBUTING.md#making-a-pull-request) section of the `CONTRIBUTING` docs.\r\n- [x] I've updated or added relevant docstrings following the syntax described in the [Writing docstrings](https://github.com/allenai/olmocr/blob/main/.github/CONTRIBUTING.md#writing-docstrings) section of the `CONTRIBUTING` docs.\r\n- [x] If this PR fixes a bug, I've added a test that will fail without my fix.\r\n- [x] If this PR adds a new feature, I've added tests that sufficiently cover my new functionality.\r\n\r\nfixes  #162 \r\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T00:58:37.575894",
+    "extractor_version": "1.0.0",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "scripts/jsonl_to_markdown.py",
+      "status": "modified",
+      "additions": 15,
+      "deletions": 9,
+      "functions_modified": [
+        {
+          "function_name": "jsonl_to_markdown",
+          "class_name": null,
+          "full_name": "jsonl_to_markdown",
+          "start_line": 12,
+          "end_line": 43,
+          "lines_changed": [
+            12,
+            20,
+            21,
+            22,
+            25,
+            31,
+            32,
+            33,
+            35,
+            37,
+            39,
+            41,
+            43
+          ]
+        }
+      ],
+      "patch": "@@ -1,40 +1,46 @@\n+#!/usr/bin/env python3\n import json\n import os\n import sys\n+from pathlib import Path\n \n \n # This is a simple script to convert JSONL files to Markdown format.\n # It reads each line of the JSONL file, extracts the 'text' field,\n # and saves it as a Markdown file with the line number as the filename.\n # The script also handles potential JSON decoding errors and prints relevant messages.\n-def jsonl_to_markdown(input_file, output_dir):\n+def jsonl_to_markdown(input_file: str, output_dir: str) -> None:\n     \"\"\"\n     Reads a JSONL file, extracts the 'text' field from each line, and saves it as a Markdown file.\n \n     Args:\n         input_file (str): Path to the input JSONL file.\n         output_dir (str): Directory to save the Markdown files.\n     \"\"\"\n-    if not os.path.exists(output_dir):\n-        os.makedirs(output_dir)\n+    # Create output directory if it doesn't exist\n+    output_path = Path(output_dir)\n+    output_path.mkdir(parents=True, exist_ok=True)\n \n     with open(input_file, \"r\", encoding=\"utf-8\") as file:\n-        for i, line in enumerate(file):\n+        for i, line in enumerate(file, 1):\n             try:\n                 # Parse the JSON line\n                 data = json.loads(line)\n                 text_content = data.get(\"text\", \"\")\n \n+                # Convert to Markdown format\n+                markdown_content = f\"# Extracted Content (Line {i})\\n\\n{text_content}\"\n+\n                 # Save to a Markdown file\n-                output_file = os.path.join(output_dir, f\"line_{i + 1}.md\")\n+                output_file = output_path / f\"line_{i}.md\"\n                 with open(output_file, \"w\", encoding=\"utf-8\") as md_file:\n-                    md_file.write(text_content)\n+                    md_file.write(markdown_content)\n \n-                print(f\"Extracted and saved line {i + 1} to {output_file}\")\n+                print(f\"Extracted and saved line {i} to {output_file}\")\n             except json.JSONDecodeError as e:\n-                print(f\"Error decoding JSON on line {i + 1}: {e}\")\n+                print(f\"Error decoding JSON on line {i}: {e}\")\n             except Exception as e:\n-                print(f\"Unexpected error on line {i + 1}: {e}\")\n+                print(f\"Unexpected error on line {i}: {e}\")\n \n \n # Example usage"
+    }
+  ],
+  "functions_modified": [
+    {
+      "function_name": "jsonl_to_markdown",
+      "class_name": null,
+      "full_name": "jsonl_to_markdown",
+      "start_line": 12,
+      "end_line": 43,
+      "lines_changed": [
+        12,
+        20,
+        21,
+        22,
+        25,
+        31,
+        32,
+        33,
+        35,
+        37,
+        39,
+        41,
+        43
+      ]
+    }
+  ],
+  "step_plan": {
+    "steps": [
+      {
+        "operation": "Fix and enhance the JSONL-to-Markdown conversion by switching to pathlib, using 1-based line numbering, and writing a Markdown header plus extracted text to each output file while keeping robust error reporting.",
+        "file_to_modify": "scripts/jsonl_to_markdown.py",
+        "function_to_modify": "jsonl_to_markdown",
+        "reason": "The utility needed corrected/clearer output semantics (consistent 1-based line indexing), more portable/idiomatic path handling (Path + mkdir with parents/exist_ok), and true Markdown output (not raw text) to match the intended behavior described in the PR/issue.",
+        "side_effects": "Downstream users/scripts expecting the old behavior may notice: (1) file names change from line_{i+1}.md to line_{i}.md due to enumerate(..., 1); (2) file contents now include a Markdown heading wrapper; (3) output paths are Path objects (though they stringify in f-strings and open() handles Path), which could affect any code that assumed os.path.join-style strings."
+      }
+    ],
+    "summary": "Updates the jsonl_to_markdown utility to generate proper Markdown files with consistent 1-based line numbering and more robust directory/path handling via pathlib, while preserving JSON decode and IO error reporting."
+  }
+}

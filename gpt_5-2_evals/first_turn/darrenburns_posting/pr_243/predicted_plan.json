@@ -1,0 +1,57 @@
+{
+  "pr_number": 243,
+  "repository": "darrenburns/posting",
+  "title": "fix(collection): prevent markup parsing",
+  "body": "Prevent the request description trying to parse the content with markup.\r\n\r\nFixes #241.",
+  "extraction_metadata": {
+    "extracted_at": "2026-02-26T03:12:57.148857",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "src/posting/widgets/collection/browser.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "compose",
+          "class_name": "RequestPreview",
+          "full_name": "RequestPreview.compose",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "watch_request",
+          "class_name": "RequestPreview",
+          "full_name": "RequestPreview.watch_request",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Prevent request descriptions in the Collection Browser preview from being interpreted as Rich/Textual markup by disabling markup for that specific description renderer and ensuring updates pass plain/literal text.",
+    "steps": [
+      {
+        "operation": "Disable Rich/Textual markup parsing for the request description preview widget at creation time (e.g., by constructing the `Static` with markup disabled or by supplying a `Text` renderable configured as plain).",
+        "file_to_modify": "src/posting/widgets/collection/browser.py",
+        "function_to_modify": "RequestPreview.compose",
+        "reason": "The description preview is currently created as a plain `Static` and later updated with user-provided text; `Static` may interpret bracketed sequences as markup, causing request descriptions like `[b]...[/b]` to be rendered instead of shown literally.",
+        "side_effects": "May change how the description preview renders any previously-used intentional markup in descriptions (it will now be shown as literal text). Other UI components that rely on markup should remain unaffected because the change is scoped to this widget. Verify styling/wrapping still looks correct in the preview panel."
+      },
+      {
+        "operation": "Update the description-setting logic to ensure the value passed to the description widget is treated as literal text (e.g., update with a `rich.text.Text(request.description, markup=False)`/equivalent, or escape markup before calling `.update(...)`, and handle `None`/empty description consistently).",
+        "file_to_modify": "src/posting/widgets/collection/browser.py",
+        "function_to_modify": "RequestPreview.watch_request",
+        "reason": "Even if the widget is configured correctly, the injection point is where `request.description` is pushed into the UI; normalizing/escaping here ensures the preview cannot accidentally interpret markup due to framework defaults or future refactors.",
+        "side_effects": "Could affect downstream expectations for what `watch_request` puts into the `Static` (string vs renderable). Requires verifying that updates still trigger re-render and that empty descriptions render the expected placeholder/blank state. Manual regression checks recommended: descriptions containing brackets, ANSI-like sequences, and multiline text."
+      }
+    ]
+  }
+}

@@ -1,0 +1,118 @@
+{
+  "pr_number": 14200,
+  "repository": "NVIDIA/NeMo",
+  "title": "Change RerankerSpecter Dataset question key",
+  "body": "> [!IMPORTANT]  \r\n> The `Update branch` button must only be pressed in very rare occassions.\r\n> An outdated branch is never blocking the merge of a PR.\r\n> Please reach out to the automation team before pressing that button.\r\n\r\n# What does this PR do ?\r\n\r\nAdd a one line overview of what this PR aims to accomplish.\r\n\r\n**Collection**: [Note which collection this PR will affect]\r\n\r\n# Changelog\r\n\r\n- Add specific line by line info of high level changes in this PR.\r\n\r\n# Usage\r\n\r\n- You can potentially add a usage example below\r\n\r\n```python\r\n# Add a code snippet demonstrating how to use this \r\n```\r\n\r\n# GitHub Actions CI\r\n\r\nThe Jenkins CI system has been replaced by GitHub Actions self-hosted runners.\r\n\r\nThe GitHub Actions CI will run automatically when the \"Run CICD\" label is added to the PR.\r\nTo re-run CI remove and add the label again.\r\nTo run CI on an untrusted fork, a NeMo user with write access must first click \"Approve and run\".\r\n\r\n# Before your PR is \"Ready for review\"\r\n\r\n**Pre checks**:\r\n\r\n- [ ] Make sure you read and followed [Contributor guidelines](https://github.com/NVIDIA/NeMo/blob/main/CONTRIBUTING.md)\r\n- [ ] Did you write any new necessary tests?\r\n- [ ] Did you add or update any necessary documentation?\r\n- [ ] Does the PR affect components that are optional to install? (Ex: Numba, Pynini, Apex etc)\r\n  - [ ] Reviewer: Does the PR have correct import guards for all optional libraries?\r\n  \r\n**PR Type**:\r\n\r\n- [ ] New Feature\r\n- [ ] Bugfix\r\n- [ ] Documentation\r\n\r\nIf you haven't finished some of the above items you can still open \"Draft\" PR.\r\n\r\n## Who can review?\r\n\r\nAnyone in the community is free to review the PR once the checks have passed.\r\n[Contributor guidelines](https://github.com/NVIDIA/NeMo/blob/main/CONTRIBUTING.md) contains specific people who can review PRs to various areas.\r\n\r\n# Additional Information\r\n\r\n- Related to # (issue)",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T09:49:13.496145",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "nemo/collections/llm/gpt/data/reranker.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "_create_dataset",
+          "class_name": "SpecterReRankerDataModule",
+          "full_name": "SpecterReRankerDataModule._create_dataset",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_preprocess_and_split_data",
+          "class_name": "SpecterReRankerDataModule",
+          "full_name": "SpecterReRankerDataModule._preprocess_and_split_data",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_process_example",
+          "class_name": "ReRankerDataset",
+          "full_name": "ReRankerDataset._process_example",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "tests/collections/llm/bert/data/test_specter.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "test_preprocess_and_split_data",
+          "class_name": null,
+          "full_name": "test_preprocess_and_split_data",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "nemo/collections/llm/bert/data/specter.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "_preprocess_and_split_data",
+          "class_name": "SpecterDataModule",
+          "full_name": "SpecterDataModule._preprocess_and_split_data",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Fix the SPECTER reranker data pipeline by aligning the reranker dataset reader’s `question_key` with the actual JSONL field name produced by preprocessing (currently `query`), optionally adding compatibility fallback and updating/confirming schema tests and related preprocessors remain consistent.",
+    "steps": [
+      {
+        "operation": "Switch SPECTER reranker dataset construction to use the on-disk JSONL query field key",
+        "file_to_modify": "nemo/collections/llm/gpt/data/reranker.py",
+        "function_to_modify": "SpecterReRankerDataModule._create_dataset",
+        "reason": "`SpecterReRankerDataModule._preprocess_and_split_data` writes JSONL records with a `query` field, but `_create_dataset` currently hardcodes `question_key=\"question\"`, causing `ReRankerDataset` to look up a non-existent key and fail at runtime. Setting `question_key=\"query\"` aligns reader and writer without changing the data schema.",
+        "side_effects": "Fixes KeyError/incorrect parsing for SPECTER reranker. Any external code that relied on the (broken) `question` key for SPECTER reranker JSONL would need to use `query` instead, but this should only affect consumers of these specific preprocessed files."
+      },
+      {
+        "operation": "(Optional hardening) Add backward-compatible fallback for question/query key mismatch when processing examples",
+        "file_to_modify": "nemo/collections/llm/gpt/data/reranker.py",
+        "function_to_modify": "ReRankerDataset._process_example",
+        "reason": "If there are existing preprocessed artifacts in the wild that use `question` while newer code uses `query` (or vice-versa), a small compatibility shim (e.g., if configured key missing, try the other common key) prevents breakage and makes the dataset loader more robust across versions.",
+        "side_effects": "Could mask schema mistakes by silently accepting multiple keys; consider logging a warning when fallback is used. Might slightly complicate debugging if users expect strict schema validation."
+      },
+      {
+        "operation": "Ensure SPECTER reranker JSONL writer and schema remain consistent with the chosen key",
+        "file_to_modify": "nemo/collections/llm/gpt/data/reranker.py",
+        "function_to_modify": "SpecterReRankerDataModule._preprocess_and_split_data",
+        "reason": "This function is the producer of the JSONL schema (`query`, `pos_doc`, `neg_doc`). Confirm it continues to emit the key that `_create_dataset` now expects (preferably `query`), and update any inline comments/docstrings to reflect the canonical key name.",
+        "side_effects": "If you decide instead to rename the emitted key to `question`, this will invalidate existing cached/preprocessed splits and require updating any tests and other consumers accordingly."
+      },
+      {
+        "operation": "Keep BERT SPECTER preprocessing aligned with the canonical SPECTER JSONL schema key",
+        "file_to_modify": "nemo/collections/llm/bert/data/specter.py",
+        "function_to_modify": "SpecterDataModule._preprocess_and_split_data",
+        "reason": "There are two SPECTER preprocessors (GPT reranker and BERT SPECTER). If the project standardizes the query/question key name for SPECTER JSONL (e.g., `query`), this module should remain consistent to avoid divergent schemas across collections.",
+        "side_effects": "If changed, will require regenerating fixtures/artifacts and updating tests that validate the output schema. If no schema change is made (only reranker mapping), this step may be a no-op aside from verifying consistency."
+      },
+      {
+        "operation": "Update schema assertion test to reflect the canonical key and prevent regressions",
+        "file_to_modify": "tests/collections/llm/bert/data/test_specter.py",
+        "function_to_modify": "test_preprocess_and_split_data",
+        "reason": "This test guards the JSONL schema produced by SPECTER preprocessing. If the PR changes the canonical key name (e.g., from `query` to `question`) or adds compatibility behavior, the test should be updated/extended to assert the correct expected key so future changes don’t reintroduce mismatches.",
+        "side_effects": "Test expectations will change; ensure CI covers both the preprocessing path and (ideally) a minimal dataset read path. If only reranker mapping changes (keeping `query`), the test may stay the same, but consider adding an assertion that reranker datamodule uses the same key to catch future drift."
+      }
+    ]
+  }
+}

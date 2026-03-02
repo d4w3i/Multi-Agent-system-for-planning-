@@ -1,0 +1,42 @@
+{
+  "pr_number": 1155,
+  "repository": "SWE-agent/SWE-agent",
+  "title": "Fix: Correctly format commit message for PR creation",
+  "body": "The commit message by the agent does not formatted properly\n![image](https://github.com/user-attachments/assets/4d40e248-2761-47e1-a091-26d53bde1179)\n\nThis pull request includes a small change to the `open_pr` function in `sweagent/run/hooks/open_pr.py`. The change updates the string formatting for commit messages to use f-strings for formating the message properly",
+  "extraction_metadata": {
+    "extracted_at": "2026-02-25T20:40:47.588505",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "open_pr.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "open_pr",
+          "class_name": null,
+          "full_name": "open_pr",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Update the PR-opening workflow to correctly interpolate issue title/number into the git commit message during PR creation. This fixes malformed commit subjects/bodies that currently contain literal `{issue.title}` / `{issue.number}` placeholders.",
+    "steps": [
+      {
+        "operation": "Fix commit message interpolation by switching from literal placeholder strings to f-strings (and optionally sanitizing to single-line) before shell-quoting",
+        "file_to_modify": "open_pr.py",
+        "function_to_modify": "open_pr",
+        "reason": "The current commit subject/body are built as plain strings containing `{issue.title}` and `{issue.number}` so `git commit` receives placeholders literally. Building the message with f-strings ensures the issue title/number are interpolated correctly while preserving existing `shlex.quote(...)` shell-safety.",
+        "side_effects": "Changes the resulting commit message text in created PR branches; verify `_dry_run` still works with `--allow-empty` and that titles with quotes/newlines don’t break the shell command (may require replacing newlines with spaces). Downstream behavior in `OpenPRHook.on_instance_completed` remains the same; manual verification via `git log -1 --pretty=%B` is recommended."
+      }
+    ]
+  }
+}

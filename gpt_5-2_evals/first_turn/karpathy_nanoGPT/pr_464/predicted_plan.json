@@ -1,0 +1,49 @@
+{
+  "pr_number": 464,
+  "repository": "karpathy/nanoGPT",
+  "title": "fix: h100-mfu-calculation",
+  "body": "I was getting 104% MFU on h100 then i realized that MFU calculation might of been based on a100 312 tflops \n\nh100 is 989 tflops at bfloat16. nvidia claims 1,979tflops but that is for 2:4 sparsity.\n\n<img width=\"515\" alt=\"image\" src=\"https://github.com/karpathy/nanoGPT/assets/47992694/7ed83ae5-3769-4c48-91a6-7cc4d8f6e140\">",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T08:31:00.832821",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "model.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "estimate_mfu",
+          "class_name": "GPT",
+          "full_name": "GPT.estimate_mfu",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "train.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    }
+  ],
+  "step_plan": {
+    "summary": "Fix MFU reporting on H100 by updating `GPT.estimate_mfu` to normalize achieved FLOPs against an H100-appropriate BF16 dense peak (989 TFLOPS) rather than the A100 constant, preventing misleading >100% MFU values on H100.",
+    "steps": [
+      {
+        "operation": "Make MFU normalization device-aware by selecting an appropriate BF16 dense peak FLOPs constant (H100=989e12, default/A100=312e12) instead of always using the A100 value",
+        "file_to_modify": "model.py",
+        "function_to_modify": "GPT.estimate_mfu",
+        "reason": "The current MFU calculation hardcodes `flops_promised = 312e12` (A100 BF16 peak), which inflates utilization on faster GPUs like H100 (leading to >100% MFU). Selecting the peak FLOPs based on the detected CUDA device name (e.g., substring match on 'H100') corrects the normalization for H100 while preserving A100 behavior.",
+        "side_effects": "MFU numbers will change on H100 (and any other GPUs that match new heuristics). Device-name parsing is somewhat brittle across cloud variants (e.g., 'NVIDIA H100 SXM', 'NVIDIA H100 PCIe'); ensure substring matching is robust. No expected impact on training correctness, but logged metrics (console/wandb) will differ and may require updating baselines."
+      }
+    ]
+  }
+}

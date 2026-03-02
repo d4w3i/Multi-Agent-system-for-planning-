@@ -1,0 +1,42 @@
+{
+  "pr_number": 228,
+  "repository": "facebookresearch/vggt",
+  "title": "Fix a typo in batch_np_matrix_to_pycolmap",
+  "body": "The current implementation can cause `reproj_mask` to be undefined in `batch_np_matrix_to_pycolmap()` if `max_reproj_error = None` causing the following: \n\n```\nif masks is not None and reproj_mask is not None:\nUnboundLocalError: local variable 'reproj_mask' referenced before assignment\n``` \n\nInitializing `reproj_mask` beforehand fix that error.\n\nExplore the source code to identify the files and functions to modify.",
+  "extraction_metadata": {
+    "extracted_at": "2026-02-25T20:45:08.518177",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "np_to_pycolmap.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "batch_np_matrix_to_pycolmap",
+          "class_name": null,
+          "full_name": "batch_np_matrix_to_pycolmap",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Fixes a crash in `batch_np_matrix_to_pycolmap` by ensuring `reproj_mask` is always defined when `max_reproj_error` is `None`, preventing an `UnboundLocalError` during mask merging.",
+    "steps": [
+      {
+        "operation": "Initialize `reproj_mask` to a safe default before the `max_reproj_error` conditional and keep the existing mask-combination semantics intact",
+        "file_to_modify": "base_project/np_to_pycolmap.py",
+        "function_to_modify": "batch_np_matrix_to_pycolmap",
+        "reason": "`reproj_mask` is currently only assigned inside `if max_reproj_error is not None:` but is referenced afterward unconditionally, causing an `UnboundLocalError` when `max_reproj_error=None`. Setting `reproj_mask = None` before the conditional (or equivalent restructuring) guarantees the variable is always defined and preserves intended behavior when reprojection filtering is disabled.",
+        "side_effects": "Eliminates the runtime error path for `max_reproj_error=None`. Behavior should remain unchanged otherwise: when `max_reproj_error` is provided, reprojection masking still applies; when it is not, only user-provided `masks` (if any) are used. Note that the existing `assert masks is not None` will still fail if both `masks` and `max_reproj_error` are `None`—this is pre-existing behavior and should be verified against callers/tests."
+      }
+    ]
+  }
+}

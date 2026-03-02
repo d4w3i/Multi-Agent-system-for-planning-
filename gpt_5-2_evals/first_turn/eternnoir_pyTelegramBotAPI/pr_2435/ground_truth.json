@@ -1,0 +1,93 @@
+{
+  "pr_number": 2435,
+  "repository": "eternnoir/pyTelegramBotAPI",
+  "title": "Fixed \"subscription_period\" docstring",
+  "body": "## Description\r\nFixed method docstring for \"subscription_period\"\r\n\r\nPython version: 3.10\r\n\r\nOS: macOS Sonoma 14.7\r\n\r\n## Checklist:\r\n- Just minor change of param docstring\r\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T00:59:18.077967",
+    "extractor_version": "1.0.0",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "telebot/__init__.py",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "functions_modified": [
+        {
+          "function_name": "create_invoice_link",
+          "class_name": "TeleBot",
+          "full_name": "TeleBot.create_invoice_link",
+          "start_line": 5425,
+          "end_line": 5539,
+          "lines_changed": [
+            5477
+          ]
+        }
+      ],
+      "patch": "@@ -5474,7 +5474,7 @@ def create_invoice_link(self,\n             (e.g. product price, tax, discount, delivery cost, delivery tax, bonus, etc.)\n         :type prices: :obj:`list` of :obj:`types.LabeledPrice`\n \n-        :subscription_period: \tThe number of seconds the subscription will be active for before the next payment.\n+        :param subscription_period: The number of seconds the subscription will be active for before the next payment.\n             The currency must be set to “XTR” (Telegram Stars) if the parameter is used. Currently, it must always\n             be 2592000 (30 days) if specified.\n         :type subscription_period: :obj:`int`"
+    },
+    {
+      "filename": "telebot/async_telebot.py",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "functions_modified": [
+        {
+          "function_name": "create_invoice_link",
+          "class_name": "AsyncTeleBot",
+          "full_name": "AsyncTeleBot.create_invoice_link",
+          "start_line": 6873,
+          "end_line": 6985,
+          "lines_changed": [
+            6925
+          ]
+        }
+      ],
+      "patch": "@@ -6922,7 +6922,7 @@ async def create_invoice_link(self,\n             (e.g. product price, tax, discount, delivery cost, delivery tax, bonus, etc.)\n         :type prices: :obj:`list` of :obj:`types.LabeledPrice`\n \n-        :subscription_period: \tThe number of seconds the subscription will be active for before the next payment.\n+        :param subscription_period: The number of seconds the subscription will be active for before the next payment.\n             The currency must be set to “XTR” (Telegram Stars) if the parameter is used. Currently, it must always\n             be 2592000 (30 days) if specified.\n         :type subscription_period: :obj:`int`"
+    }
+  ],
+  "functions_modified": [
+    {
+      "function_name": "create_invoice_link",
+      "class_name": "TeleBot",
+      "full_name": "TeleBot.create_invoice_link",
+      "start_line": 5425,
+      "end_line": 5539,
+      "lines_changed": [
+        5477
+      ]
+    },
+    {
+      "function_name": "create_invoice_link",
+      "class_name": "AsyncTeleBot",
+      "full_name": "AsyncTeleBot.create_invoice_link",
+      "start_line": 6873,
+      "end_line": 6985,
+      "lines_changed": [
+        6925
+      ]
+    }
+  ],
+  "step_plan": {
+    "steps": [
+      {
+        "operation": "Fix the Sphinx/RST parameter tag in the docstring for the invoice link creation method",
+        "file_to_modify": "telebot/__init__.py",
+        "function_to_modify": "create_invoice_link",
+        "reason": "The docstring used `:subscription_period:` instead of the correct `:param subscription_period:` field list syntax, which can break or degrade generated documentation and parameter introspection in doc tooling.",
+        "side_effects": "Only documentation output is affected (e.g., Sphinx/autodoc rendering). No runtime behavior changes, but any docs builds/tests that validate docstring formatting may start passing (or change output)."
+      },
+      {
+        "operation": "Mirror the same docstring parameter tag correction in the async implementation",
+        "file_to_modify": "telebot/async_telebot.py",
+        "function_to_modify": "create_invoice_link",
+        "reason": "The async variant had the same docstring typo, so it must be kept consistent with the sync API documentation and correctly parsed by documentation generators.",
+        "side_effects": "Documentation rendering for the async API changes similarly; no functional/runtime impact, but docs diffs and any doc-linting steps may be affected."
+      }
+    ],
+    "summary": "This PR corrects a minor docstring typo by changing the `subscription_period` field to the proper `:param subscription_period:` format in both the synchronous and asynchronous `create_invoice_link` methods."
+  }
+}

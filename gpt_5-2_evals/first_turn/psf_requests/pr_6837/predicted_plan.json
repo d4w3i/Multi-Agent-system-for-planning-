@@ -1,0 +1,94 @@
+{
+  "pr_number": 6837,
+  "repository": "psf/requests",
+  "title": "Fix handling of non-latin credentials in HTTPDigestAuth",
+  "body": "Fixes #6102\n\nUpdate `HTTPDigestAuth` to handle non-latin credentials correctly.\n\n* Change `_basic_auth_str` in `src/requests/auth.py` to encode `username` and `password` using `utf-8` instead of `latin1`.\n* Update `build_digest_header` in `src/requests/auth.py` to correctly format the string for the header with non-latin characters.\n* Add tests in `tests/test_requests.py` to verify correct handling of non-latin credentials in `HTTPDigestAuth`.",
+  "extraction_metadata": {
+    "extracted_at": "2026-02-26T03:41:57.395548",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "src/requests/auth.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "_basic_auth_str",
+          "class_name": null,
+          "full_name": "_basic_auth_str",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "build_digest_header",
+          "class_name": "HTTPDigestAuth",
+          "full_name": "HTTPDigestAuth.build_digest_header",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "handle_401",
+          "class_name": "HTTPDigestAuth",
+          "full_name": "HTTPDigestAuth.handle_401",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "__call__",
+          "class_name": "HTTPDigestAuth",
+          "full_name": "HTTPDigestAuth.__call__",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "tests/test_requests.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    }
+  ],
+  "step_plan": {
+    "summary": "Update Requests’ auth helpers so non-latin `str` usernames/passwords are encoded and formatted correctly: Basic auth uses UTF-8 for base64 encoding, and Digest auth header construction/propagation avoids lossy or invalid string formatting. Add regression coverage to ensure `HTTPDigestAuth` works end-to-end with non-latin credentials.",
+    "steps": [
+      {
+        "operation": "Switch text credential encoding from latin-1 to UTF-8 when building the Basic Authorization header value",
+        "file_to_modify": "src/requests/auth.py",
+        "function_to_modify": "_basic_auth_str",
+        "reason": "`latin1` cannot represent many non-latin `str` characters; encoding `username:password` as UTF-8 before base64 ensures non-latin credentials are faithfully encoded and avoids encoding errors/garbling.",
+        "side_effects": "Changes the on-the-wire base64 payload for non-latin `str` credentials (bytes inputs should remain unchanged). May require adjusting/adding tests that assert the exact `Authorization: Basic ...` value."
+      },
+      {
+        "operation": "Ensure Digest Authorization header string formatting/quoting supports non-latin usernames/passwords without lossy conversions",
+        "file_to_modify": "src/requests/auth.py",
+        "function_to_modify": "HTTPDigestAuth.build_digest_header",
+        "reason": "Even if hashing uses UTF-8, building the `Digest ...` header via string interpolation can mis-handle non-latin characters (e.g., implicit latin-1 assumptions, incorrect quoting/escaping). The header must remain a native `str` and correctly quote/escape username/realm/uri fields when they contain non-ascii characters.",
+        "side_effects": "May alter the exact `Authorization: Digest ...` header text for some inputs. Needs to remain compatible with servers and existing tests (ASCII credentials) while preventing encoding-related exceptions."
+      },
+      {
+        "operation": "Propagate the newly formatted Digest Authorization header onto the prepared request after a 401 challenge, ensuring type and header-setting behavior remain consistent",
+        "file_to_modify": "src/requests/auth.py",
+        "function_to_modify": "HTTPDigestAuth.handle_401",
+        "reason": "`handle_401` is the primary path that calls `build_digest_header` and inserts the result into `request.headers`. If `build_digest_header` changes how it returns/normalizes strings, this function must continue to set a native `str` header and correctly resend the request for non-latin credentials.",
+        "side_effects": "Any mismatch in header type (bytes vs str) can break downstream request preparation/sending. Could impact retry/auth flows for digest endpoints; should be covered by regression tests hitting a digest-auth server fixture (e.g., httpbin)."
+      },
+      {
+        "operation": "Keep preemptive Digest header injection consistent with updated header construction for subsequent requests using cached nonce state",
+        "file_to_modify": "src/requests/auth.py",
+        "function_to_modify": "HTTPDigestAuth.__call__",
+        "reason": "When `last_nonce` is present, `__call__` may add a Digest header without waiting for a 401. This path must continue to call the updated `build_digest_header` and set headers correctly when credentials contain non-latin characters, ensuring consistent behavior across first and subsequent requests.",
+        "side_effects": "Could change behavior of preemptive auth on redirects/retries if header values differ or if string normalization changes. Should not affect non-digest auth and should still behave identically for ASCII credentials."
+      }
+    ]
+  }
+}

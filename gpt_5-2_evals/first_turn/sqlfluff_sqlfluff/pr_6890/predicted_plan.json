@@ -1,0 +1,42 @@
+{
+  "pr_number": 6890,
+  "repository": "sqlfluff/sqlfluff",
+  "title": "Fix RawFileSlice idx and tags in lexer_test",
+  "body": "While running the lexer test in rust mode, these `RawFileSlice` tags came across with type errors. This fixes the order of the `block_idx` and `tag`.\n\nSide effects: None.\n\nChecklist: tests and docs claimed updated.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T08:41:56.050429",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "test/core/parser/lexer_test.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "test__parser__lexer_slicing_from_template_file",
+          "class_name": null,
+          "full_name": "test__parser__lexer_slicing_from_template_file",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Fix lexer test failures in rust mode by correcting the positional argument ordering when constructing RawFileSlice objects, ensuring block_idx is an int and tag is Optional[str]. The change is confined to lexer_test test data setup.",
+    "steps": [
+      {
+        "operation": "Fix RawFileSlice construction to use correct block_idx/tag ordering (prefer keyword args) in the lexer slicing test",
+        "file_to_modify": "test/core/parser/lexer_test.py",
+        "function_to_modify": "test__parser__lexer_slicing_from_template_file",
+        "reason": "RawFileSlice is a NamedTuple with field order (raw, slice_type, source_idx, block_idx=0, tag=None). The test currently passes positional arguments as (..., None, 0), which assigns None to block_idx (should be int) and 0 to tag (should be Optional[str]), causing type errors in rust mode. Switching to keyword args (block_idx=0, tag=None) or swapping to (..., 0, None) restores type correctness while preserving slice coverage invariants (source_idx and raw lengths).",
+        "side_effects": "Only affects test data construction. May change the string representation of failing assertions if any snapshots/logging include RawFileSlice tuple positions. Ensures the test passes in both python and rust lexer modes; no runtime/library API changes expected."
+      }
+    ]
+  }
+}

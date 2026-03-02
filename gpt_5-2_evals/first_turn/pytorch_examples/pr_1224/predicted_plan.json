@@ -1,0 +1,57 @@
+{
+  "pr_number": 1224,
+  "repository": "pytorch/examples",
+  "title": "Fixes in Imagenet training script",
+  "body": "* ngpus_per_node variable count fix\r\n* dist_backend assertion added for nccl issue",
+  "extraction_metadata": {
+    "extracted_at": "2026-02-26T03:50:29.492657",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "imagenet/main.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "main",
+          "class_name": null,
+          "full_name": "main",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "main_worker",
+          "class_name": null,
+          "full_name": "main_worker",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Fixes the ImageNet training script by correctly deriving `ngpus_per_node` from the actual CUDA device count and by adding a fail-fast validation so `--dist-backend nccl` is only allowed when CUDA GPUs are available, preventing NCCL initialization hangs/crashes.",
+    "steps": [
+      {
+        "operation": "Fix ngpus_per_node computation and add a fail-fast guard for multiprocessing-distributed on GPU-less nodes",
+        "file_to_modify": "imagenet/main.py",
+        "function_to_modify": "main",
+        "reason": "The number of processes spawned via `mp.spawn(..., nprocs=ngpus_per_node)` and the world-size scaling depend on `ngpus_per_node` being the true CUDA device count. Using `torch.cuda.is_available()` (or similar) can incorrectly yield `1` even when there are zero visible GPUs (misconfigured CUDA, `CUDA_VISIBLE_DEVICES` masking, etc.), causing incorrect spawn counts and rank/world-size math. When `--multiprocessing-distributed` is requested but `torch.cuda.device_count() == 0`, the script should error clearly rather than spawning invalid workers.",
+        "side_effects": "May change behavior from silently spawning 1 process to raising a clear error on misconfigured GPU environments. Impacts distributed launch paths that rely on `--multiprocessing-distributed`; ensure single-process CPU training paths remain unaffected. Update/verify any docs or example commands expecting implicit fallback."
+      },
+      {
+        "operation": "Add an assertion/validation that NCCL backend is only used when CUDA GPUs are available (and the per-process GPU selection is valid)",
+        "file_to_modify": "imagenet/main.py",
+        "function_to_modify": "main_worker",
+        "reason": "`dist.init_process_group(backend='nccl', ...)` requires CUDA-capable devices; using NCCL on CPU-only environments (or when no GPUs are visible/selected) can hang or crash during initialization. A precondition check immediately before initializing the process group provides a deterministic, user-friendly failure message and guides users toward `gloo` for CPU training.",
+        "side_effects": "Users who previously invoked `--dist-backend nccl` on CPU (or with no visible GPUs) will now fail fast with a clear message instead of encountering NCCL initialization issues. Might require adjusting CI or example invocations that accidentally set `nccl` without GPUs."
+      }
+    ]
+  }
+}

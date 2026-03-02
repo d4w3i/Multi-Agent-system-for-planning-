@@ -1,0 +1,87 @@
+{
+  "pr_number": 2952,
+  "repository": "Mikubill/sd-webui-controlnet",
+  "title": "Fix issue with > in pip cmd causing file creation",
+  "body": "### Problem Summary\n\nWhen starting the Web UI, the `install.py` script reads `requirements.txt`. If a package version uses \">\", it is treated as a redirection in `pip install`, creating an unintended file.\n\n### Steps to Reproduce\n\nRunning `webui.bat` or `webui.sh` creates a file named \"=4.8.0\" due to \"opencv-python>=4.8.0\" in `requirements.txt` being misinterpreted.\n\n### Fix\n\nI enclosed the package and version specification in double quotes in `install.py`.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T09:48:49.196581",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "install.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "install_requirements",
+          "class_name": null,
+          "full_name": "install_requirements",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "install_onnxruntime",
+          "class_name": null,
+          "full_name": "install_onnxruntime",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "try_install_from_wheel",
+          "class_name": null,
+          "full_name": "try_install_from_wheel",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "try_install_insight_face",
+          "class_name": null,
+          "full_name": "try_install_insight_face",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Fixes a webui startup/install bug where unquoted requirement specifiers containing comparison operators (e.g., \">=\") are misinterpreted as shell redirection during pip installation, creating unintended files. The change hardens pip command construction in install.py across requirements and wheel-based install helpers for consistent, safe behavior.",
+    "steps": [
+      {
+        "operation": "Harden pip command construction in requirements installer by safely quoting/escaping requirement specifiers containing shell metacharacters (e.g., >, <, ;, @, spaces) before passing to launch.run_pip, and ensure rewritten specs (e.g., <= rewritten to ==) are also quoted consistently.",
+        "file_to_modify": "install.py",
+        "function_to_modify": "install_requirements",
+        "reason": "Raw requirement lines like \"opencv-python>=4.8.0\" embedded into a single pip command string can be interpreted by a shell as output redirection (\">\"), creating unintended files; centralizing safe embedding here fixes the primary bug and covers edge cases like markers/extras/URLs.",
+        "side_effects": "Command strings passed to launch.run_pip will change (added quotes), which may affect any downstream parsing if launch.run_pip does non-shell tokenization; verify installs still work for pinned/unpinned, markers, extras, VCS/URL requirements, and that the stray file is no longer created on Windows/batch and *nix shells."
+      },
+      {
+        "operation": "Apply the same safe quoting/argument strategy to the onnxruntime installation command so the selected package name/version cannot be misparsed by a shell when interpolated into a pip command string.",
+        "file_to_modify": "install.py",
+        "function_to_modify": "install_onnxruntime",
+        "reason": "Although current onnxruntime spec values are typically simple, keeping all pip invocations consistent prevents future regressions if the spec becomes more complex (extras, markers, comparison operators) and aligns with the fix in install_requirements.",
+        "side_effects": "May slightly change the exact pip command string logged/executed; confirm platform-specific quoting works and that onnxruntime selection logic still installs the intended wheel/package."
+      },
+      {
+        "operation": "Safely embed wheel URLs/paths in the pip install command (e.g., quote the wheel_url argument or use a non-shell-safe representation) when installing from a wheel, including env-overridden values.",
+        "file_to_modify": "install.py",
+        "function_to_modify": "try_install_from_wheel",
+        "reason": "Wheel URLs/paths can contain characters significant to shells (e.g., &, ?, =, <, >, spaces); interpolating them into a single command string risks misparsing/redirection similar to the reported issue.",
+        "side_effects": "If pip invocation previously relied on shell expansion, quoting may prevent that (generally desirable); validate wheel installation still works for local paths, http(s) URLs, and environment overrides across Windows and Linux/macOS."
+      },
+      {
+        "operation": "Mirror the wheel URL quoting/escaping approach for insightface wheel installation to prevent shell interpretation and keep behavior consistent with other wheel-based installers.",
+        "file_to_modify": "install.py",
+        "function_to_modify": "try_install_insight_face",
+        "reason": "This code path also interpolates a (potentially env-overridden) wheel URL into a pip command string; hardening it avoids similar redirection/file-creation issues and reduces security/robustness risks.",
+        "side_effects": "Same as other wheel installs: command string changes and potential differences in logging; verify insightface optional installation still succeeds on supported platforms and does not break when the URL contains query parameters or special characters."
+      }
+    ]
+  }
+}

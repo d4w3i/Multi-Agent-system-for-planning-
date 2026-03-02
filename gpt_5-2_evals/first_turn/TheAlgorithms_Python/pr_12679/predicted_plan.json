@@ -1,0 +1,42 @@
+{
+  "pr_number": 12679,
+  "repository": "TheAlgorithms/Python",
+  "title": "Fix: Correct time-and-a-half pay calculation logic",
+  "body": "This pull request fixes the logic for calculating time-and-a-half pay in the `financial/time_and_half_pay.py` file.\n\nPreviously, the overtime calculation was incorrect. The fix correctly applies the time-and-a-half formula:\n```python\novertime_pay = overtime_hours * pay_rate * 1.5\n```\n\nChecklist items included; PR claims it changes only one algorithm file.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T09:49:33.696965",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "financial/time_and_half_pay.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "pay",
+          "class_name": null,
+          "full_name": "pay",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Update `financial/time_and_half_pay.py:pay()` to compute overtime pay using the explicit time-and-a-half formula (1.5× base rate for overtime hours) while preserving the function signature and keeping doctests consistent.",
+    "steps": [
+      {
+        "operation": "Rewrite overtime computation to explicit regular-hours + 1.5× overtime-hours formula (while preserving current public API/signature) and keep/adjust doctests accordingly",
+        "file_to_modify": "financial/time_and_half_pay.py",
+        "function_to_modify": "pay",
+        "reason": "Implement the intended time-and-a-half formula unambiguously as `total_pay = regular_hours * pay_rate + overtime_hours * pay_rate * 1.5`, where `regular_hours = min(hours_worked, hours)` and `overtime_hours = max(0, hours_worked - hours)`, ensuring correctness for custom overtime thresholds and improving readability/maintainability; update doctests if needed to reflect intended semantics.",
+        "side_effects": "If any downstream code relied on the previous internal decomposition (base-for-all-hours plus 0.5× premium) rather than the overall numeric result, behavior should remain numerically identical for valid inputs; doctest outputs should remain the same if the prior implementation was already equivalent, but any newly clarified edge cases (e.g., negative inputs or non-integer hours) may require updating/adding doctests and could surface previously untested behavior."
+      }
+    ]
+  }
+}

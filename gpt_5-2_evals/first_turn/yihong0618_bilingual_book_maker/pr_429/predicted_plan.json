@@ -1,0 +1,64 @@
+{
+  "pr_number": 429,
+  "repository": "yihong0618/bilingual_book_maker",
+  "title": "fix: Fix parameter mismatch in EPUBBookLoaderHelper.translate_with_ba…",
+  "body": "## Problem\nThe `translate_with_backoff` method in `EPUBBookLoaderHelper` class was raising TypeError because of parameter mismatch between the method signature and actual calls through the backoff decorator.\n\nError message:\nTypeError: EPUBBookLoaderHelper.translate_with_backoff() takes 1 positional argument but 3 were given\n\n## Solution\n1. Modified the method signature to properly handle parameters:\n   - Added explicit parameters for text and context_flag\n   - Added jitter=None to backoff decorator\n   \n2. Improved error handling and logging\n#bug",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T08:43:29.450353",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "book_maker/loader/helper.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "translate_with_backoff",
+          "class_name": "EPUBBookLoaderHelper",
+          "full_name": "EPUBBookLoaderHelper.translate_with_backoff",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "deal_new",
+          "class_name": "EPUBBookLoaderHelper",
+          "full_name": "EPUBBookLoaderHelper.deal_new",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "tests/test_integration.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    }
+  ],
+  "step_plan": {
+    "summary": "Fixes a runtime TypeError in EPUB translation by aligning EPUBBookLoaderHelper.translate_with_backoff’s signature with its actual positional-argument usage under the backoff decorator, while making backoff jitter deterministic and improving failure logging.",
+    "steps": [
+      {
+        "operation": "Fix the backoff-wrapped translation helper signature and retry configuration (add explicit parameters, keep kwargs compatibility, and make backoff deterministic with jitter=None) while improving exception logging around retries/giveup.",
+        "file_to_modify": "book_maker/loader/helper.py",
+        "function_to_modify": "EPUBBookLoaderHelper.translate_with_backoff",
+        "reason": "The method is decorated with backoff and is currently defined to accept only **kwargs, but it is invoked with positional arguments from deal_new (text, context_flag), causing a TypeError at runtime. Updating the signature to accept (text, context_flag) aligns it with actual call sites and prevents the mismatch; adding jitter=None matches the PR requirement and makes retry sleep behavior predictable. Logging improvements make repeated failures diagnosable without dumping full sensitive text.",
+        "side_effects": "Any other callers relying on kwargs-only calling convention may break unless backward compatibility is preserved (e.g., accept both positional args and **kwargs). Retry timing will change due to jitter=None (more deterministic), which could affect integration tests that assume variable delays. More verbose logs may appear in failure scenarios."
+      },
+      {
+        "operation": "Update the call site to use the corrected signature consistently and add localized error handling/logging to surface translation failures with safe context (e.g., text length/snippet, context_flag), ensuring failures propagate or are handled consistently with existing flow.",
+        "file_to_modify": "book_maker/loader/helper.py",
+        "function_to_modify": "EPUBBookLoaderHelper.deal_new",
+        "reason": "deal_new is the direct caller passing positional args into translate_with_backoff and is the trigger point for the reported TypeError. Aligning this call with the updated signature (and optionally switching to explicit keyword arguments for clarity) ensures consistent invocation. Adding targeted logging/handling here helps distinguish preprocessing/paragraph issues from translation/backoff failures.",
+        "side_effects": "Behavior on translation failure may change depending on whether exceptions are re-raised, swallowed, or transformed—this can affect downstream EPUB generation, partial outputs, and integration tests. If logging is added in a loop over paragraphs, logs may become noisy for large books unless rate-limited or kept to warnings/errors."
+      }
+    ]
+  }
+}

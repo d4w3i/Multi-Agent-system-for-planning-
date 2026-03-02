@@ -1,0 +1,49 @@
+{
+  "pr_number": 5479,
+  "repository": "angr/angr",
+  "title": "arg_session: Ensure created void* types have arch.",
+  "body": "This PR fixes the following exception:\n\n```python\nFile F:\\angr\\angr\\angr\\calling_conventions.py:878, in SimCC.arg_locs(self, prototype)\n    876 if prototype._arch is None:\n    877     prototype = prototype.with_arch(self.arch)\n--> 878 session = self.arg_session(prototype.returnty)\n    879 return [self.next_arg(session, arg_ty) for arg_ty in prototype.args]\n\nFile F:\\angr\\angr\\angr\\calling_conventions.py:728, in SimCC.arg_session(self, ret_ty)\n    726 session = self.ArgSession(self)\n    727 if self.return_in_implicit_outparam(ret_ty):\n--> 728     self.next_arg(session, SimTypePointer(SimTypeBottom()))\n    729 return session\n\nFile F:\\angr\\angr\\angr\\calling_conventions.py:1614, in SimCCSystemVAMD64.next_arg(self, session, arg_type)\n   1612     arg_type = SimTypePointer(arg_type.elem_type).with_arch(self.arch)\n   1613 state = session.getstate()\n-> 1614 classification = self._classify(arg_type)\n   1615 try:\n   1616     mapped_classes = []\n\nFile F:\\angr\\angr\\angr\\calling_conventions.py:1678, in SimCCSystemVAMD64._classify(self, ty, chunksize)\n   1676     chunksize = self.arch.bytes\n   1677 # treat BOT as INTEGER\n-> 1678 nchunks = 1 if isinstance(ty, SimTypeBottom) else (ty.size // self.arch.byte_width + chunksize - 1) // chunksize\n   1679 if isinstance(ty, (SimTypeFloat,)):\n   1680     return [\"SSE\"] + [\"SSEUP\"] * (nchunks - 1)\n\nFile F:\\angr\\angr\\angr\\sim_type.py:778, in SimTypePointer.size(self)\n    775 @property\n    776 def size(self):\n    777     if self._arch is None:\n--> 778         raise ValueError(\"Can't tell my size without an arch!\")\n    779     return self._arch.bits\n\nValueError: Can't tell my size without an arch!\n```",
+  "extraction_metadata": {
+    "extracted_at": "2026-02-26T03:09:48.709756",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "angr/calling_conventions.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "arg_session",
+          "class_name": "SimCC",
+          "full_name": "SimCC.arg_session",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Fixes a crash in calling convention argument layout by ensuring the implicit sret/outparam `void*` synthesized in `SimCC.arg_session()` is created with the active architecture attached. This prevents ABI classifiers (e.g., SysV AMD64) from querying pointer size on an arch-less type and raising an exception.",
+    "steps": [
+      {
+        "operation": "Attach self.arch to the synthesized implicit outparam void* type before passing it to next_arg()",
+        "file_to_modify": "angr/calling_conventions.py",
+        "function_to_modify": "SimCC.arg_session",
+        "reason": "arg_session() pre-consumes the hidden sret/outparam argument for ABIs that return via an implicit pointer parameter, but currently creates `SimTypePointer(SimTypeBottom())` without an arch. Downstream calling-convention logic (e.g., SysV AMD64 classification) queries `ty.size` on the pointer, which requires `_arch` and raises if missing. Applying `.with_arch(self.arch)` produces a well-formed pointer type with a known width and prevents the crash without changing ABI semantics.",
+        "side_effects": "Eliminates `ValueError: Can't tell my size without an arch!` for prototypes requiring implicit outparams (notably on AMD64 SysV). Very low behavioral risk: only the hidden argument’s type object changes to include arch metadata; argument slot consumption/layout should remain identical. May surface other latent cases where non-arch’d synthetic types are created elsewhere."
+      },
+      {
+        "operation": "Keep SimTypePointer.size strict; optionally add/adjust an assertion or comment to reinforce that pointers must be arch-bound by construction (no functional relaxation)",
+        "file_to_modify": "angr/sim_type.py",
+        "function_to_modify": "SimTypePointer.size",
+        "reason": "The PR’s intent is to ensure synthesized void* types have an arch rather than weakening the invariant that pointer size is arch-derived. Retaining the exception preserves correctness and quickly reveals other code paths that incorrectly construct pointer types without `.with_arch(...)`. If desired, add a clarifying comment/assertion to document the contract used by calling convention code.",
+        "side_effects": "No runtime behavior change expected if you only add documentation/assertions. If you add assertions, it could cause earlier, clearer failures in other call sites that create arch-less pointers; this is generally desirable but could require follow-up fixes if such sites exist."
+      }
+    ]
+  }
+}

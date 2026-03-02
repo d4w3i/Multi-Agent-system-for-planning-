@@ -1,0 +1,80 @@
+{
+  "pr_number": 563,
+  "repository": "netease-youdao/QAnything",
+  "title": "修复错误将chunk_size更新为chunks_number的问题",
+  "body": "KnowledgeBaseManager类中，更新File表的chunk_number字段使用的方法update_chunks_number存在sql语句错误。\r\n实际为\"UPDATE File SET chunk_size = %s WHERE file_id = %s\"。这会错误地修改chunk_size，导致chunk_size和chunks_number值相同。\r\n\r\n同时，在文件插入向量数据库结束后，原代码会有针对chunks_number等信息的统一修改。\r\n\r\n所以可以将insert_files_server.py中，process_data中对chunks_number做的更新语句：mysql_client.update_chunks_number(local_file.file_id, chunks_number)进行删除。\r\n修改后，文件上传成功后chunks_number和chunk_size的值完全正确。",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T08:35:52.369519",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "qanything_kernel/connector/database/mysql/mysql_client.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "update_chunks_number",
+          "class_name": "KnowledgeBaseManager",
+          "full_name": "KnowledgeBaseManager.update_chunks_number",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "qanything_kernel/dependent_server/insert_files_serve/insert_files_server.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "process_data",
+          "class_name": null,
+          "full_name": "process_data",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "check_and_process",
+          "class_name": null,
+          "full_name": "check_and_process",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Fixes a bug where `update_chunks_number()` mistakenly updated the `File.chunk_size` column, corrupting file metadata. Also removes a redundant `chunks_number` update during processing so the final pipeline step remains the single authoritative DB update for chunk counts.",
+    "steps": [
+      {
+        "operation": "Fix SQL to update the correct column (chunks_number) instead of chunk_size",
+        "file_to_modify": "qanything_kernel/connector/database/mysql/mysql_client.py",
+        "function_to_modify": "KnowledgeBaseManager.update_chunks_number",
+        "reason": "The method name/intent is to persist the number of chunks, but the current SQL updates `File.chunk_size`, corrupting file metadata by making `chunk_size` equal to `chunks_number`. Correcting the SQL to `UPDATE File SET chunks_number = %s WHERE file_id = %s` restores semantic correctness.",
+        "side_effects": "Any callers that were (incorrectly) relying on this bug to change `chunk_size` will change behavior; however this would be a misuse. After the fix, DB rows will no longer be unintentionally modified in `chunk_size`, improving data integrity."
+      },
+      {
+        "operation": "Remove redundant early chunks_number DB update after vector insertion",
+        "file_to_modify": "qanything_kernel/dependent_server/insert_files_serve/insert_files_server.py",
+        "function_to_modify": "process_data",
+        "reason": "`process_data()` currently calls `mysql_client.update_chunks_number(local_file.file_id, chunks_number)` after inserting vectors. This is redundant because the workflow later performs a unified `UPDATE File SET ... chunks_number=...` in `check_and_process()`. Removing the call prevents duplicate writes and avoids propagating the earlier SQL bug’s corruption path.",
+        "side_effects": "`chunks_number` will now be persisted only at the end of the pipeline (via `check_and_process()`), so intermediate DB state during processing may not show updated `chunks_number` until completion. This reduces DB load and potential race conditions from multiple updates."
+      },
+      {
+        "operation": "Ensure end-of-pipeline update remains the single source of truth for chunks_number (and optionally clarify via comment/log)",
+        "file_to_modify": "qanything_kernel/dependent_server/insert_files_serve/insert_files_server.py",
+        "function_to_modify": "check_and_process",
+        "reason": "With the `process_data()` update removed, `check_and_process()` becomes the authoritative place that persists `chunks_number` along with status/content_length/msg. Confirm it still updates `chunks_number` correctly and (optionally) add a short comment/log indicating that final DB update is intentionally centralized here.",
+        "side_effects": "No functional change intended if SQL already correct; minimal risk. If you add comments/logging, it could slightly change log output. This step reduces future regressions by documenting the intended ownership of the final DB write."
+      }
+    ]
+  }
+}

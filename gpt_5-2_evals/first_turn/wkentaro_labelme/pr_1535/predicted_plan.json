@@ -1,0 +1,87 @@
+{
+  "pr_number": 1535,
+  "repository": "wkentaro/labelme",
+  "title": "feat: support AI-generated masks in shape_to_mask",
+  "body": "Updated the export functionality to support AI-generated masks. The function now handles mask data from JSON files, including AI-generated mask formats (list/array and base64 encoded images).",
+  "extraction_metadata": {
+    "extracted_at": "2026-02-26T04:02:25.778113",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "labelme/utils/shape.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "shape_to_mask",
+          "class_name": null,
+          "full_name": "shape_to_mask",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "shapes_to_label",
+          "class_name": null,
+          "full_name": "shapes_to_label",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "labelme/cli/export_json.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "main",
+          "class_name": null,
+          "full_name": "main",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "tests/labelme_tests/utils_tests/test_shape.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    }
+  ],
+  "step_plan": {
+    "summary": "Add support for AI-generated per-shape pixel masks in the export pipeline by extending `shape_to_mask`/`shapes_to_label` to accept and normalize mask data from JSON (nested lists/arrays and base64-encoded images), ensuring `export_json` produces correct label images while keeping existing vector-shape behavior unchanged.",
+    "steps": [
+      {
+        "operation": "Extend `shape_to_mask` to accept an optional precomputed mask and normalize supported mask encodings (nested lists/array-like, base64-encoded image, numpy arrays) into a boolean (H,W) ndarray; validate against `img_shape[:2]` and fall back to existing vector rasterization when no mask is provided.",
+        "file_to_modify": "labelme/utils/shape.py",
+        "function_to_modify": "shape_to_mask",
+        "reason": "`export_json` loads raw JSON directly (bypassing `LabelFile.load()` decoding), so `shape_to_mask` must be robust to raw `shape[\"mask\"]` encodings and still support existing vector `points` + `shape_type` behavior without regressions.",
+        "side_effects": "May raise clearer errors for malformed/mismatched mask sizes; any downstream callers relying on implicit behavior (e.g., non-bool masks or wrong dimensions) may now fail fast. Ensure dtype/shape handling doesn’t break vector paths and that performance is acceptable for large masks."
+      },
+      {
+        "operation": "Update `shapes_to_label` to detect `shape.get(\"mask\")` and route it into `shape_to_mask` (with an explicit precedence rule: if `mask` is present and non-empty, use it; otherwise use vector rasterization); keep label mapping/instance id logic unchanged.",
+        "file_to_modify": "labelme/utils/shape.py",
+        "function_to_modify": "shapes_to_label",
+        "reason": "`shapes_to_label` is the orchestrator used by export; it currently assumes every shape is vector-based and always passes `points`/`shape_type`. It needs to pass through per-shape mask data so exports produce correct `label.png` for AI-generated masks.",
+        "side_effects": "If a shape includes both `points` and `mask`, the chosen precedence may change output versus older behavior; document/encode the rule. Potentially impacts any other consumers of `shapes_to_label` (not just export) by enabling mask-first handling."
+      },
+      {
+        "operation": "Adjust export pipeline to ensure shapes loaded from raw JSON can include `mask` in either base64 or list/array form and still produce correct label outputs (e.g., by keeping JSON loading but ensuring the shapes dict is passed unchanged into `utils.shapes_to_label`, and adding any minimal compatibility glue if the CLI currently strips/normalizes fields).",
+        "file_to_modify": "labelme/cli/export_json.py",
+        "function_to_modify": "main",
+        "reason": "The CLI path explicitly bypasses `LabelFile.load()` and thus sees un-decoded masks; after updating utils, `main()` must not inadvertently drop `mask` data and must keep the call chain (`main` → `shapes_to_label` → `shape_to_mask`) intact for both vector and AI-mask shapes.",
+        "side_effects": "Export outputs (`label.png`/derived artifacts) may change for datasets that already carried `mask` fields but were previously ignored; ensure backward compatibility for JSON without masks. May require updating CLI-level error handling/reporting when mask decoding/validation fails."
+      }
+    ]
+  }
+}

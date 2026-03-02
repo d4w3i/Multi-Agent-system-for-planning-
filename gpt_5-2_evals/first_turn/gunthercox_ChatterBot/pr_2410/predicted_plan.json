@@ -1,0 +1,110 @@
+{
+  "pr_number": 2410,
+  "repository": "gunthercox/ChatterBot",
+  "title": "Fix file path resolution",
+  "body": "This pull request makes a few changes:\r\n\r\n1. It fixes the single file case where a `yield` should be used instead of a `return` - the difference seems to be that the former results in an empty generator evaluation when a single file is provided.\r\n2. Absolute path resolution has been added for easier identification of file locations if the specified file is not found.\r\n3. A more descriptive error message.",
+  "extraction_metadata": {
+    "extracted_at": "2026-02-26T03:21:56.929892",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "chatterbot/trainers.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "_get_file_list",
+          "class_name": "GenericFileTrainer",
+          "full_name": "GenericFileTrainer._get_file_list",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "train",
+          "class_name": "GenericFileTrainer",
+          "full_name": "GenericFileTrainer.train",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "chatterbot/corpus.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "get_file_path",
+          "class_name": null,
+          "full_name": "get_file_path",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "list_corpus_files",
+          "class_name": null,
+          "full_name": "list_corpus_files",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "read_corpus",
+          "class_name": null,
+          "full_name": "read_corpus",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Fixes single-file training by correcting generator behavior in file discovery, and improves debuggability across trainers and corpus loading by adding absolute-path context and more descriptive missing-file error messages.",
+    "steps": [
+      {
+        "operation": "Fix single-file generator semantics by yielding the file path instead of returning a list",
+        "file_to_modify": "chatterbot/trainers.py",
+        "function_to_modify": "GenericFileTrainer._get_file_list",
+        "reason": "This function is a generator (it contains `yield` in the directory branch). Using `return [data_path]` in the single-file branch terminates the generator immediately, causing the caller loop to iterate over zero files when a single file is provided. Replacing it with `yield data_path` (or otherwise ensuring a consistent iterable) makes the single-file case produce exactly one item.",
+        "side_effects": "Single-file training will start processing one file (behavioral fix). Any downstream code that relied on the buggy ‘zero files’ behavior (unlikely) will change. Ensure existing directory traversal behavior (including any filtering/limits) remains unchanged."
+      },
+      {
+        "operation": "Add preflight validation and improved error messages including absolute paths when training input cannot be resolved or yields no files",
+        "file_to_modify": "chatterbot/trainers.py",
+        "function_to_modify": "GenericFileTrainer.train",
+        "reason": "This is the main consumer of `_get_file_list`. Adding validation here allows raising a clear, user-facing exception when: (a) the provided `data_path` doesn’t exist, (b) the path is not a file/dir as expected, or (c) discovery finds zero matching files. The PR requires absolute-path resolution in error output for easier debugging.",
+        "side_effects": "May change failure mode from silent no-op / generic error to an explicit exception with a more descriptive message; callers/tests that previously expected a warning or empty training run may need adjustment. Error messages should include both user input and `os.path.abspath(...)` to avoid ambiguity across working directories."
+      },
+      {
+        "operation": "Augment corpus dotted-path resolution to retain/compute absolute-path context for downstream diagnostics",
+        "file_to_modify": "chatterbot/corpus.py",
+        "function_to_modify": "get_file_path",
+        "reason": "`get_file_path` is the central resolver from corpus references to filesystem paths. Enhancing it to compute (or make available) absolute paths (at least for error/reporting) supports the PR goal of easier identification of file locations when resolution fails.",
+        "side_effects": "If `get_file_path` output normalization changes (e.g., returning normalized/absolute paths), it may affect string comparisons in callers. Prefer keeping return value compatible (likely still a filesystem path) while ensuring errors/logging can reference absolute paths."
+      },
+      {
+        "operation": "Validate resolved corpus paths and raise a more descriptive FileNotFoundError (including absolute path) when no corpus files are found",
+        "file_to_modify": "chatterbot/corpus.py",
+        "function_to_modify": "list_corpus_files",
+        "reason": "`list_corpus_files` expands a resolved path into a list of corpus files. It is an appropriate choke point to detect ‘neither file nor directory exists’ and produce a targeted error message that includes: original corpus reference (if available/known at this layer), the resolved path, and `os.path.abspath(resolved_path)` to clarify where the code looked.",
+        "side_effects": "Callers (e.g., trainers that `extend(list_corpus_files(...))`) may now get an exception earlier instead of receiving an empty list. This improves debuggability but can be a behavior change; ensure error type/message are stable enough for tests."
+      },
+      {
+        "operation": "Wrap corpus file opening to enrich missing-file errors with absolute path and corpus context",
+        "file_to_modify": "chatterbot/corpus.py",
+        "function_to_modify": "read_corpus",
+        "reason": "`read_corpus` is where the file is actually opened/parsed. Catching `FileNotFoundError` and re-raising with a more descriptive message (including `os.path.abspath(file_path)` and the original/attempted path) satisfies the PR requirement for clearer diagnostics even when earlier validation is bypassed.",
+        "side_effects": "Exception messages will change (tests asserting exact strings may need updates). Ensure the original exception is chained (e.g., `raise ... from e`) so stack traces remain useful and debugging retains the root cause."
+      }
+    ]
+  }
+}

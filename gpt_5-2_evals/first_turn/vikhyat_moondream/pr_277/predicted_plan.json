@@ -1,0 +1,103 @@
+{
+  "pr_number": 277,
+  "repository": "vikhyat/moondream",
+  "title": "finetune_region.py fixed. Added waste_detection eval",
+  "body": "Fixed bug in finetune_region.py that was introduced when log2 was added. Bug pointed out here: https://github.com/vikhyat/moondream/issues/267\n\nIncluded an eval script for waste detection. The F1 score improves from 65.67 ->  66.23 after 1 epoch of finetuning.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T09:52:17.504289",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "moondream/finetune/finetune_region.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "region_loss",
+          "class_name": null,
+          "full_name": "region_loss",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "main",
+          "class_name": null,
+          "full_name": "main",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "moondream/eval/waste_detection.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "eval_waste_detection",
+          "class_name": null,
+          "full_name": "eval_waste_detection",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "moondream/eval/eval_all.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "eval_all",
+          "class_name": null,
+          "full_name": "eval_all",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Fixes a region-finetuning regression by restoring the expected 4-label-per-box supervision contract under log2 size binning, and adds a waste detection evaluation that computes and reports F1, integrated into the repo’s eval runner.",
+    "steps": [
+      {
+        "operation": "Fix label construction and index alignment for region finetuning under log2 size binning (remove duplicated linear size labels; ensure exactly [x,y,w,h] per box matches c_idx/s_idx ordering)",
+        "file_to_modify": "moondream/finetune/finetune_region.py",
+        "function_to_modify": "main",
+        "reason": "The regression described (introduced when log2 binning was added) is consistent with constructing 8 labels per box (log2 size labels plus legacy linear size labels), while downstream supervision expects repeating groups of 4 labels in the strict order [x_bin, y_bin, w_bin, h_bin]. main() is the place where labels and token indices (c_idx/s_idx) are assembled, so it must be made consistent with the log2 contract used by region encode/decode.",
+        "side_effects": "Changes the supervision target format for finetuning runs; existing checkpoints trained with the buggy 8-label scheme may no longer be comparable. Any off-by-one errors in c_idx/s_idx will manifest as exploding/NaN loss or non-learning; re-run a short finetune smoke test to confirm loss decreases."
+      },
+      {
+        "operation": "Review and, if necessary, adjust region_loss indexing/label grouping assumptions to match the corrected 4-label-per-box contract (verify c_idx/s_idx offsets, the “-1” shift, and (l_idx % 4) routing to x/y/w/h losses)",
+        "file_to_modify": "moondream/finetune/finetune_region.py",
+        "function_to_modify": "region_loss",
+        "reason": "region_loss hardcodes the supervision contract: it splits labels by modulo-4 position and indexes into hidden states using c_idx/s_idx with an additional offset adjustment. After fixing main(), region_loss must be validated to still select the correct token positions for coordinate vs size tokens and to align with label ordering. If the bugfix changes where labels are appended relative to tokens, region_loss may require a small correction to avoid misaligned targets.",
+        "side_effects": "Any change here affects all region finetuning behavior and could alter training dynamics/metrics. Downstream scripts that call region_loss (directly or indirectly) may need updated expectations; add/adjust a minimal unit/smoke check to ensure indices are in range and loss components map to intended targets."
+      },
+      {
+        "operation": "Add waste detection evaluation implementation that loads the waste detection dataset, runs inference in the expected prompting/format, extracts predictions vs ground truth, and computes precision/recall/F1 (reporting the F1 cited in the PR)",
+        "file_to_modify": "moondream/eval/waste_detection.py",
+        "function_to_modify": "eval_waste_detection",
+        "reason": "The PR adds a new eval script to quantify the waste detection task and report F1, enabling verification of finetuning improvements (65.67 → 66.23 after 1 epoch). Implementing this as an eval module keeps it consistent with the existing eval suite conventions (eval_fn(model) → metrics dict).",
+        "side_effects": "Introduces a new dependency surface on dataset loading and on the model’s prediction parsing for detection outputs; may increase eval runtime. If dataset access requires external credentials or downloads, document the expected setup. Ensure deterministic metric computation (thresholding/IOU rules if applicable) so results are reproducible."
+      },
+      {
+        "operation": "Register the new waste detection eval in the central eval runner so it can be invoked via eval_all (import the module and add an entry in the eval registry)",
+        "file_to_modify": "moondream/eval/eval_all.py",
+        "function_to_modify": "eval_all",
+        "reason": "To integrate the new evaluation into the standard workflow (e.g., `python -m moondream.eval.eval_all ...`), eval_all must include the waste detection task in its registry/dictionary of evaluations and call the new eval function under a stable task name (e.g., \"waste_detection\").",
+        "side_effects": "Changes available eval task list and CLI behavior; may require updating documentation/readme or CI scripts that enumerate tasks. If eval_all has filtering/allowlist logic, ensure the new task respects output-size conventions (e.g., avoid huge per-example dumps unless gated)."
+      }
+    ]
+  }
+}

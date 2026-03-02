@@ -1,0 +1,72 @@
+{
+  "pr_number": 6899,
+  "repository": "scrapy/scrapy",
+  "title": "Fix typing of dynamic `request` attribute on `Failure` with a cast subclass",
+  "body": "This PR addresses a longstanding `TODO` in the `call_spider_async` method regarding the typing of the dynamically added `request` attribute on `twisted.python.failure.Failure` objects.\r\n\r\nSince `Failure` does not originally define the `request` attribute, adding it dynamically causes static type checkers (e.g., mypy) to raise errors.\r\n\r\nTo resolve this without changing runtime behavior or introducing new `Failure` instances, this PR introduces a lightweight subclass `FailureWithRequest` used solely for static typing purposes via `cast()`. This approach:\r\n\r\n- Provides type safety and clarity for static analysis tools  \r\n- Avoids creating new `Failure` instances, preserving error context and traceback  \r\n- Keeps runtime behavior unchanged  \r\n- Offers a balanced solution (middle ground) between ignoring type checks and a full refactor of `Failure` usage",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T08:40:58.086858",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "scrapy/core/scraper.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "call_spider_async",
+          "class_name": "Scraper",
+          "full_name": "Scraper.call_spider_async",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "scrapy/core/spidermw.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "_process_spider_input",
+          "class_name": "SpiderMiddlewareManager",
+          "full_name": "SpiderMiddlewareManager._process_spider_input",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "tests_typing/test_spiders.mypy-testing",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    }
+  ],
+  "step_plan": {
+    "summary": "Replace the `type: ignore` workaround for the dynamically added `.request` attribute on Twisted `Failure` objects by introducing a typing-only `FailureWithRequest` subclass and using `cast()` in the scraper’s failure path, preserving the original Failure instance and runtime behavior.",
+    "steps": [
+      {
+        "operation": "Introduce a typing-only Failure subclass and replace the dynamic `.request` assignment ignore with a `cast()` in the scraper failure path",
+        "file_to_modify": "scrapy/core/scraper.py",
+        "function_to_modify": "Scraper.call_spider_async",
+        "reason": "`twisted.python.failure.Failure` does not define `.request`, so dynamically attaching it forces `# type: ignore[attr-defined]`. Declaring a lightweight `FailureWithRequest(Failure)` (typing-only) and using `typing.cast` before assignment/access makes mypy accept the code while preserving the exact same runtime object (no new Failure instance, traceback/context preserved).",
+        "side_effects": "No runtime behavior change intended (still mutates the same Failure instance by adding `.request`). Static typing improves; any downstream code relying on `# type: ignore` can be cleaned up later. Ensure imports (`typing.cast`, `TYPE_CHECKING`, and `Request`) don’t introduce runtime-only dependencies."
+      },
+      {
+        "operation": "Validate and (if necessary) minimally adjust how Failures are created/forwarded into the scraper to remain compatible with the new cast-based typing approach",
+        "file_to_modify": "scrapy/core/spidermw.py",
+        "function_to_modify": "SpiderMiddlewareManager._process_spider_input",
+        "reason": "This is the contract point that can inject a plain `Failure()` into the scraper path (`scrape_func(Failure(), request)`); confirming that no code starts depending on `isinstance(..., FailureWithRequest)` and that the cast-based approach remains purely static ensures the typing fix in `call_spider_async` doesn’t conflict with how failures enter the pipeline.",
+        "side_effects": "Likely no functional changes required; at most, add/adjust local type hints/comments to document that the `.request` attribute is attached later in the scraper. Be careful not to change failure construction semantics or wrap/replace the Failure instance, which could affect traceback preservation."
+      }
+    ]
+  }
+}

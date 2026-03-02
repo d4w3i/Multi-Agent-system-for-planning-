@@ -1,0 +1,126 @@
+{
+  "pr_number": 2410,
+  "repository": "gunthercox/ChatterBot",
+  "title": "Fix file path resolution",
+  "body": "This pull request makes a few changes:\r\n\r\n1. It fixes the single file case where a `yield` should be used instead of a `return` - the difference seems to be that the former results in an empty generator evaluation when a single file is provided.\r\n2. Absolute path resolution has been added for easier identification of file locations if the specified file is not found.\r\n3. A more descriptive error message.",
+  "extraction_metadata": {
+    "extracted_at": "2026-02-26T01:08:37.275273",
+    "extractor_version": "1.0.0",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "chatterbot/trainers.py",
+      "status": "modified",
+      "additions": 23,
+      "deletions": 14,
+      "functions_modified": [
+        {
+          "function_name": "_get_file_list",
+          "class_name": "GenericFileTrainer",
+          "full_name": "GenericFileTrainer._get_file_list",
+          "start_line": 205,
+          "end_line": 229,
+          "lines_changed": [
+            213,
+            229
+          ]
+        },
+        {
+          "function_name": "train",
+          "class_name": "GenericFileTrainer",
+          "full_name": "GenericFileTrainer.train",
+          "start_line": 231,
+          "end_line": 346,
+          "lines_changed": [
+            257,
+            258,
+            259,
+            286,
+            287,
+            288,
+            289,
+            290,
+            291,
+            292,
+            293,
+            294,
+            295,
+            296,
+            297,
+            298,
+            299,
+            300,
+            301,
+            302,
+            303
+          ]
+        }
+      ],
+      "patch": "@@ -210,7 +210,7 @@ def _get_file_list(self, data_path, limit):\n         if self.file_extension is None:\n             raise self.TrainerInitializationException(\n                 'The file_extension attribute must be set before calling train().'\n-            ) \n+            )\n \n         # List all csv or json files in the specified directory\n         if os.path.isdir(data_path):\n@@ -226,7 +226,7 @@ def _get_file_list(self, data_path, limit):\n \n                 yield file_path\n         else:\n-            return [data_path]\n+            yield data_path\n \n     def train(self, data_path: str, limit=None):\n         \"\"\"\n@@ -254,7 +254,9 @@ def train(self, data_path: str, limit=None):\n \n             statements_to_create = []\n \n-            with open(data_file, 'r', encoding='utf-8') as file:\n+            file_abspath = os.path.abspath(data_file)\n+\n+            with open(file_abspath, 'r', encoding='utf-8') as file:\n \n                 if self.file_extension == 'json':\n                     data = json.load(file)\n@@ -281,17 +283,24 @@ def train(self, data_path: str, limit=None):\n \n                 text_row = self.field_map['text']\n \n-                documents = self.chatbot.tagger.as_nlp_pipeline([\n-                    (\n-                        row[text_row],\n-                        {\n-                            # Include any defined metadata columns\n-                            key: row[value]\n-                            for key, value in self.field_map.items()\n-                            if key != text_row\n-                        }\n-                    ) for row in data if len(row) > 0\n-                ])\n+                try:\n+                    documents = self.chatbot.tagger.as_nlp_pipeline([\n+                        (\n+                            row[text_row],\n+                            {\n+                                # Include any defined metadata columns\n+                                key: row[value]\n+                                for key, value in self.field_map.items()\n+                                if key != text_row\n+                            }\n+                        ) for row in data if len(row) > 0\n+                    ])\n+                except KeyError as e:\n+                    raise KeyError(\n+                        f'{e}. Please check the field_map parameter used to initialize '\n+                        f'the training class and remove this value if it is not needed. '\n+                        f'Current mapping: {self.field_map}'\n+                    )\n \n             for document, context in documents:\n                 statement = Statement("
+    }
+  ],
+  "functions_modified": [
+    {
+      "function_name": "_get_file_list",
+      "class_name": "GenericFileTrainer",
+      "full_name": "GenericFileTrainer._get_file_list",
+      "start_line": 205,
+      "end_line": 229,
+      "lines_changed": [
+        213,
+        229
+      ]
+    },
+    {
+      "function_name": "train",
+      "class_name": "GenericFileTrainer",
+      "full_name": "GenericFileTrainer.train",
+      "start_line": 231,
+      "end_line": 346,
+      "lines_changed": [
+        257,
+        258,
+        259,
+        286,
+        287,
+        288,
+        289,
+        290,
+        291,
+        292,
+        293,
+        294,
+        295,
+        296,
+        297,
+        298,
+        299,
+        300,
+        301,
+        302,
+        303
+      ]
+    }
+  ],
+  "step_plan": {
+    "steps": [
+      {
+        "operation": "Fix generator behavior for single-file training inputs by yielding the provided path instead of returning a list",
+        "file_to_modify": "chatterbot/trainers.py",
+        "function_to_modify": "Trainer._get_file_list",
+        "reason": "The caller iterates over `_get_file_list(...)` expecting an iterator/generator; returning a list in the non-directory case can change iteration semantics and lead to unexpected/empty generator evaluation when a single file is provided. Using `yield` keeps behavior consistent across directory and single-file inputs.",
+        "side_effects": "Any code path relying on `_get_file_list` returning a concrete list (e.g., expecting list methods or re-iterating without materializing) will now receive a generator and may need to explicitly wrap with `list(...)` if it needs a list."
+      },
+      {
+        "operation": "Resolve training file paths to absolute paths before opening and improve field_map KeyError reporting around NLP pipeline construction",
+        "file_to_modify": "chatterbot/trainers.py",
+        "function_to_modify": "Trainer.train",
+        "reason": "Opening files via an absolute path makes it easier to diagnose missing/incorrect file locations and reduces ambiguity caused by differing working directories. Wrapping the NLP pipeline construction in a try/except and re-raising with a richer message provides clearer guidance when `field_map` references missing columns/keys in the loaded data.",
+        "side_effects": "Error output changes (absolute paths shown; KeyError message format expanded), which may affect tests or log parsing. Re-raising `KeyError` with a formatted message may slightly alter exception string comparisons in downstream consumers."
+      }
+    ],
+    "summary": "Fixes training data path handling by making single-file inputs yield consistently and by opening files via absolute paths. Also improves diagnostics by providing a more descriptive KeyError when `field_map` does not match the training data."
+  }
+}

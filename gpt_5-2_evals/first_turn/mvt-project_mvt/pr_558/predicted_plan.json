@@ -1,0 +1,80 @@
+{
+  "pr_number": 558,
+  "repository": "mvt-project/mvt",
+  "title": "Fix crash when handling empty adb key list",
+  "body": "This commit fixes a crash in the ADB module when no keys were parsed. We should return an empty list by default.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T08:47:39.727388",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "src/mvt/android/artifacts/dumpsys_adb.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "parse",
+          "class_name": "DumpsysADBArtifact",
+          "full_name": "DumpsysADBArtifact.parse",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "calculate_key_info",
+          "class_name": "DumpsysADBArtifact",
+          "full_name": "DumpsysADBArtifact.calculate_key_info",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "src/mvt/android/modules/adb/dumpsys_adbstate.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "run",
+          "class_name": "DumpsysADBState",
+          "full_name": "DumpsysADBState.run",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Fixes a crash in the Android ADB dumpsys parsing path when no trusted ADB keys are present by normalizing missing/None `user_keys` to an empty list, and ensures both parsing and module execution remain robust under empty/malformed key scenarios.",
+    "steps": [
+      {
+        "operation": "Normalize missing/None user_keys to an empty list during dumpsys parsing, and always persist user_keys as a list in the parsed schema before iterating",
+        "file_to_modify": "src/mvt/android/artifacts/dumpsys_adb.py",
+        "function_to_modify": "DumpsysADBArtifact.parse",
+        "reason": "The crash is caused by iterating over `parsed.get('user_keys')` when it is `None` or absent; normalizing via `user_keys = parsed.get('user_keys') or []` prevents `TypeError` and guarantees a stable output shape (`user_keys: []`) for downstream consumers.",
+        "side_effects": "Changes the parsed artifact schema to always include `user_keys` as a list (possibly empty), which may affect any code/tests that previously assumed the key could be missing/None; should be validated against any JSON output expectations."
+      },
+      {
+        "operation": "Harden key-line post-processing to safely handle empty/malformed key strings (e.g., missing comment field, invalid base64) and return a conservative result instead of raising",
+        "file_to_modify": "src/mvt/android/artifacts/dumpsys_adb.py",
+        "function_to_modify": "DumpsysADBArtifact.calculate_key_info",
+        "reason": "Even with `user_keys` normalized, individual entries could be malformed; guarding splits/decoding prevents unexpected crashes when encountering truncated or non-standard adb key lines in the wild.",
+        "side_effects": "Malformed keys may now be silently skipped or produce partial metadata (depending on implementation), which could slightly change reporting output; consider logging at debug level if a key is ignored."
+      },
+      {
+        "operation": "Ensure module execution and logging handles both an empty overall results set and a single result with user_keys=[], without assumptions about presence of keys",
+        "file_to_modify": "src/mvt/android/modules/adb/dumpsys_adbstate.py",
+        "function_to_modify": "DumpsysADBState.run",
+        "reason": "Downstream consumer should remain robust whether parsing yields no results (e.g., debugging_manager section missing) or yields an entry with an empty key list; logging should consistently report 0 keys rather than erroring due to shape assumptions.",
+        "side_effects": "May adjust log messages/counting behavior in edge cases (no debugging_manager vs. debugging_manager with no keys); verify any CLI output snapshots/tests that assert exact wording/counts."
+      }
+    ]
+  }
+}

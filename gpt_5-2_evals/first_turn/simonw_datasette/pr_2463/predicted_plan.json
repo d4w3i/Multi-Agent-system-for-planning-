@@ -1,0 +1,64 @@
+{
+  "pr_number": 2463,
+  "repository": "simonw/datasette",
+  "title": "Use the event_loop fixture",
+  "body": "Refs:\r\n- https://github.com/simonw/datasette/issues/2461#issuecomment-2634920351\r\n\r\n<!-- readthedocs-preview datasette start -->\r\n----\r\n📚 Documentation preview 📚: https://datasette--2463.org.readthedocs.build/en/2463/\r\n\r\n<!-- readthedocs-preview datasette end -->",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T08:40:40.484568",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "tests/conftest.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "ds_client",
+          "class_name": null,
+          "full_name": "ds_client",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "pytest_collection_modifyitems",
+          "class_name": null,
+          "full_name": "pytest_collection_modifyitems",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "pytest.ini",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    }
+  ],
+  "step_plan": {
+    "summary": "Adjust the test suite to explicitly use pytest-asyncio’s event_loop fixture, ensuring event loop lifecycle is controlled under asyncio strict mode and preserving any existing test-ordering guarantees that depend on when asyncio is initialized.",
+    "steps": [
+      {
+        "operation": "Update the async ds_client fixture to explicitly depend on pytest-asyncio’s event loop fixture (accept an event_loop parameter) so loop creation/teardown is owned by pytest-asyncio under strict mode",
+        "file_to_modify": "tests/conftest.py",
+        "function_to_modify": "ds_client",
+        "reason": "With newer pytest-asyncio behavior (especially in asyncio_mode=strict), async fixtures that indirectly trigger loop creation can hit deprecations or cross-loop/closed-loop errors. Adding an explicit dependency on the event_loop fixture forces consistent loop lifecycle management and matches pytest-asyncio’s recommended pattern.",
+        "side_effects": "May change when the event loop is initialized relative to other fixtures/tests; could surface hidden ordering assumptions. Any tests/fixtures that indirectly relied on implicit loop creation may now run under the event_loop-provided loop, potentially fixing intermittent failures but also revealing improper loop usage."
+      },
+      {
+        "operation": "Review and adjust test ordering logic to ensure the intended “run before any asyncio code kicks in” behavior remains correct once event_loop is explicitly used by async fixtures",
+        "file_to_modify": "tests/conftest.py",
+        "function_to_modify": "pytest_collection_modifyitems",
+        "reason": "pytest_collection_modifyitems currently enforces ordering constraints that may have been designed around implicit asyncio initialization. After ds_client (and potentially other fixtures) explicitly uses event_loop, the boundary for “asyncio starts” can shift, so the ordering logic should be validated and updated to still guarantee the pre-async tests run first.",
+        "side_effects": "May reorder the test suite slightly, which can affect tests that (incorrectly) depend on execution order. Could require updating markers/selection logic if the ordering is keyed to specific test names/paths."
+      }
+    ]
+  }
+}

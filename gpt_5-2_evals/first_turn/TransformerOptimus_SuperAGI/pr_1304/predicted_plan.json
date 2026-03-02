@@ -1,0 +1,58 @@
+{
+  "pr_number": 1304,
+  "repository": "TransformerOptimus/SuperAGI",
+  "title": "Fix Recruitment Workflow",
+  "body": "### Description\nFixing the existing recruitment workflow.\n\n### Solution and Design\nFixing the existing recruitment workflow.\n\n### Type of change\n- [x] Bug fix\n- [x] New feature\n- [x] Breaking change\n- [x] Docs update\n\n### Checklist\n- [x] Atomic\n- [x] Conforms to guidelines\n- [x] Documented\n- [x] Added required tests",
+  "extraction_metadata": {
+    "extracted_at": "2026-02-25T20:43:25.410263",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "workflow_seed.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "build_recruitment_workflow",
+          "class_name": "AgentWorkflowSeed",
+          "full_name": "AgentWorkflowSeed.build_recruitment_workflow",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "find_or_create_tool_workflow_step",
+          "class_name": "AgentWorkflowStep",
+          "full_name": "AgentWorkflowStep.find_or_create_tool_workflow_step",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "add_next_workflow_step",
+          "class_name": "AgentWorkflowStep",
+          "full_name": "AgentWorkflowStep.add_next_workflow_step",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Repair the seeded Recruitment Workflow so resume iteration, job-description reading, deterministic YES/NO branching, and termination behave reliably; email is sent only for YES matches and the workflow ends cleanly when the queue is exhausted.",
+    "steps": [
+      {
+        "operation": "Fix recruitment workflow step creation and prompts to ensure deterministic branching, correct job-description evaluation, robust task-queue termination, and email-only-on-YES behavior (including a small smoke validation of created edges/prompts before commit).",
+        "file_to_modify": "base_project/workflow_seed.py",
+        "function_to_modify": "AgentWorkflowSeed.build_recruitment_workflow",
+        "reason": "The recruitment workflow is fully defined here, and current step4 creation appears to misuse positional arguments (likely mis-assigning instruction/completion_prompt), while step2/step4 prompts do not strongly enforce machine-parseable outputs (TASK_QUEUE JSON, YES/NO token) needed for correct routing via conditional edges.",
+        "side_effects": "Changes seeded DB records for the Recruitment Workflow (existing deployments may need reseeding/migration of step prompts). Conditional routing becomes stricter (breaking change for any runtime that relied on verbose answers). May require updating any docs/examples that reference the previous prompts; add/adjust a seed-time assertion/smoke check so failures surface early."
+      }
+    ]
+  }
+}

@@ -1,0 +1,57 @@
+{
+  "pr_number": 925,
+  "repository": "plasma-umass/scalene",
+  "title": "Fix for overwriting LD_PRELOAD if it contains libscalene.so and other values",
+  "body": "It looks like in some cases setup_preload gets called more than once, so it was adding `libscalene.so` to `LD_PRELOAD` the first time then later replacing `LD_PRELOAD`  with just `libscalene.so`, this fixes that case.\n\nExplore the source code to identify the files and functions to modify.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T08:47:15.541073",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "scalene/scalene_preload.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "get_preload_environ",
+          "class_name": "ScalenePreload",
+          "full_name": "ScalenePreload.get_preload_environ",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "setup_preload",
+          "class_name": "ScalenePreload",
+          "full_name": "ScalenePreload.setup_preload",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Fix Linux LD_PRELOAD handling so repeated calls to ScalenePreload.setup_preload() do not overwrite or collapse existing LD_PRELOAD entries when libscalene.so is already present. The change makes preload environment construction and restart checks stable and idempotent across multiple invocations.",
+    "steps": [
+      {
+        "operation": "Make LD_PRELOAD merging idempotent by tokenizing existing LD_PRELOAD, detecting any libscalene.so entry (including full paths), de-duplicating, and prepending libscalene.so while preserving all other entries and a stable join format across repeated calls",
+        "file_to_modify": "scalene/scalene_preload.py",
+        "function_to_modify": "ScalenePreload.get_preload_environ",
+        "reason": "The bug arises when setup_preload is invoked multiple times and get_preload_environ reconstructs LD_PRELOAD in a way that can drop previously-existing entries or collapse to only libscalene.so. A stable, token-based merge prevents overwrites and guarantees that subsequent calls produce the same LD_PRELOAD string (idempotency), avoiding both data loss and restart loops.",
+        "side_effects": "Changes the exact LD_PRELOAD string formatting (ordering/delimiters) which may affect downstream string-comparison logic; should be validated on Linux with various existing LD_PRELOAD formats (space-separated, colon-separated, mixed). May also affect restart behavior if other code assumes a specific delimiter."
+      },
+      {
+        "operation": "Adjust environment-diff / restart decision to avoid re-exec when the process already satisfies the required preload state, treating LD_PRELOAD equivalence in a normalized way (e.g., compare token sets/order-stable normalized string) and ensuring a second call to setup_preload does not rewrite or re-exec unnecessarily",
+        "file_to_modify": "scalene/scalene_preload.py",
+        "function_to_modify": "ScalenePreload.setup_preload",
+        "reason": "Even with correct merging, brittle exact string comparisons can cause setup_preload to think the environment differs and trigger an unnecessary restart (or rewrite LD_PRELOAD). Normalizing LD_PRELOAD comparison (and/or skipping updates when libscalene.so is already present alongside other tokens) ensures repeated calls are no-ops and preserves user/system preload entries.",
+        "side_effects": "May reduce the frequency of re-exec in edge cases where environment values differ only by benign formatting; ensure this does not suppress required restarts when LD_PRELOAD is genuinely missing or incorrect. Add/adjust tests (if present) or validate via manual scenarios: 'foo.so bar.so' -> prepend; 'libscalene.so foo.so' unchanged; '/path/libscalene.so foo.so' unchanged; calling setup_preload twice should not change env nor re-exec."
+      }
+    ]
+  }
+}

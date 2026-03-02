@@ -1,0 +1,79 @@
+{
+  "pr_number": 17947,
+  "repository": "saleor/saleor",
+  "title": "Fix incorrect multipler for limit field",
+  "body": "I want to merge this change because we recently introduced the `values` field with input limit. By accident the query cost was added to incorrect place. This PR fixes this. \n\n> [!IMPORTANT]  \n> The changes on `SelectedAttribute` is expected. We don't have `limit` there, and it is not paginated.  (The query cost for this field will be handled separatly)\n\n<!-- Please mention all relevant issue numbers. -->\n<!-- GitHub issue number is required for external contributions. -->\n\n# Impact\n\n- [ ] New migrations\n- [ ] New/Updated API fields or mutations\n- [ ] Deprecated API fields or mutations\n- [ ] Removed API types, fields, or mutations\n\n# Docs\n\n<!-- Docs are stored in a separate repository: https://github.com/saleor/saleor-docs/. -->\n<!-- Please provide a link to the PR that updates documentation for your changes. -->\n<!-- If changes in docs are not required, please mention that in the description. -->\n\n- [ ] Link to documentation:\n\n# Pull Request Checklist\n\n<!-- Please keep this section. It will make the maintainer's life easier. -->\n\n- [ ] Privileged queries and mutations are either absent or guarded by proper permission checks\n- [ ] Database queries are optimized and the number of queries is constant\n- [ ] Database migrations are either absent or optimized for zero downtime\n- [ ] The changes are covered by test cases\n- [ ] All new fields/inputs/mutations have proper labels added (`ADDED_IN_X`, `PREVIEW_FEATURE`, etc.)\n- [ ] All migrations have proper dependencies\n- [ ] All indexes are added concurrently in migrations\n- [ ] All RunSql and RunPython migrations have revert option defined\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T09:51:09.573008",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "saleor/graphql/query_cost_map.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "COST_MAP",
+          "class_name": null,
+          "full_name": "COST_MAP",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "saleor/graphql/core/tests/test_query_cost_validation.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "test_query_below_cost_limit_with_multiplied_complexity_passes_validation",
+          "class_name": null,
+          "full_name": "test_query_below_cost_limit_with_multiplied_complexity_passes_validation",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Correct the GraphQL query-cost configuration so `Attribute.values(limit)` complexity scales with the `limit` argument, and ensure `SelectedAttribute.values` is not incorrectly multiplied. Add/adjust tests to lock in the expected behavior and prevent regressions.",
+    "steps": [
+      {
+        "operation": "Fix COST_MAP entries so `Attribute.values` uses the `limit` multiplier and `SelectedAttribute.values` does not",
+        "file_to_modify": "saleor/graphql/query_cost_map.py",
+        "function_to_modify": "COST_MAP",
+        "reason": "The `Attribute.values` field is a non-connection list that accepts `limit`, so its query-cost should scale with `limit`. The multiplier was mistakenly applied/configured on the wrong field/type (e.g., using `first/last` on `Attribute.values` and/or adding `limit` on `SelectedAttribute.values`, which has no `limit` argument). Updating the map aligns cost calculation with the schema and prevents under/over-counting query complexity.",
+        "side_effects": "May change computed cost for client queries that use `attribute { values(limit: X) { ... } }`, potentially causing previously-allowed queries to be rejected (or vice versa) based on correct cost accounting. Must ensure the updated cost-map still passes any internal cost-map validation that checks field/arg existence."
+      },
+      {
+        "operation": "Extend/add regression test to assert query-cost scales with `limit` for `Attribute.values(limit: X)` and does not incorrectly multiply for `SelectedAttribute.values`",
+        "file_to_modify": "saleor/graphql/core/tests/test_query_cost_validation.py",
+        "function_to_modify": "test_query_below_cost_limit_with_multiplied_complexity_passes_validation",
+        "reason": "Provides a failing test for the prior bug (multiplier applied to the wrong place) and prevents regressions. Specifically verifies that the validator reads the correct multiplier argument name (`limit`) from the cost map for `Attribute.values` and that `SelectedAttribute.values` is not treated as limited/paginated.",
+        "side_effects": "May require adjusting test query strings/fixtures to include an `attribute { values(limit: N) { ... } }` selection and a `selectedAttribute { values { ... } }` selection. Could expose unrelated cost-map inconsistencies if other entries rely on the old behavior."
+      },
+      {
+        "operation": "Verify `validate_query_cost` integration still behaves correctly with the updated cost map and new tests (adjust only if failing)",
+        "file_to_modify": "saleor/graphql/core/validators/query_cost.py",
+        "function_to_modify": "validate_query_cost",
+        "reason": "`validate_query_cost` is the integration entry-point used by API execution/tests. Even if no logic change is intended, confirm that the updated cost-map configuration is correctly wired through validation and that any exceptions raised (e.g., cost-map mismatch, missing args) remain accurate and user-friendly.",
+        "side_effects": "Unlikely to change runtime behavior beyond ensuring proper propagation of the corrected cost configuration. If modified, could affect how query-cost errors are raised/handled across the API and might require updating additional tests."
+      },
+      {
+        "operation": "Confirm multiplier parsing supports `limit` for `Attribute.values` and adjust parsing only if `limit` is not being applied as expected",
+        "file_to_modify": "saleor/graphql/core/validators/query_cost.py",
+        "function_to_modify": "CostValidator.get_multipliers_from_string",
+        "reason": "This function interprets multiplier argument names from the cost map and extracts numeric values from GraphQL arguments. With the cost map fixed to use `limit`, ensure `limit` is parsed as a numeric multiplier in the same way as `first/last`. Only update if the current implementation mishandles `limit` (e.g., missing name handling, defaulting behavior).",
+        "side_effects": "Any changes here can affect cost computation for all fields using argument-based multipliers, so it may require running/adjusting broader query-cost validation tests to avoid unintended changes to other fields’ computed costs."
+      }
+    ]
+  }
+}

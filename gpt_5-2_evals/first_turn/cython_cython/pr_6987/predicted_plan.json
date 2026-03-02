@@ -1,0 +1,118 @@
+{
+  "pr_number": 6987,
+  "repository": "cython/cython",
+  "title": "Fix return type of bytes.join()",
+  "body": "This was already tested in `tests/run/bytesmethods.pyx`, but there were apparently (non-trivial?) cases where the return type wasn't correctly inferred.\n\nExplore the source code to identify the files and functions to modify.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T08:29:06.531860",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "Cython/Compiler/ExprNodes.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "infer_type",
+          "class_name": "CallNode",
+          "full_name": "CallNode.infer_type",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "set_py_result_type",
+          "class_name": "CallNode",
+          "full_name": "CallNode.set_py_result_type",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "Cython/Compiler/Builtin.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "find_return_type_of_builtin_method",
+          "class_name": null,
+          "full_name": "find_return_type_of_builtin_method",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "tests/run/bytesmethods.pyx",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "bytes_join",
+          "class_name": null,
+          "full_name": "bytes_join",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "literal_join",
+          "class_name": null,
+          "full_name": "literal_join",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Fix Cython’s compile-time type inference so that `bytes.join(...)` consistently infers a `bytes` result even when the receiver expression is typed non-trivially (e.g. widened to `object`). Update compiler call typing to safely recognize `bytes` receivers and add regression tests covering the missed call shapes.",
+    "steps": [
+      {
+        "operation": "Broaden builtin-method return type inference for attribute calls in the early type inference pass by recognizing `bytes` receivers even when they are not already marked as a builtin type (e.g. inferred as `object`/widened types) and then querying `Builtin.find_return_type_of_builtin_method()` for `join` to set the call result to `bytes`.",
+        "file_to_modify": "Cython/Compiler/ExprNodes.py",
+        "function_to_modify": "CallNode.infer_type",
+        "reason": "Non-trivial `bytes.join(...)` call shapes likely fail the existing `function.obj.infer_type(env).is_builtin_type` guard, causing the compiler to skip the builtin-method return mapping (`bytes.join='T'`) and fall back to `py_object_type`. Adding a safe narrowing/recognition path for `bytes` at this stage improves compile-time `typeof()` and downstream typing decisions.",
+        "side_effects": "May change inferred types for some Python calls where the receiver can be proven to be `bytes`; must ensure it does not mis-type user-defined `.join` methods on arbitrary objects. Could alter inferred types used by subsequent analysis/optimizations; run the full test suite focusing on method-call and descriptor behavior."
+      },
+      {
+        "operation": "Apply the builtin-method return type mapping during analysis-time typing even when `function.obj.type` is not already `is_builtin_type`, by safely detecting/narrowing `bytes` receivers (and only then) and setting the Python call result type accordingly for `join`.",
+        "file_to_modify": "Cython/Compiler/ExprNodes.py",
+        "function_to_modify": "CallNode.set_py_result_type",
+        "reason": "Even if early inference misses, analysis-time typing currently has the same builtin-only guard (`function.obj.type.is_builtin_type`). This can leave `bytes.join()` typed as generic `object` in cases where the receiver’s static type is widened. Ensuring this pass can still recognize a `bytes` receiver makes return typing reliable across call shapes.",
+        "side_effects": "May affect code generation decisions/optimizations for Python calls and could change inferred result types seen by user code (`cython.typeof`). Needs careful gating to avoid assuming builtin semantics for non-builtin receivers. Verify no regressions in existing bytes method descriptor/unbound-method tests."
+      },
+      {
+        "operation": "Enhance the builtin-method return type resolver to support the “non-trivial” receiver typing scenarios by accepting/normalizing builtin type identification for `bytes` (e.g. handling subtypes/aliases or resolving from less-specific Python object types when safely known) while keeping the mapping for `bytes.join` returning `'T'` (receiver type).",
+        "file_to_modify": "Cython/Compiler/Builtin.py",
+        "function_to_modify": "find_return_type_of_builtin_method",
+        "reason": "`bytes.join='T'` exists, so the remaining failure is likely that the resolver is not reached or cannot match the receiver type in some cases. Making the resolver more robust (e.g. normalizing to the underlying builtin type or supporting safe receiver narrowing inputs) ensures both call-site hooks can consistently obtain the correct return type.",
+        "side_effects": "Potentially affects return type inference for other builtin methods if the normalization logic is generalized; must ensure it doesn’t start matching user-defined types incorrectly. Requires running broader compiler tests that rely on builtin-method typing tables."
+      },
+      {
+        "operation": "Add regression coverage for previously-missed `bytes.join()` call shapes (e.g. receiver stored in an `object`-typed variable but known to be bytes, conditional/union-like flow, or intermediate expressions that lose builtin-ness) and assert `cython.typeof(...) == 'bytes object'` for those cases.",
+        "file_to_modify": "tests/run/bytesmethods.pyx",
+        "function_to_modify": "bytes_join",
+        "reason": "The PR goal is to make inference reliable beyond the already-tested simple cases. Extending `bytes_join` with one or more non-trivial patterns ensures the bug is reproduced and prevented from regressing.",
+        "side_effects": "May require updating any AST assertions or expected inference outputs if the improved typing changes intermediate nodes. Test additions can expose other latent typing issues; run `tests/run/bytesmethods.pyx` and nearby string/bytes method tests."
+      },
+      {
+        "operation": "Add complementary regression cases for bytes-literal receivers and/or more complex expression receivers (e.g. `(<object>b'.').join(...)`, `b'.' if cond else b','` then `.join`, or calls through temporary variables) ensuring the inference still yields `bytes` and remains stable for constant/literal pathways.",
+        "file_to_modify": "tests/run/bytesmethods.pyx",
+        "function_to_modify": "literal_join",
+        "reason": "`literal_join` is a baseline for the simplest receiver form; extending it with additional expression shapes helps confirm the fix works both for literals and for expressions that previously caused loss of builtin typing, while ensuring the literal path remains correct.",
+        "side_effects": "Could require adjusting expectations if the compiler’s optimized call path changes. Adds more compile-time typing checks; ensure they are robust across minor AST/optimization differences."
+      }
+    ]
+  }
+}

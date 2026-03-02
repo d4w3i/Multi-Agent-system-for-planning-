@@ -1,0 +1,84 @@
+{
+  "pr_number": 18102,
+  "repository": "apache/tvm",
+  "title": "[RELAX] Fix rotary embedding buffer size calculation",
+  "body": "- Change head_dim//2 to rotary_dim//2 in LongRope scaling\r\n- Fixes buffer size when rotary_dim differs from head_dim when partial_rotary_factor < 1.0",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T00:58:44.600806",
+    "extractor_version": "1.0.0",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "python/tvm/relax/frontend/nn/llm/position_embedding.py",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "functions_modified": [
+        {
+          "function_name": "llama_rope_with_position_map",
+          "class_name": null,
+          "full_name": "llama_rope_with_position_map",
+          "start_line": 370,
+          "end_line": 547,
+          "lines_changed": [
+            496
+          ]
+        },
+        {
+          "function_name": "fused_rope_longrope_scaling",
+          "class_name": null,
+          "full_name": "fused_rope_longrope_scaling",
+          "start_line": 490,
+          "end_line": 543,
+          "lines_changed": [
+            496
+          ]
+        }
+      ],
+      "patch": "@@ -493,7 +493,7 @@ def fused_rope_longrope_scaling(  # pylint: disable=too-many-locals\n         var_q: T.handle,\n         var_k: T.handle,\n         var_v: T.handle,\n-        ext_factors: T.Buffer((head_dim // 2,), \"float32\"),  # type: ignore\n+        ext_factors: T.Buffer((rotary_dim // 2,), \"float32\"),  # type: ignore\n     ):\n         T.func_attr(\n             {"
+    }
+  ],
+  "functions_modified": [
+    {
+      "function_name": "llama_rope_with_position_map",
+      "class_name": null,
+      "full_name": "llama_rope_with_position_map",
+      "start_line": 370,
+      "end_line": 547,
+      "lines_changed": [
+        496
+      ]
+    },
+    {
+      "function_name": "fused_rope_longrope_scaling",
+      "class_name": null,
+      "full_name": "fused_rope_longrope_scaling",
+      "start_line": 490,
+      "end_line": 543,
+      "lines_changed": [
+        496
+      ]
+    }
+  ],
+  "step_plan": {
+    "steps": [
+      {
+        "operation": "Fix LongRope scaling buffer shape to use the actual rotary dimension",
+        "file_to_modify": "python/tvm/relax/frontend/nn/llm/position_embedding.py",
+        "function_to_modify": "fused_rope_longrope_scaling",
+        "reason": "When `partial_rotary_factor < 1.0`, `rotary_dim` can be smaller than `head_dim`. The `ext_factors` buffer is conceptually sized to match the rotary portion only, so using `head_dim // 2` can allocate an incorrect buffer size and cause shape mismatches or incorrect codegen/runtime behavior.",
+        "side_effects": "May change generated TIR/Relax function signatures and buffer binding expectations for kernels calling/using `fused_rope_longrope_scaling`, potentially requiring recompilation of downstream artifacts and affecting any tests or callers that assumed `ext_factors` was sized by `head_dim`."
+      },
+      {
+        "operation": "Update the `ext_factors` T.Buffer annotation from `(head_dim // 2,)` to `(rotary_dim // 2,)`",
+        "file_to_modify": "python/tvm/relax/frontend/nn/llm/position_embedding.py",
+        "function_to_modify": "fused_rope_longrope_scaling",
+        "reason": "This is the concrete implementation change that aligns the buffer’s declared extent with the intended rotary embedding dimension, preventing incorrect buffer size calculation when `rotary_dim != head_dim`.",
+        "side_effects": "Could expose latent bugs where callers were incorrectly providing buffers sized to `head_dim // 2`; those call sites may now fail fast due to stricter/accurate shape expectations, and any shape inference/validation logic relying on the old extent may need adjustment."
+      }
+    ],
+    "summary": "Fixes an incorrect buffer-size declaration in LongRope rotary embedding scaling by sizing `ext_factors` with `rotary_dim // 2` instead of `head_dim // 2`, which corrects behavior when partial rotary embeddings are used."
+  }
+}

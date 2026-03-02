@@ -1,0 +1,170 @@
+{
+  "pr_number": 1706,
+  "repository": "confident-ai/deepeval",
+  "title": "Fixing IndexError list index out of range in Synthesizer.generate_goldens_from_docs()",
+  "body": "This fixes https://github.com/confident-ai/deepeval/issues/1682\n\nExplore the source code to identify the files and functions to modify.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T09:51:27.251027",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "deepeval/synthesizer/synthesizer.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "generate_goldens_from_docs",
+          "class_name": "Synthesizer",
+          "full_name": "Synthesizer.generate_goldens_from_docs",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "a_generate_goldens_from_docs",
+          "class_name": "Synthesizer",
+          "full_name": "Synthesizer.a_generate_goldens_from_docs",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "generate_goldens_from_contexts",
+          "class_name": "Synthesizer",
+          "full_name": "Synthesizer.generate_goldens_from_contexts",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "a_generate_goldens_from_contexts",
+          "class_name": "Synthesizer",
+          "full_name": "Synthesizer.a_generate_goldens_from_contexts",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_a_generate_from_context",
+          "class_name": "Synthesizer",
+          "full_name": "Synthesizer._a_generate_from_context",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "deepeval/synthesizer/chunking/context_generator.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "generate_contexts",
+          "class_name": "ContextGenerator",
+          "full_name": "ContextGenerator.generate_contexts",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "a_generate_contexts",
+          "class_name": "ContextGenerator",
+          "full_name": "ContextGenerator.a_generate_contexts",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_generate_contexts_per_source_file",
+          "class_name": "ContextGenerator",
+          "full_name": "ContextGenerator._generate_contexts_per_source_file",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_a_get_n_random_contexts_per_source_file",
+          "class_name": "ContextGenerator",
+          "full_name": "ContextGenerator._a_get_n_random_contexts_per_source_file",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Fixes an IndexError in Synthesizer.generate_goldens_from_docs() by enforcing aligned (contexts, source_files, scores) outputs from ContextGenerator and by guarding/capping multiple indexing sites in Synthesizer’s sync/async contexts→goldens pipeline (including an async variable-shadowing bug that mis-indexes source_files).",
+    "steps": [
+      {
+        "operation": "Normalize and validate ContextGenerator outputs before invoking the contexts→goldens pipeline (ensure contexts/source_files/scores are parallel, equal-length lists; truncate or filter defensively if needed, and fail fast with a clear error if invariants cannot be restored).",
+        "file_to_modify": "deepeval/synthesizer/synthesizer.py",
+        "function_to_modify": "Synthesizer.generate_goldens_from_docs",
+        "reason": "Even if ContextGenerator is fixed, the docs entry point is where the mismatched lists first cross the boundary into Synthesizer; adding an invariant check here prevents downstream IndexError and avoids silently associating wrong metadata to contexts.",
+        "side_effects": "May change behavior from crashing with IndexError to raising a clearer ValueError/log warning; downstream code will see consistent list lengths; may require updating/adding tests that assert the invariant."
+      },
+      {
+        "operation": "Apply the same invariant enforcement/normalization for the async docs entry point (mirror sync behavior, including any truncation/filtering strategy and error messaging).",
+        "file_to_modify": "deepeval/synthesizer/synthesizer.py",
+        "function_to_modify": "Synthesizer.a_generate_goldens_from_docs",
+        "reason": "The async path must be as safe as the sync path; otherwise issue #1682 can still reproduce when users call the async API.",
+        "side_effects": "Async callers may observe clearer errors instead of IndexError; potential slight overhead for validation."
+      },
+      {
+        "operation": "Fix out-of-range indexing when evolving inputs per context: cap iteration to max_goldens_per_context (or size progress-id lists based on actual count) and guard indexing of pbar_evolve_input_ids; also rely only on aligned (contexts, source_files, context_scores) when indexing by context i.",
+        "file_to_modify": "deepeval/synthesizer/synthesizer.py",
+        "function_to_modify": "Synthesizer.generate_goldens_from_contexts",
+        "reason": "Current code sizes progress-bar IDs using max_goldens_per_context but enumerates qualified_synthetic_inputs which can exceed that cap, causing IndexError; additionally, this function assumes perfect alignment of ContextGenerator outputs and should be robust given the bug history.",
+        "side_effects": "May reduce number of evolved inputs processed to the configured cap (more predictable output); progress reporting may change; tests expecting more-than-cap evolution may need updates."
+      },
+      {
+        "operation": "Mirror the sync fixes in the async orchestration: ensure per-context tasks do not assume misaligned metadata, and ensure any progress-id or per-input iteration is capped/guarded consistently with the sync implementation.",
+        "file_to_modify": "deepeval/synthesizer/synthesizer.py",
+        "function_to_modify": "Synthesizer.a_generate_goldens_from_contexts",
+        "reason": "Async orchestration passes indices/metadata into workers; any mismatch or uncapped indexing can still trigger IndexError in async workflows.",
+        "side_effects": "Async output counts may become capped more strictly; concurrency behavior unchanged but per-task bookkeeping may differ; tests for async generation may need adjustment."
+      },
+      {
+        "operation": "Fix variable shadowing and wrong indexing in the async per-context worker: rename inner per-input index variable, use the context_index for source_files/context_scores association, and guard/cap pbar_evolve_input_ids indexing to the number of tracked items (or build IDs sized to actual processed inputs).",
+        "file_to_modify": "deepeval/synthesizer/synthesizer.py",
+        "function_to_modify": "Synthesizer._a_generate_from_context",
+        "reason": "The current implementation shadows the context index with a per-input index, leading to source_files[index] using the wrong index and causing IndexError/corrupted metadata; it also repeats the progress-id indexing hazard.",
+        "side_effects": "Fixes incorrect source_file attribution in generated goldens for async runs; may affect logging/progress semantics; requires regression coverage to ensure no IndexError and correct metadata."
+      },
+      {
+        "operation": "Ensure generate_contexts returns strictly parallel lists: when building per-file contexts, only append a score when a context is actually appended; similarly append matching source_file entries; optionally add an internal assertion that lengths match before returning.",
+        "file_to_modify": "deepeval/synthesizer/chunking/context_generator.py",
+        "function_to_modify": "ContextGenerator.generate_contexts",
+        "reason": "Issue stems from misalignment created during context sampling/scoring; enforcing the invariant at the generator boundary prevents downstream indexing assumptions from breaking and avoids mismatched context-score associations.",
+        "side_effects": "May slightly change which scores are returned (dropping scores for skipped/empty contexts); downstream ranking/selection could shift but will be correct and stable; may require test updates."
+      },
+      {
+        "operation": "Apply the same parallel-list invariant enforcement in the async generator entry point, ensuring the returned contexts/source_files/scores lengths always match and represent the same items in the same order.",
+        "file_to_modify": "deepeval/synthesizer/chunking/context_generator.py",
+        "function_to_modify": "ContextGenerator.a_generate_contexts",
+        "reason": "Async and sync generators must produce equivalent, aligned outputs; otherwise async callers can still experience IndexError or incorrect context-score pairing.",
+        "side_effects": "Potential minor differences in async output ordering/selection if previously relying on buggy misalignment; may require updating async-specific tests."
+      },
+      {
+        "operation": "Fix the primary mismatch source in per-source-file context building: move scoring append to occur only after context validity checks pass (non-empty chunk, sufficient similar chunks), and ensure any early-continue branches do not append to scores/source_files without also appending the corresponding context.",
+        "file_to_modify": "deepeval/synthesizer/chunking/context_generator.py",
+        "function_to_modify": "ContextGenerator._generate_contexts_per_source_file",
+        "reason": "This function currently can score sampled chunks and then skip creating/appending a context, producing len(scores) > len(contexts); fixing this eliminates the root cause of downstream IndexErrors and incorrect associations.",
+        "side_effects": "May reduce the number of returned scores/contexts in edge cases with many invalid chunks; behavior becomes consistent and predictable; should be covered by a regression test that previously triggered the mismatch."
+      },
+      {
+        "operation": "Fix the async per-source-file sampler with the same alignment logic: ensure contexts, scores, and source_files are appended together atomically; avoid appending scores for skipped/invalid contexts and add an invariant check before returning.",
+        "file_to_modify": "deepeval/synthesizer/chunking/context_generator.py",
+        "function_to_modify": "ContextGenerator._a_get_n_random_contexts_per_source_file",
+        "reason": "Async equivalent of the sync mismatch bug must be fixed to prevent IndexError in async docs/context generation and to keep metadata aligned across all code paths.",
+        "side_effects": "Async context generation results may change slightly (dropping invalid scored entries); improves correctness; may require adjusting async regression tests."
+      }
+    ]
+  }
+}

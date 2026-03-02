@@ -1,0 +1,298 @@
+{
+  "pr_number": 2380,
+  "repository": "pyecharts/pyecharts",
+  "title": "fix and update",
+  "body": "* 修复 `timeline` 的 bug，关联：https://github.com/pyecharts/pyecharts/issues/2361\r\n* 更新一些配置的引用位置和方式\r\n    * `markline`, `markarea` 增加动画配置项：https://github.com/pyecharts/pyecharts/issues/2362 \r\n\r\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-02-26T01:10:29.063007",
+    "extractor_version": "1.0.0",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "pyecharts/charts/base.py",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 2,
+      "functions_modified": [],
+      "patch": "@@ -7,8 +7,7 @@\n from ..commons import utils\n from ..globals import CurrentConfig, RenderType, ThemeType\n from ..options import InitOpts, RenderOpts\n-from ..options.global_options import AnimationOpts\n-from ..options.series_options import BasicOpts\n+from ..options.series_options import BasicOpts, AnimationOpts\n from ..render import engine\n from ..types import Optional, Sequence, Union\n from .mixins import ChartMixin"
+    },
+    {
+      "filename": "pyecharts/charts/composite_charts/timeline.py",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 6,
+      "functions_modified": [
+        {
+          "function_name": "add",
+          "class_name": "Timeline",
+          "full_name": "Timeline.add",
+          "start_line": 88,
+          "end_line": 119,
+          "lines_changed": [
+            97
+          ]
+        },
+        {
+          "function_name": "__check_components",
+          "class_name": "Timeline",
+          "full_name": "Timeline.__check_components",
+          "start_line": 121,
+          "end_line": 140,
+          "lines_changed": [
+            140
+          ]
+        }
+      ],
+      "patch": "@@ -94,6 +94,7 @@ def add(self, chart: Base, time_point: str):\n         self.options.get(\"options\").append(\r\n             {\r\n                 \"backgroundColor\": chart.options.get(\"backgroundColor\"),\r\n+                \"legend\": chart.options.get(\"legend\"),\r\n                 \"series\": chart.options.get(\"series\"),\r\n                 \"xAxis\": chart.options.get(\"xAxis\"),\r\n                 \"yAxis\": chart.options.get(\"yAxis\"),\r\n@@ -136,9 +137,4 @@ def __check_components(self, chart: Base):\n         for component in components:\r\n             c = chart.options.get(component, None)\r\n             if c is not None:\r\n-                # eg: legend in timeline\r\n-                base_option_component = self.options.get(\"baseOption\").get(component)\r\n-                if base_option_component and isinstance(c, Sequence):\r\n-                    base_option_component.extend(c)\r\n-                else:\r\n-                    self.options.get(\"baseOption\").update({component: c})\r\n+                self.options.get(\"baseOption\").update({component: c})\r"
+    },
+    {
+      "filename": "pyecharts/options/global_options.py",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 24,
+      "functions_modified": [],
+      "patch": "@@ -1,6 +1,7 @@\n from ..globals import CurrentConfig, RenderType, ThemeType\r\n from ..options.series_options import (\r\n     BasicOpts,\r\n+    AnimationOpts,\r\n     AreaStyleOpts,\r\n     ItemStyleOpts,\r\n     JSFunc,\r\n@@ -18,30 +19,6 @@\n )\r\n \r\n \r\n-class AnimationOpts(BasicOpts):\r\n-    def __init__(\r\n-        self,\r\n-        animation: bool = True,\r\n-        animation_threshold: Numeric = 2000,\r\n-        animation_duration: Union[Numeric, JSFunc] = 1000,\r\n-        animation_easing: Union[str] = \"cubicOut\",\r\n-        animation_delay: Union[Numeric, JSFunc] = 0,\r\n-        animation_duration_update: Union[Numeric, JSFunc] = 300,\r\n-        animation_easing_update: Union[Numeric] = \"cubicOut\",\r\n-        animation_delay_update: Union[Numeric, JSFunc] = 0,\r\n-    ):\r\n-        self.opts: dict = {\r\n-            \"animation\": animation,\r\n-            \"animationThreshold\": animation_threshold,\r\n-            \"animationDuration\": animation_duration,\r\n-            \"animationEasing\": animation_easing,\r\n-            \"animationDelay\": animation_delay,\r\n-            \"animationDurationUpdate\": animation_duration_update,\r\n-            \"animationEasingUpdate\": animation_easing_update,\r\n-            \"animationDelayUpdate\": animation_delay_update,\r\n-        }\r\n-\r\n-\r\n class AriaLabelOpts(BasicOpts):\r\n     def __init__(\r\n         self,\r"
+    },
+    {
+      "filename": "pyecharts/options/series_options.py",
+      "status": "modified",
+      "additions": 36,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "__init__",
+          "class_name": "AnimationOpts",
+          "full_name": "AnimationOpts.__init__",
+          "start_line": 20,
+          "end_line": 40,
+          "lines_changed": [
+            20,
+            21,
+            22,
+            23,
+            24,
+            25,
+            26,
+            27,
+            28,
+            29,
+            30,
+            31,
+            32,
+            33,
+            34,
+            35,
+            36,
+            37,
+            38,
+            39,
+            40
+          ]
+        },
+        {
+          "function_name": "__init__",
+          "class_name": "MarkPointOpts",
+          "full_name": "MarkPointOpts.__init__",
+          "start_line": 237,
+          "end_line": 253,
+          "lines_changed": [
+            243,
+            252,
+            253
+          ]
+        },
+        {
+          "function_name": "__init__",
+          "class_name": "MarkLineOpts",
+          "full_name": "MarkLineOpts.__init__",
+          "start_line": 289,
+          "end_line": 311,
+          "lines_changed": [
+            298,
+            310,
+            311
+          ]
+        },
+        {
+          "function_name": "__init__",
+          "class_name": "MarkAreaOpts",
+          "full_name": "MarkAreaOpts.__init__",
+          "start_line": 348,
+          "end_line": 364,
+          "lines_changed": [
+            354,
+            363,
+            364
+          ]
+        }
+      ],
+      "patch": "@@ -16,6 +16,30 @@ def get(self, key: str) -> Any:\n         return self.opts.get(key)\n \n \n+class AnimationOpts(BasicOpts):\n+    def __init__(\n+        self,\n+        animation: bool = True,\n+        animation_threshold: Numeric = 2000,\n+        animation_duration: Union[Numeric, JSFunc] = 1000,\n+        animation_easing: Union[str] = \"cubicOut\",\n+        animation_delay: Union[Numeric, JSFunc] = 0,\n+        animation_duration_update: Union[Numeric, JSFunc] = 300,\n+        animation_easing_update: Union[Numeric] = \"cubicOut\",\n+        animation_delay_update: Union[Numeric, JSFunc] = 0,\n+    ):\n+        self.opts: dict = {\n+            \"animation\": animation,\n+            \"animationThreshold\": animation_threshold,\n+            \"animationDuration\": animation_duration,\n+            \"animationEasing\": animation_easing,\n+            \"animationDelay\": animation_delay,\n+            \"animationDurationUpdate\": animation_duration_update,\n+            \"animationEasingUpdate\": animation_easing_update,\n+            \"animationDelayUpdate\": animation_delay_update,\n+        }\n+\n+\n class ItemStyleOpts(BasicOpts):\n     def __init__(\n         self,\n@@ -216,6 +240,7 @@ def __init__(\n         symbol: Optional[str] = None,\n         symbol_size: Union[None, Numeric] = None,\n         label_opts: LabelOpts = LabelOpts(position=\"inside\", color=\"#fff\"),\n+        animation_opts: Union[AnimationOpts, dict, None] = None,\n     ):\n         self.opts: dict = {\n             \"symbol\": symbol,\n@@ -224,6 +249,9 @@ def __init__(\n             \"data\": data,\n         }\n \n+        if animation_opts:\n+            self.opts.update(**animation_opts.opts)\n+\n \n class MarkLineItem(BasicOpts):\n     def __init__(\n@@ -267,6 +295,7 @@ def __init__(\n         precision: int = 2,\n         label_opts: LabelOpts = LabelOpts(),\n         linestyle_opts: Union[LineStyleOpts, dict, None] = None,\n+        animation_opts: Union[AnimationOpts, dict, None] = None,\n     ):\n         self.opts: dict = {\n             \"silent\": is_silent,\n@@ -278,6 +307,9 @@ def __init__(\n             \"data\": data,\n         }\n \n+        if animation_opts:\n+            self.opts.update(**animation_opts.opts)\n+\n \n class MarkAreaItem(BasicOpts):\n     def __init__(\n@@ -319,6 +351,7 @@ def __init__(\n         label_opts: LabelOpts = LabelOpts(),\n         data: Sequence[Union[MarkAreaItem, Sequence, dict]] = None,\n         itemstyle_opts: ItemStyleOpts = None,\n+        animation_opts: Union[AnimationOpts, dict, None] = None,\n     ):\n         self.opts: dict = {\n             \"silent\": is_silent,\n@@ -327,6 +360,9 @@ def __init__(\n             \"itemStyle\": itemstyle_opts,\n         }\n \n+        if animation_opts:\n+            self.opts.update(**animation_opts.opts)\n+\n \n class EffectOpts(BasicOpts):\n     def __init__("
+    },
+    {
+      "filename": "test/test_base.py",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "functions_modified": [],
+      "patch": "@@ -6,7 +6,7 @@\n from pyecharts.options import InitOpts, RenderOpts\n from pyecharts.globals import CurrentConfig\n from pyecharts.charts.base import Base, default\n-from pyecharts.options.global_options import AnimationOpts\n+from pyecharts.options.series_options import AnimationOpts\n \n \n class TestBaseClass(unittest.TestCase):"
+    }
+  ],
+  "functions_modified": [
+    {
+      "function_name": "add",
+      "class_name": "Timeline",
+      "full_name": "Timeline.add",
+      "start_line": 88,
+      "end_line": 119,
+      "lines_changed": [
+        97
+      ]
+    },
+    {
+      "function_name": "__check_components",
+      "class_name": "Timeline",
+      "full_name": "Timeline.__check_components",
+      "start_line": 121,
+      "end_line": 140,
+      "lines_changed": [
+        140
+      ]
+    },
+    {
+      "function_name": "__init__",
+      "class_name": "AnimationOpts",
+      "full_name": "AnimationOpts.__init__",
+      "start_line": 20,
+      "end_line": 40,
+      "lines_changed": [
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40
+      ]
+    },
+    {
+      "function_name": "__init__",
+      "class_name": "MarkPointOpts",
+      "full_name": "MarkPointOpts.__init__",
+      "start_line": 237,
+      "end_line": 253,
+      "lines_changed": [
+        243,
+        252,
+        253
+      ]
+    },
+    {
+      "function_name": "__init__",
+      "class_name": "MarkLineOpts",
+      "full_name": "MarkLineOpts.__init__",
+      "start_line": 289,
+      "end_line": 311,
+      "lines_changed": [
+        298,
+        310,
+        311
+      ]
+    },
+    {
+      "function_name": "__init__",
+      "class_name": "MarkAreaOpts",
+      "full_name": "MarkAreaOpts.__init__",
+      "start_line": 348,
+      "end_line": 364,
+      "lines_changed": [
+        354,
+        363,
+        364
+      ]
+    }
+  ],
+  "step_plan": {
+    "steps": [
+      {
+        "operation": "Update import wiring to source AnimationOpts from series_options instead of global_options",
+        "file_to_modify": "pyecharts/charts/base.py",
+        "function_to_modify": null,
+        "reason": "AnimationOpts was relocated to align option-class ownership with other series-level options and avoid maintaining duplicate/incorrect import paths.",
+        "side_effects": "Any downstream code importing AnimationOpts via Base’s module dependencies may see import resolution changes; this also tightens coupling between charts/base.py and options/series_options.py."
+      },
+      {
+        "operation": "Fix Timeline.add to persist each chart’s legend into per-frame options",
+        "file_to_modify": "pyecharts/charts/composite_charts/timeline.py",
+        "function_to_modify": "Timeline.add",
+        "reason": "Timeline frames were not carrying legend configuration, causing legend-related bugs when switching time points (as reported in issue #2361).",
+        "side_effects": "Timeline rendering will now include per-frame legend config; if users relied on legend being only in baseOption, behavior may change (e.g., different legend merging/overrides across frames)."
+      },
+      {
+        "operation": "Simplify component merging logic to always update baseOption with the chart’s component config",
+        "file_to_modify": "pyecharts/charts/composite_charts/timeline.py",
+        "function_to_modify": "Timeline.__check_components",
+        "reason": "The previous special-case logic for Sequence components (e.g., legend) could incorrectly extend/merge structures and produce invalid or unexpected baseOption state; direct update is more predictable and fixes the timeline bug scenario.",
+        "side_effects": "Component merging semantics change: sequence components are no longer concatenated into existing baseOption entries, which can affect users who expected accumulation across charts."
+      },
+      {
+        "operation": "Remove the AnimationOpts class from global options and re-export/import it from series_options",
+        "file_to_modify": "pyecharts/options/global_options.py",
+        "function_to_modify": null,
+        "reason": "Centralize AnimationOpts in series_options to match how mark* options are defined and referenced, and to support adding animation configuration to markline/markarea/markpoint consistently (issue #2362).",
+        "side_effects": "External imports from pyecharts.options.global_options.AnimationOpts will break unless users update imports; internal modules must be adjusted to import from series_options."
+      },
+      {
+        "operation": "Add AnimationOpts definition into series_options as a BasicOpts-derived option container",
+        "file_to_modify": "pyecharts/options/series_options.py",
+        "function_to_modify": "AnimationOpts.__init__",
+        "reason": "Provide a canonical AnimationOpts implementation in the series options layer so it can be reused by series-level features (including mark* configs) and referenced consistently across the codebase.",
+        "side_effects": "Establishes a new public import path (pyecharts.options.series_options.AnimationOpts); may introduce name shadowing if other modules define AnimationOpts locally."
+      },
+      {
+        "operation": "Extend MarkPointOpts to accept animation_opts and merge its fields into the emitted options dict",
+        "file_to_modify": "pyecharts/options/series_options.py",
+        "function_to_modify": "MarkPointOpts.__init__",
+        "reason": "Enable animation configuration on markpoint by allowing callers to pass AnimationOpts and have its keys included in the final markPoint configuration (issue #2362).",
+        "side_effects": "MarkPoint JSON output now may include animation-related keys; if callers pass a plain dict instead of AnimationOpts, the current implementation expects an `.opts` attribute and may raise at runtime."
+      },
+      {
+        "operation": "Extend MarkLineOpts to accept animation_opts and merge its fields into the emitted options dict",
+        "file_to_modify": "pyecharts/options/series_options.py",
+        "function_to_modify": "MarkLineOpts.__init__",
+        "reason": "Enable animation configuration on markline by incorporating AnimationOpts fields into markLine configuration (issue #2362).",
+        "side_effects": "MarkLine JSON output now may include animation-related keys; same potential runtime mismatch exists if a dict/None is passed but treated as having `.opts`."
+      },
+      {
+        "operation": "Extend MarkAreaOpts to accept animation_opts and merge its fields into the emitted options dict",
+        "file_to_modify": "pyecharts/options/series_options.py",
+        "function_to_modify": "MarkAreaOpts.__init__",
+        "reason": "Enable animation configuration on markarea by incorporating AnimationOpts fields into markArea configuration (issue #2362).",
+        "side_effects": "MarkArea JSON output now may include animation-related keys; callers passing dicts may encounter attribute errors due to `.opts` access expectations."
+      },
+      {
+        "operation": "Update tests to import AnimationOpts from the new module path",
+        "file_to_modify": "test/test_base.py",
+        "function_to_modify": null,
+        "reason": "Keep the test suite aligned with the refactor that moved AnimationOpts from global_options to series_options so imports resolve and tests remain valid.",
+        "side_effects": "Any other tests (or external user tests) importing from the old location will similarly need updates; this also codifies the new public import path."
+      }
+    ],
+    "summary": "This PR fixes a Timeline component/legend handling bug and refactors option plumbing by moving AnimationOpts into series_options. It also adds animation configuration support to markpoint/markline/markarea and updates imports/tests accordingly."
+  }
+}

@@ -1,0 +1,170 @@
+{
+  "pr_number": 2195,
+  "repository": "Zulko/moviepy",
+  "title": "fixes for tests",
+  "body": "- set requred version of pillow to 9.5.0\r\n- test-ffmpeg-reader - change duration number to match video\r\n- ffmpeg-reader - add displaymatrix to be read as video rotation\r\n- config set binary to autodetect\r\n\r\n<!--\r\nPlease tick when you have done these. They don't need to all be completed before the PR is submitted.\r\nDelete them if they are not appropriate for this pull request.\r\n-->\r\n- [x] I have provided code that clearly demonstrates the bug and that only works correctly when applying this fix\r\n- [x] I have added suitable tests demonstrating a fixed bug or new/changed feature to the test suite in `tests/`\r\naddresses issue #2183",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T08:24:40.402512",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "setup.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    },
+    {
+      "filename": "moviepy/video/VideoClip.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    },
+    {
+      "filename": "tests/test_ffmpeg_reader.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "test_ffmpeg_parse_infos_decode_file",
+          "class_name": null,
+          "full_name": "test_ffmpeg_parse_infos_decode_file",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "test_ffmpeg_parse_video_rotation",
+          "class_name": null,
+          "full_name": "test_ffmpeg_parse_video_rotation",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "test_correct_video_rotation",
+          "class_name": null,
+          "full_name": "test_correct_video_rotation",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "moviepy/video/io/ffmpeg_reader.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "parse",
+          "class_name": "FFmpegInfosParser",
+          "full_name": "FFmpegInfosParser.parse",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "video_metadata_type_casting",
+          "class_name": "FFmpegInfosParser",
+          "full_name": "FFmpegInfosParser.video_metadata_type_casting",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "parse_duration",
+          "class_name": "FFmpegInfosParser",
+          "full_name": "FFmpegInfosParser.parse_duration",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "__init__",
+          "class_name": "FFMPEG_VideoReader",
+          "full_name": "FFMPEG_VideoReader.__init__",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "moviepy/config.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "(module-level) FFMPEG_BINARY initialization logic",
+          "class_name": null,
+          "full_name": "(module-level) FFMPEG_BINARY initialization logic",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Fixes test failures by aligning dependencies and FFmpeg-related parsing with real-world outputs: pin Pillow, correct duration expectations, add rotation detection via displaymatrix side-data, and default FFmpeg binary selection to autodetection.",
+    "steps": [
+      {
+        "operation": "Extend FFmpeg stderr parsing to detect rotation from displaymatrix side data and populate infos['video_rotation'] (falling back to existing 'rotate' metadata when present)",
+        "file_to_modify": "moviepy/video/io/ffmpeg_reader.py",
+        "function_to_modify": "FFmpegInfosParser.parse",
+        "reason": "Some FFmpeg builds report rotation via stream side-data (e.g., “displaymatrix: rotation of … degrees”) instead of stream metadata “rotate”. Tests and runtime behavior need consistent rotation detection regardless of which representation FFmpeg emits.",
+        "side_effects": "May change detected rotation for some files/FFmpeg versions; downstream width/height swap logic and any code that relies on infos['video_rotation'] will start working for displaymatrix-only cases; rotation-related tests may need updated/expanded expectations."
+      },
+      {
+        "operation": "Update metadata casting/normalization so rotation values extracted from either 'rotate' or displaymatrix parsing are consistently numeric (degrees) and comparable",
+        "file_to_modify": "moviepy/video/io/ffmpeg_reader.py",
+        "function_to_modify": "FFmpegInfosParser.video_metadata_type_casting",
+        "reason": "The parser currently type-casts only certain fields (notably 'rotate'); with displaymatrix-derived rotation introduced, the code should ensure the final stored rotation is a numeric degree value (and normalized if needed) so other components can safely use it.",
+        "side_effects": "Could surface previously silent parsing issues (e.g., unexpected string formats) and may require minor test adjustments if rotation rounding/normalization changes."
+      },
+      {
+        "operation": "Adjust duration parsing/selection logic used by ffmpeg_parse_infos so the returned duration matches the actual fixture video duration used in decode mode, improving test stability across FFmpeg outputs",
+        "file_to_modify": "moviepy/video/io/ffmpeg_reader.py",
+        "function_to_modify": "FFmpegInfosParser.parse_duration",
+        "reason": "The test suite indicates a mismatch between hardcoded expected durations and what FFmpeg reports/decodes for the fixture; duration extraction should be robust (e.g., prefer decoded 'time=' when decode_file=True, otherwise container 'Duration:') to avoid fragile expectations.",
+        "side_effects": "May change reported duration in some scenarios (especially VFR/stream-copy edge cases); could impact any user code that depends on the exact parsing behavior, and may require updating related tests."
+      },
+      {
+        "operation": "Ensure video reader initialization correctly applies rotation discovered via displaymatrix (including proper width/height swap for 90/270 and consistent angle conventions)",
+        "file_to_modify": "moviepy/video/io/ffmpeg_reader.py",
+        "function_to_modify": "FFMPEG_VideoReader.__init__",
+        "reason": "Once new rotation sources are parsed, the reader must apply them consistently; any differences in sign or normalization between 'rotate' and displaymatrix-derived angles must not break dimension correction and frame orientation logic.",
+        "side_effects": "Could alter the perceived size/orientation of rotated videos; might require updating golden expectations in rotation-related tests and could affect any downstream code that assumes pre-rotation dimensions."
+      },
+      {
+        "operation": "Update ffmpeg reader duration test expectations to match the fixture’s real decoded duration and the adjusted duration parsing behavior",
+        "file_to_modify": "tests/test_ffmpeg_reader.py",
+        "function_to_modify": "test_ffmpeg_parse_infos_decode_file",
+        "reason": "The PR notes the expected duration value in the test is incorrect for the current fixture video; tests should assert the correct duration returned by ffmpeg_parse_infos for decode and non-decode paths.",
+        "side_effects": "Tests become less brittle but will lock in the new expected value; if fixture video changes again, this test will need recalibration."
+      },
+      {
+        "operation": "Extend/adjust rotation parsing test to cover displaymatrix-derived rotation (and keep compatibility with existing 'rotate' metadata parsing)",
+        "file_to_modify": "tests/test_ffmpeg_reader.py",
+        "function_to_modify": "test_ffmpeg_parse_video_rotation",
+        "reason": "To prevent regressions, the test suite should explicitly validate that displaymatrix rotation is recognized and mapped into infos['video_rotation'] correctly, since this is a key new behavior in the PR.",
+        "side_effects": "May require adding a new test asset or simulating ffmpeg stderr output; if FFmpeg output varies across versions, assertions may need to be tolerant (e.g., normalized degrees)."
+      },
+      {
+        "operation": "Update end-to-end rotation correctness test to pass under the new rotation detection source (displaymatrix) and any duration/rotation normalization changes",
+        "file_to_modify": "tests/test_ffmpeg_reader.py",
+        "function_to_modify": "test_correct_video_rotation",
+        "reason": "Rotation correctness should be validated through the full read/write/re-read pipeline; changes in rotation detection can alter this behavior, so this test must reflect the updated rotation parsing and application rules.",
+        "side_effects": "May require updating expected dimensions/orientation checks; could expose differences across FFmpeg builds, potentially requiring conditional logic or looser assertions if variability is unavoidable."
+      }
+    ]
+  }
+}

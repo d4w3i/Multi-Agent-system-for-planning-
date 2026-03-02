@@ -1,0 +1,202 @@
+{
+  "pr_number": 1270,
+  "repository": "NVIDIA/Megatron-LM",
+  "title": "[ENHANCEMENT] Add z-loss",
+  "body": "z-loss regularization was shown to stabilize training by preventing logits in the last layer to explode: https://arxiv.org/abs/2309.14322\r\n\r\nThis PR: \r\n- allows one to add zloss regularization\r\n- since the total loss is not cross entropy anymore but cross entropy + zloss, this PR also allows one to additionally log the original cross-entropy and the z-loss",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T08:22:54.575697",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "megatron/training/arguments.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "parse_args",
+          "class_name": null,
+          "full_name": "parse_args",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_add_training_args",
+          "class_name": null,
+          "full_name": "_add_training_args",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "validate_args",
+          "class_name": null,
+          "full_name": "validate_args",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "megatron/core/models/common/language_module/language_module.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "compute_language_model_loss",
+          "class_name": "LanguageModule",
+          "full_name": "LanguageModule.compute_language_model_loss",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "megatron/core/models/gpt/gpt_model.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "forward",
+          "class_name": "GPTModel",
+          "full_name": "GPTModel.forward",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "megatron/training/training.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "train_step",
+          "class_name": null,
+          "full_name": "train_step",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "training_log",
+          "class_name": null,
+          "full_name": "training_log",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "megatron/legacy/model/gpt_model.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "post_language_model_processing",
+          "class_name": null,
+          "full_name": "post_language_model_processing",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "megatron/inference/gpt/loss_func.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "loss_func",
+          "class_name": null,
+          "full_name": "loss_func",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Add optional z-loss regularization to language-model training by augmenting the optimization loss as CE + (z_loss_coeff × z-loss) while separately reporting the original cross-entropy and the z-loss term. Wire the new coefficient through CLI args, compute z-loss where logits are available (core and legacy), and ensure training aggregation/logging surfaces the three metrics consistently.",
+    "steps": [
+      {
+        "operation": "Register CLI flag `--z-loss-coeff` and expose it on `args`",
+        "file_to_modify": "megatron/training/arguments.py",
+        "function_to_modify": "_add_training_args",
+        "reason": "Training needs a user-configurable coefficient to enable/disable z-loss regularization (default 0.0). Placing it in the training arg group keeps it alongside other optimization/loss knobs and distinct from existing MoE router z-loss flags.",
+        "side_effects": "Adds a new public CLI surface area; requires updating any docs/examples that enumerate supported args. No behavioral change when left at default."
+      },
+      {
+        "operation": "Thread new argument through the argument parsing path so downstream modules can read `args.z_loss_coeff`",
+        "file_to_modify": "megatron/training/arguments.py",
+        "function_to_modify": "parse_args",
+        "reason": "Ensures the new flag is actually parsed and present in the returned args/config object used by model/loss code paths.",
+        "side_effects": "If this repo snapshots/prints args for reproducibility, output will include the new field; otherwise no runtime impact."
+      },
+      {
+        "operation": "Validate and normalize z-loss settings (non-negative, default behavior)",
+        "file_to_modify": "megatron/training/arguments.py",
+        "function_to_modify": "validate_args",
+        "reason": "Prevents silent misconfiguration (e.g., negative coeff) and guarantees baseline equivalence when `z_loss_coeff==0`.",
+        "side_effects": "Invalid configs that previously would have run will now error early; may need to adjust existing launcher scripts if they pass unexpected values."
+      },
+      {
+        "operation": "Compute per-token z-loss from logits alongside CE and return an optimization loss that includes it",
+        "file_to_modify": "megatron/core/models/common/language_module/language_module.py",
+        "function_to_modify": "LanguageModule.compute_language_model_loss",
+        "reason": "This is the centralized Megatron-Core loss primitive that already computes vocab-parallel cross entropy; adding z-loss here minimizes duplication and keeps behavior consistent for fused/unfused CE paths while having access to logits. It should produce (a) CE tokens, (b) z-loss tokens, and (c) total tokens = CE + coeff*z.",
+        "side_effects": "Must be tensor-parallel safe: if z-loss depends on a full-vocab `logsumexp`, it may require an all-reduce or a vocab-parallel logsumexp utility. Any change to the return structure may require adjusting callers; prefer preserving the primary return as the optimization loss tensor and exposing CE/z via an auxiliary dict/side-channel to avoid widespread breakage."
+      },
+      {
+        "operation": "Plumb CE and z-loss reporting from the model forward so the training step can log both while optimizing total loss",
+        "file_to_modify": "megatron/core/models/gpt/gpt_model.py",
+        "function_to_modify": "GPTModel.forward",
+        "reason": "`GPTModel.forward` is the point where logits exist (post-process stage) and where loss outputs are formed when labels are provided. It should ensure the optimization target is total loss, while also returning (or otherwise making available) separate scalars/tensors for original CE and z-loss for logging.",
+        "side_effects": "Potentially changes the forward output contract (e.g., returning an additional loss dict). Any custom `forward_step_func` implementations or downstream wrappers may need updates to consume the extra metrics; must not break pipeline-parallel stages that don’t have logits (only last stage should compute/report these losses)."
+      },
+      {
+        "operation": "Aggregate microbatch metrics for total/CE/z-loss consistently across data-parallel and pipeline-parallel execution",
+        "file_to_modify": "megatron/training/training.py",
+        "function_to_modify": "train_step",
+        "reason": "Once forward steps emit separate keys (e.g., `lm loss`, `z loss`, `loss`/`total loss`), `train_step` must reduce/accumulate them correctly (including existing tuple (numerator,denominator) conventions) so logging reports meaningful averages.",
+        "side_effects": "Incorrect handling can skew reported values or break logging when mixing scalar and (num,den) formats. May require updating any tests or scripts that expect a fixed set of loss_dict keys."
+      },
+      {
+        "operation": "Ensure training logs include optimization loss plus separate CE and z-loss terms with stable naming",
+        "file_to_modify": "megatron/training/training.py",
+        "function_to_modify": "training_log",
+        "reason": "`training_log` is the centralized sink that prints/writes whatever is in `loss_dict`. Confirm it logs the new keys (and, if necessary, add formatting/aliasing so users see `total loss`, `lm loss` (CE), and `z loss` clearly).",
+        "side_effects": "Log output and TensorBoard/W&B series will gain new curves; dashboards/alerts that assume only `lm loss` may need adjustments. Minimal runtime overhead."
+      },
+      {
+        "operation": "Add z-loss to the legacy GPT loss path and expose separate CE and z-loss metrics for logging",
+        "file_to_modify": "megatron/legacy/model/gpt_model.py",
+        "function_to_modify": "post_language_model_processing",
+        "reason": "Legacy training entrypoints compute logits and CE here; parity requires applying the same regularization and reporting so users get consistent behavior regardless of core vs legacy model path.",
+        "side_effects": "Legacy loss semantics will change when `z_loss_coeff>0` (optimization target differs). Must ensure tensor-parallel correctness in legacy vocab-parallel setup and that any legacy-specific loss dict keys align with the new logging conventions."
+      },
+      {
+        "operation": "Extend inference/training loss wrapper to optimize total loss while reporting CE and z-loss (patterned after existing `lm loss` reporting)",
+        "file_to_modify": "megatron/inference/gpt/loss_func.py",
+        "function_to_modify": "loss_func",
+        "reason": "This utility already follows the pattern of returning an optimization loss distinct from the reported `lm loss` (e.g., for KD). Adding z-loss here ensures any workflows that rely on `loss_func` (evaluation, specialized training, export-time loss computation) can enable z-loss and still log CE and z-loss separately.",
+        "side_effects": "May change reported metrics in inference/eval outputs when enabled; must ensure default (`z_loss_coeff==0`) yields identical results. If this path is used in scripts expecting a fixed metric set, they may need to tolerate the extra keys."
+      }
+    ]
+  }
+}

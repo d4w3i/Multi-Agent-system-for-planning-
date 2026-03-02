@@ -1,0 +1,59 @@
+{
+  "pr_number": 1002,
+  "repository": "FoundationAgents/OpenManus",
+  "title": "remove unnecessary actions while ensuring required tool calls",
+  "body": "**Features**\r\n- remove unnecessary actions while ensuring required tool calls\r\n\r\n**Feature Docs**\r\nI am struggling to understand the rationale behind handing over the decision to continue processing to the act method and throwing an exception when `tool_choices` is set to `required` and `tool_calls` is empty. In my opinion, it would be more appropriate to simply return `False` in this scenario, as the current approach seems unnecessary and could potentially be removed.\r\n\r\n**Influence**\r\nno influence\r\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-02-25T15:50:29.543723",
+    "extractor_version": "1.0.0",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "app/agent/toolcall.py",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 5,
+      "functions_modified": [
+        {
+          "function_name": "think",
+          "class_name": "ToolCallAgent",
+          "full_name": "ToolCallAgent.think",
+          "start_line": 39,
+          "end_line": 129,
+          "lines_changed": [
+            114,
+            115
+          ]
+        }
+      ],
+      "patch": "@@ -111,8 +111,8 @@ async def think(self) -> bool:\n             )\n             self.memory.add_message(assistant_msg)\n \n-            if self.tool_choices == ToolChoice.REQUIRED and not self.tool_calls:\n-                return True  # Will be handled in act()\n+            if self.tool_choices == ToolChoice.REQUIRED:\n+                return bool(self.tool_calls)\n \n             # For 'auto' mode, continue with content if no commands but content exists\n             if self.tool_choices == ToolChoice.AUTO and not self.tool_calls:\n@@ -131,9 +131,6 @@ async def think(self) -> bool:\n     async def act(self) -> str:\n         \"\"\"Execute tool calls and handle their results\"\"\"\n         if not self.tool_calls:\n-            if self.tool_choices == ToolChoice.REQUIRED:\n-                raise ValueError(TOOL_CALL_REQUIRED)\n-\n             # Return last message content if no tool calls\n             return self.messages[-1].content or \"No content or commands to execute\"\n "
+    }
+  ],
+  "functions_modified": [
+    {
+      "function_name": "think",
+      "class_name": "ToolCallAgent",
+      "full_name": "ToolCallAgent.think",
+      "start_line": 39,
+      "end_line": 129,
+      "lines_changed": [
+        114,
+        115
+      ]
+    }
+  ],
+  "step_plan": {
+    "steps": [
+      {
+        "operation": "Adjust the tool-call gating logic so REQUIRED mode only proceeds when tool calls are present, and remove the redundant REQUIRED-mode exception from execution.",
+        "file_to_modify": "app/agent/toolcall.py",
+        "function_to_modify": "think",
+        "reason": "Previously, `think()` returned `True` even when `ToolChoice.REQUIRED` had no `tool_calls`, deferring enforcement to `act()` which then raised `ValueError`. This PR moves the decision to continue processing into `think()` by returning `bool(self.tool_calls)` for REQUIRED mode, eliminating an unnecessary control-flow hop and avoiding raising an exception for a condition that can be handled by a simple stop/continue signal.",
+        "side_effects": "Callers that relied on `act()` raising `ValueError(TOOL_CALL_REQUIRED)` will no longer see that exception; instead the agent will stop earlier (since `think()` returns `False`) when REQUIRED mode yields no tool calls. Any orchestration loop that interprets `think()`’s boolean differently may need to ensure it correctly terminates or retries when `False` is returned in REQUIRED mode."
+      }
+    ],
+    "summary": "Removes unnecessary control flow by enforcing `ToolChoice.REQUIRED` tool-call presence in `think()` and eliminating the corresponding exception path in `act()`, so processing only continues when required tool calls exist."
+  }
+}

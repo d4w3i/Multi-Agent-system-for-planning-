@@ -1,0 +1,35 @@
+{
+  "pr_number": 954,
+  "repository": "google-deepmind/alphafold",
+  "title": "Fix deprecation warning / error from BioPython",
+  "body": "Hi,\r\n\r\n   Here is a small PR to fix a deprecation issue related to BioPython. It would be great if y'all could run this through CI to make sure it doesn't have any side effects, but BioPython _seems_ to promise it's a safe change.\r\n\r\n## Description:\r\nThis PR swaps the BioPython.SCOPData module import in the mmcif_parsing module for BioPython.PDBData.\r\n\r\n## Related issue:\r\nSee https://github.com/biopython/biopython/blob/master/DEPRECATED.rst#biodatascopdata for information about the SCOPData deprecation.\r\n\r\n## Motivation:\r\nSCOPData was removed in version 1.82 of BioPython, so its usage throws an error when imported. This change allows upgrading BioPython beyond version 1.79, which brings improvements in security and stability. I had been trying to use AlphaFold2 with an updated BioPython but kept receiving deprecation warnings / errors depending on which version I was using.\r\n\r\n## Verification\r\n  [X] Package still installs after change\r\n  [X] `run_alphafold_test.py` returns `ok` after this change.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T00:59:34.624062",
+    "extractor_version": "1.0.0",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "alphafold/data/mmcif_parsing.py",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "functions_modified": [],
+      "patch": "@@ -21,7 +21,7 @@\n \n from absl import logging\n from Bio import PDB\n-from Bio.Data import SCOPData\n+from Bio.Data import PDBData\n \n # Type aliases:\n ChainId = str"
+    }
+  ],
+  "functions_modified": [],
+  "step_plan": {
+    "steps": [
+      {
+        "operation": "Replace deprecated BioPython SCOPData import with PDBData in the mmCIF parsing module",
+        "file_to_modify": "alphafold/data/mmcif_parsing.py",
+        "function_to_modify": null,
+        "reason": "Bio.Data.SCOPData was deprecated and removed in BioPython >= 1.82, causing deprecation warnings and then import-time errors; switching to Bio.Data.PDBData preserves compatibility with newer BioPython versions while keeping equivalent data access for PDB-related constants.",
+        "side_effects": "Any code in this module (or downstream imports) that referenced the name `SCOPData` must now reference `PDBData` instead; if other modules relied on `mmcif_parsing` re-exporting/holding `SCOPData`, they could break at runtime unless already using the updated name (though this specific diff suggests only the import name changed)."
+      }
+    ],
+    "summary": "Update AlphaFold’s mmCIF parsing module to import BioPython’s non-deprecated PDBData instead of SCOPData, fixing deprecation warnings and preventing import errors on newer BioPython versions."
+  }
+}

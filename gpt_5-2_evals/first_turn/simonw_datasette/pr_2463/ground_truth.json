@@ -1,0 +1,93 @@
+{
+  "pr_number": 2463,
+  "repository": "simonw/datasette",
+  "title": "Use the event_loop fixture",
+  "body": "Refs:\r\n- https://github.com/simonw/datasette/issues/2461#issuecomment-2634920351\r\n\r\n<!-- readthedocs-preview datasette start -->\r\n----\n📚 Documentation preview 📚: https://datasette--2463.org.readthedocs.build/en/2463/\n\r\n<!-- readthedocs-preview datasette end -->",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T01:05:05.333321",
+    "extractor_version": "1.0.0",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "tests/test_auth.py",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "functions_modified": [
+        {
+          "function_name": "test_cli_create_token",
+          "class_name": null,
+          "full_name": "test_cli_create_token",
+          "start_line": 310,
+          "end_line": 339,
+          "lines_changed": [
+            310
+          ]
+        }
+      ],
+      "patch": "@@ -307,7 +307,7 @@ async def test_auth_with_dstok_token(ds_client, scenario, should_work):\n \n \n @pytest.mark.parametrize(\"expires\", (None, 1000, -1000))\n-def test_cli_create_token(app_client, expires):\n+def test_cli_create_token(event_loop, app_client, expires):\n     secret = app_client.ds._secret\n     runner = CliRunner(mix_stderr=False)\n     args = [\"create-token\", \"--secret\", secret, \"test\"]"
+    },
+    {
+      "filename": "tests/test_permissions.py",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 2,
+      "functions_modified": [
+        {
+          "function_name": "test_cli_create_token",
+          "class_name": null,
+          "full_name": "test_cli_create_token",
+          "start_line": 986,
+          "end_line": 1012,
+          "lines_changed": [
+            986
+          ]
+        }
+      ],
+      "patch": "@@ -929,7 +929,6 @@ async def test_actor_endpoint_allows_any_token():\n     }\n \n \n-@pytest.mark.serial\n @pytest.mark.parametrize(\n     \"options,expected\",\n     (\n@@ -984,7 +983,7 @@ async def test_actor_endpoint_allows_any_token():\n         ),\n     ),\n )\n-def test_cli_create_token(options, expected):\n+def test_cli_create_token(event_loop, options, expected):\n     runner = CliRunner()\n     result1 = runner.invoke(\n         cli,"
+    }
+  ],
+  "functions_modified": [
+    {
+      "function_name": "test_cli_create_token",
+      "class_name": null,
+      "full_name": "test_cli_create_token",
+      "start_line": 310,
+      "end_line": 339,
+      "lines_changed": [
+        310
+      ]
+    },
+    {
+      "function_name": "test_cli_create_token",
+      "class_name": null,
+      "full_name": "test_cli_create_token",
+      "start_line": 986,
+      "end_line": 1012,
+      "lines_changed": [
+        986
+      ]
+    }
+  ],
+  "step_plan": {
+    "steps": [
+      {
+        "operation": "Update the CLI token creation test to request pytest-asyncio's event loop fixture",
+        "file_to_modify": "tests/test_auth.py",
+        "function_to_modify": "test_cli_create_token",
+        "reason": "Ensure the test runs with an explicit asyncio event loop available (matching pytest-asyncio expectations) when the CLI path touches async-aware application state via the app_client fixture.",
+        "side_effects": "Alters fixture resolution and test setup order for this test; may surface hidden event-loop scoping issues if other fixtures assume a different loop lifecycle."
+      },
+      {
+        "operation": "Remove serial-only execution marker and require the event_loop fixture for the CLI token creation parametrized test",
+        "file_to_modify": "tests/test_permissions.py",
+        "function_to_modify": "test_cli_create_token",
+        "reason": "Replace reliance on serialized execution with an explicit event loop fixture to stabilize the test environment and avoid flakiness related to asyncio loop availability across parametrized runs.",
+        "side_effects": "Test will no longer be forced to run in isolation; can increase concurrency with other tests, which may expose shared-state coupling or race conditions in CLI/app initialization."
+      }
+    ],
+    "summary": "This PR updates CLI token creation tests to explicitly depend on pytest-asyncio's event_loop fixture, and removes a serial marker, improving reliability of tests that interact with async-aware application components."
+  }
+}

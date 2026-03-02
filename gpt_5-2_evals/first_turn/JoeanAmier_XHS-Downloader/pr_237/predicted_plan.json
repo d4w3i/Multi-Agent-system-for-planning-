@@ -1,0 +1,80 @@
+{
+  "pr_number": 237,
+  "repository": "JoeanAmier/XHS-Downloader",
+  "title": "fix can't run by source code",
+  "body": "the error is:    fix NoMatches: No nodes match <class 'textual.widgets._rich_log.RichLog'> on XHSDownloader\n\nExplore the source code to identify the files and functions to modify.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T08:21:14.206907",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "source/TUI/app.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "on_mount",
+          "class_name": "XHSDownloader",
+          "full_name": "XHSDownloader.on_mount",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "source/TUI/index.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "compose",
+          "class_name": "Index",
+          "full_name": "Index.compose",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "on_mount",
+          "class_name": "Index",
+          "full_name": "Index.on_mount",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Fixes a Textual startup crash (`NoMatches` for `RichLog`) when running from source by making RichLog lookup lifecycle-safe and deterministic. The plan guards/defers the startup query, adds a stable RichLog selector on the Index screen, and ensures settings validation logs only after the Index widget tree is mounted.",
+    "steps": [
+      {
+        "operation": "Make RichLog lookup at startup resilient (guard query / defer validation)",
+        "file_to_modify": "source/TUI/app.py",
+        "function_to_modify": "XHSDownloader.on_mount",
+        "reason": "`self.screen.query_one(RichLog)` can run before the Index screen’s widget tree is fully mounted/active, raising Textual `NoMatches` and crashing the app when running from source. Wrap the lookup in `try/except` (catching Textual’s `NoMatches`) and/or defer the settings check until after the screen is mounted; pass `None` (or a safe fallback logger target) into the settings callback when RichLog isn’t available.",
+        "side_effects": "Startup flow changes slightly (settings validation/log message may occur a tick later). If other code relied on immediate settings validation, it may now happen after the screen push/mount. Add/adjust tests/manual checks for first-run (missing settings keys) and confirm no crash + message still appears (RichLog when available, console fallback otherwise)."
+      },
+      {
+        "operation": "Assign a stable selector to the Index RichLog to enable deterministic querying",
+        "file_to_modify": "source/TUI/index.py",
+        "function_to_modify": "Index.compose",
+        "reason": "Type-based querying (`query_one(RichLog)`) is more brittle during early lifecycle and can collide with multiple RichLog instances across screens. Giving the RichLog an explicit `id` (e.g., `id=\"app_log\"`) allows `query_one(\"#app_log\")` from the correct screen and reduces timing/ambiguity issues.",
+        "side_effects": "Any CSS, bindings, or code that assumes the previous structure may need updating if it starts using the new `id`. If additional screens also define RichLog, ensure IDs remain unique per screen context (or query within the Index screen only)."
+      },
+      {
+        "operation": "Ensure settings validation/log wiring happens when the Index screen is mounted and RichLog is guaranteed to exist",
+        "file_to_modify": "source/TUI/index.py",
+        "function_to_modify": "Index.on_mount",
+        "reason": "Moving (or triggering) the settings check from within `Index.on_mount` ensures `self.query_one(RichLog)` succeeds because the screen has been mounted and its widget tree is present. This avoids the startup race between `push_screen()` and querying the widget tree from the app’s `on_mount`. If the app must own validation, `Index.on_mount` can instead expose the RichLog reference or call back into the app after mount.",
+        "side_effects": "Behavior changes in when/where missing-settings messages are emitted (now tied to Index mounting). If other screens are pushed first in some modes, validation might be delayed until Index appears unless explicitly handled. Verify monitor/other screens still function and that the log destination is correct after navigation."
+      }
+    ]
+  }
+}

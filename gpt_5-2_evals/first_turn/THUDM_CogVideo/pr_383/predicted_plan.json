@@ -1,0 +1,57 @@
+{
+  "pr_number": 383,
+  "repository": "THUDM/CogVideo",
+  "title": "fix deprecation of clear_objs_and_retain_memory",
+  "body": "The API of diffusers `clear_objs_and_retain_memory` has been deprecated in huggingface/diffusers#9543 and is replaced with `free_memory`. Therefore, the corresponding parts in the LoRA training script need to be adjusted to adapt to the latest version of diffusers.\n\nExplore the source code to identify the files and functions to modify.",
+  "extraction_metadata": {
+    "extracted_at": "2026-02-25T20:41:44.340865",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "train_cogvideox_lora.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "log_validation",
+          "class_name": null,
+          "full_name": "log_validation",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "(module import section)",
+          "class_name": null,
+          "full_name": "(module import section)",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Update the CogVideoX LoRA training script to handle the diffusers memory-cleanup API change by replacing deprecated `clear_objs_and_retain_memory` usage with the newer `free_memory` utility (optionally via a compatibility shim). This keeps validation/inference cleanup working on recent diffusers versions and prevents import/runtime errors.",
+    "steps": [
+      {
+        "operation": "Replace deprecated diffusers training-utils import with a backwards-compatible shim that prefers `free_memory` and falls back to `clear_objs_and_retain_memory`",
+        "file_to_modify": "train_cogvideox_lora.py",
+        "function_to_modify": "main",
+        "reason": "Newer diffusers versions removed/deprecated `clear_objs_and_retain_memory` in favor of `free_memory`; the script must import a cleanup helper that works across diffusers versions so validation doesn’t crash with ImportError.",
+        "side_effects": "Changes module-level import behavior (implemented near the top of the script but reflected in this plan as part of the script’s main execution path); if the shim is wrong it will fail early at import time. No effect on training math, only on memory cleanup utilities used during validation/inference."
+      },
+      {
+        "operation": "Update validation teardown to call the new memory cleanup utility (`free_memory`) with the correct signature, retaining support for older diffusers if needed",
+        "file_to_modify": "train_cogvideox_lora.py",
+        "function_to_modify": "log_validation",
+        "reason": "`log_validation` is the only runtime call site that currently invokes `clear_objs_and_retain_memory([pipe])` after generating videos; it must be migrated to `free_memory(...)` (or a shim) to avoid runtime failures and to properly release VRAM after validation sampling.",
+        "side_effects": "Affects GPU memory release behavior after validation runs; incorrect call signature may raise during validation or reduce memory freeing effectiveness, potentially causing later OOMs. Should be exercised by running training with validation enabled (e.g., `--validation_prompt ... --validation_epochs ...`) and ensuring training continues after validation."
+      }
+    ]
+  }
+}

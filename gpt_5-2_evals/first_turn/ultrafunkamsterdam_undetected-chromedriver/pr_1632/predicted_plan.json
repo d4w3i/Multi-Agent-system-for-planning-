@@ -1,0 +1,80 @@
+{
+  "pr_number": 1632,
+  "repository": "ultrafunkamsterdam/undetected-chromedriver",
+  "title": "fixed options not having headless attribute",
+  "body": "Fixes errors:\n\nline 398, in __init__\n    if headless or options.headless:\n                   ^^^^^^^^^^^^^^^^\nAttributeError: 'ChromeOptions' object has no attribute 'headless'\n\n\nline 488, in __init__\n    if options.headless:\n       ^^^^^^^^^^^^^^^^\nAttributeError: 'ChromeOptions' object has no attribute 'headless'",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T08:42:06.158336",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "undetected_chromedriver/__init__.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "__init__",
+          "class_name": "Chrome",
+          "full_name": "Chrome.__init__",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_configure_headless",
+          "class_name": "Chrome",
+          "full_name": "Chrome._configure_headless",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "undetected_chromedriver/options.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "ChromeOptions",
+          "class_name": null,
+          "full_name": "ChromeOptions",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Fixes crashes when initializing `uc.Chrome(...)` with options objects that do not define a `.headless` attribute by making headless detection attribute-safe and adding a compatibility `.headless` property to the project’s `ChromeOptions`. Ensures headless-specific configuration runs only when headless is actually enabled (via kwarg or headless CLI arguments).",
+    "steps": [
+      {
+        "operation": "Make headless detection robust by avoiding direct `options.headless` access; compute a single `is_headless` flag from (a) `headless` kwarg, (b) an optional `options.headless` attribute via `getattr`, and (c) presence of `--headless` / `--headless=new` in options arguments; use this flag everywhere in `__init__` where headless behavior is decided.",
+        "file_to_modify": "undetected_chromedriver/__init__.py",
+        "function_to_modify": "Chrome.__init__",
+        "reason": "The reported `AttributeError` originates from unconditional reads of `options.headless`. Some Selenium/UC option objects don’t expose this attribute, but headless still needs to be detected reliably from either the explicit `headless=` parameter or headless CLI args already present in options.",
+        "side_effects": "May slightly change headless activation precedence (now explicitly defined by the computed `is_headless` rule). Requires verifying that any existing code paths that previously depended on `options.headless` still behave the same. Add/adjust tests or a minimal runtime check to confirm no crash when passing Selenium’s `ChromeOptions`."
+      },
+      {
+        "operation": "Change headless hardening to accept an explicit `is_headless` decision from `__init__` and only apply headless-specific configuration when that flag is true; remove any internal assumptions that `options.headless` exists (e.g., don’t re-check `options.headless` inside this method).",
+        "file_to_modify": "undetected_chromedriver/__init__.py",
+        "function_to_modify": "Chrome._configure_headless",
+        "reason": "`_configure_headless` is currently gated (directly or indirectly) by `if options.headless:` patterns, which can crash or mis-detect headless. Centralizing headless detection in `__init__` and passing/using a boolean avoids attribute reliance and keeps behavior consistent.",
+        "side_effects": "If `_configure_headless` previously inferred headless from options state, it will now follow the `__init__` computation. Ensure downstream behavior (flags, user-agent tweaks, window sizing, etc.) still occurs only in headless mode. Might require updating any internal callers if they exist."
+      },
+      {
+        "operation": "Add a compatibility `headless` property (and optional setter) on the project’s `ChromeOptions` that reflects whether headless is enabled based on the presence of `--headless` / `--headless=new` arguments (and, if a setter is provided, adds/removes the appropriate argument rather than setting a bare attribute).",
+        "file_to_modify": "undetected_chromedriver/options.py",
+        "function_to_modify": "ChromeOptions",
+        "reason": "Even with safe `getattr` usage, providing a stable `.headless` API on this project’s own options type reduces future regressions and improves compatibility with code that expects `options.headless` to exist (including older internal logic and user code).",
+        "side_effects": "Potential behavior change for users who previously set `options.headless = True` expecting it to work (if you implement a setter, it should now work; if not, document the preferred `add_argument('--headless...')` path). Ensure the property implementation matches how arguments are stored (`arguments` list vs other Selenium internals) and doesn’t break serialization/copying of options."
+      }
+    ]
+  }
+}

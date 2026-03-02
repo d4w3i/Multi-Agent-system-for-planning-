@@ -1,0 +1,42 @@
+{
+  "pr_number": 1264,
+  "repository": "XiaoMi/ha_xiaomi_home",
+  "title": "feat: do not subscribe BLE device online/offline state message",
+  "body": "# Why\r\nIn the issue #1251, MIoT cloud published an offline state message when the device became offline, but did not publish an online state message when the device became online. So, even xiaomi_home got properties_changed and event_occured message, the device entities was still shown unavailable.\r\nMIoT cloud can not accurately determine the BLE device's online/offline state. Also see #1207. \r\n\r\n# Changed\r\n- Do not subscribe BLE device online/offline state message. Assume that all BLE devices are online.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T09:52:16.583391",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "custom_components/xiaomi_home/miot/miot_client.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "__on_mips_cloud_state_changed",
+          "class_name": "MIoTClient",
+          "full_name": "MIoTClient.__on_mips_cloud_state_changed",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Stop subscribing to MIoT Cloud per-device online/offline MQTT state topics for BLE devices (`blt.*`) and instead treat BLE devices as always online, preventing entities from getting stuck unavailable due to missing `online` state messages.",
+    "steps": [
+      {
+        "operation": "Skip MIoT cloud per-device online/offline state subscription for BLE DIDs (prefix `blt.`) when cloud MQTT connects, so BLE availability is not driven by unreliable state push",
+        "file_to_modify": "custom_components/xiaomi_home/miot/miot_client.py",
+        "function_to_modify": "MIoTClient.__on_mips_cloud_state_changed",
+        "reason": "MIoT Cloud may publish `offline` for BLE devices without publishing a matching `online`, which can permanently mark BLE entities unavailable. Filtering out BLE DIDs at the centralized subscription point prevents these stale offline transitions while leaving props/events subscriptions intact.",
+        "side_effects": "BLE devices will no longer react to MIoT Cloud `device/{did}/state/#` messages (including legitimate offline), and will be treated as always online; Wi‑Fi/LAN/gateway devices remain unchanged. May require adjusting/adding tests around MQTT connect/resubscribe behavior and verifying no code path assumes BLE state subscription exists."
+      }
+    ]
+  }
+}

@@ -1,0 +1,49 @@
+{
+  "pr_number": 3108,
+  "repository": "pwndbg/pwndbg",
+  "title": "Fix: Prevent error in lldb `kernel vmmap`",
+  "body": "The `kernel vmmap` command could raise an error in LLDB due to `kernel_vmmap()` not being fully compatible with the LLDB environment. Specifically, when `get_known_pages()` returned no pages, `LLDBProcess.vmmap()` would still attempt to call `kernel_vmmap()`, leading to an error when `KernelVmmap.adjust` tried to iterate over potentially invalid LLDBValue objects.\n\nThis commit modifies `LLDBProcess.vmmap()` to return an empty `LLDBMemoryMap` directly if `get_known_pages()` yields no results, thus avoiding the problematic call path in LLDB.\n\nA new test has been added in `tests/lldb-tests/tests/test_command_vmmap.py` to verify that the `vmmap` command executes without error in LLDB and handles cases with no memory mappings gracefully.\n\nFixes #3102",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T08:38:47.764953",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "pwndbg/dbg/lldb/__init__.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "vmmap",
+          "class_name": "LLDBProcess",
+          "full_name": "LLDBProcess.vmmap",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "tests/lldb-tests/tests/test_command_vmmap.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    }
+  ],
+  "step_plan": {
+    "summary": "Prevent LLDB `kernel vmmap`/`vmmap` from erroring when LLDB reports no memory regions by making LLDBProcess.vmmap return an empty memory map instead of falling back to the kernel vmmap provider. Add an LLDB-focused test to ensure the vmmap command succeeds and handles the empty-map case gracefully.",
+    "steps": [
+      {
+        "operation": "Add an early-return guard in the LLDB vmmap implementation so it never falls back to kernel_vmmap when LLDB reports no known pages",
+        "file_to_modify": "pwndbg/dbg/lldb/__init__.py",
+        "function_to_modify": "LLDBProcess.vmmap",
+        "reason": "In LLDB, the current fallback path can call pwndbg.aglib.kernel.vmmap.kernel_vmmap(), which performs adjustments that assume debugger/value semantics that may not hold under LLDB. When get_known_pages() returns an empty list, returning an empty LLDBMemoryMap is the correct and safest behavior and avoids the incompatible kernel vmmap code path entirely.",
+        "side_effects": "Behavior change is LLDB-only: vmmap output may become empty (instead of attempting a kernel fallback) when LLDB provides no regions. This should prevent runtime exceptions in LLDB and should not affect GDB/QEMU backends. Any callers expecting a kernel-derived map in LLDB when regions are empty will now receive an empty map, so command output will be minimal but stable."
+      }
+    ]
+  }
+}

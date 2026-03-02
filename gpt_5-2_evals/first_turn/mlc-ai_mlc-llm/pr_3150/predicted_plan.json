@@ -1,0 +1,87 @@
+{
+  "pr_number": 3150,
+  "repository": "mlc-ai/mlc-llm",
+  "title": "Fixed log prob result generation",
+  "body": "Fixes the merging logic of logprobs of different tokens  for the same choice.\n\nEarlier response \n\n```{\n    \"id\": \"cmpl-0e79013e278c497a8926be59641d0381\",\n    \"choices\": [\n        {\n            \"finish_reason\": \"length\",\n            \"index\": 0,\n            \"logprobs\": {\n                \"text_offset\": null,\n                \"token_logprobs\": [\n                    0.0\n                ],\n                \"tokens\": [\n                    \"\"\n                ],\n                \"top_logprobs\": [\n                    {\n                        \"\": -23.0259,\n                        \"<unk>\": -23.0259,\n                        \"<s>\": -23.0259,\n                        \"</s>\": -23.0259\n                    }\n                ]\n            },\n            \"text\": \"2, and \"\n        }\n    ],\n    \"created\": 1741063066,\n    \"model\": \"/home/annanyac/mlc-llm/dist/Llama-2-7b-chat-hf-q0f16-MLC/\",\n    \"object\": \"text_completion\",\n    \"usage\": {\n        \"prompt_tokens\": 6,\n        \"completion_tokens\": 5,\n        \"total_tokens\": 11,\n        \"extra\": null\n    }\n}\n```\n\nNew response \n\n```{\n    \"id\": \"cmpl-d6b2bc3820f8441fbfbe9d5d0be3d9ce\",\n    \"choices\": [\n        {\n            \"finish_reason\": \"length\",\n            \"index\": 0,\n            \"logprobs\": {\n                \"text_offset\": null,\n                \"token_logprobs\": [\n                    0.0,\n                    -0.912338,\n                    -0.47704,\n                    -0.111992\n                ],\n                \"tokens\": [\n                    \"2\",\n                    \".\",\n                    \"\",\n                    \"\"\n                ],\n                \"top_logprobs\": [\n                    {\n                        \"2\": 0.0,\n                        \"<unk>\": -23.0259,\n                        \"<s>\": -23.0259,\n                        \"</s>\": -23.0259,\n                        \"\": -23.0259\n                    },\n                    {\n                        \".\": -0.912338,\n                        \",\": -1.07249,\n                        \"\": -1.36156,\n                        \"<unk>\": -23.0259,\n                        \"<s>\": -23.0259\n                    },\n                    {\n                        \"\": -1.39891,\n                        \"So\": -2.54735,\n                        \"In\": -2.91454,\n                        \"<unk>\": -23.0259\n                    },\n                    {\n                        \"\": -0.111992,\n                        \"So\": -2.2448,\n                        \"<unk>\": -23.0259,\n                        \"<s>\": -23.0259,\n                        \"</s>\": -23.0259\n                    }\n                ]\n            },\n            \"text\": \"2.\\n\\n\"\n        }\n    ],\n    \"created\": 1741064363,\n    \"model\": \"/mnt/data/ehdd1/home/models/mlc/Llama-2-7b-chat-hf-q0f16-MLC/\",\n    \"object\": \"text_completion\",\n    \"usage\": {\n        \"prompt_tokens\": 6,\n        \"completion_tokens\": 5,\n        \"total_tokens\": 11,\n        \"extra\": null\n    }\n}```\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T08:35:35.535474",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "python/mlc_llm/serve/entrypoints/openai_entrypoints.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "request_completion",
+          "class_name": null,
+          "full_name": "request_completion",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "python/mlc_llm/serve/engine_base.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "get_logprobs_from_delta",
+          "class_name": null,
+          "full_name": "get_logprobs_from_delta",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "wrap_completion_response",
+          "class_name": null,
+          "full_name": "wrap_completion_response",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "python/mlc_llm/protocol/openai_api_protocol.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    }
+  ],
+  "step_plan": {
+    "summary": "Fixes `/v1/completions` non-streaming responses so that when a completion arrives in multiple incremental chunks, logprob arrays (`tokens`, `token_logprobs`, `top_logprobs`) are merged/appended per choice index instead of being overwritten, producing token-by-token logprobs consistent with the final concatenated text.",
+    "steps": [
+      {
+        "operation": "Fix non-streaming aggregation to merge per-chunk logprobs per choice index instead of overwriting",
+        "file_to_modify": "python/mlc_llm/serve/entrypoints/openai_entrypoints.py",
+        "function_to_modify": "request_completion",
+        "reason": "`request_completion` aggregates multiple engine chunks into one final `/v1/completions` response. It currently assigns `logprob_results[idx] = choice.logprobs` on each chunk, which drops earlier token logprobs for the same `choice.index`. Replace this with an append/merge strategy so `tokens`, `token_logprobs`, and `top_logprobs` accumulate in order across chunks (matching the accumulated `text`).",
+        "side_effects": "Changes the shape/length of `choices[i].logprobs.*` in non-streaming responses (now includes all generated tokens instead of last chunk only). Requires ensuring list lengths stay aligned and may expose any upstream chunk irregularities (e.g., empty token entries). Add/adjust any response validation or tests that assumed single-entry logprobs."
+      },
+      {
+        "operation": "Normalize/validate per-delta logprobs structure to guarantee merge safety (list alignment, None handling, empty deltas)",
+        "file_to_modify": "python/mlc_llm/serve/engine_base.py",
+        "function_to_modify": "get_logprobs_from_delta",
+        "reason": "Merging relies on consistent per-chunk `CompletionLogProbs` objects. Ensure `get_logprobs_from_delta` always returns either `None` or an object whose `tokens`, `token_logprobs`, and `top_logprobs` are all present and of equal length (or safely default to empty lists). This prevents merge-time mismatches when some deltas omit logprob fields or produce empty/placeholder tokens.",
+        "side_effects": "May alter how missing/partial logprob data is represented (e.g., returning empty lists vs. None), which can affect both streaming and non-streaming output. Could require updates to any callers that check for `None` or assume specific list contents."
+      },
+      {
+        "operation": "Ensure final response wrapping preserves merged logprobs without re-shaping/overwriting and keeps invariants intact",
+        "file_to_modify": "python/mlc_llm/serve/engine_base.py",
+        "function_to_modify": "wrap_completion_response",
+        "reason": "After aggregation, `wrap_completion_response` constructs the final OpenAI completion payload. Verify it passes through the merged `logprob_results` as-is per `choice.index`, does not reinitialize/overwrite logprobs, and (optionally) enforces basic invariants (equal lengths across token arrays) before serializing.",
+        "side_effects": "If invariants are enforced here, invalid upstream logprob chunks could now fail fast (raising/returning an error) instead of silently producing malformed output. This may require updating tests or error handling in the entrypoint."
+      }
+    ]
+  }
+}

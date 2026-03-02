@@ -1,0 +1,95 @@
+{
+  "pr_number": 7339,
+  "repository": "getredash/redash",
+  "title": "Sanitize NaN, Infinite, -Infinite causing error when saving as PostgreSQL JSON",
+  "body": "## What type of PR is this? \n- [x] Bug Fix\n\n## Description\nWhen running query that output NaN, Infinite, or -Infinite, redash executor crashes with the error \"Out of range float values are not JSON compliant\" like below. Redash does not output any rows when the error was occurred.\n\n```\n[2025-02-19 04:48:49,040][PID:593][ERROR][rq.worker] [Job 6cfa1d1c-2a32-48c6-8bf4-0cd8f8ba6f32]: exception raised while executing (redash.tasks.queries.execution.execute_query)\nTraceback (most recent call last):\n...\nsqlalchemy.exc.StatementError: ...\n(builtins.ValueError) Out of range float values are not JSON compliant\n[SQL: INSERT INTO query_results ...]\n...\n```\n\nThe error occurs because JSON(PostgreSQL JSON type) does not support NaN, Infinite, -Infinite.\n\nThis PR fixes the issue by sanitize NaN, Infinite, -Infinite value to None. This is the save behavior that JavaScript JSON.stringify() does.\n\nWe can reproduce the issue by running following query on BigQuery or PostgreSQL.\n\nBigQuery:\n```\nselect 1.0, cast('NaN' as float64), cast('Infinity' as float64), cast('-Infinity' as float64)\n```\n\nPostgreSQL:\n```\nselect 1.0::float, 'NaN'::float, 'Infinity'::float, '-Infinity'::float\n```\n\nThe issue was introduced by #6685 which removes simplejson. Before #6685 , NaN / Inf was converted to null by simplejson with ignore_nan=True. This PR change behavior for NaN/Inf as same as before #6685 .\n\n## How is this tested?\n\n- [x] Unit tests (pytest, jest)\n- [x] Manually\n\nUnit test was added.\nAlso, we can confirm by running the query on the description.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T08:29:36.354692",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "redash/utils/__init__.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "json_dumps",
+          "class_name": null,
+          "full_name": "json_dumps",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "redash/models/types.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "process_bind_param",
+          "class_name": "JSONText",
+          "full_name": "JSONText.process_bind_param",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "redash/models/__init__.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "store_result",
+          "class_name": "QueryResult",
+          "full_name": "QueryResult.store_result",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "tests/models/test_query_results.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    }
+  ],
+  "step_plan": {
+    "summary": "Prevent Redash query execution from crashing when result payloads contain NaN/Infinity/-Infinity by sanitizing non-finite floats to null (None) before JSON serialization into PostgreSQL JSON. The change restores the prior behavior from simplejson(ignore_nan=True) and adds/extends unit coverage for persistence of such results.",
+    "steps": [
+      {
+        "operation": "Add recursive sanitization of non-finite floats (NaN/+Inf/-Inf) to None before JSON serialization in json_dumps (while keeping allow_nan=False).",
+        "file_to_modify": "redash/utils/__init__.py",
+        "function_to_modify": "json_dumps",
+        "reason": "The crash originates from Python’s json.dumps raising ValueError when allow_nan=False and the payload contains non-finite floats; pre-sanitizing the object tree preserves strict JSON compliance and restores pre-#6685 behavior (simplejson(ignore_nan=True)).",
+        "side_effects": "All callers of redash.utils.json_dumps will now emit null for non-finite floats instead of raising; potential behavior change for any code relying on the exception. Must ensure recursion handles nested dict/list/tuple and doesn’t break custom encoder behavior."
+      },
+      {
+        "operation": "Ensure DB binding for JSONText always uses the sanitized serialization path (and optionally add a defensive sanitize step if any other dump path exists).",
+        "file_to_modify": "redash/models/types.py",
+        "function_to_modify": "JSONText.process_bind_param",
+        "reason": "QueryResult.data is persisted through JSONText TypeDecorator; guaranteeing it serializes via the updated json_dumps (or defensively sanitizing here too) prevents INSERT/flush failures even if other code paths pass non-finite floats into JSONText columns.",
+        "side_effects": "Affects all models/columns using JSONText; could mask non-finite float issues by coercing them to null at persistence time. Should keep allow_nan=False to avoid emitting invalid JSON into PostgreSQL JSON/JSONB."
+      },
+      {
+        "operation": "Normalize stored QueryResult data by sanitizing before assignment/persistence so the in-memory value matches what is written to the DB.",
+        "file_to_modify": "redash/models/__init__.py",
+        "function_to_modify": "QueryResult.store_result",
+        "reason": "Sanitizing at the persistence entrypoint makes behavior explicit and ensures any downstream use of the stored Python object (e.g., caching, comparison, later re-serialization) matches the DB representation and won’t re-trigger serialization failures.",
+        "side_effects": "Potential slight performance cost for walking large result payloads; may affect any code that expects NaN/Inf to remain floats in-memory after store_result. Requires updating/adding tests asserting values become None."
+      }
+    ]
+  }
+}

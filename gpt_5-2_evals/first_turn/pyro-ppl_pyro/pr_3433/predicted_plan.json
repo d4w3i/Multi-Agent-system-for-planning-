@@ -1,0 +1,57 @@
+{
+  "pr_number": 3433,
+  "repository": "pyro-ppl/pyro",
+  "title": "Fixes #3430 (serializing an easyguide corrupts it).",
+  "body": "- The issue is that on Python 3.12 the `super()` object of `easyguide.Group` started having the `__getstate__` attribute (this doesn't happen in python 3.9), which is then called to return the state object, which is then modified without making a copy before modification, which causes the corruption.\n- The solution is to ensure that we always make a copy of the state object before modifying it.\n- This was tested on both python 3.9 and 3.12.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T08:38:03.395483",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "pyro/contrib/easyguide/easyguide.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "__getstate__",
+          "class_name": "Group",
+          "full_name": "Group.__getstate__",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "__setstate__",
+          "class_name": "Group",
+          "full_name": "Group.__setstate__",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Fixes Python 3.12 easyguide `Group` pickling corruption by copying the state returned from `super().__getstate__()` before mutating it, and ensuring `__setstate__` remains compatible with the safer state handling.",
+    "steps": [
+      {
+        "operation": "Make `__getstate__` always copy the state object before mutating it (so mutating `_guide` does not corrupt shared/base state returned by `super().__getstate__()` on Python 3.12).",
+        "file_to_modify": "pyro/contrib/easyguide/easyguide.py",
+        "function_to_modify": "Group.__getstate__",
+        "reason": "On Python 3.12, `super()` may expose `__getstate__` and return a state mapping that must be treated as potentially shared/unsafe to mutate in-place. Copying the returned state before modifying `_guide` prevents corruption of the original object’s serialization state.",
+        "side_effects": "Pickle payload should remain semantically identical except for safer handling of mapping types; if any downstream code relied on in-place mutation of a shared state object (unlikely/buggy), behavior will change. Should re-run serialization-related tests on both Python 3.9 and 3.12."
+      },
+      {
+        "operation": "Review and (if needed) harden `__setstate__` to remain symmetric with the adjusted `__getstate__` behavior, ensuring `_guide` is restored to a weakref and state assignment works even if the state is not a plain dict.",
+        "file_to_modify": "pyro/contrib/easyguide/easyguide.py",
+        "function_to_modify": "Group.__setstate__",
+        "reason": "`__setstate__` is the deserialization counterpart; after changing how `__getstate__` constructs the state (e.g., via `dict(state)` or `state.copy()`), `__setstate__` must correctly accept that state and restore invariants (notably `_guide` as a weakref) without assuming a specific concrete mapping implementation.",
+        "side_effects": "Potentially affects unpickling for existing pickles if assumptions about state structure change; should verify backward compatibility by unpickling objects serialized before/after the change, and confirm no regressions in easyguide behavior after deserialization."
+      }
+    ]
+  }
+}

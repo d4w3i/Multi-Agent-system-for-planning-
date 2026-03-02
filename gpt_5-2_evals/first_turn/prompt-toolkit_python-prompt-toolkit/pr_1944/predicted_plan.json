@@ -1,0 +1,139 @@
+{
+  "pr_number": 1944,
+  "repository": "prompt-toolkit/python-prompt-toolkit",
+  "title": "Fixes bug whereby read_only bool is called as a function",
+  "body": "This is a simple bug fix to remedy the following issue:\n\n```python\n  File \".../site-packages/prompt_toolkit/filters/app.py\", line 374, in emacs_insert_mode\n    or app.current_buffer.read_only()\n       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n\nException 'bool' object is not callable\n```\n\nIt would appear to be a simple typo, calling the boolean `read_only` property as if it were a function.",
+  "extraction_metadata": {
+    "extracted_at": "2026-02-26T03:40:11.443703",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "src/prompt_toolkit/filters/app.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "emacs_insert_mode",
+          "class_name": null,
+          "full_name": "emacs_insert_mode",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "is_read_only",
+          "class_name": null,
+          "full_name": "is_read_only",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "vi_navigation_mode",
+          "class_name": null,
+          "full_name": "vi_navigation_mode",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "vi_insert_mode",
+          "class_name": null,
+          "full_name": "vi_insert_mode",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "vi_insert_multiple_mode",
+          "class_name": null,
+          "full_name": "vi_insert_multiple_mode",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "vi_replace_mode",
+          "class_name": null,
+          "full_name": "vi_replace_mode",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "vi_replace_single_mode",
+          "class_name": null,
+          "full_name": "vi_replace_single_mode",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "tests/",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    }
+  ],
+  "step_plan": {
+    "summary": "Fix filter predicates in `src/prompt_toolkit/filters/app.py` to stop calling `current_buffer.read_only` as a function when it is implemented as a boolean, preventing `'bool' object is not callable` crashes. Update all affected mode/read-only predicates to evaluate `read_only` safely while preserving behavior when `read_only` is a callable Filter.",
+    "steps": [
+      {
+        "operation": "Harden `emacs_insert_mode` against `current_buffer.read_only` being a boolean by evaluating it in a callable-or-bool compatible way (call when callable, otherwise cast to bool) and using that value in the mode predicate logic.",
+        "file_to_modify": "src/prompt_toolkit/filters/app.py",
+        "function_to_modify": "emacs_insert_mode",
+        "reason": "The reported crash originates here: `app.current_buffer.read_only()` raises `TypeError` when `read_only` is a `bool` in some installations/versions; the filter must safely handle both callable-filter and boolean-attribute implementations.",
+        "side_effects": "May change behavior only in environments where `read_only` is not callable; should remain identical when `read_only` is a Filter/callable. Requires updating/adding tests that simulate a bool `read_only` to ensure no regression."
+      },
+      {
+        "operation": "Update `is_read_only` to evaluate `get_app().current_buffer.read_only` in a version-tolerant way (call if callable, else bool) instead of unconditionally calling it.",
+        "file_to_modify": "src/prompt_toolkit/filters/app.py",
+        "function_to_modify": "is_read_only",
+        "reason": "This filter is a centralized read-only predicate and will crash the same way under a boolean `read_only`; keeping it compatible prevents downstream filters/key bindings from failing.",
+        "side_effects": "Other filters that depend on `is_read_only` may start working in environments that previously crashed; ensure no accidental truthiness evaluation of Filter objects (avoid `if ro:` when `ro` could be a Filter)."
+      },
+      {
+        "operation": "Modify `vi_navigation_mode` to use the compatible evaluation of `current_buffer.read_only` when computing whether vi is in navigation mode (i.e., do not call a bool).",
+        "file_to_modify": "src/prompt_toolkit/filters/app.py",
+        "function_to_modify": "vi_navigation_mode",
+        "reason": "This mode predicate participates in key binding conditionals; it currently assumes `read_only` is callable and will raise `TypeError` when it is a boolean.",
+        "side_effects": "Behavior should be unchanged for normal prompt_toolkit `Buffer` objects; when used with alternate buffer implementations, vi navigation detection will no longer crash and may enable/disable bindings correctly based on the bool value."
+      },
+      {
+        "operation": "Modify `vi_insert_mode` to compute the read-only state via callable-or-bool handling and use that result in the insert-mode condition.",
+        "file_to_modify": "src/prompt_toolkit/filters/app.py",
+        "function_to_modify": "vi_insert_mode",
+        "reason": "`vi_insert_mode` is another direct call site of `current_buffer.read_only()` and will exhibit the same crash; fixing it closes an entire class of failures for vi editing key bindings.",
+        "side_effects": "Could affect which bindings are active in rare setups where `read_only` is a bool; add regression coverage to ensure no exception and correct boolean interpretation."
+      },
+      {
+        "operation": "Modify `vi_insert_multiple_mode` to evaluate `current_buffer.read_only` safely (call if callable, else bool) before using it in the mode predicate.",
+        "file_to_modify": "src/prompt_toolkit/filters/app.py",
+        "function_to_modify": "vi_insert_multiple_mode",
+        "reason": "This function shares the same assumption about `read_only` callability; it must be made robust to avoid crashes during key binding condition evaluation.",
+        "side_effects": "No expected change when `read_only` is a filter; in boolean implementations, prevents crashes and ensures consistent activation/deactivation of multi-insert mode bindings."
+      },
+      {
+        "operation": "Modify `vi_replace_mode` to use a compatible read-only evaluation instead of calling `read_only()` unconditionally.",
+        "file_to_modify": "src/prompt_toolkit/filters/app.py",
+        "function_to_modify": "vi_replace_mode",
+        "reason": "Replace mode is another vi predicate that may execute in the same call paths and will crash under boolean `read_only`; updating ensures vi mode checks are consistently safe across buffer implementations.",
+        "side_effects": "Could alter mode gating only when `read_only` is boolean; should be covered by a regression test that ensures no exception and that `True` disables replace operations as intended."
+      },
+      {
+        "operation": "Modify `vi_replace_single_mode` to interpret `current_buffer.read_only` in a callable-or-bool compatible manner and remove any unconditional `()` invocation on `read_only`.",
+        "file_to_modify": "src/prompt_toolkit/filters/app.py",
+        "function_to_modify": "vi_replace_single_mode",
+        "reason": "This is the last known read-only call site in `filters/app.py`; fixing it completes the module-wide compatibility and prevents intermittent failures depending on which vi predicate is evaluated.",
+        "side_effects": "Ensures stability when third-party integrations provide a boolean `read_only`; may require updating existing tests (or adding new ones) that previously assumed `read_only` is always callable."
+      }
+    ]
+  }
+}

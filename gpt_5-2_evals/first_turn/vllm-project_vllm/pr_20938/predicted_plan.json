@@ -1,0 +1,87 @@
+{
+  "pr_number": 20938,
+  "repository": "vllm-project/vllm",
+  "title": "Fix overflow indexing in causal_conv1d kernel",
+  "body": "## Essential Elements of an Effective PR Description Checklist\n- [x] The purpose of the PR, such as \"Fix some issue (link existing issues this PR will resolve)\".\n- [x] The test plan, such as providing test command.\n- [x] The test results, such as pasting the results comparison before and after, or e2e results\n- [x] (Optional) The necessary documentation update, such as updating `supported_models.md` and `examples` for a new model.\n\n## Purpose\n\nThis PR fixes an indexing overflow issue that can occur when running mamba-based models in V1. Before V1 integration, the value of `conv_state_batch_coord` could vary from `0` to `max_num_seqs-1`. However, with V1 integration it can now vary between `0` and `num_gpu_blocks-1`. Depending on the model and deployment, the number of blocks can be orders of magnitude higher and I'm running into overflow issues unless we explicitly cast to `tl.int64`.\n\nPlease note I already made the equivalent fix to the `selective_state_update` as part of https://github.com/vllm-project/vllm/pull/20016. I forgot to make the equivalent change to this kernel, my bad. \n\n@tlrmchlsmth @cyang49 @thoangtrvn \n\n## Test Plan\n\nIt is actually not that easy to catch this with a test because you need a lot of blocks and need to let it run for a while until the scheduler starts picking off blocks with a high enough index to cause the overflow. I think it could be good to write some tests to try and catch these kernel overflow issues in general, but I would advocate for getting this fix in now. \n\n## Test Result\n\nn/a\n\n## (Optional) Documentation Update\n\nn/a",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T08:43:32.306672",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "vllm/model_executor/layers/mamba/ops/causal_conv1d.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "_causal_conv1d_fwd_kernel",
+          "class_name": null,
+          "full_name": "_causal_conv1d_fwd_kernel",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_causal_conv1d_update_kernel",
+          "class_name": null,
+          "full_name": "_causal_conv1d_update_kernel",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "causal_conv1d_fn",
+          "class_name": null,
+          "full_name": "causal_conv1d_fn",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "causal_conv1d_update",
+          "class_name": null,
+          "full_name": "causal_conv1d_update",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Prevent overflow in Triton pointer arithmetic for Mamba causal conv1d by promoting cache/state batch index computations to 64-bit in both forward and update kernels, with optional wrapper-level validation to keep index/padding semantics consistent under V1’s much larger block index ranges.",
+    "steps": [
+      {
+        "operation": "Promote conv/state batch index and stride arithmetic to 64-bit inside the forward Triton kernel (cast loaded `conv_state_batch_coord` to `tl.int64` before multiplying by state strides; ensure any subsequent pointer offsets derived from it stay in int64).",
+        "file_to_modify": "vllm/model_executor/layers/mamba/ops/causal_conv1d.py",
+        "function_to_modify": "_causal_conv1d_fwd_kernel",
+        "reason": "With V1 integration, `conv_state_batch_coord` can range up to `num_gpu_blocks-1` and `conv_state_batch_coord * stride_conv_state_seq` may overflow if computed in 32-bit, leading to incorrect pointer math and potential silent memory corruption. Casting to `tl.int64` matches the proven fix pattern used in selective_state_update and prevents overflow.",
+        "side_effects": "Slight extra scalar cast work in the kernel; may require ensuring any comparisons/masks involving `pad_slot_id` remain type-consistent if they touch the casted index. Downstream correctness improves for large cache/block indices; existing small-index behavior should remain unchanged."
+      },
+      {
+        "operation": "Promote conv/state batch index and stride arithmetic to 64-bit inside the update Triton kernel (cast loaded `conv_state_batch_coord` to `tl.int64` before all pointer arithmetic for shift/update reads and writes; optionally cast relevant strides to `tl.int64` to avoid mixed-width multiplication).",
+        "file_to_modify": "vllm/model_executor/layers/mamba/ops/causal_conv1d.py",
+        "function_to_modify": "_causal_conv1d_update_kernel",
+        "reason": "The update kernel also forms state base pointers using `conv_state_batch_coord * stride_conv_state_seq` (and may compute additional source/destination offsets). For large `num_gpu_blocks`, 32-bit overflow can break state updates and cause invalid memory access or corrupted state. Applying the same int64 promotion ensures address computations are safe.",
+        "side_effects": "Potentially minor performance impact due to int64 arithmetic, but confined to index math. Any mask logic must remain safe (avoid computing overflowed pointers before masking). Kernel signature remains the same; only internal arithmetic changes."
+      },
+      {
+        "operation": "Add/adjust wrapper-side validation/normalization for state/cache indices passed to the forward kernel (ensure `cache_indices`/`conv_state_indices` tensor dtype is integer, contiguous as expected by Triton, and that `pad_slot_id` semantics remain consistent with the kernel’s int64-casted index).",
+        "file_to_modify": "vllm/model_executor/layers/mamba/ops/causal_conv1d.py",
+        "function_to_modify": "causal_conv1d_fn",
+        "reason": "Although the overflow is primarily in-kernel, the wrapper is the coordination point for inputs: it can defensively enforce an integer dtype (int32/int64) and clarify expectations around padding indices. This reduces the chance of subtle mismatches (e.g., comparing an int64-casted index to an int32 pad value) and makes failures earlier and clearer.",
+        "side_effects": "May introduce runtime assertions or conversions that could affect performance in debug scenarios or trigger errors for previously-accepted invalid inputs. If conversions are added, they could create extra allocations unless carefully handled."
+      },
+      {
+        "operation": "Add/adjust wrapper-side validation/normalization for state/cache indices passed to the update kernel (mirror `causal_conv1d_fn` checks; ensure pad/slot handling and index dtype are consistent with the kernel’s int64 pointer arithmetic).",
+        "file_to_modify": "vllm/model_executor/layers/mamba/ops/causal_conv1d.py",
+        "function_to_modify": "causal_conv1d_update",
+        "reason": "The update path is frequently exercised and directly mutates the convolution state. Validating index dtype/range expectations at the wrapper level helps prevent hard-to-debug kernel failures and ensures consistent behavior when very large block indices are used in V1 scheduling.",
+        "side_effects": "Similar to the forward wrapper: potential added assertions/conversions and associated overhead; improved debuggability and clearer contract for callers. No API signature changes expected, but callers relying on non-integer index tensors may now fail fast."
+      }
+    ]
+  }
+}

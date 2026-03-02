@@ -1,0 +1,125 @@
+{
+  "pr_number": 5625,
+  "repository": "pyodide/pyodide",
+  "title": "Fix test_package_index test",
+  "body": "It started to fail a few days ago, because of some extra terminal output.\n\nExplore the source code to identify the files and functions to modify.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T08:38:56.578629",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "src/tests/test_package_loading.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "test_load_packages_multiple",
+          "class_name": null,
+          "full_name": "test_load_packages_multiple",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "test_load_failure_retry",
+          "class_name": null,
+          "full_name": "test_load_failure_retry",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "test_load_twice_different_source",
+          "class_name": null,
+          "full_name": "test_load_twice_different_source",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "test_uri_mismatch",
+          "class_name": null,
+          "full_name": "test_uri_mismatch",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "test_normalized_name",
+          "class_name": null,
+          "full_name": "test_normalized_name",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "conftest.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "strip_assertions_stderr",
+          "class_name": null,
+          "full_name": "strip_assertions_stderr",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Fixes the failing package index/loading tests by making their log/stderr assertions resilient to newly introduced extra terminal output. The change focuses on asserting essential semantic signals (package names, success/failure markers, and source/URI details) and, if needed, filtering known-noisy stderr lines centrally in pytest configuration.",
+    "steps": [
+      {
+        "operation": "Relax brittle log assertions in the multi-package load test by asserting presence of key semantic substrings/regex (e.g., at least one 'Loaded ...' line) instead of exact log list equality or exact counts.",
+        "file_to_modify": "src/tests/test_package_loading.py",
+        "function_to_modify": "test_load_packages_multiple",
+        "reason": "This test is likely failing because additional unrelated stdout/stderr (warnings/progress/deprecations) now appears in the captured terminal/console output; checking only the essential package-loading signals makes the test resilient while preserving intent.",
+        "side_effects": "May slightly reduce strictness of the test (won’t fail on additional benign lines). Ensure it still fails when the expected package(s) are not actually loaded by keeping strong enough semantic checks (e.g., package names present)."
+      },
+      {
+        "operation": "Update retry/failure assertions to tolerate extra noise by matching for required error markers and minimum occurrences rather than exact counts and exact full-line matches.",
+        "file_to_modify": "src/tests/test_package_loading.py",
+        "function_to_modify": "test_load_failure_retry",
+        "reason": "Extra output commonly breaks tests that assert exact counts for 'Loading ...' / error headers. Using regex/subsequence/min-count assertions keeps validation focused on retry behavior and the presence of the expected failure signal.",
+        "side_effects": "If downstream code changes error wording, regex will need maintenance; keep patterns narrow enough to still catch regressions in retry logic."
+      },
+      {
+        "operation": "Make the “different source” warning assertion robust by matching the invariant parts of the message (package name + both sources) and ignoring prefixes/suffixes/formatting changes introduced by new terminal output.",
+        "file_to_modify": "src/tests/test_package_loading.py",
+        "function_to_modify": "test_load_twice_different_source",
+        "reason": "This test currently relies on an exact long warning string; any additional logging prefixes or minor formatting changes will cause failures even though behavior is correct.",
+        "side_effects": "Could mask changes in non-essential wording; ensure the assertion still validates the two distinct sources and that the warning actually occurred."
+      },
+      {
+        "operation": "Loosen URI mismatch validation to assert that a mismatch warning/error is present and references the relevant URI/package, without requiring exact string equality or single-line output.",
+        "file_to_modify": "src/tests/test_package_loading.py",
+        "function_to_modify": "test_uri_mismatch",
+        "reason": "A new warning line (e.g., deprecation/progress output) can be interleaved with logs, making exact matches brittle. Checking for key tokens (mismatch + target URI/package) maintains coverage.",
+        "side_effects": "If multiple mismatch-like warnings appear, the test may pass by matching the wrong one; constrain matching to include the specific URI/package involved in the test."
+      },
+      {
+        "operation": "Adjust normalized-name callback/log assertions to accept additional callback messages while still verifying that the normalized name is used for 'Loading'/'Loaded' events.",
+        "file_to_modify": "src/tests/test_package_loading.py",
+        "function_to_modify": "test_normalized_name",
+        "reason": "Callbacks/log capture may now include extra informational lines; the test should validate name normalization semantics rather than an exact ordered list of messages.",
+        "side_effects": "Ordering assumptions may be relaxed; if order is important, assert relative ordering of key events (e.g., 'Loading X' occurs before 'Loaded X') rather than exact full sequence."
+      },
+      {
+        "operation": "Extend stderr normalization to filter or collapse newly introduced noisy assertion/runtime lines (while preserving real tracebacks), and ensure tests that compare stderr use this helper consistently.",
+        "file_to_modify": "conftest.py",
+        "function_to_modify": "strip_assertions_stderr",
+        "reason": "If the failure is due to extra terminal output on stderr (not just selenium/browser logs), centralizing filtering in the existing helper prevents repeated brittle test changes and keeps stderr comparisons stable across environments/dependency updates.",
+        "side_effects": "Over-filtering could hide legitimate failures. Implement conservative filtering (target known noise patterns only) and ensure failing tracebacks/errors remain intact; may require updating any tests that rely on the previous exact stderr formatting."
+      }
+    ]
+  }
+}

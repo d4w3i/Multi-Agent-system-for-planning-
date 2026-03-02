@@ -1,0 +1,42 @@
+{
+  "pr_number": 18102,
+  "repository": "apache/tvm",
+  "title": "[RELAX] Fix rotary embedding buffer size calculation",
+  "body": "- Change head_dim//2 to rotary_dim//2 in LongRope scaling\r\n- Fixes buffer size when rotary_dim differs from head_dim when partial_rotary_factor < 1.0",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T08:23:28.979352",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "python/tvm/relax/frontend/nn/llm/position_embedding.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "llama_rope_with_position_map",
+          "class_name": null,
+          "full_name": "llama_rope_with_position_map",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Adjust LongRoPE rotary embedding scaling to size the `ext_factors` buffer by `rotary_dim//2` instead of `head_dim//2`, fixing shape mismatches when only a subset of head dimensions are rotated (e.g., partial rotary factor).",
+    "steps": [
+      {
+        "operation": "Fix LongRoPE ext_factors buffer sizing to use rotary_dim rather than head_dim in the generated TIR PrimFunc signature (and keep indexing consistent with rotary_dim).",
+        "file_to_modify": "python/tvm/relax/frontend/nn/llm/position_embedding.py",
+        "function_to_modify": "llama_rope_with_position_map",
+        "reason": "When `partial_rotary_factor < 1.0`, `rotary_dim` can be smaller than `head_dim`, so declaring/allocating `ext_factors` as `(head_dim // 2,)` is incorrect for LongRoPE scaling (can cause shape mismatches or wasted allocation). The scaling factors are defined per rotated pair, i.e., `rotary_dim // 2`.",
+        "side_effects": "Changes the TIR PrimFunc parameter shape for the LongRoPE path, which may require any caller/allocation sites within this function (or downstream compilation artifacts) to pass an `ext_factors` tensor of length `rotary_dim//2`. May impact compile-time shape checks and any tests that assume the old buffer shape; add/update a regression test that exercises `rotary_dim != head_dim` under LongRoPE."
+      }
+    ]
+  }
+}

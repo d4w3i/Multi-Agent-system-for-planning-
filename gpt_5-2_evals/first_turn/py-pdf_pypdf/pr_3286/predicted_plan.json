@@ -1,0 +1,80 @@
+{
+  "pr_number": 3286,
+  "repository": "py-pdf/pypdf",
+  "title": "BUG: Add delimiters to NameObject.renumber_table",
+  "body": "Per the spec, name objects cannot contain unescaped delimiters, which include angle, curly and square brackets (currently missing).\n\nI've attached a sample input PDF with a valid, correctly escaped name object. When appending this to a new PdfWriter the output is invalid (incorrectly escaped):\n\n```\n>>> w = PdfWriter()\n>>> w.append('nameobj.pdf')\n>>> w.write('out.pdf')\n```\n[out.pdf](https://github.com/user-attachments/files/20173760/out.pdf)\n[nameobj.pdf](https://github.com/user-attachments/files/20173761/nameobj.pdf)\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-02-26T03:43:43.101231",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "pypdf/generic/_base.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "renumber",
+          "class_name": "NameObject",
+          "full_name": "NameObject.renumber",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "write_to_stream",
+          "class_name": "NameObject",
+          "full_name": "NameObject.write_to_stream",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "tests/test_generic.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "test_name_object",
+          "class_name": null,
+          "full_name": "test_name_object",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Fix PDF NameObject serialization so all delimiter characters forbidden unescaped in PDF names (notably <, >, [, ], {, }) are escaped as #XX during writing. Add regression tests to ensure PdfWriter output remains valid when rewriting PDFs containing correctly escaped name objects.",
+    "steps": [
+      {
+        "operation": "Update NameObject escaping table usage in renumber to include PDF delimiter characters and ensure it applies to all bytes produced for the name",
+        "file_to_modify": "pypdf/generic/_base.py",
+        "function_to_modify": "NameObject.renumber",
+        "reason": "The writer path serializes names via NameObject.write_to_stream() → NameObject.renumber(); the bug is that some delimiter characters (<, >, [, ], {, }) are not being escaped as #XX, producing invalid PDF names per spec when rewriting/cloning objects.",
+        "side_effects": "Will change serialized output bytes for names containing these delimiters (now spec-compliant). Downstream tests that assert exact output may need updating. Should not affect parsing because #XX decoding already exists."
+      },
+      {
+        "operation": "Verify NameObject serialization always goes through renumber and (if needed) adjust write_to_stream to consistently serialize the renumbered/escaped representation",
+        "file_to_modify": "pypdf/generic/_base.py",
+        "function_to_modify": "NameObject.write_to_stream",
+        "reason": "write_to_stream is the central serialization entry point used by PdfWriter; confirming it always uses renumber() guarantees the updated escaping is applied in all writer scenarios (append/merge/clone/write).",
+        "side_effects": "If any alternate serialization path is corrected to route through renumber(), more names may become escaped than before (intended). Could affect byte-for-byte golden tests and external consumers that relied on the previous non-compliant output."
+      },
+      {
+        "operation": "Add/extend regression assertions for delimiter escaping in PDF name objects, including angle/square/curly brackets serialization as #3C/#3E/#5B/#5D/#7B/#7D",
+        "file_to_modify": "tests/test_generic.py",
+        "function_to_modify": "test_name_object",
+        "reason": "Prevents regressions by ensuring NameObject.write_to_stream produces spec-compliant escapes for all delimiter characters. This directly covers the reported failure mode when rewriting PDFs with valid escaped names.",
+        "side_effects": "Test expectations may need to be updated to reflect new escaping behavior. May require adding explicit byte-string expectations or parametrized cases to keep the test readable and stable across platforms/encodings."
+      }
+    ]
+  }
+}
