@@ -1,5 +1,5 @@
 {
-  "evaluated_at": "2026-03-02T10:19:43.561437",
+  "evaluated_at": "2026-03-02T10:41:42.654507",
   "pr_dir": "/Users/davidecroatto/code/planningtest0/gpt_5-2_evals/first_turn/DLR-RM_stable-baselines3/pr_2127",
   "pr_number": 2127,
   "repository": "DLR-RM/stable-baselines3",
@@ -28,11 +28,54 @@
     "targets_total": 14
   },
   "semantic": {
-    "summary_similarity": 0.0,
-    "avg_step_similarity": 0.0,
-    "step_matches": [],
-    "overall_semantic_score": 0.0,
-    "computed": false,
+    "summary_similarity": 0.7141,
+    "avg_step_similarity": 0.252,
+    "step_matches": [
+      {
+        "pred_idx": 0,
+        "pred_text": "Operation: Extend NatureCNN to optionally insert BatchNorm2d layers in each conv block (Conv2d -> op...",
+        "gt_idx": 0,
+        "gt_text": "Operation: Add a new `use_batch_norm` constructor flag and refactor the CNN block assembly to condit...",
+        "similarity": 0.9081
+      },
+      {
+        "pred_idx": 1,
+        "pred_text": "Operation: Add optional MLP batch normalization controlled by a use_batch_norm flag (default False),...",
+        "gt_idx": 1,
+        "gt_text": "Operation: Extend `create_mlp` with a `use_batch_norm` flag to optionally prepend BatchNorm1d on inp...",
+        "similarity": 0.8326
+      },
+      {
+        "pred_idx": 2,
+        "pred_text": "Operation: Propagate the new CNN batch-norm option when creating per-key image extractors so MultiIn...",
+        "gt_idx": 3,
+        "gt_text": "Operation: Add a targeted unit test that constructs `NatureCNN` with `use_batch_norm=True`, asserts ...",
+        "similarity": 0.4947
+      },
+      {
+        "pred_idx": 3,
+        "pred_text": "Operation: Plumb MLP batch-norm configuration into critic MLP construction by passing the new create...",
+        "gt_idx": 2,
+        "gt_text": "Operation: Add a forward-pass regression test that instantiates `ActorCriticCnnPolicy` for both disc...",
+        "similarity": 0.4362
+      },
+      {
+        "pred_idx": 4,
+        "pred_text": "Operation: Enable SAC actor trunk to use optional MLP batch norm by forwarding the flag/kwargs to cr...",
+        "gt_idx": 5,
+        "gt_text": "Operation: Add an example training script for PPO on Atari Breakout using a CNN policy, including en...",
+        "similarity": 0.3424
+      },
+      {
+        "pred_idx": 12,
+        "pred_text": "Operation: Allow DQN QNetwork MLP head to use optional batch norm by forwarding the flag/kwargs to c...",
+        "gt_idx": 4,
+        "gt_text": "Operation: Add a unit test for `create_mlp(..., use_batch_norm=True)` that checks the initial BatchN...",
+        "similarity": 0.5133
+      }
+    ],
+    "overall_semantic_score": 0.3906,
+    "computed": true,
     "error": null
   },
   "has_prediction": true,

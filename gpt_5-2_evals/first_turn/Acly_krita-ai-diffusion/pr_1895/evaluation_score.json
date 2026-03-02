@@ -1,5 +1,5 @@
 {
-  "evaluated_at": "2026-03-02T10:19:43.560798",
+  "evaluated_at": "2026-03-02T10:41:41.588426",
   "pr_dir": "/Users/davidecroatto/code/planningtest0/gpt_5-2_evals/first_turn/Acly_krita-ai-diffusion/pr_1895",
   "pr_number": 1895,
   "repository": "Acly/krita-ai-diffusion",
@@ -28,11 +28,61 @@
     "targets_total": 7
   },
   "semantic": {
-    "summary_similarity": 0.0,
-    "avg_step_similarity": 0.0,
-    "step_matches": [],
-    "overall_semantic_score": 0.0,
-    "computed": false,
+    "summary_similarity": 0.7554,
+    "avg_step_similarity": 0.7161,
+    "step_matches": [
+      {
+        "pred_idx": 0,
+        "pred_text": "Operation: Introduce enum-based queue mode property and migrate from boolean queue_front; implement ...",
+        "gt_idx": 0,
+        "gt_text": "Operation: Introduce an enum representing queue insertion behavior (back/front/replace) | Reason: Re...",
+        "similarity": 0.7516
+      },
+      {
+        "pred_idx": 1,
+        "pred_text": "Operation: Apply replace semantics exactly once across batch splitting (clear only once, not per spl...",
+        "gt_idx": 5,
+        "gt_text": "Operation: Extend enqueue_jobs to support replace semantics by clearing server/client queues and the...",
+        "similarity": 0.7778
+      },
+      {
+        "pred_idx": 2,
+        "pred_text": "Operation: Translate QueueMode into client enqueue parameters (front/back) and ensure replace-specif...",
+        "gt_idx": 6,
+        "gt_text": "Operation: Update job enqueue helper to accept a computed 'front' boolean and pass it to the client ...",
+        "similarity": 0.7554
+      },
+      {
+        "pred_idx": 3,
+        "pred_text": "Operation: Refactor/extend cancel(queued=True) logic for reuse by replace mode to clear remote queue...",
+        "gt_idx": 7,
+        "gt_text": "Operation: Refactor queued-cancel path to reuse a shared local queued-job clearing routine | Functio...",
+        "similarity": 0.7995
+      },
+      {
+        "pred_idx": 4,
+        "pred_text": "Operation: Update QueuePopup binding to use the new enum property (queue_mode) instead of the old bo...",
+        "gt_idx": 1,
+        "gt_text": "Operation: Replace the persisted model property/signal from boolean queue_front to enum queue_mode |...",
+        "similarity": 0.8031
+      },
+      {
+        "pred_idx": 5,
+        "pred_text": "Operation: Populate QueuePopup combo entries for enum modes and add the new 'replace' mode option wi...",
+        "gt_idx": 10,
+        "gt_text": "Operation: Update the UI to use an enum-backed queue mode combo and add a ctrl-click-capable Generat...",
+        "similarity": 0.6
+      },
+      {
+        "pred_idx": 6,
+        "pred_text": "Operation: Ensure backend queue clearing is correctly sequenced/awaited so replace mode can safely c...",
+        "gt_idx": 8,
+        "gt_text": "Operation: Add a helper that removes all locally tracked queued jobs and reports whether any were re...",
+        "similarity": 0.525
+      }
+    ],
+    "overall_semantic_score": 0.7279,
+    "computed": true,
     "error": null
   },
   "has_prediction": true,

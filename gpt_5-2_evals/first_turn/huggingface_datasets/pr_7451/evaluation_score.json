@@ -1,5 +1,5 @@
 {
-  "evaluated_at": "2026-03-02T10:19:43.581965",
+  "evaluated_at": "2026-03-02T10:42:23.358167",
   "pr_dir": "/Users/davidecroatto/code/planningtest0/gpt_5-2_evals/first_turn/huggingface_datasets/pr_7451",
   "pr_number": 7451,
   "repository": "huggingface/datasets",
@@ -28,11 +28,47 @@
     "targets_total": 5
   },
   "semantic": {
-    "summary_similarity": 0.0,
-    "avg_step_similarity": 0.0,
-    "step_matches": [],
-    "overall_semantic_score": 0.0,
-    "computed": false,
+    "summary_similarity": 0.7583,
+    "avg_step_similarity": 0.7078,
+    "step_matches": [
+      {
+        "pred_idx": 0,
+        "pred_text": "Operation: Make set_epoch coordinate with any loaded checkpoint epoch/shuffle identity (either by re...",
+        "gt_idx": 26,
+        "gt_text": "Operation: Add regression test ensuring resuming works correctly across epoch changes (resume exhaus...",
+        "similarity": 0.7086
+      },
+      {
+        "pred_idx": 1,
+        "pred_text": "Operation: Extend the dataset checkpoint to include epoch/shuffle-order identity needed to rebuild t...",
+        "gt_idx": 24,
+        "gt_text": "Operation: Make PyTorch worker iteration build an epoch-aware top-level state dict and only restore ...",
+        "similarity": 0.7054
+      },
+      {
+        "pred_idx": 2,
+        "pred_text": "Operation: Restore epoch/shuffle identity from the state dict and ensure prepared pipeline construct...",
+        "gt_idx": 23,
+        "gt_text": "Operation: Change load_state_dict to store the provided state as starting state instead of immediate...",
+        "similarity": 0.7849
+      },
+      {
+        "pred_idx": 3,
+        "pred_text": "Operation: When building the prepared iterable for iteration, select the shuffling generator/seed ba...",
+        "gt_idx": 25,
+        "gt_text": "Operation: Update iterable preparation to set epoch-aware state dict and conditionally load starting...",
+        "similarity": 0.7508
+      },
+      {
+        "pred_idx": 4,
+        "pred_text": "Operation: Add support for deriving an effective RNG from either the current epoch or an epoch/shuff...",
+        "gt_idx": 22,
+        "gt_text": "Operation: Refactor IterableDataset initialization to prepare iterables and state dict via _prepare_...",
+        "similarity": 0.5895
+      }
+    ],
+    "overall_semantic_score": 0.7229,
+    "computed": true,
     "error": null
   },
   "has_prediction": true,

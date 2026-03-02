@@ -1,5 +1,5 @@
 {
-  "evaluated_at": "2026-03-02T10:19:43.602064",
+  "evaluated_at": "2026-03-02T10:43:07.597292",
   "pr_dir": "/Users/davidecroatto/code/planningtest0/gpt_5-2_evals/first_turn/trycua_cua/pr_152",
   "pr_number": 152,
   "repository": "trycua/cua",
@@ -28,11 +28,61 @@
     "targets_total": 7
   },
   "semantic": {
-    "summary_similarity": 0.0,
-    "avg_step_similarity": 0.0,
-    "step_matches": [],
-    "overall_semantic_score": 0.0,
-    "computed": false,
+    "summary_similarity": 0.833,
+    "avg_step_similarity": 0.6709,
+    "step_matches": [
+      {
+        "pred_idx": 0,
+        "pred_text": "Operation: Refactor streaming loop yields to emit standardized AgentResponse objects for thoughts/ac...",
+        "gt_idx": 5,
+        "gt_text": "Operation: Replace ad-hoc thought/action yielding with a single standardized AgentResponse yield for...",
+        "similarity": 0.7561
+      },
+      {
+        "pred_idx": 1,
+        "pred_text": "Operation: Standardize how model responses are converted into structured thought/action/tool-call in...",
+        "gt_idx": 6,
+        "gt_text": "Operation: Standardize error yields from UITARS loop to a chat-message shaped assistant response rat...",
+        "similarity": 0.5782
+      },
+      {
+        "pred_idx": 2,
+        "pred_text": "Operation: Adjust model-response parsing to return structures aligned with the standardized AgentRes...",
+        "gt_idx": 7,
+        "gt_text": "Operation: Introduce conversion utility to transform raw UITARS responses into the shared AgentRespo...",
+        "similarity": 0.6568
+      },
+      {
+        "pred_idx": 3,
+        "pred_text": "Operation: Extend action-parameter parsing to support multi-point drag paths (N>2 points) while pres...",
+        "gt_idx": 1,
+        "gt_text": "Operation: Register a new supported tool action type ('drag') in the OpenAI computer tool | Reason: ...",
+        "similarity": 0.5719
+      },
+      {
+        "pred_idx": 4,
+        "pred_text": "Operation: Update drag execution to accept either start/end coordinates or a `path=[{x,y}, ...]` (>=...",
+        "gt_idx": 3,
+        "gt_text": "Operation: Implement path-based drag execution (2-point drag_to vs multi-point drag) including scree...",
+        "similarity": 0.7122
+      },
+      {
+        "pred_idx": 5,
+        "pred_text": "Operation: Update Gradio streaming renderer to correctly detect and render standardized AgentRespons...",
+        "gt_idx": 11,
+        "gt_text": "Operation: Refactor streaming response rendering to emit Gradio ChatMessages directly from AgentResp...",
+        "similarity": 0.7423
+      },
+      {
+        "pred_idx": 6,
+        "pred_text": "Operation: Enhance synthesis/extraction logic to build readable text from AgentResponse `output` blo...",
+        "gt_idx": 9,
+        "gt_text": "Operation: Remove legacy synthesized-text extraction helper from the Gradio UI codepath | Reason: Th...",
+        "similarity": 0.6789
+      }
+    ],
+    "overall_semantic_score": 0.7195,
+    "computed": true,
     "error": null
   },
   "has_prediction": true,

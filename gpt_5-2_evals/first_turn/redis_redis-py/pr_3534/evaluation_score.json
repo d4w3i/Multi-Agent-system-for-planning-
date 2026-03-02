@@ -1,5 +1,5 @@
 {
-  "evaluated_at": "2026-03-02T10:19:43.596042",
+  "evaluated_at": "2026-03-02T10:42:56.946570",
   "pr_dir": "/Users/davidecroatto/code/planningtest0/gpt_5-2_evals/first_turn/redis_redis-py/pr_3534",
   "pr_number": 3534,
   "repository": "redis/redis-py",
@@ -28,11 +28,26 @@
     "targets_total": 3
   },
   "semantic": {
-    "summary_similarity": 0.0,
-    "avg_step_similarity": 0.0,
-    "step_matches": [],
-    "overall_semantic_score": 0.0,
-    "computed": false,
+    "summary_similarity": 0.7011,
+    "avg_step_similarity": 0.4521,
+    "step_matches": [
+      {
+        "pred_idx": 1,
+        "pred_text": "Operation: Add/adjust the sync lock regression test to assert the exception message text for the 're...",
+        "gt_idx": 0,
+        "gt_text": "Operation: Update the synchronous lock release path to raise a more informative LockError when no to...",
+        "similarity": 0.6681
+      },
+      {
+        "pred_idx": 2,
+        "pred_text": "Operation: Add/adjust the asyncio lock regression test to assert the same exception message text for...",
+        "gt_idx": 1,
+        "gt_text": "Operation: Mirror the synchronous behavior in the asyncio lock implementation by updating the error ...",
+        "similarity": 0.6883
+      }
+    ],
+    "overall_semantic_score": 0.5268,
+    "computed": true,
     "error": null
   },
   "has_prediction": true,

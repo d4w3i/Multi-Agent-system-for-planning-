@@ -1,5 +1,5 @@
 {
-  "evaluated_at": "2026-03-02T10:19:43.579904",
+  "evaluated_at": "2026-03-02T10:42:20.358812",
   "pr_dir": "/Users/davidecroatto/code/planningtest0/gpt_5-2_evals/first_turn/goauthentik_authentik/pr_15574",
   "pr_number": 15574,
   "repository": "goauthentik/authentik",
@@ -28,11 +28,40 @@
     "targets_total": 4
   },
   "semantic": {
-    "summary_similarity": 0.0,
-    "avg_step_similarity": 0.0,
-    "step_matches": [],
-    "overall_semantic_score": 0.0,
-    "computed": false,
+    "summary_similarity": 0.8617,
+    "avg_step_similarity": 0.7491,
+    "step_matches": [
+      {
+        "pred_idx": 0,
+        "pred_text": "Operation: Harden `update_fields` handling and fix file-field serialization bug in `serialize_simple...",
+        "gt_idx": 0,
+        "gt_text": "Operation: Refactor model serialization to always include all non-deferred fields (remove update_fie...",
+        "similarity": 0.7918
+      },
+      {
+        "pred_idx": 1,
+        "pred_text": "Operation: Align `prev_state`/`new_state` snapshots when `update_fields` is provided and preserve in...",
+        "gt_idx": 2,
+        "gt_text": "Operation: Update post-save audit pipeline to use full serialization and pass update_fields only to ...",
+        "similarity": 0.7915
+      },
+      {
+        "pred_idx": 2,
+        "pred_text": "Operation: Extend serialization test coverage to ensure `update_fields` normalization works | Functi...",
+        "gt_idx": 3,
+        "gt_text": "Operation: Rewrite the unit test to validate diff behavior when update_fields is provided | Reason: ...",
+        "similarity": 0.6719
+      },
+      {
+        "pred_idx": 3,
+        "pred_text": "Operation: Add/adjust update audit test to cover partial update semantics consistent with `update_fi...",
+        "gt_idx": 1,
+        "gt_text": "Operation: Add update_fields-aware filtering to diff generation | Function: EnterpriseAuditMiddlewar...",
+        "similarity": 0.7414
+      }
+    ],
+    "overall_semantic_score": 0.7829,
+    "computed": true,
     "error": null
   },
   "has_prediction": true,

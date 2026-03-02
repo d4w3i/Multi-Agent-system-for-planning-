@@ -1,5 +1,5 @@
 {
-  "evaluated_at": "2026-03-02T10:19:43.591172",
+  "evaluated_at": "2026-03-02T10:42:45.934478",
   "pr_dir": "/Users/davidecroatto/code/planningtest0/gpt_5-2_evals/first_turn/psf_requests/pr_6837",
   "pr_number": 6837,
   "repository": "psf/requests",
@@ -28,11 +28,33 @@
     "targets_total": 4
   },
   "semantic": {
-    "summary_similarity": 0.0,
-    "avg_step_similarity": 0.0,
-    "step_matches": [],
-    "overall_semantic_score": 0.0,
-    "computed": false,
+    "summary_similarity": 0.805,
+    "avg_step_similarity": 0.524,
+    "step_matches": [
+      {
+        "pred_idx": 0,
+        "pred_text": "Operation: Switch text credential encoding from latin-1 to UTF-8 when building the Basic Authorizati...",
+        "gt_idx": 0,
+        "gt_text": "Operation: Change Basic auth credential encoding from latin-1 to UTF-8 before base64 encoding | Func...",
+        "similarity": 0.9257
+      },
+      {
+        "pred_idx": 1,
+        "pred_text": "Operation: Ensure Digest Authorization header string formatting/quoting supports non-latin usernames...",
+        "gt_idx": 1,
+        "gt_text": "Operation: Add regression tests to ensure HTTPDigestAuth works with non-Latin credentials (both `str...",
+        "similarity": 0.6643
+      },
+      {
+        "pred_idx": 3,
+        "pred_text": "Operation: Keep preemptive Digest header injection consistent with updated header construction for s...",
+        "gt_idx": 2,
+        "gt_text": "Operation: Add companion regression test for HTTPDigestAuth when credentials are provided as UTF-8 e...",
+        "similarity": 0.5059
+      }
+    ],
+    "overall_semantic_score": 0.6083,
+    "computed": true,
     "error": null
   },
   "has_prediction": true,

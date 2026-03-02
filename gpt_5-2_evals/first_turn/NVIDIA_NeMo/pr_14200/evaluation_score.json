@@ -1,5 +1,5 @@
 {
-  "evaluated_at": "2026-03-02T10:19:43.566413",
+  "evaluated_at": "2026-03-02T10:41:50.139014",
   "pr_dir": "/Users/davidecroatto/code/planningtest0/gpt_5-2_evals/first_turn/NVIDIA_NeMo/pr_14200",
   "pr_number": 14200,
   "repository": "NVIDIA/NeMo",
@@ -28,11 +28,33 @@
     "targets_total": 5
   },
   "semantic": {
-    "summary_similarity": 0.0,
-    "avg_step_similarity": 0.0,
-    "step_matches": [],
-    "overall_semantic_score": 0.0,
-    "computed": false,
+    "summary_similarity": 0.7683,
+    "avg_step_similarity": 0.4103,
+    "step_matches": [
+      {
+        "pred_idx": 0,
+        "pred_text": "Operation: Switch SPECTER reranker dataset construction to use the on-disk JSONL query field key | F...",
+        "gt_idx": 0,
+        "gt_text": "Operation: Adjust Specter preprocessing output schema to emit the new question field name | Function...",
+        "similarity": 0.7751
+      },
+      {
+        "pred_idx": 1,
+        "pred_text": "Operation: (Optional hardening) Add backward-compatible fallback for question/query key mismatch whe...",
+        "gt_idx": 1,
+        "gt_text": "Operation: Remove leftover debug output / tidy formatting around example processing | Function: _pro...",
+        "similarity": 0.431
+      },
+      {
+        "pred_idx": 4,
+        "pred_text": "Operation: Update schema assertion test to reflect the canonical key and prevent regressions | Funct...",
+        "gt_idx": 2,
+        "gt_text": "Operation: Update the unit test to assert the new output key | Function: test_specter_reranker_datam...",
+        "similarity": 0.8453
+      }
+    ],
+    "overall_semantic_score": 0.5177,
+    "computed": true,
     "error": null
   },
   "has_prediction": true,

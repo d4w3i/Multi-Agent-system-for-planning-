@@ -1,5 +1,5 @@
 {
-  "evaluated_at": "2026-03-02T10:19:43.563362",
+  "evaluated_at": "2026-03-02T10:41:46.099775",
   "pr_dir": "/Users/davidecroatto/code/planningtest0/gpt_5-2_evals/first_turn/KwaiVGI_LivePortrait/pr_31",
   "pr_number": 31,
   "repository": "KwaiVGI/LivePortrait",
@@ -28,11 +28,33 @@
     "targets_total": 3
   },
   "semantic": {
-    "summary_similarity": 0.0,
-    "avg_step_similarity": 0.0,
-    "step_matches": [],
-    "overall_semantic_score": 0.0,
-    "computed": false,
+    "summary_similarity": 0.8152,
+    "avg_step_similarity": 0.7156,
+    "step_matches": [
+      {
+        "pred_idx": 0,
+        "pred_text": "Operation: Extend video-writing utility to optionally mux audio from a source video after encoding f...",
+        "gt_idx": 0,
+        "gt_text": "Operation: Add a new CLI/config flag to control whether audio should be muxed into the generated vid...",
+        "similarity": 0.658
+      },
+      {
+        "pred_idx": 1,
+        "pred_text": "Operation: Update ffmpeg mux helper to support taking audio from a video input and to use explicit s...",
+        "gt_idx": 1,
+        "gt_text": "Operation: Implement an ffmpeg-based helper to mux audio from the driving input into a silent render...",
+        "similarity": 0.7445
+      },
+      {
+        "pred_idx": 2,
+        "pred_text": "Operation: Integrate keep-audio logic in the main pipeline execution when driving input is a video |...",
+        "gt_idx": 2,
+        "gt_text": "Operation: Wire audio muxing into the main pipeline outputs (both the concatenated preview and the f...",
+        "similarity": 0.7442
+      }
+    ],
+    "overall_semantic_score": 0.7455,
+    "computed": true,
     "error": null
   },
   "has_prediction": true,

@@ -1,5 +1,5 @@
 {
-  "evaluated_at": "2026-03-02T10:19:43.593045",
+  "evaluated_at": "2026-03-02T10:42:50.688132",
   "pr_dir": "/Users/davidecroatto/code/planningtest0/gpt_5-2_evals/first_turn/pyecharts_pyecharts/pr_2380",
   "pr_number": 2380,
   "repository": "pyecharts/pyecharts",
@@ -28,11 +28,75 @@
     "targets_total": 10
   },
   "semantic": {
-    "summary_similarity": 0.0,
-    "avg_step_similarity": 0.0,
-    "step_matches": [],
-    "overall_semantic_score": 0.0,
-    "computed": false,
+    "summary_similarity": 0.7404,
+    "avg_step_similarity": 0.5669,
+    "step_matches": [
+      {
+        "pred_idx": 0,
+        "pred_text": "Operation: Fix Timeline option initialization to ensure correct baseOption/options schema and safe d...",
+        "gt_idx": 5,
+        "gt_text": "Operation: Extend MarkPointOpts to accept animation_opts and merge its fields into the emitted optio...",
+        "similarity": 0.4974
+      },
+      {
+        "pred_idx": 1,
+        "pred_text": "Operation: Adjust timeline schema application so timeline component config is placed consistently un...",
+        "gt_idx": 8,
+        "gt_text": "Operation: Update tests to import AnimationOpts from the new module path | Reason: Keep the test sui...",
+        "similarity": 0.4449
+      },
+      {
+        "pred_idx": 2,
+        "pred_text": "Operation: Fix Timeline frame assembly so baseOption is not incorrectly overwritten by the last adde...",
+        "gt_idx": 1,
+        "gt_text": "Operation: Fix Timeline.add to persist each chart’s legend into per-frame options | Function: Timeli...",
+        "similarity": 0.7681
+      },
+      {
+        "pred_idx": 3,
+        "pred_text": "Operation: Fix shared-component merge logic to avoid duplicated/invalid component lists across frame...",
+        "gt_idx": 2,
+        "gt_text": "Operation: Simplify component merging logic to always update baseOption with the chart’s component c...",
+        "similarity": 0.7976
+      },
+      {
+        "pred_idx": 4,
+        "pred_text": "Operation: Add animation-related fields to MarkLineOpts and serialize them into the markLine contain...",
+        "gt_idx": 6,
+        "gt_text": "Operation: Extend MarkLineOpts to accept animation_opts and merge its fields into the emitted option...",
+        "similarity": 0.8761
+      },
+      {
+        "pred_idx": 5,
+        "pred_text": "Operation: Add animation-related fields to MarkAreaOpts and serialize them into the markArea contain...",
+        "gt_idx": 7,
+        "gt_text": "Operation: Extend MarkAreaOpts to accept animation_opts and merge its fields into the emitted option...",
+        "similarity": 0.8697
+      },
+      {
+        "pred_idx": 7,
+        "pred_text": "Operation: Update MarkAreaItem boundary reference mapping (two-point structure) to support revised r...",
+        "gt_idx": 4,
+        "gt_text": "Operation: Add AnimationOpts definition into series_options as a BasicOpts-derived option container ...",
+        "similarity": 0.3799
+      },
+      {
+        "pred_idx": 8,
+        "pred_text": "Operation: Harden Timeline-related serialization in get_options (only if timeline reproducer indicat...",
+        "gt_idx": 0,
+        "gt_text": "Operation: Update import wiring to source AnimationOpts from series_options instead of global_option...",
+        "similarity": 0.5088
+      },
+      {
+        "pred_idx": 9,
+        "pred_text": "Operation: Fix dump_options serialization for nested Timeline frames and option objects if JSON emis...",
+        "gt_idx": 3,
+        "gt_text": "Operation: Remove the AnimationOpts class from global options and re-export/import it from series_op...",
+        "similarity": 0.5262
+      }
+    ],
+    "overall_semantic_score": 0.6189,
+    "computed": true,
     "error": null
   },
   "has_prediction": true,

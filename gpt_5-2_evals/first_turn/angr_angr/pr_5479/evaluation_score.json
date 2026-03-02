@@ -1,5 +1,5 @@
 {
-  "evaluated_at": "2026-03-02T10:19:43.572216",
+  "evaluated_at": "2026-03-02T10:42:03.177458",
   "pr_dir": "/Users/davidecroatto/code/planningtest0/gpt_5-2_evals/first_turn/angr_angr/pr_5479",
   "pr_number": 5479,
   "repository": "angr/angr",
@@ -28,11 +28,26 @@
     "targets_total": 2
   },
   "semantic": {
-    "summary_similarity": 0.0,
-    "avg_step_similarity": 0.0,
-    "step_matches": [],
-    "overall_semantic_score": 0.0,
-    "computed": false,
+    "summary_similarity": 0.7549,
+    "avg_step_similarity": 0.7562,
+    "step_matches": [
+      {
+        "pred_idx": 0,
+        "pred_text": "Operation: Attach self.arch to the synthesized implicit outparam void* type before passing it to nex...",
+        "gt_idx": 0,
+        "gt_text": "Operation: Fix `arg_session` to attach the current architecture to the implicit out-param `void*` ty...",
+        "similarity": 0.8993
+      },
+      {
+        "pred_idx": 1,
+        "pred_text": "Operation: Keep SimTypePointer.size strict; optionally add/adjust an assertion or comment to reinfor...",
+        "gt_idx": 1,
+        "gt_text": "Operation: Fix `return_val` to attach the current architecture to the synthesized `void*` return poi...",
+        "similarity": 0.6132
+      }
+    ],
+    "overall_semantic_score": 0.7558,
+    "computed": true,
     "error": null
   },
   "has_prediction": true,

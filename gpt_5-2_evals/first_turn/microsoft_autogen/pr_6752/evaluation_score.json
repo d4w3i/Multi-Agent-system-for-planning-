@@ -1,5 +1,5 @@
 {
-  "evaluated_at": "2026-03-02T10:19:43.587528",
+  "evaluated_at": "2026-03-02T10:42:34.753110",
   "pr_dir": "/Users/davidecroatto/code/planningtest0/gpt_5-2_evals/first_turn/microsoft_autogen/pr_6752",
   "pr_number": 6752,
   "repository": "microsoft/autogen",
@@ -28,11 +28,47 @@
     "targets_total": 5
   },
   "semantic": {
-    "summary_similarity": 0.0,
-    "avg_step_similarity": 0.0,
-    "step_matches": [],
-    "overall_semantic_score": 0.0,
-    "computed": false,
+    "summary_similarity": 0.823,
+    "avg_step_similarity": 0.7067,
+    "step_matches": [
+      {
+        "pred_idx": 0,
+        "pred_text": "Operation: Change graph completion behavior to signal natural termination (without scheduling a stop...",
+        "gt_idx": 1,
+        "gt_text": "Operation: Refactor speaker selection to stop selecting a synthetic stop agent when no ready speaker...",
+        "similarity": 0.8703
+      },
+      {
+        "pred_idx": 1,
+        "pred_text": "Operation: Remove stop-agent wiring from GraphFlow construction: do not prepend `_StopAgent` to part...",
+        "gt_idx": 4,
+        "gt_text": "Operation: Simplify GraphFlow construction by removing stop-agent participant injection and stop-mes...",
+        "similarity": 0.8742
+      },
+      {
+        "pred_idx": 2,
+        "pred_text": "Operation: Teach the base manager transition logic to treat “no next speakers” from `select_speaker(...",
+        "gt_idx": 14,
+        "gt_text": "Operation: Update serialization/deserialization test to assert no StopMessage instances appear in co...",
+        "similarity": 0.5311
+      },
+      {
+        "pred_idx": 3,
+        "pred_text": "Operation: Allow immediate natural completion at start when `select_speaker()` indicates there are n...",
+        "gt_idx": 7,
+        "gt_text": "Operation: Update parallel join-all test expectations by removing stop-agent assertions and adjustin...",
+        "similarity": 0.5986
+      },
+      {
+        "pred_idx": 4,
+        "pred_text": "Operation: After processing agent responses, allow natural completion when no next speakers remain; ...",
+        "gt_idx": 2,
+        "gt_text": "Operation: Implement graph-completion-aware termination logic that signals termination without addin...",
+        "similarity": 0.6592
+      }
+    ],
+    "overall_semantic_score": 0.7416,
+    "computed": true,
     "error": null
   },
   "has_prediction": true,

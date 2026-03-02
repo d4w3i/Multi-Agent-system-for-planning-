@@ -1,5 +1,5 @@
 {
-  "evaluated_at": "2026-03-02T10:19:43.569848",
+  "evaluated_at": "2026-03-02T10:41:56.288002",
   "pr_dir": "/Users/davidecroatto/code/planningtest0/gpt_5-2_evals/first_turn/Significant-Gravitas_AutoGPT/pr_10395",
   "pr_number": 10395,
   "repository": "Significant-Gravitas/AutoGPT",
@@ -28,11 +28,68 @@
     "targets_total": 8
   },
   "semantic": {
-    "summary_similarity": 0.0,
-    "avg_step_similarity": 0.0,
-    "step_matches": [],
-    "overall_semantic_score": 0.0,
-    "computed": false,
+    "summary_similarity": 0.7567,
+    "avg_step_similarity": 0.7852,
+    "step_matches": [
+      {
+        "pred_idx": 0,
+        "pred_text": "Operation: Add payload-size limiting + truncation to node execution update publishing (sync bus) bef...",
+        "gt_idx": 7,
+        "gt_text": "Operation: Route synchronous node execution update publishing through a truncation-aware publish hel...",
+        "similarity": 0.8479
+      },
+      {
+        "pred_idx": 1,
+        "pred_text": "Operation: Apply the same payload-size limiting + truncation policy to graph execution update publis...",
+        "gt_idx": 8,
+        "gt_text": "Operation: Route synchronous graph execution update publishing through a truncation-aware publish he...",
+        "similarity": 0.8589
+      },
+      {
+        "pred_idx": 2,
+        "pred_text": "Operation: Apply payload-size limiting + truncation to node execution update publishing (async bus),...",
+        "gt_idx": 10,
+        "gt_text": "Operation: Route async node execution update publishing through the truncation-aware async publish h...",
+        "similarity": 0.8682
+      },
+      {
+        "pred_idx": 3,
+        "pred_text": "Operation: Apply payload-size limiting + truncation to graph execution update publishing (async bus)...",
+        "gt_idx": 12,
+        "gt_text": "Operation: Implement async truncation-aware publish helper that trims execution event fields before ...",
+        "similarity": 0.8014
+      },
+      {
+        "pred_idx": 4,
+        "pred_text": "Operation: Fix termination transition data: treat TERMINATED as terminal by setting endedTime (and a...",
+        "gt_idx": 14,
+        "gt_text": "Operation: Publish execution events immediately when a graph is already terminated/completed/failed ...",
+        "similarity": 0.5569
+      },
+      {
+        "pred_idx": 5,
+        "pred_text": "Operation: Adjust graph execution stats update gating to allow final writes/events on termination/ti...",
+        "gt_idx": 17,
+        "gt_text": "Operation: Update graph execution status to TERMINATED and publish the graph termination event concu...",
+        "similarity": 0.7238
+      },
+      {
+        "pred_idx": 6,
+        "pred_text": "Operation: Enhance continuous_retry decorator to support coroutine functions: use async wrapper with...",
+        "gt_idx": 20,
+        "gt_text": "Operation: Enhance the continuous_retry decorator to support both sync and async callables | Functio...",
+        "similarity": 0.8332
+      },
+      {
+        "pred_idx": 7,
+        "pred_text": "Operation: Optimize spreadsheet reading by streaming row outputs rather than materializing full data...",
+        "gt_idx": 2,
+        "gt_text": "Operation: Change the Spreadsheet block generator logic to conditionally yield either per-row output...",
+        "similarity": 0.7913
+      }
+    ],
+    "overall_semantic_score": 0.7767,
+    "computed": true,
     "error": null
   },
   "has_prediction": true,

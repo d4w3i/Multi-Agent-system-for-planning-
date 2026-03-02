@@ -1,5 +1,5 @@
 {
-  "evaluated_at": "2026-03-02T10:19:43.562171",
+  "evaluated_at": "2026-03-02T10:41:43.480466",
   "pr_dir": "/Users/davidecroatto/code/planningtest0/gpt_5-2_evals/first_turn/EleutherAI_lm-evaluation-harness/pr_2940",
   "pr_number": 2940,
   "repository": "EleutherAI/lm-evaluation-harness",
@@ -28,11 +28,75 @@
     "targets_total": 12
   },
   "semantic": {
-    "summary_similarity": 0.0,
-    "avg_step_similarity": 0.0,
-    "step_matches": [],
-    "overall_semantic_score": 0.0,
-    "computed": false,
+    "summary_similarity": 0.7358,
+    "avg_step_similarity": 0.5174,
+    "step_matches": [
+      {
+        "pred_idx": 0,
+        "pred_text": "Operation: Remove brittle `from lm_eval.utils import eval_logger` dependency by relying on a module-...",
+        "gt_idx": 0,
+        "gt_text": "Operation: Replace deprecated eval_logger import with stdlib logging-based module logger | Reason: T...",
+        "similarity": 0.7622
+      },
+      {
+        "pred_idx": 1,
+        "pred_text": "Operation: Update option-order robustness doc processing to use the module-local stdlib-backed `eval...",
+        "gt_idx": 2,
+        "gt_text": "Operation: Replace deprecated eval_logger import with stdlib logging-based module logger | Reason: K...",
+        "similarity": 0.662
+      },
+      {
+        "pred_idx": 2,
+        "pred_text": "Operation: Ensure non-greedy robustness doc processing continues to log missing-template errors via ...",
+        "gt_idx": 8,
+        "gt_text": "Operation: Replace deprecated eval_logger import in shared score utilities with stdlib logging-based...",
+        "similarity": 0.692
+      },
+      {
+        "pred_idx": 3,
+        "pred_text": "Operation: Replace removed `eval_logger` import usage inside Perspective API toxicity metric with a ...",
+        "gt_idx": 4,
+        "gt_text": "Operation: Replace deprecated eval_logger import with stdlib logging-based module logger | Reason: `...",
+        "similarity": 0.7382
+      },
+      {
+        "pred_idx": 4,
+        "pred_text": "Operation: Keep AGIEval per-prompt accuracy reporting working by ensuring `eval_logger` resolves to ...",
+        "gt_idx": 5,
+        "gt_text": "Operation: Remove broken eval_logger import and introduce a module-scoped stdlib logger for score AG...",
+        "similarity": 0.74
+      },
+      {
+        "pred_idx": 5,
+        "pred_text": "Operation: Keep AGIEval per-option accuracy reporting working by migrating to module-local stdlib lo...",
+        "gt_idx": 3,
+        "gt_text": "Operation: Fix incorrect logger import path and define module logger via stdlib logging | Reason: Th...",
+        "similarity": 0.5826
+      },
+      {
+        "pred_idx": 7,
+        "pred_text": "Operation: Keep Math per-prompt accuracy reporting working by migrating to module-local stdlib logge...",
+        "gt_idx": 6,
+        "gt_text": "Operation: Remove broken eval_logger import and introduce a module-scoped stdlib logger for score Ma...",
+        "similarity": 0.7285
+      },
+      {
+        "pred_idx": 9,
+        "pred_text": "Operation: Preserve MMLU-Pro per-prompt macro accuracy category logging by ensuring `eval_logger` is...",
+        "gt_idx": 7,
+        "gt_text": "Operation: Remove broken eval_logger import and introduce a module-scoped stdlib logger for MMLU-Pro...",
+        "similarity": 0.6911
+      },
+      {
+        "pred_idx": 11,
+        "pred_text": "Operation: Preserve MMLU-Pro non-greedy macro accuracy category logging by ensuring `eval_logger` is...",
+        "gt_idx": 1,
+        "gt_text": "Operation: Replace deprecated eval_logger import with stdlib logging-based module logger | Reason: E...",
+        "similarity": 0.6121
+      }
+    ],
+    "overall_semantic_score": 0.5829,
+    "computed": true,
     "error": null
   },
   "has_prediction": true,

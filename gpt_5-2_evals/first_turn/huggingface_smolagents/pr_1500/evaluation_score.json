@@ -1,5 +1,5 @@
 {
-  "evaluated_at": "2026-03-02T10:19:43.582309",
+  "evaluated_at": "2026-03-02T10:42:24.068530",
   "pr_dir": "/Users/davidecroatto/code/planningtest0/gpt_5-2_evals/first_turn/huggingface_smolagents/pr_1500",
   "pr_number": 1500,
   "repository": "huggingface/smolagents",
@@ -28,11 +28,33 @@
     "targets_total": 3
   },
   "semantic": {
-    "summary_similarity": 0.0,
-    "avg_step_similarity": 0.0,
-    "step_matches": [],
-    "overall_semantic_score": 0.0,
-    "computed": false,
+    "summary_similarity": 0.7948,
+    "avg_step_similarity": 0.8009,
+    "step_matches": [
+      {
+        "pred_idx": 0,
+        "pred_text": "Operation: Generalize step finalization to work for PlanningStep as well as ActionStep (preferably b...",
+        "gt_idx": 1,
+        "gt_text": "Operation: Widen the accepted step type for finalization to include planning steps | Function: _fina...",
+        "similarity": 0.7617
+      },
+      {
+        "pred_idx": 1,
+        "pred_text": "Operation: Invoke `_finalize_step(planning_step)` in the planning-step flow before appending to memo...",
+        "gt_idx": 0,
+        "gt_text": "Operation: Invoke step-finalization for planning steps in the streaming run loop | Function: _run_st...",
+        "similarity": 0.7621
+      },
+      {
+        "pred_idx": 2,
+        "pred_text": "Operation: Add a regression test that installs a step callback, runs an agent using FakeCodeModelPla...",
+        "gt_idx": 2,
+        "gt_text": "Operation: Add a regression test ensuring callbacks (and interrupt behavior) trigger for both planni...",
+        "similarity": 0.8789
+      }
+    ],
+    "overall_semantic_score": 0.7991,
+    "computed": true,
     "error": null
   },
   "has_prediction": true,
