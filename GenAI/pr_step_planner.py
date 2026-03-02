@@ -327,6 +327,7 @@ class TokenUsageReport(BaseModel):
     total_input_tokens: int
     total_output_tokens: int
     total_tokens: int
+    duration_seconds: Optional[float] = None
 
 # =============================================================================
 # SESSION LOG MODELS - Full trace for dashboard consumption
@@ -1479,6 +1480,7 @@ Use the context files to understand dependencies and generate a detailed step-by
             total_input_tokens=session_log.token_summary["total_input_tokens"],
             total_output_tokens=session_log.token_summary["total_output_tokens"],
             total_tokens=session_log.token_summary["total_tokens"],
+            duration_seconds=session_log.duration_seconds,
         )
         with open(token_path, 'w', encoding='utf-8') as f:
             json.dump(token_report.model_dump(), f, indent=2, ensure_ascii=False)

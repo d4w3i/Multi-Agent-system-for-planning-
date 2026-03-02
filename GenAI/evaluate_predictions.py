@@ -816,11 +816,22 @@ def evaluate_batch(base_path: Path, limit: Optional[int] = None, compute_semanti
     })
 
     if skip_existing:
+        def _has_valid_score(d: Path) -> bool:
+            p = d / "evaluation_score.json"
+            if not p.exists():
+                return False
+            try:
+                with open(p, encoding="utf-8") as f:
+                    data = json.load(f)
+                return not data.get("error")
+            except Exception:
+                return False
+
         original_count = len(pr_dirs)
-        pr_dirs = [d for d in pr_dirs if not (d / "evaluation_score.json").exists()]
+        pr_dirs = [d for d in pr_dirs if not _has_valid_score(d)]
         skipped = original_count - len(pr_dirs)
         if skipped:
-            print(f"{Fore.YELLOW}⏭️  Skipping {skipped} PRs with existing evaluation_score.json{Style.RESET_ALL}")
+            print(f"{Fore.YELLOW}⏭️  Skipping {skipped} PRs with valid evaluation_score.json{Style.RESET_ALL}")
 
     if limit:
         pr_dirs = pr_dirs[:limit]

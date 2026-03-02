@@ -17,7 +17,15 @@ from pathlib import Path
 
 from flask import Flask, abort, jsonify, redirect, render_template_string, request, send_from_directory, session, url_for
 
-DATASET = Path(__file__).parent.parent / "gpt_5-2_evals" / "first_turn"
+_BASE = Path(__file__).parent.parent
+
+DATASETS: dict[str, Path] = {
+    "gpt_5-2":    _BASE / "gpt_5-2_evals"   / "first_turn",
+    "gpt_5-mini": _BASE / "gpt_5-mini_evals" / "first_turn",
+    "gpt_5-nano": _BASE / "gpt_5-nano_evals"  / "first_turn",
+}
+DEFAULT_EVAL = "gpt_5-2"
+
 STATIC = Path(__file__).parent / "static"
 
 _PASSWORD = os.environ.get("DASHBOARD_PASSWORD", "RapidVienn4gain")
@@ -106,6 +114,16 @@ def _stdev(values):
     clean = [v for v in values if v is not None]
     return round(statistics.stdev(clean), 4) if len(clean) > 1 else None
 
+def _quantile(values, q: float):
+    clean = sorted(v for v in values if v is not None)
+    if not clean:
+        return None
+    n = len(clean)
+    idx = q * (n - 1)
+    lo_i, hi_i = int(idx), min(int(idx) + 1, n - 1)
+    return round(clean[lo_i] + (idx - lo_i) * (clean[hi_i] - clean[lo_i]), 4)
+
+
 def _histogram(values, n_bins=10, lo=0.0, hi=1.0):
     counts = [0] * n_bins
     width = (hi - lo) / n_bins
@@ -125,6 +143,7 @@ def _pr_summary(repo_dir_name: str, pr_dir: Path) -> dict | None:
 
     score = _load(pr_dir / "evaluation_score.json")
     tokens = _load(pr_dir / "token_usage.json")
+    session = _load(pr_dir / "session_log.json")
 
     has_score = score is not None
     has_eval_error = bool(score.get("error")) if has_score else False
@@ -177,30 +196,72 @@ def _pr_summary(repo_dir_name: str, pr_dir: Path) -> dict | None:
 
     # ── token info ──────────────────────────────────────────────────────────
     if tokens:
-        result["total_tokens"]   = tokens.get("total_tokens", 0)
-        result["total_requests"] = tokens.get("total_requests", 0)
-        result["model"]          = tokens.get("model_name", "")
+        result["total_tokens"]        = tokens.get("total_tokens", 0)
+        result["total_input_tokens"]  = tokens.get("total_input_tokens", 0)
+        result["total_output_tokens"] = tokens.get("total_output_tokens", 0)
+        result["total_requests"]      = tokens.get("total_requests", 0)
+        result["model"]               = tokens.get("model_name", "")
+        dur = tokens.get("duration_seconds")
+        if dur is None and session:
+            dur = session.get("duration_seconds")
+        result["duration_seconds"]    = dur
+        agents_list = tokens.get("agents", [])
+        agent_map   = {a["agent_name"]: a.get("total_tokens", 0)
+                       for a in agents_list if "agent_name" in a}
+        result["agent1_tokens"] = agent_map.get("analysis_agent")
+        result["agent2_tokens"] = agent_map.get("context_planner_agent")
     else:
-        result["total_tokens"]   = None
-        result["total_requests"] = None
-        result["model"]          = ""
+        result["total_tokens"]        = None
+        result["total_input_tokens"]  = None
+        result["total_output_tokens"] = None
+        result["total_requests"]      = None
+        result["model"]               = ""
+        result["duration_seconds"]    = session.get("duration_seconds") if session else None
+        result["agent1_tokens"]       = None
+        result["agent2_tokens"]       = None
+
+    # ── tool call info ───────────────────────────────────────────────────────
+    if session:
+        tc_total: int = 0
+        tc_by_agent: dict[str, int] = {}
+        tc_by_tool:  dict[str, int] = {}
+        for agent in session.get("agents", []):
+            agent_name = agent.get("name", "unknown")
+            calls = agent.get("tool_calls", [])
+            count = len(calls)
+            tc_total += count
+            tc_by_agent[agent_name] = tc_by_agent.get(agent_name, 0) + count
+            for call in calls:
+                tool_name = call.get("tool_name", "unknown")
+                tc_by_tool[tool_name] = tc_by_tool.get(tool_name, 0) + 1
+        result["tool_calls_total"]    = tc_total
+        result["tool_calls_by_agent"] = tc_by_agent
+        result["tool_calls_by_tool"]  = tc_by_tool
+    else:
+        result["tool_calls_total"]    = None
+        result["tool_calls_by_agent"] = {}
+        result["tool_calls_by_tool"]  = {}
 
     return result
 
 
-_cache: dict = {"prs": None, "ts": 0.0}
+_cache: dict = {k: {"prs": None, "ts": 0.0} for k in DATASETS}
 _CACHE_TTL = 60  # seconds
 
 
-def _collect_prs() -> list[dict]:
+def _collect_prs(eval_key: str = DEFAULT_EVAL) -> list[dict]:
+    if eval_key not in DATASETS:
+        eval_key = DEFAULT_EVAL
+    c = _cache[eval_key]
     now = time.monotonic()
-    if _cache["prs"] is not None and now - _cache["ts"] < _CACHE_TTL:
-        return _cache["prs"]
+    if c["prs"] is not None and now - c["ts"] < _CACHE_TTL:
+        return c["prs"]
 
     prs = []
-    if not DATASET.exists():
+    dataset = DATASETS[eval_key]
+    if not dataset.exists():
         return prs
-    for repo_dir in sorted(DATASET.iterdir()):
+    for repo_dir in sorted(dataset.iterdir()):
         if not repo_dir.is_dir():
             continue
         for pr_dir in sorted(repo_dir.iterdir()):
@@ -210,8 +271,8 @@ def _collect_prs() -> list[dict]:
             if pr:
                 prs.append(pr)
 
-    _cache["prs"] = prs
-    _cache["ts"] = now
+    c["prs"] = prs
+    c["ts"] = now
     return prs
 
 
@@ -222,9 +283,18 @@ def index():
     return send_from_directory(app.static_folder, "index.html")
 
 
+@app.route("/api/datasets")
+def api_datasets():
+    return jsonify({
+        k: {"exists": v.exists(), "label": k.replace("_", "-")}
+        for k, v in DATASETS.items()
+    })
+
+
 @app.route("/api/summary")
 def api_summary():
-    prs       = _collect_prs()
+    eval_key  = request.args.get("eval", DEFAULT_EVAL)
+    prs       = _collect_prs(eval_key)
     evaluated = [p for p in prs if p["has_score"] and not p["has_eval_error"]]
     repos     = sorted({p["repository"] for p in prs if p.get("repository")})
 
@@ -276,8 +346,16 @@ def api_summary():
         if p.get("steps_predicted") is not None and p.get("steps_actual") is not None
     ]
     step_diffs = [p["steps_predicted"] - p["steps_actual"] for p in steps_with_data]
-    avg_step_diff = round(statistics.mean(step_diffs), 3) if step_diffs else None
+    avg_step_diff = round(statistics.mean(abs(d) for d in step_diffs), 3) if step_diffs else None
     std_step_diff = round(statistics.stdev(step_diffs), 3) if len(step_diffs) > 1 else None
+
+    steps_actual_vals = [p["steps_actual"]    for p in steps_with_data]
+    steps_pred_vals   = [p["steps_predicted"]  for p in steps_with_data]
+    abs_diff_vals     = [abs(d) for d in step_diffs]
+
+    total_token_vals = [p["total_tokens"]  for p in prs if p.get("total_tokens")  is not None]
+    agent1_vals      = [p["agent1_tokens"] for p in prs if p.get("agent1_tokens") is not None]
+    agent2_vals      = [p["agent2_tokens"] for p in prs if p.get("agent2_tokens") is not None]
 
     # separate chart data for steps — includes ALL evaluated PRs with step data,
     # not just those that also have token_usage.json
@@ -291,6 +369,22 @@ def api_summary():
         }
         for p in steps_with_data
     ]
+
+    # ── tool call aggregation ────────────────────────────────────────────────
+    prs_with_tc = [p for p in prs if p.get("tool_calls_total") is not None]
+    agent_names_set: set[str] = set()
+    tool_names_set:  set[str] = set()
+    for p in prs_with_tc:
+        agent_names_set.update(p.get("tool_calls_by_agent", {}).keys())
+        tool_names_set.update(p.get("tool_calls_by_tool",  {}).keys())
+    avg_tc_by_agent = {
+        name: _avg(p["tool_calls_by_agent"].get(name, 0) for p in prs_with_tc)
+        for name in sorted(agent_names_set)
+    }
+    avg_tc_by_tool = {
+        name: _avg(p["tool_calls_by_tool"].get(name, 0) for p in prs_with_tc)
+        for name in sorted(tool_names_set)
+    }
 
     return jsonify({
         "total_prs":          len(prs),
@@ -321,13 +415,81 @@ def api_summary():
                                     if p.get("target_coverage") is not None),
         "avg_step_diff":  avg_step_diff,
         "std_step_diff":  std_step_diff,
+        # steps distribution
+        "stdev_steps_actual":      _stdev(steps_actual_vals),
+        "q1_steps_actual":         _quantile(steps_actual_vals, 0.25),
+        "median_steps_actual":     _median(steps_actual_vals),
+        "q3_steps_actual":         _quantile(steps_actual_vals, 0.75),
+        "min_steps_actual":        min(steps_actual_vals)   if steps_actual_vals else None,
+        "max_steps_actual":        max(steps_actual_vals)   if steps_actual_vals else None,
+        "stdev_steps_predicted":   _stdev(steps_pred_vals),
+        "q1_steps_predicted":      _quantile(steps_pred_vals, 0.25),
+        "median_steps_predicted":  _median(steps_pred_vals),
+        "q3_steps_predicted":      _quantile(steps_pred_vals, 0.75),
+        "min_steps_predicted":     min(steps_pred_vals)     if steps_pred_vals else None,
+        "max_steps_predicted":     max(steps_pred_vals)     if steps_pred_vals else None,
+        "avg_abs_step_diff":       avg_step_diff,
+        "stdev_abs_step_diff":     _stdev(abs_diff_vals),
+        "q1_abs_step_diff":        _quantile(abs_diff_vals, 0.25),
+        "median_abs_step_diff":    _median(abs_diff_vals),
+        "q3_abs_step_diff":        _quantile(abs_diff_vals, 0.75),
+        "min_abs_step_diff":       min(abs_diff_vals)       if abs_diff_vals else None,
+        "max_abs_step_diff":       max(abs_diff_vals)       if abs_diff_vals else None,
         # tokens
         "avg_total_tokens":   _avg(
             p["total_tokens"] for p in prs if p.get("total_tokens") is not None
         ),
+        "avg_input_tokens":   _avg(
+            p["total_input_tokens"] for p in prs if p.get("total_input_tokens") is not None
+        ),
+        "avg_output_tokens":  _avg(
+            p["total_output_tokens"] for p in prs if p.get("total_output_tokens") is not None
+        ),
         "avg_total_requests": _avg(
             p["total_requests"] for p in prs if p.get("total_requests") is not None
         ),
+        "avg_duration_seconds": _avg(
+            p["duration_seconds"] for p in prs if p.get("duration_seconds") is not None
+        ),
+        # per-agent token distribution
+        "avg_agent1_tokens":    _avg(agent1_vals),
+        "stdev_agent1_tokens":  _stdev(agent1_vals),
+        "q1_agent1_tokens":     _quantile(agent1_vals, 0.25),
+        "median_agent1_tokens": _median(agent1_vals),
+        "q3_agent1_tokens":     _quantile(agent1_vals, 0.75),
+        "min_agent1_tokens":    min(agent1_vals) if agent1_vals else None,
+        "max_agent1_tokens":    max(agent1_vals) if agent1_vals else None,
+        "avg_agent2_tokens":    _avg(agent2_vals),
+        "stdev_agent2_tokens":  _stdev(agent2_vals),
+        "q1_agent2_tokens":     _quantile(agent2_vals, 0.25),
+        "median_agent2_tokens": _median(agent2_vals),
+        "q3_agent2_tokens":     _quantile(agent2_vals, 0.75),
+        "min_agent2_tokens":    min(agent2_vals) if agent2_vals else None,
+        "max_agent2_tokens":    max(agent2_vals) if agent2_vals else None,
+        "stdev_total_tokens":   _stdev(total_token_vals),
+        "q1_total_tokens":      _quantile(total_token_vals, 0.25),
+        "median_total_tokens":  _median(total_token_vals),
+        "q3_total_tokens":      _quantile(total_token_vals, 0.75),
+        "min_total_tokens":     min(total_token_vals) if total_token_vals else None,
+        "max_total_tokens":     max(total_token_vals) if total_token_vals else None,
+        # files F1 distribution stats
+        "q1_files_f1":            _quantile(f1_vals, 0.25),
+        "q3_files_f1":            _quantile(f1_vals, 0.75),
+        "min_files_f1":           round(min(f1_vals), 4) if f1_vals else None,
+        "max_files_f1":           round(max(f1_vals), 4) if f1_vals else None,
+        # functions F1 additional stats
+        "median_functions_f1":    _median(func_f1_vals),
+        "stdev_functions_f1":     _stdev(func_f1_vals),
+        "q1_functions_f1":        _quantile(func_f1_vals, 0.25),
+        "q3_functions_f1":        _quantile(func_f1_vals, 0.75),
+        "min_functions_f1":       round(min(func_f1_vals), 4) if func_f1_vals else None,
+        "max_functions_f1":       round(max(func_f1_vals), 4) if func_f1_vals else None,
+        # semantic additional stats
+        "stdev_semantic":         _stdev(sem_vals),
+        "q1_semantic":            _quantile(sem_vals, 0.25),
+        "q3_semantic":            _quantile(sem_vals, 0.75),
+        "min_semantic":           round(min(sem_vals), 4) if sem_vals else None,
+        "max_semantic":           round(max(sem_vals), 4) if sem_vals else None,
         # distributions
         "f1_distribution":          _histogram(f1_vals),
         "functions_f1_distribution":_histogram(func_f1_vals),
@@ -337,21 +499,31 @@ def api_summary():
         "repositories":      repos,
         "chart_data":        chart_data,
         "steps_chart_data":  steps_chart_data,
+        # tool calls
+        "avg_tool_calls":          _avg(p["tool_calls_total"] for p in prs_with_tc),
+        "avg_tool_calls_by_agent": avg_tc_by_agent,
+        "avg_tool_calls_by_tool":  avg_tc_by_tool,
+        "prs_with_tool_data":      len(prs_with_tc),
+        # eval metadata
+        "eval_key":          eval_key,
     })
 
 
 @app.route("/api/prs")
 def api_prs():
-    return jsonify(_collect_prs())
+    eval_key = request.args.get("eval", DEFAULT_EVAL)
+    return jsonify(_collect_prs(eval_key))
 
 
 @app.route("/api/pr/<path:pr_id>")
 def api_pr_detail(pr_id: str):
+    eval_key = request.args.get("eval", DEFAULT_EVAL)
+    dataset  = DATASETS.get(eval_key, DATASETS[DEFAULT_EVAL])
     parts = pr_id.split("/", 1)
     if len(parts) != 2:
         abort(404)
     repo_dir_name, pr_name = parts
-    pr_dir = DATASET / repo_dir_name / pr_name
+    pr_dir = dataset / repo_dir_name / pr_name
     if not pr_dir.exists():
         abort(404)
 
@@ -367,8 +539,10 @@ def api_pr_detail(pr_id: str):
 
 if __name__ == "__main__":
     print()
-    print("  ◆ PR4Code Evaluation Dashboard  [gpt_5-2_evals / first_turn]")
-    print(f"  ◆ Dataset : {DATASET}")
+    print("  ◆ PR4Code Evaluation Dashboard")
+    for key, path in DATASETS.items():
+        status = "✓" if path.exists() else "✗ (missing)"
+        print(f"  ◆ [{key}] {path}  {status}")
     print(f"  ◆ URL     : http://localhost:2002")
     print()
     app.run(debug=False, port=2002)
