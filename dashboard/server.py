@@ -136,6 +136,53 @@ def _histogram(values, n_bins=10, lo=0.0, hi=1.0):
     return counts
 
 
+def _histogram_auto(values, n_bins=10):
+    """Auto-range histogram; returns {counts, lo, hi} for arbitrary value ranges."""
+    clean = [v for v in values if v is not None]
+    if not clean:
+        return {"counts": [0] * n_bins, "lo": 0, "hi": 1}
+    lo = 0
+    hi = max(clean)
+    counts = _histogram(clean, n_bins, lo=lo, hi=hi if hi > 0 else 1)
+    return {"counts": counts, "lo": lo, "hi": float(hi)}
+
+
+def _histogram_shared(values_list, n_bins=10):
+    """Bin multiple series with identical bin edges (shared lo/hi).
+    Returns {lo, hi, series: [counts_a, counts_b, ...]} for overlay charts."""
+    all_vals = [v for vals in values_list for v in vals if v is not None]
+    if not all_vals:
+        return {"lo": 0, "hi": 1, "series": [[0] * n_bins for _ in values_list]}
+    lo = 0
+    hi = max(all_vals)
+    effective_hi = hi if hi > 0 else 1
+    series = [_histogram(vals, n_bins, lo=lo, hi=effective_hi) for vals in values_list]
+    return {"lo": lo, "hi": float(hi), "series": series}
+
+
+def _histogram_int(values):
+    """One bin per integer value; lo = min(values), hi = max(values).
+    Handles both positive-only (step counts) and signed (step diffs) data."""
+    clean = [int(round(v)) for v in values if v is not None]
+    if not clean:
+        return {"counts": [], "lo": 0, "hi": 0, "step": 1}
+    lo = min(clean)
+    hi = max(clean)
+    n_bins = hi - lo + 1
+    counts = [0] * n_bins
+    for v in clean:
+        counts[v - lo] += 1
+    return {"counts": counts, "lo": float(lo), "hi": float(hi), "step": 1}
+
+
+def _has_empty_fn(plan_json) -> bool:
+    """Return True if any step in step_plan.steps has an empty function_to_modify."""
+    if not plan_json:
+        return False
+    steps = (plan_json.get("step_plan") or {}).get("steps") or []
+    return any(not (s.get("function_to_modify") or "").strip() for s in steps)
+
+
 def _pr_summary(repo_dir_name: str, pr_dir: Path) -> dict | None:
     data = _load(pr_dir / "data.json")
     if not data:
@@ -163,6 +210,12 @@ def _pr_summary(repo_dir_name: str, pr_dir: Path) -> dict | None:
         "has_ground_truth": (pr_dir / "ground_truth.json").exists(),
         "has_session_log": (pr_dir / "session_log.json").exists(),
     }
+
+    gt_data   = _load(pr_dir / "ground_truth.json")
+    pred_data = _load(pr_dir / "predicted_plan.json")
+    result["has_empty_function_step"] = _has_empty_fn(gt_data) or _has_empty_fn(pred_data)
+    result["empty_fn_in_gt"]          = _has_empty_fn(gt_data)
+    result["empty_fn_in_pred"]        = _has_empty_fn(pred_data)
 
     # ── evaluation metrics ──────────────────────────────────────────────────
     if has_score and not has_eval_error:
@@ -298,12 +351,143 @@ def api_summary():
     evaluated = [p for p in prs if p["has_score"] and not p["has_eval_error"]]
     repos     = sorted({p["repository"] for p in prs if p.get("repository")})
 
+    eval_with_empty = [p for p in evaluated if p.get("empty_fn_in_gt")]
+    eval_without    = [p for p in evaluated if not p.get("empty_fn_in_gt")]
+
+    # subset: evaluated PRs where ground truth has NO empty function_to_modify fields
+    clean_gt = [p for p in evaluated if not p.get("empty_fn_in_gt")]
+    cgt_f1_vals   = [p["files_f1"]     for p in clean_gt if p["files_f1"]     is not None]
+    cgt_func_vals = [p["functions_f1"] for p in clean_gt if p["functions_f1"] is not None]
+    cgt_sem_vals  = [p["semantic"]     for p in clean_gt if p["semantic"]      is not None]
+    cgt_dur_vals  = [p["duration_seconds"] for p in clean_gt if p.get("duration_seconds") is not None]
+
+    cgt_steps_with_data = [
+        p for p in clean_gt
+        if p.get("steps_predicted") is not None and p.get("steps_actual") is not None
+    ]
+    cgt_steps_actual_vals = [p["steps_actual"]    for p in cgt_steps_with_data]
+    cgt_steps_pred_vals   = [p["steps_predicted"]  for p in cgt_steps_with_data]
+    cgt_step_diffs        = [p["steps_predicted"] - p["steps_actual"] for p in cgt_steps_with_data]
+    cgt_abs_diff_vals     = [abs(d) for d in cgt_step_diffs]
+    cgt_total_token_vals  = [p["total_tokens"]   for p in clean_gt if p.get("total_tokens")   is not None]
+    cgt_agent1_vals       = [p["agent1_tokens"]  for p in clean_gt if p.get("agent1_tokens")  is not None]
+    cgt_agent2_vals       = [p["agent2_tokens"]  for p in clean_gt if p.get("agent2_tokens")  is not None]
+    cgt_req_vals          = [p["total_requests"] for p in clean_gt if p.get("total_requests") is not None]
+    cgt_prs_with_tc       = [p for p in clean_gt if p.get("tool_calls_total") is not None]
+    cgt_agent_names: set[str] = set()
+    cgt_tool_names:  set[str] = set()
+    for p in cgt_prs_with_tc:
+        cgt_agent_names.update(p.get("tool_calls_by_agent", {}).keys())
+        cgt_tool_names.update(p.get("tool_calls_by_tool",  {}).keys())
+    cgt_avg_tc_by_agent = {
+        name: _avg(p["tool_calls_by_agent"].get(name, 0) for p in cgt_prs_with_tc)
+        for name in sorted(cgt_agent_names)
+    }
+    cgt_avg_tc_by_tool = {
+        name: _avg(p["tool_calls_by_tool"].get(name, 0) for p in cgt_prs_with_tc)
+        for name in sorted(cgt_tool_names)
+    }
+
+    clean_gt_stats = {
+        "n":                     len(clean_gt),
+        # files F1
+        "avg_files_f1":          _avg(cgt_f1_vals),
+        "min_files_f1":          round(min(cgt_f1_vals), 4)  if cgt_f1_vals  else None,
+        "q1_files_f1":           _quantile(cgt_f1_vals, 0.25),
+        "median_files_f1":       _median(cgt_f1_vals),
+        "q3_files_f1":           _quantile(cgt_f1_vals, 0.75),
+        "max_files_f1":          round(max(cgt_f1_vals), 4)  if cgt_f1_vals  else None,
+        # functions F1
+        "avg_functions_f1":      _avg(cgt_func_vals),
+        "min_functions_f1":      round(min(cgt_func_vals), 4) if cgt_func_vals else None,
+        "q1_functions_f1":       _quantile(cgt_func_vals, 0.25),
+        "median_functions_f1":   _median(cgt_func_vals),
+        "q3_functions_f1":       _quantile(cgt_func_vals, 0.75),
+        "max_functions_f1":      round(max(cgt_func_vals), 4) if cgt_func_vals else None,
+        # semantic
+        "avg_semantic":          _avg(cgt_sem_vals),
+        "min_semantic":          round(min(cgt_sem_vals), 4)  if cgt_sem_vals  else None,
+        "q1_semantic":           _quantile(cgt_sem_vals, 0.25),
+        "median_semantic":       _median(cgt_sem_vals),
+        "q3_semantic":           _quantile(cgt_sem_vals, 0.75),
+        "max_semantic":          round(max(cgt_sem_vals), 4)  if cgt_sem_vals  else None,
+        # duration
+        "avg_duration_seconds":  _avg(cgt_dur_vals),
+        "stdev_duration_seconds":_stdev(cgt_dur_vals),
+        "min_duration_seconds":  min(cgt_dur_vals)            if cgt_dur_vals  else None,
+        "q1_duration_seconds":   _quantile(cgt_dur_vals, 0.25),
+        "median_duration_seconds": _median(cgt_dur_vals),
+        "q3_duration_seconds":   _quantile(cgt_dur_vals, 0.75),
+        "max_duration_seconds":  max(cgt_dur_vals)            if cgt_dur_vals  else None,
+        # steps actual
+        "avg_steps_actual":      _avg(cgt_steps_actual_vals),
+        "stdev_steps_actual":    _stdev(cgt_steps_actual_vals),
+        "q1_steps_actual":       _quantile(cgt_steps_actual_vals, 0.25),
+        "median_steps_actual":   _median(cgt_steps_actual_vals),
+        "q3_steps_actual":       _quantile(cgt_steps_actual_vals, 0.75),
+        "min_steps_actual":      min(cgt_steps_actual_vals) if cgt_steps_actual_vals else None,
+        "max_steps_actual":      max(cgt_steps_actual_vals) if cgt_steps_actual_vals else None,
+        # steps predicted
+        "avg_steps_predicted":   _avg(cgt_steps_pred_vals),
+        "stdev_steps_predicted": _stdev(cgt_steps_pred_vals),
+        "q1_steps_predicted":    _quantile(cgt_steps_pred_vals, 0.25),
+        "median_steps_predicted":_median(cgt_steps_pred_vals),
+        "q3_steps_predicted":    _quantile(cgt_steps_pred_vals, 0.75),
+        "min_steps_predicted":   min(cgt_steps_pred_vals) if cgt_steps_pred_vals else None,
+        "max_steps_predicted":   max(cgt_steps_pred_vals) if cgt_steps_pred_vals else None,
+        # abs step diff
+        "avg_abs_step_diff":     _avg(cgt_abs_diff_vals),
+        "stdev_abs_step_diff":   _stdev(cgt_abs_diff_vals),
+        "q1_abs_step_diff":      _quantile(cgt_abs_diff_vals, 0.25),
+        "median_abs_step_diff":  _median(cgt_abs_diff_vals),
+        "q3_abs_step_diff":      _quantile(cgt_abs_diff_vals, 0.75),
+        "min_abs_step_diff":     min(cgt_abs_diff_vals) if cgt_abs_diff_vals else None,
+        "max_abs_step_diff":     max(cgt_abs_diff_vals) if cgt_abs_diff_vals else None,
+        # total tokens
+        "avg_total_tokens":      _avg(cgt_total_token_vals),
+        "stdev_total_tokens":    _stdev(cgt_total_token_vals),
+        "q1_total_tokens":       _quantile(cgt_total_token_vals, 0.25),
+        "median_total_tokens":   _median(cgt_total_token_vals),
+        "q3_total_tokens":       _quantile(cgt_total_token_vals, 0.75),
+        "min_total_tokens":      min(cgt_total_token_vals) if cgt_total_token_vals else None,
+        "max_total_tokens":      max(cgt_total_token_vals) if cgt_total_token_vals else None,
+        # agent 1 tokens
+        "avg_agent1_tokens":     _avg(cgt_agent1_vals),
+        "stdev_agent1_tokens":   _stdev(cgt_agent1_vals),
+        "q1_agent1_tokens":      _quantile(cgt_agent1_vals, 0.25),
+        "median_agent1_tokens":  _median(cgt_agent1_vals),
+        "q3_agent1_tokens":      _quantile(cgt_agent1_vals, 0.75),
+        "min_agent1_tokens":     min(cgt_agent1_vals) if cgt_agent1_vals else None,
+        "max_agent1_tokens":     max(cgt_agent1_vals) if cgt_agent1_vals else None,
+        # agent 2 tokens
+        "avg_agent2_tokens":     _avg(cgt_agent2_vals),
+        "stdev_agent2_tokens":   _stdev(cgt_agent2_vals),
+        "q1_agent2_tokens":      _quantile(cgt_agent2_vals, 0.25),
+        "median_agent2_tokens":  _median(cgt_agent2_vals),
+        "q3_agent2_tokens":      _quantile(cgt_agent2_vals, 0.75),
+        "min_agent2_tokens":     min(cgt_agent2_vals) if cgt_agent2_vals else None,
+        "max_agent2_tokens":     max(cgt_agent2_vals) if cgt_agent2_vals else None,
+        # API requests
+        "avg_total_requests":    _avg(cgt_req_vals),
+        "stdev_total_requests":  _stdev(cgt_req_vals),
+        "q1_total_requests":     _quantile(cgt_req_vals, 0.25),
+        "median_total_requests": _median(cgt_req_vals),
+        "q3_total_requests":     _quantile(cgt_req_vals, 0.75),
+        "min_total_requests":    min(cgt_req_vals) if cgt_req_vals else None,
+        "max_total_requests":    max(cgt_req_vals) if cgt_req_vals else None,
+        # tool calls
+        "avg_tool_calls":          _avg(p["tool_calls_total"] for p in cgt_prs_with_tc),
+        "avg_tool_calls_by_agent": cgt_avg_tc_by_agent,
+        "avg_tool_calls_by_tool":  cgt_avg_tc_by_tool,
+    }
+
     chart_data = [
         {
             "id":       p["id"],
             "title":    p["title"][:80],
             "repo":     p["repository"],
             "tokens":   p["total_tokens"],
+            "tool_calls": p.get("tool_calls_total"),
             "requests": p.get("total_requests") or 0,
             "files_f1":          p["files_f1"],
             "files_precision":   p["files_precision"],
@@ -314,6 +498,8 @@ def api_summary():
             "steps_predicted":   p.get("steps_predicted"),
             "steps_actual":      p.get("steps_actual"),
             "target_coverage":   p.get("target_coverage") or 0,
+            "duration":          p.get("duration_seconds"),
+            "empty_fn_in_gt":    p.get("empty_fn_in_gt", False),
         }
         for p in evaluated
         if p.get("total_tokens") is not None
@@ -353,9 +539,11 @@ def api_summary():
     steps_pred_vals   = [p["steps_predicted"]  for p in steps_with_data]
     abs_diff_vals     = [abs(d) for d in step_diffs]
 
-    total_token_vals = [p["total_tokens"]  for p in prs if p.get("total_tokens")  is not None]
-    agent1_vals      = [p["agent1_tokens"] for p in prs if p.get("agent1_tokens") is not None]
-    agent2_vals      = [p["agent2_tokens"] for p in prs if p.get("agent2_tokens") is not None]
+    total_token_vals = [p["total_tokens"]       for p in prs if p.get("total_tokens")       is not None]
+    agent1_vals      = [p["agent1_tokens"]      for p in prs if p.get("agent1_tokens")      is not None]
+    agent2_vals      = [p["agent2_tokens"]      for p in prs if p.get("agent2_tokens")      is not None]
+    dur_vals         = [p["duration_seconds"]   for p in prs if p.get("duration_seconds")   is not None]
+    req_vals         = [p["total_requests"]     for p in prs if p.get("total_requests")     is not None]
 
     # separate chart data for steps — includes ALL evaluated PRs with step data,
     # not just those that also have token_usage.json
@@ -445,12 +633,22 @@ def api_summary():
         "avg_output_tokens":  _avg(
             p["total_output_tokens"] for p in prs if p.get("total_output_tokens") is not None
         ),
-        "avg_total_requests": _avg(
+        "avg_total_requests":    _avg(
             p["total_requests"] for p in prs if p.get("total_requests") is not None
         ),
-        "avg_duration_seconds": _avg(
-            p["duration_seconds"] for p in prs if p.get("duration_seconds") is not None
-        ),
+        "stdev_total_requests":  _stdev(req_vals),
+        "q1_total_requests":     _quantile(req_vals, 0.25),
+        "median_total_requests": _median(req_vals),
+        "q3_total_requests":     _quantile(req_vals, 0.75),
+        "min_total_requests":    min(req_vals) if req_vals else None,
+        "max_total_requests":    max(req_vals) if req_vals else None,
+        "avg_duration_seconds":    _avg(dur_vals),
+        "stdev_duration_seconds":  _stdev(dur_vals),
+        "q1_duration_seconds":     _quantile(dur_vals, 0.25),
+        "median_duration_seconds": _median(dur_vals),
+        "q3_duration_seconds":     _quantile(dur_vals, 0.75),
+        "min_duration_seconds":    min(dur_vals) if dur_vals else None,
+        "max_duration_seconds":    max(dur_vals) if dur_vals else None,
         # per-agent token distribution
         "avg_agent1_tokens":    _avg(agent1_vals),
         "stdev_agent1_tokens":  _stdev(agent1_vals),
@@ -490,10 +688,21 @@ def api_summary():
         "q3_semantic":            _quantile(sem_vals, 0.75),
         "min_semantic":           round(min(sem_vals), 4) if sem_vals else None,
         "max_semantic":           round(max(sem_vals), 4) if sem_vals else None,
-        # distributions
+        # distributions (0-1 metrics)
         "f1_distribution":          _histogram(f1_vals),
         "functions_f1_distribution":_histogram(func_f1_vals),
         "semantic_distribution":    _histogram(sem_vals),
+        # distributions (auto-range for steps / tokens)
+        "steps_actual_distribution":    _histogram_int(steps_actual_vals),
+        "steps_predicted_distribution": _histogram_int(steps_pred_vals),
+        "abs_diff_distribution":        _histogram_auto(abs_diff_vals),
+        "step_diff_distribution":       _histogram_int(step_diffs),
+        "agent1_tokens_distribution":   _histogram_auto(agent1_vals),
+        "agent2_tokens_distribution":   _histogram_auto(agent2_vals),
+        "total_tokens_distribution":    _histogram_auto(total_token_vals),
+        "agents_overlay_distribution":  _histogram_shared([agent1_vals, agent2_vals]),
+        "duration_distribution":        _histogram_auto(dur_vals),
+        "requests_distribution":        _histogram_int(req_vals),
         # per-repo
         "per_repo":          per_repo,
         "repositories":      repos,
@@ -504,6 +713,23 @@ def api_summary():
         "avg_tool_calls_by_agent": avg_tc_by_agent,
         "avg_tool_calls_by_tool":  avg_tc_by_tool,
         "prs_with_tool_data":      len(prs_with_tc),
+        # empty-function step subset comparison
+        "count_with_empty_fn":    len(eval_with_empty),
+        "count_without_empty_fn": len(eval_without),
+        "empty_fn_comparison": {
+            "with": {
+                "avg_files_f1":     _avg(p["files_f1"]     for p in eval_with_empty),
+                "avg_functions_f1": _avg(p["functions_f1"] for p in eval_with_empty),
+                "avg_semantic":     _avg(p["semantic"]      for p in eval_with_empty),
+            },
+            "without": {
+                "avg_files_f1":     _avg(p["files_f1"]     for p in eval_without),
+                "avg_functions_f1": _avg(p["functions_f1"] for p in eval_without),
+                "avg_semantic":     _avg(p["semantic"]      for p in eval_without),
+            },
+        },
+        # clean GT subset (no empty function_to_modify in ground truth)
+        "clean_gt_stats":    clean_gt_stats,
         # eval metadata
         "eval_key":          eval_key,
     })

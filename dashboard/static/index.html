@@ -16,7 +16,7 @@
       inset: 0;
       z-index: 0;
       pointer-events: none;
-      opacity: 0.45;
+      opacity: 0.88;
     }
 
     :root {
@@ -25,6 +25,7 @@
       --surface-hover: #f0ece3;
       --border: #000000;
       --border-hi: #000000;
+      --border-int: #d0ccc4;
       --text-1: #000000;
       --text-2: #333333;
       --text-3: #666666;
@@ -67,7 +68,7 @@
       z-index: 1;
       max-width: 1400px;
       margin: 0 auto;
-      padding: 0 28px 80px;
+      padding: 20px 28px 80px;
     }
 
     /* NAV */
@@ -193,40 +194,40 @@
 
     /* Tier 1 — primary KPI sections */
     .section-h1 {
-      font-size: 0.78rem;
-      font-weight: 700;
-      letter-spacing: 0.12em;
+      font-size: 1.5rem;
+      font-weight: 900;
+      letter-spacing: 0em;
       text-transform: uppercase;
       color: var(--text-1);
-      margin-bottom: 14px;
-      margin-top: 56px;
+      margin-bottom: 10px;
+      margin-top: 20px;
       display: flex;
       align-items: center;
       gap: 12px;
       border-bottom: 1px solid var(--border);
       border-left: 4px solid var(--text-1);
-      padding-bottom: 8px;
+      padding-bottom: 6px;
       padding-left: 10px;
     }
 
-    .section-h1:first-of-type {
-      margin-top: 32px;
+    .page-section > .section-h1:first-child {
+      margin-top: 12px;
     }
 
     /* Tier 2 — secondary/operational sections */
     .section-h2 {
-      font-size: 0.7rem;
-      font-weight: 700;
-      letter-spacing: 0.12em;
+      font-size: 1rem;
+      font-weight: 900;
+      letter-spacing: 0.04em;
       text-transform: uppercase;
       color: var(--text-3);
-      margin-bottom: 14px;
-      margin-top: 36px;
+      margin-bottom: 10px;
+      margin-top: 18px;
       display: flex;
       align-items: center;
       gap: 12px;
       border-bottom: 1px solid var(--border);
-      padding-bottom: 8px;
+      padding-bottom: 6px;
     }
 
     /* MACRO METRICS BLOCK */
@@ -255,24 +256,24 @@
 
     .macro-card {
       background: var(--surface);
-      padding: 28px 32px 32px;
+      padding: 16px 24px 16px;
       display: flex;
       flex-direction: column;
     }
 
     .mc-label {
-      font-size: 0.72rem;
-      font-weight: 700;
+      font-size: 0.75rem;
+      font-weight: 900;
       letter-spacing: 0.14em;
       text-transform: uppercase;
       color: var(--text-3);
       border-bottom: 2px solid var(--border);
-      padding-bottom: 10px;
-      margin-bottom: 22px;
+      padding-bottom: 6px;
+      margin-bottom: 10px;
     }
 
     .mc-avg {
-      font-size: 4rem;
+      font-size: 2.6rem;
       font-weight: 700;
       line-height: 1;
       font-family: 'Courier New', Courier, monospace;
@@ -285,15 +286,50 @@
       text-transform: uppercase;
       letter-spacing: 0.1em;
       color: var(--text-3);
-      margin-top: 5px;
-      margin-bottom: 24px;
+      margin-top: 4px;
+      margin-bottom: 8px;
+    }
+
+    /* section detail toggle — hidden by default, revealed by section button.
+       !important is required because layout rules like .s2-cards { display: grid }
+       appear later in the stylesheet and would otherwise win the cascade. */
+    .mc-detail { display: none !important; }
+    .section-detail-open .mc-detail { display: block !important; }
+    .section-detail-open .s2-cards.mc-detail { display: grid !important; }
+
+    .section-expand-btn {
+      display: block;
+      width: 100%;
+      padding: 10px 12px;
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      background: var(--bg);
+      color: var(--text-2);
+      border: 1px solid var(--border);
+      border-top: 2px solid var(--border);
+      cursor: pointer;
+      text-align: center;
+      margin-top: 0;
+      transition: background 0.15s, color 0.15s;
+    }
+
+    /* reduce card bottom padding when detail is collapsed so no empty gap shows */
+    #section-kpi:not(.section-detail-open) .macro-card { padding-bottom: 8px; }
+    #section-activity:not(.section-detail-open) .macro-card { padding-bottom: 8px !important; }
+
+    .section-expand-btn:hover {
+      background: var(--text-1);
+      color: var(--surface);
     }
 
     .mc-stats {
       display: flex;
       flex-direction: column;
       gap: 0;
-      border-top: 1px solid #e0ddd6;
+      border-top: 1px solid var(--border-int);
       padding-top: 16px;
     }
 
@@ -302,7 +338,7 @@
       align-items: baseline;
       gap: 12px;
       padding: 6px 0;
-      border-bottom: 1px dashed #e8e4dd;
+      border-bottom: 1px dashed var(--border-int);
     }
 
     .mc-stat-row:last-child {
@@ -354,7 +390,7 @@
       display: flex;
       align-items: center;
       gap: 5px;
-      font-size: 0.55rem;
+      font-size: 0.58rem;
       font-weight: 700;
       letter-spacing: 0.08em;
       text-transform: uppercase;
@@ -376,7 +412,7 @@
     .bp-axis-row {
       display: flex;
       justify-content: space-between;
-      font-size: 0.52rem;
+      font-size: 0.60rem;
       color: var(--text-3);
       font-family: 'Courier New', Courier, monospace;
       margin-bottom: 10px;
@@ -387,6 +423,18 @@
       position: relative;
       height: 40px;
       margin: 0 4px;
+    }
+
+    .bp-track::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background: repeating-linear-gradient(to right,
+          transparent,
+          transparent calc(25% - 0.5px),
+          rgba(0, 0, 0, 0.10) calc(25% - 0.5px),
+          rgba(0, 0, 0, 0.10) 25%);
     }
 
     .bp-whisker {
@@ -445,7 +493,7 @@
     }
 
     .bp-leg-key {
-      font-size: 0.52rem;
+      font-size: 0.60rem;
       text-transform: uppercase;
       letter-spacing: 0.08em;
       color: var(--text-3);
@@ -478,7 +526,7 @@
       justify-content: space-between;
       padding: 0 6px 0 0;
       align-items: flex-end;
-      font-size: 0.5rem;
+      font-size: 0.60rem;
       color: var(--text-3);
       font-family: 'Courier New', Courier, monospace;
       user-select: none;
@@ -500,9 +548,9 @@
       inset: 0;
       pointer-events: none;
       background:
-        linear-gradient(to bottom, transparent calc(25% - 0.5px), rgba(0, 0, 0, 0.07) calc(25% - 0.5px), rgba(0, 0, 0, 0.07) 25%, transparent 25%) no-repeat top/100% 100%,
-        linear-gradient(to bottom, transparent calc(50% - 0.5px), rgba(0, 0, 0, 0.07) calc(50% - 0.5px), rgba(0, 0, 0, 0.07) 50%, transparent 50%) no-repeat top/100% 100%,
-        linear-gradient(to bottom, transparent calc(75% - 0.5px), rgba(0, 0, 0, 0.07) calc(75% - 0.5px), rgba(0, 0, 0, 0.07) 75%, transparent 75%) no-repeat top/100% 100%;
+        linear-gradient(to bottom, transparent calc(25% - 0.5px), rgba(0, 0, 0, 0.10) calc(25% - 0.5px), rgba(0, 0, 0, 0.10) 25%, transparent 25%) no-repeat top/100% 100%,
+        linear-gradient(to bottom, transparent calc(50% - 0.5px), rgba(0, 0, 0, 0.10) calc(50% - 0.5px), rgba(0, 0, 0, 0.10) 50%, transparent 50%) no-repeat top/100% 100%,
+        linear-gradient(to bottom, transparent calc(75% - 0.5px), rgba(0, 0, 0, 0.10) calc(75% - 0.5px), rgba(0, 0, 0, 0.10) 75%, transparent 75%) no-repeat top/100% 100%;
     }
 
     .mc-vbp-col {
@@ -600,7 +648,7 @@
     }
 
     .s2-cards .macro-card {
-      padding: 28px 32px 0;
+      padding: 14px 22px 14px;
     }
 
     .s2-col-grid {
@@ -608,27 +656,27 @@
       grid-template-columns: repeat(3, 1fr);
       gap: 1px;
       background: var(--border);
-      margin: 16px -32px 0;
+      margin: 10px -22px 0;
     }
 
     .s2-col {
       background: var(--surface);
-      padding: 16px 20px 24px;
+      padding: 10px 14px 12px;
     }
 
     .s2-col-label {
-      font-size: 0.72rem;
+      font-size: 0.65rem;
       font-weight: 700;
       letter-spacing: 0.12em;
       text-transform: uppercase;
       color: var(--text-3);
-      border-bottom: 1px solid #e0ddd6;
-      padding-bottom: 8px;
-      margin-bottom: 14px;
+      border-bottom: 1px solid var(--border-int);
+      padding-bottom: 5px;
+      margin-bottom: 8px;
     }
 
     .s2-col .mc-avg {
-      font-size: 2.2rem;
+      font-size: 1.8rem;
     }
 
     .s2-col .mc-stat-key {
@@ -661,9 +709,224 @@
       border-color: var(--border);
     }
 
-    /* chart cards in slide 1: restore bottom padding; chart fills available height */
+    /* chart cards in slide 1: reduce top margin, restore bottom padding */
     .s2-cards .mc-chart-card {
-      padding-bottom: 32px;
+      padding-top: 14px;
+      padding-bottom: 24px;
+    }
+
+    /* ── distribution mini-carousel ── */
+    .dist-carousel {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+
+    .dc-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border-bottom: 2px solid var(--border);
+      padding-bottom: 8px;
+      margin-bottom: 10px;
+    }
+
+    .dc-title {
+      flex: 1;
+      font-size: 0.85rem;
+      font-weight: 700;
+      letter-spacing: 0.10em;
+      text-transform: uppercase;
+      color: var(--text-3);
+      text-align: center;
+    }
+
+    .dc-arrow {
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--text-1);
+      font-size: 1rem;
+      line-height: 1;
+      cursor: pointer;
+      padding: 2px 7px 3px;
+      font-family: 'Courier New', Courier, monospace;
+      flex-shrink: 0;
+    }
+
+    .dc-arrow:hover:not(:disabled) {
+      background: var(--surface-hover);
+    }
+
+    .dc-arrow:disabled {
+      opacity: 0.22;
+      cursor: default;
+    }
+
+    .dc-slides {
+      flex: 1;
+      position: relative;
+      min-height: 0;
+    }
+
+    .dc-slide {
+      position: absolute;
+      inset: 0;
+      display: none;
+      flex-direction: column;
+    }
+
+    .dc-slide.active {
+      display: flex;
+    }
+
+    /* KPI (macro-card) carousels: flow-based slides, no absolute positioning.
+       Scoped to :not(.mc-chart-card) so steps/tokens chart cards keep
+       position:absolute;inset:0 on their slides (they rely on dc-slides having
+       a definite height from the grid row stretch). */
+    .macro-card:not(.mc-chart-card) .dc-slides {
+      min-height: 0;
+    }
+
+    .macro-card:not(.mc-chart-card) .dc-slide {
+      position: static;
+      inset: auto;
+    }
+
+    .macro-card:not(.mc-chart-card) .dc-chart-wrap {
+      min-height: 180px;
+    }
+
+    /* steps/tokens chart cards: give dc-slides a min-height so absolute slides
+       have a guaranteed fill target even before the grid row height is computed */
+    .mc-chart-card .dc-slides {
+      min-height: 240px;
+    }
+
+    /* KPI card: thin nav bar with arrows between avg and the sliding section */
+    .mc-bp-nav {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 4px;
+      border-top: 1px solid var(--border);
+      padding-top: 8px;
+      margin-bottom: 10px;
+      margin-top: 4px;
+    }
+
+    .dc-chart-wrap {
+      flex: 1;
+      position: relative;
+      min-height: 0;
+    }
+
+    /* HORIZONTAL BOX PLOT (hbp-*) */
+    .hbp-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      padding: 6px 0 4px;
+      width: 100%;
+    }
+
+    .hbp-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex: 1;
+      min-height: 22px;
+    }
+
+    .hbp-label {
+      width: 72px;
+      min-width: 72px;
+      text-align: right;
+      font-family: 'Courier New', monospace;
+      font-size: 10px;
+      line-height: 1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .hbp-track {
+      flex: 1;
+      position: relative;
+      align-self: stretch;
+      min-height: 22px;
+    }
+
+    .hbp-track::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background: repeating-linear-gradient(to right,
+          transparent,
+          transparent calc(25% - 0.5px),
+          rgba(0, 0, 0, 0.10) calc(25% - 0.5px),
+          rgba(0, 0, 0, 0.10) 25%);
+    }
+
+    .hbp-whisker {
+      position: absolute;
+      top: 50%;
+      height: 1px;
+      transform: translateY(-50%);
+    }
+
+    .hbp-cap {
+      position: absolute;
+      width: 1.5px;
+      top: 28%;
+      height: 44%;
+      transform: translateX(-50%);
+    }
+
+    .hbp-box {
+      position: absolute;
+      top: 18%;
+      height: 64%;
+    }
+
+    .hbp-median {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      width: 2px;
+      transform: translateX(-50%);
+    }
+
+    .hbp-mean {
+      position: absolute;
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+    }
+
+    .hbp-axis-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      margin-top: 2px;
+    }
+
+    .hbp-axis-spacer {
+      width: 72px;
+      min-width: 72px;
+    }
+
+    .hbp-axis {
+      flex: 1;
+      display: flex;
+      justify-content: space-between;
+      font-family: 'Courier New', monospace;
+      font-size: 9px;
+      color: #888;
     }
 
     /* METRICS REFERENCE */
@@ -748,7 +1011,7 @@
     }
 
     .mref-body {
-      font-size: 0.68rem;
+      font-size: 0.72rem;
       line-height: 1.6;
       color: var(--text-2);
     }
@@ -827,7 +1090,7 @@
     }
 
     .chart-title {
-      font-size: 0.78rem;
+      font-size: 0.85rem;
       font-weight: 700;
       color: var(--text-1);
       text-transform: uppercase;
@@ -1067,7 +1330,7 @@
     }
 
     .card-title {
-      font-size: 0.82rem;
+      font-size: 0.78rem;
       font-weight: 400;
       line-height: 1.45;
       color: var(--text-1);
@@ -1103,7 +1366,7 @@
     }
 
     .card-metric-lbl {
-      font-size: 0.55rem;
+      font-size: 0.60rem;
       color: var(--text-3);
       text-transform: uppercase;
       letter-spacing: 0.07em;
@@ -1116,7 +1379,7 @@
     }
 
     .card-metric-primary .card-metric-super-lbl {
-      font-size: 0.55rem;
+      font-size: 0.60rem;
       color: var(--text-3);
       text-transform: uppercase;
       letter-spacing: 0.08em;
@@ -1345,7 +1608,7 @@
     }
 
     .panel-metric-lbl {
-      font-size: 0.55rem;
+      font-size: 0.60rem;
       color: var(--text-3);
       text-transform: uppercase;
       letter-spacing: 0.07em;
@@ -1370,7 +1633,7 @@
       display: flex;
       flex-direction: column;
       padding: 6px 14px;
-      border-right: 1px solid #e0ddd6;
+      border-right: 1px solid var(--border-int);
     }
 
     .pat-item:last-child {
@@ -1378,7 +1641,7 @@
     }
 
     .pat-agent {
-      font-size: 0.55rem;
+      font-size: 0.60rem;
       text-transform: uppercase;
       letter-spacing: 0.07em;
       color: var(--text-3);
@@ -1393,7 +1656,7 @@
     }
 
     .pat-lbl {
-      font-size: 0.5rem;
+      font-size: 0.60rem;
       text-transform: uppercase;
       letter-spacing: 0.06em;
       color: var(--text-3);
@@ -1408,7 +1671,7 @@
 
     .tab-btn {
       padding: 10px 18px;
-      font-size: 0.68rem;
+      font-size: 0.72rem;
       font-weight: 700;
       background: none;
       border: none;
@@ -1481,7 +1744,7 @@
     }
 
     .ov-body-text {
-      font-size: 0.78rem;
+      font-size: 0.75rem;
       line-height: 1.6;
       color: var(--text-2);
       background: var(--bg);
@@ -1515,7 +1778,7 @@
 
     .token-table td {
       padding: 9px 10px;
-      border-bottom: 1px solid #e0ddd6;
+      border-bottom: 1px solid var(--border-int);
       color: var(--text-2);
     }
 
@@ -1539,7 +1802,7 @@
     }
 
     .token-bar-wrap {
-      background: #e0ddd6;
+      background: var(--border-int);
       height: 6px;
       overflow: hidden;
     }
@@ -1561,7 +1824,7 @@
       align-items: center;
       gap: 10px;
       background: var(--surface);
-      border-bottom: 1px solid #e0ddd6;
+      border-bottom: 1px solid var(--border-int);
       padding: 7px 12px;
       font-size: 0.75rem;
     }
@@ -1683,7 +1946,7 @@
     }
 
     .step-num {
-      font-size: 0.58rem;
+      font-size: 0.62rem;
       font-weight: 700;
       letter-spacing: 0.08em;
       text-transform: uppercase;
@@ -1704,7 +1967,7 @@
     }
 
     .step-no-match {
-      font-size: 0.58rem;
+      font-size: 0.62rem;
       font-weight: 700;
       letter-spacing: 0.1em;
       color: var(--rose);
@@ -1727,7 +1990,7 @@
     }
 
     .step-meta-row {
-      font-size: 0.68rem;
+      font-size: 0.72rem;
       display: flex;
       gap: 6px;
       align-items: flex-start;
@@ -1824,14 +2087,14 @@
 
     .agent-name {
       font-weight: 700;
-      font-size: 0.8rem;
+      font-size: 0.85rem;
       font-family: 'Courier New', Courier, monospace;
       text-transform: uppercase;
       letter-spacing: 0.04em;
     }
 
     .agent-phase-badge {
-      font-size: 0.58rem;
+      font-size: 0.62rem;
       font-weight: 700;
       letter-spacing: 0.06em;
       text-transform: uppercase;
@@ -1942,7 +2205,7 @@
     }
 
     .tool-call-section-title {
-      font-size: 0.58rem;
+      font-size: 0.62rem;
       font-weight: 700;
       letter-spacing: 0.08em;
       text-transform: uppercase;
@@ -2001,7 +2264,7 @@
     }
 
     .prompt-block-label {
-      font-size: 0.58rem;
+      font-size: 0.62rem;
       font-weight: 700;
       letter-spacing: 0.1em;
       text-transform: uppercase;
@@ -2056,7 +2319,121 @@
     .spacer-24 {
       height: 24px;
     }
+
+    /* ── page sections ─────────────────────────────────────────────── */
+    @keyframes pageIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .page-section {
+      display: none;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      box-shadow: 0 2px 16px rgba(0,0,0,0.18);
+      padding: 0 20px 28px;
+    }
+    .page-section.page-active {
+      display: block;
+      animation: pageIn 0.22s ease-out both;
+    }
+
+    /* ── sticky bottom nav ─────────────────────────────────────────── */
+    #sticky-nav {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 2px;
+      padding: 4px 5px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      box-shadow: 0 4px 24px rgba(0,0,0,0.45);
+      z-index: 9000;
+      font-family: 'Courier New', Courier, monospace;
+    }
+    .snav-btn {
+      padding: 8px 22px;
+      font-family: inherit;
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      background: transparent;
+      color: var(--text-3);
+      border: 1px solid transparent;
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+      white-space: nowrap;
+    }
+    .snav-btn:hover {
+      background: var(--bg);
+      color: var(--text-1);
+    }
+    .snav-btn.snav-active {
+      background: var(--text-1);
+      color: var(--surface);
+    }
+
+    /* ── correlation section ────────────────────────────────────────── */
+    .corr-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      margin-top: 14px;
+    }
+    @media (max-width: 900px) { .corr-grid { grid-template-columns: 1fr 1fr; } }
+    @media (max-width: 560px) { .corr-grid { grid-template-columns: 1fr; } }
+
+    .corr-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      padding: 14px 16px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .corr-title {
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-2);
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 6px;
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+    }
+    .corr-r {
+      font-size: 0.72rem;
+      font-weight: 500;
+      letter-spacing: 0.04em;
+      color: var(--text-1);
+      font-family: 'Courier New', Courier, monospace;
+    }
+    .corr-canvas-wrap {
+      position: relative;
+      height: 200px;
+    }
+    .corr-canvas-wrap canvas {
+      width: 100% !important;
+      height: 100% !important;
+    }
+    .corr-group-label {
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--text-3);
+      margin-top: 20px;
+      margin-bottom: 4px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 5px;
+    }
   </style>
+
 </head>
 
 <body>
@@ -2083,94 +2460,104 @@
   <!-- main content -->
   <div class="wrapper">
 
+    <div class="page-section page-active" id="page-perf">
+
     <!-- macro metrics -->
-    <div class="section-h1">Performance Overview</div>
-    <div class="macro-carousel">
+    <div class="section-h1" id="section-perf" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+      Performance Overview
+      <button class="chip" id="chip-cgt" onclick="toggleKpiCleanGt()" style="font-size:0.55rem">Clean GT only</button>
+      <span id="kpi-filter-subtitle" style="font-size:0.62rem;opacity:.6;font-weight:normal"></span>
+    </div>
+    <div class="macro-carousel" id="section-kpi">
       <div class="macro-cards">
 
-        <div class="macro-card" style="border-left: 4px solid var(--cyan)">
+        <div class="macro-card" id="dc-files" style="border-left: 4px solid var(--cyan)">
           <div class="mc-label">File F1</div>
           <div class="mc-avg score-none" id="mc-files-avg">—</div>
           <div class="mc-avg-lbl">avg F1</div>
-          <div class="mc-stats">
-            <div class="mc-stat-row">
-              <span class="mc-stat-key">σ</span>
-              <span class="mc-stat-val sd" id="mc-files-sd">—</span>
+          <div class="mc-detail">
+            <div class="mc-bp-nav">
+              <button class="dc-arrow dc-prev" onclick="dcNav('files',-1)" disabled>&#8249;</button>
+              <button class="dc-arrow dc-next" onclick="dcNav('files',1)">&#8250;</button>
             </div>
-            <div class="mc-stat-row">
-              <span class="mc-stat-key">Q1</span>
-              <span class="mc-stat-val q1" id="mc-files-q1">—</span>
-            </div>
-            <div class="mc-stat-row">
-              <span class="mc-stat-key">Med</span>
-              <span class="mc-stat-val med" id="mc-files-med">—</span>
-            </div>
-            <div class="mc-stat-row">
-              <span class="mc-stat-key">Q3</span>
-              <span class="mc-stat-val q3" id="mc-files-q3">—</span>
+            <div class="dc-slides">
+              <div class="dc-slide active">
+                <div id="bp-files-outer" class="bp-outer"></div>
+              </div>
+              <div class="dc-slide">
+                <div class="dc-chart-wrap"><canvas id="chart-kpi-files-hist"></canvas></div>
+              </div>
             </div>
           </div>
         </div>
 
-        <div class="macro-card" style="border-left: 4px solid var(--emerald)">
+        <div class="macro-card" id="dc-funcs" style="border-left: 4px solid var(--emerald)">
           <div class="mc-label">Function F1</div>
           <div class="mc-avg score-none" id="mc-funcs-avg">—</div>
           <div class="mc-avg-lbl">avg F1</div>
-          <div class="mc-stats">
-            <div class="mc-stat-row">
-              <span class="mc-stat-key">σ</span>
-              <span class="mc-stat-val sd" id="mc-funcs-sd">—</span>
+          <div class="mc-detail">
+            <div class="mc-bp-nav">
+              <button class="dc-arrow dc-prev" onclick="dcNav('funcs',-1)" disabled>&#8249;</button>
+              <button class="dc-arrow dc-next" onclick="dcNav('funcs',1)">&#8250;</button>
             </div>
-            <div class="mc-stat-row">
-              <span class="mc-stat-key">Q1</span>
-              <span class="mc-stat-val q1" id="mc-funcs-q1">—</span>
-            </div>
-            <div class="mc-stat-row">
-              <span class="mc-stat-key">Med</span>
-              <span class="mc-stat-val med" id="mc-funcs-med">—</span>
-            </div>
-            <div class="mc-stat-row">
-              <span class="mc-stat-key">Q3</span>
-              <span class="mc-stat-val q3" id="mc-funcs-q3">—</span>
+            <div class="dc-slides">
+              <div class="dc-slide active">
+                <div id="bp-funcs-outer" class="bp-outer"></div>
+              </div>
+              <div class="dc-slide">
+                <div class="dc-chart-wrap"><canvas id="chart-kpi-funcs-hist"></canvas></div>
+              </div>
             </div>
           </div>
         </div>
 
-        <div class="macro-card" style="border-left: 4px solid var(--rose)">
+        <div class="macro-card" id="dc-sem" style="border-left: 4px solid var(--rose)">
           <div class="mc-label">Semantic Similarity</div>
           <div class="mc-avg score-none" id="mc-sem-avg">—</div>
           <div class="mc-avg-lbl">avg score</div>
-          <div class="mc-stats">
-            <div class="mc-stat-row">
-              <span class="mc-stat-key">σ</span>
-              <span class="mc-stat-val sd" id="mc-sem-sd">—</span>
+          <div class="mc-detail">
+            <div class="mc-bp-nav">
+              <button class="dc-arrow dc-prev" onclick="dcNav('sem',-1)" disabled>&#8249;</button>
+              <button class="dc-arrow dc-next" onclick="dcNav('sem',1)">&#8250;</button>
             </div>
-            <div class="mc-stat-row">
-              <span class="mc-stat-key">Q1</span>
-              <span class="mc-stat-val q1" id="mc-sem-q1">—</span>
-            </div>
-            <div class="mc-stat-row">
-              <span class="mc-stat-key">Med</span>
-              <span class="mc-stat-val med" id="mc-sem-med">—</span>
-            </div>
-            <div class="mc-stat-row">
-              <span class="mc-stat-key">Q3</span>
-              <span class="mc-stat-val q3" id="mc-sem-q3">—</span>
+            <div class="dc-slides">
+              <div class="dc-slide active">
+                <div id="bp-sem-outer" class="bp-outer"></div>
+              </div>
+              <div class="dc-slide">
+                <div class="dc-chart-wrap"><canvas id="chart-kpi-sem-hist"></canvas></div>
+              </div>
             </div>
           </div>
         </div>
 
-        <div class="macro-card mc-chart-card">
-          <div class="mc-label">Distribution</div>
-          <div id="mc-combo-bp" style="display:flex;flex-direction:column;flex:1;min-height:0"></div>
+        <div class="macro-card" id="dc-time" style="border-left: 4px solid var(--amber)">
+          <div class="mc-label">Latency</div>
+          <div class="mc-avg" id="mc-time-avg">—</div>
+          <div class="mc-avg-lbl">avg seconds</div>
+          <div class="mc-detail">
+            <div class="mc-bp-nav">
+              <button class="dc-arrow dc-prev" onclick="dcNav('time',-1)" disabled>&#8249;</button>
+              <button class="dc-arrow dc-next" onclick="dcNav('time',1)">&#8250;</button>
+            </div>
+            <div class="dc-slides">
+              <div class="dc-slide active">
+                <div id="bp-time-outer" class="bp-outer"></div>
+              </div>
+              <div class="dc-slide">
+                <div class="dc-chart-wrap"><canvas id="chart-kpi-time-hist"></canvas></div>
+              </div>
+            </div>
+          </div>
         </div>
 
       </div>
+      <button class="section-expand-btn" onclick="toggleSection('kpi')">&#9660;&nbsp;&nbsp;SHOW CHARTS</button>
     </div><!-- /macro-carousel -->
 
     <!-- steps & tokens overview -->
     <div class="section-h2">Steps &amp; Tokens</div>
-    <div class="s2-flat">
+    <div class="s2-flat" id="section-s2">
       <!-- stat cards -->
       <div class="s2-cards">
 
@@ -2182,45 +2569,51 @@
               <div class="s2-col-label">Ground Truth</div>
               <div class="mc-avg" id="s2-gt-avg">—</div>
               <div class="mc-avg-lbl">avg steps</div>
-              <div class="mc-stats">
-                <div class="mc-stat-row"><span class="mc-stat-key">σ</span><span class="mc-stat-val sd"
-                    id="s2-gt-sd">—</span></div>
-                <div class="mc-stat-row"><span class="mc-stat-key">Q1</span><span class="mc-stat-val q1"
-                    id="s2-gt-q1">—</span></div>
-                <div class="mc-stat-row"><span class="mc-stat-key">Med</span><span class="mc-stat-val med"
-                    id="s2-gt-med">—</span></div>
-                <div class="mc-stat-row"><span class="mc-stat-key">Q3</span><span class="mc-stat-val q3"
-                    id="s2-gt-q3">—</span></div>
+              <div class="mc-detail">
+                <div class="mc-stats">
+                  <div class="mc-stat-row"><span class="mc-stat-key">st dev</span><span class="mc-stat-val sd"
+                      id="s2-gt-sd">—</span></div>
+                  <div class="mc-stat-row"><span class="mc-stat-key">Q1</span><span class="mc-stat-val q1"
+                      id="s2-gt-q1">—</span></div>
+                  <div class="mc-stat-row"><span class="mc-stat-key">Med</span><span class="mc-stat-val med"
+                      id="s2-gt-med">—</span></div>
+                  <div class="mc-stat-row"><span class="mc-stat-key">Q3</span><span class="mc-stat-val q3"
+                      id="s2-gt-q3">—</span></div>
+                </div>
               </div>
             </div>
             <div class="s2-col">
               <div class="s2-col-label">Predicted</div>
               <div class="mc-avg" id="s2-pred-avg">—</div>
               <div class="mc-avg-lbl">avg steps</div>
-              <div class="mc-stats">
-                <div class="mc-stat-row"><span class="mc-stat-key">σ</span><span class="mc-stat-val sd"
-                    id="s2-pred-sd">—</span></div>
-                <div class="mc-stat-row"><span class="mc-stat-key">Q1</span><span class="mc-stat-val q1"
-                    id="s2-pred-q1">—</span></div>
-                <div class="mc-stat-row"><span class="mc-stat-key">Med</span><span class="mc-stat-val med"
-                    id="s2-pred-med">—</span></div>
-                <div class="mc-stat-row"><span class="mc-stat-key">Q3</span><span class="mc-stat-val q3"
-                    id="s2-pred-q3">—</span></div>
+              <div class="mc-detail">
+                <div class="mc-stats">
+                  <div class="mc-stat-row"><span class="mc-stat-key">st dev</span><span class="mc-stat-val sd"
+                      id="s2-pred-sd">—</span></div>
+                  <div class="mc-stat-row"><span class="mc-stat-key">Q1</span><span class="mc-stat-val q1"
+                      id="s2-pred-q1">—</span></div>
+                  <div class="mc-stat-row"><span class="mc-stat-key">Med</span><span class="mc-stat-val med"
+                      id="s2-pred-med">—</span></div>
+                  <div class="mc-stat-row"><span class="mc-stat-key">Q3</span><span class="mc-stat-val q3"
+                      id="s2-pred-q3">—</span></div>
+                </div>
               </div>
             </div>
             <div class="s2-col">
               <div class="s2-col-label">|Difference|</div>
               <div class="mc-avg" id="s2-diff-avg">—</div>
               <div class="mc-avg-lbl">avg |diff|</div>
-              <div class="mc-stats">
-                <div class="mc-stat-row"><span class="mc-stat-key">σ</span><span class="mc-stat-val sd"
-                    id="s2-diff-sd">—</span></div>
-                <div class="mc-stat-row"><span class="mc-stat-key">Q1</span><span class="mc-stat-val q1"
-                    id="s2-diff-q1">—</span></div>
-                <div class="mc-stat-row"><span class="mc-stat-key">Med</span><span class="mc-stat-val med"
-                    id="s2-diff-med">—</span></div>
-                <div class="mc-stat-row"><span class="mc-stat-key">Q3</span><span class="mc-stat-val q3"
-                    id="s2-diff-q3">—</span></div>
+              <div class="mc-detail">
+                <div class="mc-stats">
+                  <div class="mc-stat-row"><span class="mc-stat-key">st dev</span><span class="mc-stat-val sd"
+                      id="s2-diff-sd">—</span></div>
+                  <div class="mc-stat-row"><span class="mc-stat-key">Q1</span><span class="mc-stat-val q1"
+                      id="s2-diff-q1">—</span></div>
+                  <div class="mc-stat-row"><span class="mc-stat-key">Med</span><span class="mc-stat-val med"
+                      id="s2-diff-med">—</span></div>
+                  <div class="mc-stat-row"><span class="mc-stat-key">Q3</span><span class="mc-stat-val q3"
+                      id="s2-diff-q3">—</span></div>
+                </div>
               </div>
             </div>
           </div>
@@ -2234,45 +2627,51 @@
               <div class="s2-col-label">Agent 1</div>
               <div class="mc-avg" id="s2-a1-avg">—</div>
               <div class="mc-avg-lbl">avg tokens</div>
-              <div class="mc-stats">
-                <div class="mc-stat-row"><span class="mc-stat-key">σ</span><span class="mc-stat-val sd"
-                    id="s2-a1-sd">—</span></div>
-                <div class="mc-stat-row"><span class="mc-stat-key">Q1</span><span class="mc-stat-val q1"
-                    id="s2-a1-q1">—</span></div>
-                <div class="mc-stat-row"><span class="mc-stat-key">Med</span><span class="mc-stat-val med"
-                    id="s2-a1-med">—</span></div>
-                <div class="mc-stat-row"><span class="mc-stat-key">Q3</span><span class="mc-stat-val q3"
-                    id="s2-a1-q3">—</span></div>
+              <div class="mc-detail">
+                <div class="mc-stats">
+                  <div class="mc-stat-row"><span class="mc-stat-key">st dev</span><span class="mc-stat-val sd"
+                      id="s2-a1-sd">—</span></div>
+                  <div class="mc-stat-row"><span class="mc-stat-key">Q1</span><span class="mc-stat-val q1"
+                      id="s2-a1-q1">—</span></div>
+                  <div class="mc-stat-row"><span class="mc-stat-key">Med</span><span class="mc-stat-val med"
+                      id="s2-a1-med">—</span></div>
+                  <div class="mc-stat-row"><span class="mc-stat-key">Q3</span><span class="mc-stat-val q3"
+                      id="s2-a1-q3">—</span></div>
+                </div>
               </div>
             </div>
             <div class="s2-col">
               <div class="s2-col-label">Agent 2</div>
               <div class="mc-avg" id="s2-a2-avg">—</div>
               <div class="mc-avg-lbl">avg tokens</div>
-              <div class="mc-stats">
-                <div class="mc-stat-row"><span class="mc-stat-key">σ</span><span class="mc-stat-val sd"
-                    id="s2-a2-sd">—</span></div>
-                <div class="mc-stat-row"><span class="mc-stat-key">Q1</span><span class="mc-stat-val q1"
-                    id="s2-a2-q1">—</span></div>
-                <div class="mc-stat-row"><span class="mc-stat-key">Med</span><span class="mc-stat-val med"
-                    id="s2-a2-med">—</span></div>
-                <div class="mc-stat-row"><span class="mc-stat-key">Q3</span><span class="mc-stat-val q3"
-                    id="s2-a2-q3">—</span></div>
+              <div class="mc-detail">
+                <div class="mc-stats">
+                  <div class="mc-stat-row"><span class="mc-stat-key">st dev</span><span class="mc-stat-val sd"
+                      id="s2-a2-sd">—</span></div>
+                  <div class="mc-stat-row"><span class="mc-stat-key">Q1</span><span class="mc-stat-val q1"
+                      id="s2-a2-q1">—</span></div>
+                  <div class="mc-stat-row"><span class="mc-stat-key">Med</span><span class="mc-stat-val med"
+                      id="s2-a2-med">—</span></div>
+                  <div class="mc-stat-row"><span class="mc-stat-key">Q3</span><span class="mc-stat-val q3"
+                      id="s2-a2-q3">—</span></div>
+                </div>
               </div>
             </div>
             <div class="s2-col">
               <div class="s2-col-label">Total</div>
               <div class="mc-avg" id="s2-tot-avg">—</div>
               <div class="mc-avg-lbl">avg tokens</div>
-              <div class="mc-stats">
-                <div class="mc-stat-row"><span class="mc-stat-key">σ</span><span class="mc-stat-val sd"
-                    id="s2-tot-sd">—</span></div>
-                <div class="mc-stat-row"><span class="mc-stat-key">Q1</span><span class="mc-stat-val q1"
-                    id="s2-tot-q1">—</span></div>
-                <div class="mc-stat-row"><span class="mc-stat-key">Med</span><span class="mc-stat-val med"
-                    id="s2-tot-med">—</span></div>
-                <div class="mc-stat-row"><span class="mc-stat-key">Q3</span><span class="mc-stat-val q3"
-                    id="s2-tot-q3">—</span></div>
+              <div class="mc-detail">
+                <div class="mc-stats">
+                  <div class="mc-stat-row"><span class="mc-stat-key">st dev</span><span class="mc-stat-val sd"
+                      id="s2-tot-sd">—</span></div>
+                  <div class="mc-stat-row"><span class="mc-stat-key">Q1</span><span class="mc-stat-val q1"
+                      id="s2-tot-q1">—</span></div>
+                  <div class="mc-stat-row"><span class="mc-stat-key">Med</span><span class="mc-stat-val med"
+                      id="s2-tot-med">—</span></div>
+                  <div class="mc-stat-row"><span class="mc-stat-key">Q3</span><span class="mc-stat-val q3"
+                      id="s2-tot-q3">—</span></div>
+                </div>
               </div>
             </div>
           </div>
@@ -2280,169 +2679,189 @@
 
       </div><!-- /stat cards -->
 
-      <!-- distribution box plots (always visible) -->
-      <div class="s2-cards">
+      <!-- distribution carousels (boxplot + histograms) -->
+      <div class="s2-cards mc-detail">
+
         <div class="macro-card mc-chart-card">
-          <div class="mc-label">Step Distribution</div>
-          <div id="s2-steps-bp" style="display:flex;flex-direction:column;flex:1;min-height:0"></div>
+          <div class="dist-carousel" id="dc-steps">
+            <div class="dc-header">
+              <button class="dc-arrow dc-prev" onclick="dcNav('steps',-1)" disabled>&#8249;</button>
+              <span class="dc-title" id="dc-steps-title">Step Distribution</span>
+              <button class="dc-arrow dc-next" onclick="dcNav('steps',1)">&#8250;</button>
+            </div>
+            <div class="dc-slides">
+              <div class="dc-slide active">
+                <div id="s2-steps-bp" style="display:flex;flex-direction:column;flex:1;min-height:0"></div>
+              </div>
+              <div class="dc-slide">
+                <div class="dc-chart-wrap"><canvas id="chart-dist-steps-actual"></canvas></div>
+              </div>
+              <div class="dc-slide">
+                <div class="dc-chart-wrap"><canvas id="chart-dist-steps-pred"></canvas></div>
+              </div>
+              <div class="dc-slide">
+                <div class="dc-chart-wrap"><canvas id="chart-dist-steps-scatter"></canvas></div>
+              </div>
+              <div class="dc-slide">
+                <div class="dc-chart-wrap"><canvas id="chart-dist-steps-diff"></canvas></div>
+              </div>
+            </div>
+          </div>
         </div>
+
         <div class="macro-card mc-chart-card">
-          <div class="mc-label">Token Distribution</div>
-          <div id="s2-tokens-bp" style="display:flex;flex-direction:column;flex:1;min-height:0"></div>
+          <div class="dist-carousel" id="dc-tokens">
+            <div class="dc-header">
+              <button class="dc-arrow dc-prev" onclick="dcNav('tokens',-1)" disabled>&#8249;</button>
+              <span class="dc-title" id="dc-tokens-title">Token Distribution</span>
+              <button class="dc-arrow dc-next" onclick="dcNav('tokens',1)">&#8250;</button>
+            </div>
+            <div class="dc-slides">
+              <div class="dc-slide active">
+                <div id="s2-tokens-bp" style="display:flex;flex-direction:column;flex:1;min-height:0"></div>
+              </div>
+              <div class="dc-slide">
+                <div class="dc-chart-wrap"><canvas id="chart-dist-tokens-overlay"></canvas></div>
+              </div>
+              <div class="dc-slide">
+                <div class="dc-chart-wrap"><canvas id="chart-dist-tokens-a1"></canvas></div>
+              </div>
+              <div class="dc-slide">
+                <div class="dc-chart-wrap"><canvas id="chart-dist-tokens-a2"></canvas></div>
+              </div>
+              <div class="dc-slide">
+                <div class="dc-chart-wrap"><canvas id="chart-dist-tokens-total"></canvas></div>
+              </div>
+            </div>
+          </div>
         </div>
+
       </div><!-- /distributions -->
+
+      <button class="section-expand-btn" onclick="toggleSection('s2')">&#9660;&nbsp;&nbsp;SHOW DETAILS</button>
 
     </div><!-- /s2-flat -->
 
-    <!-- metrics reference -->
-    <div class="section-h2">Metrics Reference</div>
-    <div class="metrics-ref-grid">
+    <!-- agent activity -->
+    <div class="section-h2">Agent Activity</div>
+    <div class="s2-flat" id="section-activity">
+      <div class="s2-cards">
 
-      <div class="mref-card" onclick="this.classList.toggle('open')">
-        <div class="mref-header"><span class="mref-name">Files F1</span><span class="mref-chevron">▾</span></div>
-        <div class="mref-details">
-          <div class="mref-formula">2 · P · R / (P + R) where P = matched / predicted, R = matched / actual</div>
-          <div class="mref-body">Harmonic mean of Precision and Recall over the set of <em>files to modify</em>.
-            Matching is path-aware with 3 quality levels: exact path (3) &gt; suffix/prefix match (2) &gt; basename only
-            (1). Greedy exclusive bipartite assignment — each file matches at most once.</div>
-        </div>
-      </div>
-
-      <div class="mref-card" onclick="this.classList.toggle('open')">
-        <div class="mref-header"><span class="mref-name">Functions F1</span><span class="mref-chevron">▾</span></div>
-        <div class="mref-details">
-          <div class="mref-formula">2 · P · R / (P + R) where P = matched / predicted, R = matched / actual</div>
-          <div class="mref-body">Same bipartite F1 formula applied to <em>function names</em>. Matching uses 3 quality
-            levels: fully-qualified name (3) &gt; short name (2) &gt; last component after stripping class prefix (1).
-            Harder than file identification as function names must resolve to specific callables.</div>
-        </div>
-      </div>
-
-      <div class="mref-card" onclick="this.classList.toggle('open')">
-        <div class="mref-header"><span class="mref-name">Semantic Score</span><span class="mref-chevron">▾</span></div>
-        <div class="mref-details">
-          <div class="mref-formula">0.30 · summary_sim + 0.70 · avg_step_sim</div>
-          <div class="mref-body">Weighted combination of summary similarity and step similarity. Steps are embedded with
-            <em>OpenAI text-embedding-3-large</em> using operation + function + reason (file_to_modify excluded to avoid
-            contamination). Steps are greedily matched by cosine similarity; unmatched predicted steps score 0.
+        <div class="macro-card" style="padding-bottom:28px" id="act-tools-card">
+          <div class="mc-label">Tool Calls</div>
+          <div class="mc-avg" id="act-tools-avg">—</div>
+          <div class="mc-avg-lbl">avg calls / PR</div>
+          <div class="mc-detail">
+            <div id="act-tools-body" style="margin-top:12px"></div>
           </div>
         </div>
-      </div>
 
-      <div class="mref-card" onclick="this.classList.toggle('open')">
-        <div class="mref-header"><span class="mref-name">Summary Similarity</span><span class="mref-chevron">▾</span>
+        <div class="macro-card" style="padding-bottom:28px" id="dc-req">
+          <div class="mc-label">API Requests</div>
+          <div class="mc-avg" id="act-req-avg">—</div>
+          <div class="mc-avg-lbl">avg requests / PR</div>
+          <div class="mc-detail">
+            <div class="mc-bp-nav">
+              <button class="dc-arrow dc-prev" onclick="dcNav('req',-1)" disabled>&#8249;</button>
+              <button class="dc-arrow dc-next" onclick="dcNav('req',1)">&#8250;</button>
+            </div>
+            <div class="dc-slides">
+              <div class="dc-slide active">
+                <div id="bp-req-outer" class="bp-outer"></div>
+              </div>
+              <div class="dc-slide">
+                <div class="dc-chart-wrap"><canvas id="chart-kpi-req-hist"></canvas></div>
+              </div>
+            </div>
+          </div>
         </div>
-        <div class="mref-details">
-          <div class="mref-formula">cosine_sim(embed(summary_gt), embed(summary_pred))</div>
-          <div class="mref-body">Cosine similarity between <em>OpenAI text-embedding-3-large</em> embeddings of the
-            ground-truth plan summary and the predicted plan summary. Captures high-level intent alignment. Also
-            contributes 30% weight to the overall Semantic Score.</div>
-        </div>
-      </div>
 
-      <div class="mref-card" onclick="this.classList.toggle('open')">
-        <div class="mref-header"><span class="mref-name">Step MAE</span><span class="mref-chevron">▾</span></div>
-        <div class="mref-details">
-          <div class="mref-formula">mean( |predicted_steps − actual_steps| )</div>
-          <div class="mref-body">Mean Absolute Error of step count. <em>actual_steps</em> is derived from GT structure:
-            for each modified file, count its functions (or 1 if no functions listed). Each PR contributes its absolute
-            deviation — over- and under-predictions do not cancel. σ is computed on the signed diffs and measures spread
-            across PRs, not run-to-run variability.</div>
-        </div>
       </div>
-
-      <div class="mref-card" onclick="this.classList.toggle('open')">
-        <div class="mref-header"><span class="mref-name">Target Coverage</span><span class="mref-chevron">▾</span></div>
-        <div class="mref-details">
-          <div class="mref-formula">matched_targets / total_predicted_steps</div>
-          <div class="mref-body">Fraction of <em>predicted</em> steps whose file or function target matches a
-            ground-truth entry (path-aware / name-aware quality match). Measures how precisely the model's plan points
-            at real targets — not how many GT steps are covered.</div>
-        </div>
-      </div>
-
+      <button class="section-expand-btn" onclick="toggleSection('activity')">&#9660;&nbsp;&nbsp;SHOW DETAILS</button>
     </div>
 
-    <!-- correlation charts -->
-    <div class="section-h2">Correlation Analysis</div>
-    <div class="charts-grid">
-      <div class="chart-card glass glass-border">
-        <div class="chart-header">
-          <div>
-            <div class="chart-title">Token Usage vs Functions F1</div>
-            <div class="chart-desc">Does spending more tokens yield better function identification?</div>
+
+    <!-- empty-function step comparison -->
+    <div class="section-h2">Empty Function Step — Metric Comparison</div>
+    <div class="s2-flat" id="section-emptyfn">
+      <div class="s2-cards" style="grid-template-columns:1fr">
+        <div class="macro-card">
+          <div class="mc-label" id="empty-fn-subtitle" style="margin-bottom:12px">Loading…</div>
+          <div class="mc-detail">
+            <div class="dc-chart-wrap" style="height:220px">
+              <canvas id="empty-fn-chart"></canvas>
+            </div>
           </div>
         </div>
-        <div class="chart-wrap"><canvas id="chart-tokens-f1"></canvas></div>
       </div>
-      <div class="chart-card glass glass-border">
-        <div class="chart-header">
-          <div>
-            <div class="chart-title">Token Usage vs Semantic Score</div>
-            <div class="chart-desc">Does spending more tokens yield better semantic alignment?</div>
-          </div>
-        </div>
-        <div class="chart-wrap"><canvas id="chart-calls-f1"></canvas></div>
+      <button class="section-expand-btn" onclick="toggleSection('emptyfn')">&#9660;&nbsp;&nbsp;SHOW CHART</button>
+    </div>
+
+    </div><!-- /page-perf -->
+
+    <div class="page-section" id="page-corr">
+
+    <!-- Correlations -->
+    <div class="section-h1" id="section-corr" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+      Correlations
+      <button class="chip" id="chip-cgt-corr" onclick="toggleCorrCleanGt()" style="font-size:0.55rem">Clean GT only</button>
+      <span id="corr-filter-subtitle" style="font-size:0.62rem;opacity:.6;font-weight:normal"></span>
+    </div>
+
+    <div class="corr-group-label">Tokens</div>
+    <div class="corr-grid">
+      <div class="corr-card">
+        <div class="corr-title">Tokens vs Functions F1<span class="corr-r" id="corr-r-tok-func">r=—</span></div>
+        <div class="corr-canvas-wrap"><canvas id="corr-tok-func"></canvas></div>
+      </div>
+      <div class="corr-card">
+        <div class="corr-title">Tokens vs Files F1<span class="corr-r" id="corr-r-tok-file">r=—</span></div>
+        <div class="corr-canvas-wrap"><canvas id="corr-tok-file"></canvas></div>
+      </div>
+      <div class="corr-card">
+        <div class="corr-title">Tokens vs Semantics<span class="corr-r" id="corr-r-tok-sem">r=—</span></div>
+        <div class="corr-canvas-wrap"><canvas id="corr-tok-sem"></canvas></div>
       </div>
     </div>
 
-    <!-- score distributions -->
-    <div class="section-h2">Score Distributions</div>
-    <div class="charts-grid-3">
-      <div class="chart-card glass glass-border">
-        <div class="chart-header">
-          <div>
-            <div class="chart-title">Functions F1 Distribution</div>
-            <div class="chart-desc">How often each F1 range is achieved</div>
-          </div>
-        </div>
-        <div class="chart-wrap-sm"><canvas id="chart-f1-dist"></canvas></div>
+    <div class="corr-group-label">Tool Calls</div>
+    <div class="corr-grid">
+      <div class="corr-card">
+        <div class="corr-title">Tool Calls vs Functions F1<span class="corr-r" id="corr-r-tc-func">r=—</span></div>
+        <div class="corr-canvas-wrap"><canvas id="corr-tc-func"></canvas></div>
       </div>
-      <div class="chart-card glass glass-border">
-        <div class="chart-header">
-          <div>
-            <div class="chart-title">Semantic Distribution</div>
-            <div class="chart-desc">Embedding score spread</div>
-          </div>
-        </div>
-        <div class="chart-wrap-sm"><canvas id="chart-sem-dist"></canvas></div>
+      <div class="corr-card">
+        <div class="corr-title">Tool Calls vs Files F1<span class="corr-r" id="corr-r-tc-file">r=—</span></div>
+        <div class="corr-canvas-wrap"><canvas id="corr-tc-file"></canvas></div>
       </div>
-      <div class="chart-card glass glass-border">
-        <div class="chart-header">
-          <div>
-            <div class="chart-title">Functions F1 vs Semantic</div>
-            <div class="chart-desc">Do structural and semantic scores correlate?</div>
-          </div>
-        </div>
-        <div class="chart-wrap-sm"><canvas id="chart-f1-sem"></canvas></div>
+      <div class="corr-card">
+        <div class="corr-title">Tool Calls vs Semantics<span class="corr-r" id="corr-r-tc-sem">r=—</span></div>
+        <div class="corr-canvas-wrap"><canvas id="corr-tc-sem"></canvas></div>
       </div>
     </div>
 
-    <!-- steps analysis -->
-    <div class="section-h2">Steps Analysis</div>
-    <div class="charts-grid">
-      <div class="chart-card glass glass-border">
-        <div class="chart-header">
-          <div>
-            <div class="chart-title">Actual vs Predicted Steps</div>
-            <div class="chart-desc">Diagonal = perfect prediction. Above = over-estimate</div>
-          </div>
-        </div>
-        <div class="chart-wrap"><canvas id="chart-steps-scatter"></canvas></div>
+    <div class="corr-group-label">API Requests</div>
+    <div class="corr-grid">
+      <div class="corr-card">
+        <div class="corr-title">Requests vs Functions F1<span class="corr-r" id="corr-r-req-func">r=—</span></div>
+        <div class="corr-canvas-wrap"><canvas id="corr-req-func"></canvas></div>
       </div>
-      <div class="chart-card glass glass-border">
-        <div class="chart-header">
-          <div>
-            <div class="chart-title">Step Δ Distribution</div>
-            <div class="chart-desc">predicted − actual (red = under, blue = over)</div>
-          </div>
-        </div>
-        <div class="chart-wrap"><canvas id="chart-step-diff-dist"></canvas></div>
+      <div class="corr-card">
+        <div class="corr-title">Requests vs Files F1<span class="corr-r" id="corr-r-req-file">r=—</span></div>
+        <div class="corr-canvas-wrap"><canvas id="corr-req-file"></canvas></div>
+      </div>
+      <div class="corr-card">
+        <div class="corr-title">Requests vs Semantics<span class="corr-r" id="corr-r-req-sem">r=—</span></div>
+        <div class="corr-canvas-wrap"><canvas id="corr-req-sem"></canvas></div>
       </div>
     </div>
+
+    </div><!-- /page-corr -->
+
+    <div class="page-section" id="page-pr">
 
     <!-- PR list -->
-    <div class="section-h1">Pull Requests</div>
+    <div class="section-h1" id="section-pr">Pull Requests</div>
 
     <!-- filters -->
     <div class="filters-bar">
@@ -2477,6 +2896,7 @@
         <button class="chip" id="chip-pred" onclick="toggleChip('pred')">Has Prediction</button>
         <button class="chip" id="chip-gt" onclick="toggleChip('gt')">Has Ground Truth</button>
         <button class="chip" id="chip-scored" onclick="toggleChip('scored')">Evaluated</button>
+        <button class="chip" id="chip-emptyfn" onclick="toggleChip('emptyfn')">Empty Fn Step</button>
       </div>
 
       <span class="results-count" id="results-count"></span>
@@ -2488,6 +2908,8 @@
         <div class="loader"></div>Loading pull requests…
       </div>
     </div>
+
+    </div><!-- /page-pr -->
 
   </div><!-- /wrapper -->
 
@@ -2529,12 +2951,69 @@
 
   <script>
     /* ════════════════════════════════════════════════════════════════════
+       CONFIG
+       ════════════════════════════════════════════════════════════════════ */
+    const PALETTE = ['#000000', '#cc0000', '#006600', '#885500', '#0000cc', '#555555'];
+
+    const CHART_STYLE = {
+      tooltip: {
+        backgroundColor: '#000000', borderColor: '#000000', borderWidth: 1,
+        titleFont: { family: 'Courier New', size: 11 },
+        bodyFont: { family: 'Courier New', size: 11 },
+        padding: 10,
+      },
+      grid: { color: 'rgba(0,0,0,0.14)', lineWidth: 0.5 },
+      tick: { color: '#666666', font: { family: 'Courier New', size: 10 } },
+      tickSm: { color: '#666666', font: { family: 'Courier New', size: 9 } },
+      border: { color: '#000000' },
+    };
+
+    /* ════════════════════════════════════════════════════════════════════
        DATA STORE
        ════════════════════════════════════════════════════════════════════ */
     let allPRs = [];
     let activeChips = new Set();
     let chartRefs = {};
     let currentEval = 'gpt_5-2';
+    let summaryData = null;
+
+    const DC_STATE = { steps: 0, tokens: 0, files: 0, funcs: 0, sem: 0, time: 0, req: 0 };
+    const DC_TITLES = {
+      steps: ['Step Distribution', 'GT Steps', 'Predicted Steps', 'Pred vs Actual', 'Step Diff (pred − actual)'],
+      tokens: ['Token Distribution', 'Agent 1 vs Agent 2', 'Agent 1 Tokens', 'Agent 2 Tokens', 'Total Tokens'],
+      files: ['File F1', 'File F1 Distribution'],
+      funcs: ['Function F1', 'Func F1 Distribution'],
+      sem: ['Semantic', 'Semantic Distribution'],
+      time: ['Latency', 'Latency Distribution'],
+      req: ['API Requests', 'Requests Distribution'],
+    };
+    const DC_COLORS = {
+      steps: [null, '#0000cc', '#006600', null, '#cc0000'],
+      tokens: [null, null, '#0000cc', '#006600', '#885500'],
+      files: [null, '#0000cc'],
+      funcs: [null, '#006600'],
+      sem: [null, '#cc0000'],
+      time: [null, '#885500'],
+      req: [null, '#885500'],
+    };
+    const DC_HIST_KEYS = {
+      steps: [null, 'steps_actual_distribution', 'steps_predicted_distribution', '__scatter_steps', 'step_diff_distribution'],
+      tokens: [null, 'agents_overlay_distribution', 'agent1_tokens_distribution', 'agent2_tokens_distribution', 'total_tokens_distribution'],
+      files: [null, 'f1_distribution'],
+      funcs: [null, 'functions_f1_distribution'],
+      sem: [null, 'semantic_distribution'],
+      time: [null, 'duration_distribution'],
+      req: [null, 'requests_distribution'],
+    };
+    const DC_CANVAS_IDS = {
+      steps: [null, 'chart-dist-steps-actual', 'chart-dist-steps-pred', 'chart-dist-steps-scatter', 'chart-dist-steps-diff'],
+      tokens: [null, 'chart-dist-tokens-overlay', 'chart-dist-tokens-a1', 'chart-dist-tokens-a2', 'chart-dist-tokens-total'],
+      files: [null, 'chart-kpi-files-hist'],
+      funcs: [null, 'chart-kpi-funcs-hist'],
+      sem: [null, 'chart-kpi-sem-hist'],
+      time: [null, 'chart-kpi-time-hist'],
+      req: [null, 'chart-kpi-req-hist'],
+    };
 
     function switchEval(key) {
       if (key === currentEval) return;
@@ -2547,6 +3026,12 @@
       document.getElementById('detail-panel').classList.remove('open');
       // reset filter/search state
       activeChips.clear();
+      _kpiFilterCleanGt = false;
+      _corrCleanGt = false;
+      const kpiFiltSub = document.getElementById('kpi-filter-subtitle');
+      if (kpiFiltSub) kpiFiltSub.textContent = '';
+      const corrFiltSub = document.getElementById('corr-filter-subtitle');
+      if (corrFiltSub) corrFiltSub.textContent = '';
       document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
       document.getElementById('search-input').value = '';
       document.getElementById('repo-filter').value = '';
@@ -2559,6 +3044,7 @@
     /* ════════════════════════════════════════════════════════════════════
        HELPERS
        ════════════════════════════════════════════════════════════════════ */
+    function tx(id, v) { const el = document.getElementById(id); if (el) el.textContent = v ?? '—'; }
     function fmt(val, decimals = 3) {
       if (val === null || val === undefined) return '—';
       return Number(val).toFixed(decimals);
@@ -2623,13 +3109,21 @@
     }
 
 
-    function renderBoxPlotHTML(minV, q1, med, mean, q3, maxV) {
+    function renderBoxPlotHTML(minV, q1, med, mean, q3, maxV, opts = {}) {
       if (minV == null || maxV == null || q1 == null || q3 == null) {
         return '<p style="padding:24px;font-size:0.7rem;color:#999;text-transform:uppercase;letter-spacing:0.06em">No data</p>';
       }
-      const p = v => `${(v * 100).toFixed(2)}%`;
+      const rMin = opts.rangeMin ?? 0;
+      const rMax = opts.rangeMax ?? 1;
+      const fmtAxis = opts.fmtAxis ?? (v => v.toFixed(2));
+      const fmtLeg = opts.fmtLegend ?? (v => v.toFixed(3));
+      const span = rMax - rMin || 1;
+      const p = v => `${((v - rMin) / span * 100).toFixed(2)}%`;
+      const pct = v => `${((v) / span * 100).toFixed(2)}%`;
       // median position relative to the IQR box (0% = Q1, 100% = Q3)
       const medInBox = q3 > q1 ? `${((med - q1) / (q3 - q1) * 100).toFixed(2)}%` : '50%';
+      const ticks = [0, 0.25, 0.5, 0.75, 1.0].map(t => rMin + t * span);
+      const axisLabels = ticks.map(v => `<span>${fmtAxis(v)}</span>`).join('');
       const items = [
         ['min', minV], ['Q1', q1], ['med', med],
         ['Q3', q3], ['max', maxV], ['mean', mean],
@@ -2637,60 +3131,22 @@
       const legend = items.map(([k, v]) =>
         `<div class="bp-leg-item">
       <span class="bp-leg-key">${k}</span>
-      <span class="bp-leg-val">${v != null ? v.toFixed(3) : '—'}</span>
+      <span class="bp-leg-val">${v != null ? fmtLeg(v) : '—'}</span>
     </div>`
       ).join('');
       return `
-    <div class="bp-axis-row">
-      <span>0.0</span><span>0.25</span><span>0.5</span><span>0.75</span><span>1.0</span>
-    </div>
+    <div class="bp-axis-row">${axisLabels}</div>
     <div class="bp-track">
-      <div class="bp-whisker" style="left:${p(minV)};width:${((maxV - minV) * 100).toFixed(2)}%"></div>
+      <div class="bp-whisker" style="left:${p(minV)};width:${pct(maxV - minV)}"></div>
       <div class="bp-whisker-cap" style="left:${p(minV)}"></div>
       <div class="bp-whisker-cap" style="left:${p(maxV)}"></div>
-      <div class="bp-box" style="left:${p(q1)};width:${((q3 - q1) * 100).toFixed(2)}%">
+      <div class="bp-box" style="left:${p(q1)};width:${pct(q3 - q1)}">
         <div class="bp-median-line" style="left:${medInBox}"></div>
       </div>
       <div class="bp-mean-dot" style="left:${p(mean)}"></div>
     </div>
     <div class="bp-legend-grid">${legend}</div>
   `;
-    }
-
-    function renderComboBP(s) {
-      const el = document.getElementById('mc-combo-bp');
-      if (!el) return;
-      const colors = ['#0000cc', '#006600', '#cc0000'];
-      const labels = ['File F1', 'Func F1', 'Semantic'];
-      const metrics = [
-        { min: s.min_files_f1, q1: s.q1_files_f1, med: s.median_files_f1, mean: s.avg_files_f1, q3: s.q3_files_f1, max: s.max_files_f1 },
-        { min: s.min_functions_f1, q1: s.q1_functions_f1, med: s.median_functions_f1, mean: s.avg_functions_f1, q3: s.q3_functions_f1, max: s.max_functions_f1 },
-        { min: s.min_semantic, q1: s.q1_semantic, med: s.median_semantic, mean: s.avg_semantic, q3: s.q3_semantic, max: s.max_semantic },
-      ];
-      const p = v => `${(v * 100).toFixed(2)}%`;
-      const cols = metrics.map((m, i) => {
-        if (m.min == null || m.max == null || m.q1 == null || m.q3 == null) {
-          return `<div class="mc-vbp-col"></div>`;
-        }
-        const c = colors[i];
-        const medInBox = m.q3 > m.q1 ? `${((m.med - m.q1) / (m.q3 - m.q1) * 100).toFixed(2)}%` : '50%';
-        return `<div class="mc-vbp-col"><div class="mc-vbp-track">
-      <div class="mc-vbp-whisker" style="bottom:${p(m.min)};height:${((m.max - m.min) * 100).toFixed(2)}%;background:${c};opacity:0.45"></div>
-      <div class="mc-vbp-cap" style="bottom:${p(m.max)};background:${c}"></div>
-      <div class="mc-vbp-cap" style="bottom:${p(m.min)};background:${c}"></div>
-      <div class="mc-vbp-box" style="bottom:${p(m.q1)};height:${((m.q3 - m.q1) * 100).toFixed(2)}%;border:1.5px solid ${c};background:${c}22;position:absolute;left:18%;width:64%">
-        <div class="mc-vbp-median" style="bottom:${medInBox};background:${c}"></div>
-      </div>
-      <div class="mc-vbp-mean" style="bottom:${p(m.mean)};background:${c}"></div>
-    </div></div>`;
-      }).join('');
-      const axis = ['1.0', '0.75', '0.5', '0.25', '0.0'].map(v => `<span>${v}</span>`).join('');
-      const legend = colors.map((c, i) =>
-        `<div class="mc-vbp-leg-item"><span class="mc-vbp-leg-swatch" style="background:${c}"></span>${labels[i]}</div>`
-      ).join('');
-      el.innerHTML = `
-    <div class="mc-vbp-chart"><div class="mc-vbp-axis">${axis}</div><div class="mc-vbp-cols">${cols}</div></div>
-    <div class="mc-vbp-legend">${legend}</div>`;
     }
 
     /* ════════════════════════════════════════════════════════════════════
@@ -2702,8 +3158,8 @@
       document.querySelectorAll('.s2-dot').forEach((d, i) => d.classList.toggle('active', i === idx));
     }
 
-    /* Generic vertical combo box-plot renderer for non-[0,1] data.
-       Normalizes all 3 series globally so they share a common Y axis. */
+    /* Horizontal combo box-plot renderer — each series is a labelled horizontal track.
+       Normalises all series to a shared X axis (global min/max). */
     function renderComboVBP(elementId, metrics, labels, colors, fmtFn) {
       const el = document.getElementById(elementId);
       if (!el) return;
@@ -2720,78 +3176,283 @@
       const range = gMax - gMin || 1;
       const norm = v => (v - gMin) / range;
       const p = v => `${(norm(v) * 100).toFixed(2)}%`;
+      const pw = (a, b) => `${((norm(b) - norm(a)) * 100).toFixed(2)}%`;
 
-      const cols = metrics.map((m, i) => {
-        if (m.min == null || m.max == null || m.q1 == null || m.q3 == null) {
-          return `<div class="mc-vbp-col"></div>`;
-        }
+      const rows = metrics.map((m, i) => {
         const c = colors[i];
+        const lbl = `<span class="hbp-label" style="color:${c}">${labels[i]}</span>`;
+        if (m.min == null || m.max == null || m.q1 == null || m.q3 == null) {
+          return `<div class="hbp-row">${lbl}<div class="hbp-track"></div></div>`;
+        }
         const nq1 = norm(m.q1), nq3 = norm(m.q3);
-        const medInBox = nq3 > nq1 ? `${((norm(m.med) - nq1) / (nq3 - nq1) * 100).toFixed(2)}%` : '50%';
-        return `<div class="mc-vbp-col"><div class="mc-vbp-track">
-      <div class="mc-vbp-whisker" style="bottom:${p(m.min)};height:${((norm(m.max) - norm(m.min)) * 100).toFixed(2)}%;background:${c};opacity:0.45"></div>
-      <div class="mc-vbp-cap" style="bottom:${p(m.max)};background:${c}"></div>
-      <div class="mc-vbp-cap" style="bottom:${p(m.min)};background:${c}"></div>
-      <div class="mc-vbp-box" style="bottom:${p(m.q1)};height:${((nq3 - nq1) * 100).toFixed(2)}%;border:1.5px solid ${c};background:${c}22;position:absolute;left:18%;width:64%">
-        <div class="mc-vbp-median" style="bottom:${medInBox};background:${c}"></div>
-      </div>
-      <div class="mc-vbp-mean" style="bottom:${p(m.mean)};background:${c}"></div>
-    </div></div>`;
+        const medInBox = nq3 > nq1
+          ? `${((norm(m.med) - nq1) / (nq3 - nq1) * 100).toFixed(2)}%`
+          : '50%';
+        return `<div class="hbp-row">${lbl}<div class="hbp-track">
+          <div class="hbp-whisker" style="left:${p(m.min)};width:${pw(m.min, m.max)};background:${c}"></div>
+          <div class="hbp-cap"     style="left:${p(m.min)};background:${c}"></div>
+          <div class="hbp-cap"     style="left:${p(m.max)};background:${c}"></div>
+          <div class="hbp-box"     style="left:${p(m.q1)};width:${pw(m.q1, m.q3)};border:1.5px solid ${c};background:${c}22">
+            <div class="hbp-median" style="left:${medInBox};background:${c}"></div>
+          </div>
+          <div class="hbp-mean" style="left:${p(m.mean)};background:${c}"></div>
+        </div></div>`;
       }).join('');
 
-      const axis = [1, 0.75, 0.5, 0.25, 0].map(t => `<span>${fmtFn(gMin + t * range)}</span>`).join('');
-      const legend = colors.map((c, i) =>
-        `<div class="mc-vbp-leg-item"><span class="mc-vbp-leg-swatch" style="background:${c}"></span>${labels[i]}</div>`
-      ).join('');
+      const ticks = [0, 0.25, 0.5, 0.75, 1]
+        .map(t => `<span>${fmtFn(gMin + t * range)}</span>`).join('');
+
       el.innerHTML = `
-    <div class="mc-vbp-chart"><div class="mc-vbp-axis">${axis}</div><div class="mc-vbp-cols">${cols}</div></div>
-    <div class="mc-vbp-legend">${legend}</div>`;
+        <div class="hbp-container">
+          ${rows}
+          <div class="hbp-axis-row">
+            <span class="hbp-axis-spacer"></span>
+            <div class="hbp-axis">${ticks}</div>
+          </div>
+        </div>`;
+    }
+
+    /* ── Distribution carousel ─────────────────────────────────────── */
+    function resetDistCarousels() {
+      for (const key of ['steps', 'tokens', 'files', 'funcs', 'sem', 'time', 'req']) {
+        const el = document.getElementById(`dc-${key}`);
+        if (!el) continue;
+        el.querySelectorAll('.dc-slide').forEach((s, i) => s.classList.toggle('active', i === 0));
+        el.querySelector('.dc-prev').disabled = true;
+        el.querySelector('.dc-next').disabled = false;
+        const t0 = document.getElementById(`dc-${key}-title`);
+        if (t0) t0.textContent = DC_TITLES[key][0];
+        DC_STATE[key] = 0;
+      }
+    }
+
+    function toggleSection(id) {
+      const el = document.getElementById('section-' + id);
+      const btn = el.querySelector('.section-expand-btn');
+      const isOpen = el.classList.contains('section-detail-open');
+      el.classList.toggle('section-detail-open');
+      btn.innerHTML = isOpen
+        ? '&#9660;&nbsp;&nbsp;SHOW DETAILS'
+        : '&#9650;&nbsp;&nbsp;HIDE DETAILS';
+    }
+
+    function dcNav(key, delta) {
+      const el = document.getElementById(`dc-${key}`);
+      if (!el) return;
+      const slides = el.querySelectorAll('.dc-slide');
+      const max = slides.length - 1;
+      const next = Math.max(0, Math.min(max, DC_STATE[key] + delta));
+      if (next === DC_STATE[key]) return;
+      slides[DC_STATE[key]].classList.remove('active');
+      slides[next].classList.add('active');
+      DC_STATE[key] = next;
+      const tEl = document.getElementById(`dc-${key}-title`);
+      if (tEl) tEl.textContent = DC_TITLES[key][next];
+      el.querySelector('.dc-prev').disabled = next === 0;
+      el.querySelector('.dc-next').disabled = next === max;
+      if (next > 0 && summaryData) renderDcHistogram(key, next);
+    }
+
+    function renderDcScatterSteps(canvasId) {
+      const pts = (summaryData?.steps_chart_data || [])
+        .filter(d => d.steps_actual != null && d.steps_predicted != null);
+      if (!pts.length) return;
+      const maxVal = Math.max(...pts.map(d => Math.max(d.steps_actual, d.steps_predicted)));
+      mkChart(canvasId, {
+        type: 'scatter',
+        data: {
+          datasets: [
+            {
+              // y = x reference line
+              type: 'line',
+              data: [{ x: 0, y: 0 }, { x: maxVal, y: maxVal }],
+              borderColor: 'rgba(0,0,0,0.20)',
+              borderWidth: 1,
+              borderDash: [4, 4],
+              pointRadius: 0,
+              fill: false,
+              tension: 0,
+            },
+            {
+              data: pts.map(d => ({ x: d.steps_actual, y: d.steps_predicted, title: d.title })),
+              backgroundColor: 'rgba(0,0,0,0.55)',
+              pointRadius: 4,
+              pointHoverRadius: 6,
+              pointStyle: 'circle',
+            },
+          ],
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          animation: { duration: 300 },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: '#000000',
+              bodyFont: { family: 'Courier New', size: 11 }, padding: 8,
+              filter: ctx => ctx.datasetIndex === 1,
+              callbacks: {
+                title: ctx => ctx[0].raw.title || '',
+                label: ctx => [`Actual: ${ctx.raw.x}`, `Predicted: ${ctx.raw.y}`],
+              },
+            },
+          },
+          scales: {
+            x: {
+              min: 0,
+              grid: CHART_STYLE.grid, ticks: CHART_STYLE.tick, border: CHART_STYLE.border,
+              title: { display: true, text: 'Actual Steps', color: '#666666', font: { family: 'Courier New', size: 10 } },
+            },
+            y: {
+              min: 0,
+              grid: CHART_STYLE.grid, ticks: CHART_STYLE.tick, border: CHART_STYLE.border,
+              title: { display: true, text: 'Predicted Steps', color: '#666666', font: { family: 'Courier New', size: 10 } },
+            },
+          },
+        },
+      });
+    }
+
+    function renderDcHistogram(key, idx) {
+      const canvasId = DC_CANVAS_IDS[key][idx];
+      const histKey = DC_HIST_KEYS[key][idx];
+      if (!canvasId || !summaryData) return;
+      if (histKey === '__scatter_steps') { renderDcScatterSteps(canvasId); return; }
+      if (!histKey) return;
+      let histData = summaryData[histKey];
+      if (!histData) return;
+      // Normalize legacy plain-array format (0-1 distributions) to {counts, lo, hi}
+      if (Array.isArray(histData)) { histData = { counts: histData, lo: 0, hi: 1 }; }
+      const isTokens = key === 'tokens';
+      const isKpiFrac = key === 'files' || key === 'funcs' || key === 'sem';
+      const isKpiTime = key === 'time';
+      const isOverlay = Array.isArray(histData.series);
+
+      if (isOverlay) {
+        // Multi-series overlay chart (shared bin edges)
+        const { lo, hi, series } = histData;
+        const n = series[0].length;
+        const binW = n > 1 ? (hi - lo) / n : 1;
+        const overlayColors = [
+          { bg: 'rgba(0,0,204,0.45)', border: '#0000cc', label: 'Agent 1' },
+          { bg: 'rgba(0,102,0,0.45)', border: '#006600', label: 'Agent 2' },
+        ];
+        const labels = series[0].map((_, i) => fmtK(Math.round(lo + i * binW)));
+        mkChart(canvasId, {
+          type: 'bar',
+          data: {
+            labels,
+            datasets: series.map((counts, i) => ({
+              label: overlayColors[i].label,
+              data: counts,
+              backgroundColor: overlayColors[i].bg,
+              borderColor: overlayColors[i].border,
+              borderWidth: 1,
+              barPercentage: 1.0,
+              categoryPercentage: 1.0,
+            })),
+          },
+          options: {
+            responsive: true, maintainAspectRatio: false,
+            animation: { duration: 300 },
+            plugins: {
+              legend: {
+                display: true,
+                labels: { color: '#333', font: { family: 'Courier New', size: 10 }, boxWidth: 12, padding: 10 },
+              },
+              tooltip: {
+                backgroundColor: '#000000',
+                bodyFont: { family: 'Courier New', size: 11 }, padding: 8,
+                callbacks: {
+                  title: ctx => {
+                    const i = ctx[0].dataIndex;
+                    return `${fmtK(Math.round(lo + i * binW))} – ${fmtK(Math.round(lo + (i + 1) * binW))} tokens`;
+                  },
+                  label: ctx => `${ctx.dataset.label}: ${ctx.raw}`,
+                },
+              },
+            },
+            scales: {
+              x: { grid: CHART_STYLE.grid, ticks: CHART_STYLE.tickSm, border: CHART_STYLE.border },
+              y: { grid: CHART_STYLE.grid, ticks: CHART_STYLE.tickSm, border: CHART_STYLE.border, beginAtZero: true },
+            },
+          },
+        });
+        return;
+      }
+
+      // Single-series histogram
+      const color = DC_COLORS[key][idx];
+      const { counts, lo, hi } = histData;
+      const isInt = histData.step === 1;
+      const binW = isInt ? 1 : (counts.length > 1 ? (hi - lo) / counts.length : 1);
+      const labels = counts.map((_, i) => {
+        const v = lo + i * binW;
+        if (isKpiFrac) return v.toFixed(1);
+        if (isKpiTime) return Math.round(v) + 's';
+        return isTokens ? fmtK(Math.round(v)) : String(Math.round(v));
+      });
+      mkChart(canvasId, {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [{ data: counts, backgroundColor: color + '55', borderColor: color, borderWidth: 1 }],
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          animation: { duration: 300 },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: '#000000',
+              bodyFont: { family: 'Courier New', size: 11 }, padding: 8,
+              callbacks: {
+                title: ctx => {
+                  const i = ctx[0].dataIndex;
+                  const a = lo + i * binW;
+                  const b = lo + (i + 1) * binW;
+                  if (isKpiFrac) return `${a.toFixed(2)} – ${b.toFixed(2)}`;
+                  if (isKpiTime) return `${a.toFixed(1)}s – ${b.toFixed(1)}s`;
+                  if (isInt) return isTokens ? fmtK(Math.round(a)) + ' tokens' : String(Math.round(a)) + ' steps';
+                  return isTokens
+                    ? `${fmtK(Math.round(a))} – ${fmtK(Math.round(b))} tokens`
+                    : `${Math.round(a)} – ${Math.round(b)} steps`;
+                },
+                label: ctx => `Count: ${ctx.raw}`,
+              },
+            },
+          },
+          scales: {
+            x: { grid: CHART_STYLE.grid, ticks: CHART_STYLE.tickSm, border: CHART_STYLE.border },
+            y: { grid: CHART_STYLE.grid, ticks: CHART_STYLE.tickSm, border: CHART_STYLE.border, beginAtZero: true },
+          },
+        },
+      });
     }
 
     function renderS2Summary(s) {
-      const tx = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v ?? '—'; };
-      const fmtStep = v => v == null ? '—' : Number(v).toFixed(1);
-      const fmtTok = v => v == null ? '—' : fmtK(Math.round(v));
+      summaryData = s;
+      resetDistCarousels();
+      const fmt1 = v => v == null ? '—' : Number(v).toFixed(1);
+      const fmtK_ = v => v == null ? '—' : fmtK(Math.round(v));
 
-      // Step card
-      tx('s2-gt-avg', fmtStep(s.avg_steps_actual));
-      tx('s2-gt-sd', fmtStep(s.stdev_steps_actual));
-      tx('s2-gt-q1', fmtStep(s.q1_steps_actual));
-      tx('s2-gt-med', fmtStep(s.median_steps_actual));
-      tx('s2-gt-q3', fmtStep(s.q3_steps_actual));
+      const groups = [
+        { prefix: 's2-gt', fmt: fmt1, keys: { avg: s.avg_steps_actual, sd: s.stdev_steps_actual, q1: s.q1_steps_actual, med: s.median_steps_actual, q3: s.q3_steps_actual } },
+        { prefix: 's2-pred', fmt: fmt1, keys: { avg: s.avg_steps_predicted, sd: s.stdev_steps_predicted, q1: s.q1_steps_predicted, med: s.median_steps_predicted, q3: s.q3_steps_predicted } },
+        { prefix: 's2-diff', fmt: fmt1, keys: { avg: s.avg_abs_step_diff, sd: s.stdev_abs_step_diff, q1: s.q1_abs_step_diff, med: s.median_abs_step_diff, q3: s.q3_abs_step_diff } },
+        { prefix: 's2-a1', fmt: fmtK_, keys: { avg: s.avg_agent1_tokens, sd: s.stdev_agent1_tokens, q1: s.q1_agent1_tokens, med: s.median_agent1_tokens, q3: s.q3_agent1_tokens } },
+        { prefix: 's2-a2', fmt: fmtK_, keys: { avg: s.avg_agent2_tokens, sd: s.stdev_agent2_tokens, q1: s.q1_agent2_tokens, med: s.median_agent2_tokens, q3: s.q3_agent2_tokens } },
+        { prefix: 's2-tot', fmt: fmtK_, keys: { avg: s.avg_total_tokens, sd: s.stdev_total_tokens, q1: s.q1_total_tokens, med: s.median_total_tokens, q3: s.q3_total_tokens } },
+      ];
 
-      tx('s2-pred-avg', fmtStep(s.avg_steps_predicted));
-      tx('s2-pred-sd', fmtStep(s.stdev_steps_predicted));
-      tx('s2-pred-q1', fmtStep(s.q1_steps_predicted));
-      tx('s2-pred-med', fmtStep(s.median_steps_predicted));
-      tx('s2-pred-q3', fmtStep(s.q3_steps_predicted));
+      for (const { prefix, fmt: fmtFn, keys } of groups) {
+        for (const [stat, val] of Object.entries(keys)) {
+          const el = document.getElementById(`${prefix}-${stat}`);
+          if (el) el.textContent = fmtFn(val);
+        }
+      }
 
-      tx('s2-diff-avg', fmtStep(s.avg_abs_step_diff));
-      tx('s2-diff-sd', fmtStep(s.stdev_abs_step_diff));
-      tx('s2-diff-q1', fmtStep(s.q1_abs_step_diff));
-      tx('s2-diff-med', fmtStep(s.median_abs_step_diff));
-      tx('s2-diff-q3', fmtStep(s.q3_abs_step_diff));
-
-      // Token card
-      tx('s2-a1-avg', fmtTok(s.avg_agent1_tokens));
-      tx('s2-a1-sd', fmtTok(s.stdev_agent1_tokens));
-      tx('s2-a1-q1', fmtTok(s.q1_agent1_tokens));
-      tx('s2-a1-med', fmtTok(s.median_agent1_tokens));
-      tx('s2-a1-q3', fmtTok(s.q3_agent1_tokens));
-
-      tx('s2-a2-avg', fmtTok(s.avg_agent2_tokens));
-      tx('s2-a2-sd', fmtTok(s.stdev_agent2_tokens));
-      tx('s2-a2-q1', fmtTok(s.q1_agent2_tokens));
-      tx('s2-a2-med', fmtTok(s.median_agent2_tokens));
-      tx('s2-a2-q3', fmtTok(s.q3_agent2_tokens));
-
-      tx('s2-tot-avg', fmtTok(s.avg_total_tokens));
-      tx('s2-tot-sd', fmtTok(s.stdev_total_tokens));
-      tx('s2-tot-q1', fmtTok(s.q1_total_tokens));
-      tx('s2-tot-med', fmtTok(s.median_total_tokens));
-      tx('s2-tot-q3', fmtTok(s.q3_total_tokens));
-
-      // Slide 1 box plots
+      // Box plots
       renderComboVBP('s2-steps-bp',
         [
           { min: s.min_steps_actual, q1: s.q1_steps_actual, med: s.median_steps_actual, mean: s.avg_steps_actual, q3: s.q3_steps_actual, max: s.max_steps_actual },
@@ -2800,7 +3461,7 @@
         ],
         ['GT Steps', 'Pred Steps', '|Diff|'],
         ['#0000cc', '#006600', '#cc0000'],
-        v => v == null ? '—' : Number(v).toFixed(1)
+        fmt1
       );
 
       renderComboVBP('s2-tokens-bp',
@@ -2811,16 +3472,70 @@
         ],
         ['Agent 1', 'Agent 2', 'Total'],
         ['#0000cc', '#006600', '#cc0000'],
-        v => v == null ? '—' : fmtK(Math.round(v))
+        fmtK_
+      );
+
+      // ── Agent Activity cards ──────────────────────────────────────────
+      const actToolsAvgEl = document.getElementById('act-tools-avg');
+      if (actToolsAvgEl) actToolsAvgEl.textContent = s.avg_tool_calls != null ? Number(s.avg_tool_calls).toFixed(1) : '—';
+
+      const actToolsBodyEl = document.getElementById('act-tools-body');
+      if (actToolsBodyEl) {
+        const byTool = Object.entries(s.avg_tool_calls_by_tool || {}).sort((a, b) => b[1] - a[1]);
+        const byAgent = Object.entries(s.avg_tool_calls_by_agent || {}).sort((a, b) => b[1] - a[1]);
+        const maxTool = byTool[0]?.[1] || 1;
+        const maxAgent = byAgent[0]?.[1] || 1;
+        const barRow = (name, val, color, maxVal) =>
+          `<div style="display:flex;align-items:center;gap:8px;margin-bottom:5px">
+            <span style="width:130px;min-width:130px;font-size:0.60rem;color:var(--text-2);text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:'Courier New',monospace">${escHtml(name)}</span>
+            <div style="flex:1;height:7px;background:var(--bg);position:relative;border:1px solid var(--border)">
+              <div style="position:absolute;left:0;top:0;height:100%;width:${(val / maxVal * 100).toFixed(1)}%;background:${color}"></div>
+            </div>
+            <span style="width:36px;font-size:0.62rem;font-family:'Courier New',monospace;text-align:right">${val.toFixed(1)}</span>
+          </div>`;
+        actToolsBodyEl.innerHTML =
+          `<div style="font-size:0.58rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-3);margin-bottom:7px">By Tool</div>` +
+          byTool.map(([n, v]) => barRow(n, v, '#0000cc', maxTool)).join('') +
+          `<div style="font-size:0.58rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-3);margin-top:14px;margin-bottom:7px">By Agent</div>` +
+          byAgent.map(([n, v]) => barRow(n, v, '#885500', maxAgent)).join('');
+      }
+
+      const actReqAvgEl = document.getElementById('act-req-avg');
+      if (actReqAvgEl) actReqAvgEl.textContent = s.avg_total_requests != null ? Number(s.avg_total_requests).toFixed(1) : '—';
+
+      const bpReqEl = document.getElementById('bp-req-outer');
+      if (bpReqEl) bpReqEl.innerHTML = renderBoxPlotHTML(
+        s.min_total_requests, s.q1_total_requests, s.median_total_requests,
+        s.avg_total_requests, s.q3_total_requests, s.max_total_requests,
+        {
+          rangeMin: 0, rangeMax: s.max_total_requests || 1,
+          fmtAxis: v => String(Math.round(v)), fmtLegend: v => String(Math.round(v))
+        }
       );
     }
 
     /* ════════════════════════════════════════════════════════════════════
        SUMMARY STATS
        ════════════════════════════════════════════════════════════════════ */
-    function renderSummary(s) {
-      const tx = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v ?? '—'; };
 
+    let _lastSummary = null;
+    let _kpiFilterCleanGt = false;
+
+    // KPI metric definitions for data-driven renderSummary
+    // fields: (minV, q1, med, mean, q3, maxV) — no stdev
+    // score: true → applyScore (0-1 coloring); false → plain text with fmtVal
+    const KPI_METRICS = [
+      { avgId: 'mc-files-avg', bpId: 'bp-files-outer', score: true, avgVal: s => s.avg_files_f1, fields: s => [s.min_files_f1, s.q1_files_f1, s.median_files_f1, s.avg_files_f1, s.q3_files_f1, s.max_files_f1] },
+      { avgId: 'mc-funcs-avg', bpId: 'bp-funcs-outer', score: true, avgVal: s => s.avg_functions_f1, fields: s => [s.min_functions_f1, s.q1_functions_f1, s.median_functions_f1, s.avg_functions_f1, s.q3_functions_f1, s.max_functions_f1] },
+      { avgId: 'mc-sem-avg', bpId: 'bp-sem-outer', score: true, avgVal: s => s.avg_semantic, fields: s => [s.min_semantic, s.q1_semantic, s.median_semantic, s.avg_semantic, s.q3_semantic, s.max_semantic] },
+      {
+        avgId: 'mc-time-avg', bpId: 'bp-time-outer', score: false, avgVal: s => s.avg_duration_seconds, fields: s => [s.min_duration_seconds, s.q1_duration_seconds, s.median_duration_seconds, s.avg_duration_seconds, s.q3_duration_seconds, s.max_duration_seconds],
+        fmtVal: v => v == null ? '—' : Number(v).toFixed(1),
+        opts: s => ({ rangeMin: 0, rangeMax: s.max_duration_seconds || 1, fmtAxis: v => Math.round(v) + 's', fmtLegend: v => v.toFixed(1) + 's' })
+      },
+    ];
+
+    function renderKPICards(statsObj) {
       function applyScore(id, val) {
         const el = document.getElementById(id);
         if (!el) return;
@@ -2830,58 +3545,60 @@
         );
         el.textContent = val != null ? Number(val).toFixed(3) : '—';
       }
+      for (const kpi of KPI_METRICS) {
+        if (kpi.score) {
+          applyScore(kpi.avgId, kpi.avgVal(statsObj));
+        } else {
+          const el = document.getElementById(kpi.avgId);
+          if (el) el.textContent = kpi.fmtVal(kpi.avgVal(statsObj));
+        }
+      }
+      for (const kpi of KPI_METRICS) {
+        const el = document.getElementById(kpi.bpId);
+        if (el) el.innerHTML = renderBoxPlotHTML(...kpi.fields(statsObj), kpi.opts ? kpi.opts(statsObj) : {});
+      }
+    }
 
-      // ── slide 0: stats cards ────────────────────────────────────────
-      applyScore('mc-files-avg', s.avg_files_f1);
-      tx('mc-files-sd', s.stdev_files_f1 != null ? Number(s.stdev_files_f1).toFixed(3) : '—');
-      tx('mc-files-q1', s.q1_files_f1 != null ? Number(s.q1_files_f1).toFixed(3) : '—');
-      tx('mc-files-med', s.median_files_f1 != null ? Number(s.median_files_f1).toFixed(3) : '—');
-      tx('mc-files-q3', s.q3_files_f1 != null ? Number(s.q3_files_f1).toFixed(3) : '—');
+    function toggleKpiCleanGt() {
+      _kpiFilterCleanGt = !_kpiFilterCleanGt;
+      document.getElementById('chip-cgt')?.classList.toggle('active', _kpiFilterCleanGt);
+      const sub = document.getElementById('kpi-filter-subtitle');
+      if (sub) sub.textContent = _kpiFilterCleanGt && _lastSummary?.clean_gt_stats
+        ? `n=${_lastSummary.clean_gt_stats.n} · GT has no empty fn step`
+        : '';
+      if (!_lastSummary) return;
+      const stats = _kpiFilterCleanGt && _lastSummary.clean_gt_stats
+        ? _lastSummary.clean_gt_stats
+        : _lastSummary;
+      renderKPICards(stats);
+      renderS2Summary(stats);
+    }
 
-      applyScore('mc-funcs-avg', s.avg_functions_f1);
-      tx('mc-funcs-sd', s.stdev_functions_f1 != null ? Number(s.stdev_functions_f1).toFixed(3) : '—');
-      tx('mc-funcs-q1', s.q1_functions_f1 != null ? Number(s.q1_functions_f1).toFixed(3) : '—');
-      tx('mc-funcs-med', s.median_functions_f1 != null ? Number(s.median_functions_f1).toFixed(3) : '—');
-      tx('mc-funcs-q3', s.q3_functions_f1 != null ? Number(s.q3_functions_f1).toFixed(3) : '—');
+    function toggleCorrCleanGt() {
+      _corrCleanGt = !_corrCleanGt;
+      document.getElementById('chip-cgt-corr')?.classList.toggle('active', _corrCleanGt);
+      const sub = document.getElementById('corr-filter-subtitle');
+      if (sub) sub.textContent = _corrCleanGt ? 'GT has no empty fn step' : '';
+      if (!_lastCorrData) return;
+      const data = _corrCleanGt ? _lastCorrData.filter(d => !d.empty_fn_in_gt) : _lastCorrData;
+      renderCorrelations(data);
+    }
 
-      applyScore('mc-sem-avg', s.avg_semantic);
-      tx('mc-sem-sd', s.stdev_semantic != null ? Number(s.stdev_semantic).toFixed(3) : '—');
-      tx('mc-sem-q1', s.q1_semantic != null ? Number(s.q1_semantic).toFixed(3) : '—');
-      tx('mc-sem-med', s.median_semantic != null ? Number(s.median_semantic).toFixed(3) : '—');
-      tx('mc-sem-q3', s.q3_semantic != null ? Number(s.q3_semantic).toFixed(3) : '—');
-
-      renderComboBP(s);
+    function renderSummary(s) {
+      _lastSummary = s;
+      renderKPICards(s);
       renderS2Summary(s);
-
-      // ── slide 1: box plots ──────────────────────────────────────────
-      const bpFiles = document.getElementById('bp-files-outer');
-      const bpFuncs = document.getElementById('bp-funcs-outer');
-      const bpSem = document.getElementById('bp-sem-outer');
-      if (bpFiles) bpFiles.innerHTML = renderBoxPlotHTML(
-        s.min_files_f1, s.q1_files_f1, s.median_files_f1, s.avg_files_f1, s.q3_files_f1, s.max_files_f1
-      );
-      if (bpFuncs) bpFuncs.innerHTML = renderBoxPlotHTML(
-        s.min_functions_f1, s.q1_functions_f1, s.median_functions_f1, s.avg_functions_f1, s.q3_functions_f1, s.max_functions_f1
-      );
-      if (bpSem) bpSem.innerHTML = renderBoxPlotHTML(
-        s.min_semantic, s.q1_semantic, s.median_semantic, s.avg_semantic, s.q3_semantic, s.max_semantic
-      );
     }
 
     /* ════════════════════════════════════════════════════════════════════
        CHARTS
        ════════════════════════════════════════════════════════════════════ */
     function chartColors(items) {
-      const palette = [
-        '#000000', '#cc0000',
-        '#006600', '#885500',
-        '#0000cc', '#555555',
-      ];
       const repoIndex = {};
       let idx = 0;
       return items.map(d => {
-        if (!(d.repo in repoIndex)) repoIndex[d.repo] = idx++ % palette.length;
-        return palette[repoIndex[d.repo]];
+        if (!(d.repo in repoIndex)) repoIndex[d.repo] = idx++ % PALETTE.length;
+        return PALETTE[repoIndex[d.repo]];
       });
     }
 
@@ -2891,12 +3608,7 @@
       plugins: {
         legend: { display: false },
         tooltip: {
-          backgroundColor: '#000000',
-          borderColor: '#000000',
-          borderWidth: 1,
-          titleFont: { family: 'Courier New', size: 11 },
-          bodyFont: { family: 'Courier New', size: 11 },
-          padding: 10,
+          ...CHART_STYLE.tooltip,
           callbacks: {
             title: ctx => ctx[0].raw.title || '',
             label: ctx => {
@@ -2912,15 +3624,15 @@
       },
       scales: {
         x: {
-          grid: { color: 'rgba(0,0,0,0.08)' },
-          ticks: { color: '#666666', font: { family: 'Courier New', size: 10 } },
-          border: { color: '#000000' },
+          grid: CHART_STYLE.grid,
+          ticks: CHART_STYLE.tick,
+          border: CHART_STYLE.border,
         },
         y: {
           min: 0, max: 1,
-          grid: { color: 'rgba(0,0,0,0.08)' },
-          ticks: { color: '#666666', font: { family: 'Courier New', size: 10 } },
-          border: { color: '#000000' },
+          grid: CHART_STYLE.grid,
+          ticks: CHART_STYLE.tick,
+          border: CHART_STYLE.border,
         },
       },
     };
@@ -2941,15 +3653,15 @@
     function scaleOpts(xLabel, yLabel, yMin = null, yMax = null) {
       const base = {
         x: {
-          grid: { color: 'rgba(0,0,0,0.08)' },
-          ticks: { color: '#666666', font: { family: 'Courier New', size: 10 } },
-          border: { color: '#000000' },
+          grid: CHART_STYLE.grid,
+          ticks: CHART_STYLE.tick,
+          border: CHART_STYLE.border,
           title: { display: !!xLabel, text: xLabel, color: '#666666', font: { family: 'Courier New', size: 10 } },
         },
         y: {
-          grid: { color: 'rgba(0,0,0,0.08)' },
-          ticks: { color: '#666666', font: { family: 'Courier New', size: 10 } },
-          border: { color: '#000000' },
+          grid: CHART_STYLE.grid,
+          ticks: CHART_STYLE.tick,
+          border: CHART_STYLE.border,
           title: { display: !!yLabel, text: yLabel, color: '#666666', font: { family: 'Courier New', size: 10 } },
         },
       };
@@ -2960,10 +3672,7 @@
 
     function tooltipBase(labelFn) {
       return {
-        backgroundColor: '#000000', borderColor: '#000000', borderWidth: 1,
-        titleFont: { family: 'Courier New', size: 11 },
-        bodyFont: { family: 'Courier New', size: 11 },
-        padding: 10,
+        ...CHART_STYLE.tooltip,
         callbacks: { title: ctx => ctx[0].raw?.title || '', label: labelFn },
       };
     }
@@ -2996,252 +3705,66 @@
       return [{ x: xMin, y: slope * xMin + b }, { x: xMax, y: slope * xMax + b }];
     }
 
-    function renderAllCharts(summary) {
-      const data = summary.chart_data || [];
-      const colors = chartColors(data);
+    let _lastCorrData = null;
+    let _corrCleanGt  = false;
 
-      /* ── Correlation: Tokens vs Functions F1 ───────────────────────── */
-      {
-        const pts1 = data.map(d => ({ x: d.tokens, y: d.functions_f1 })).filter(p => p.x != null && p.y != null);
-        const r1 = pearsonR(pts1);
-        const xMin1 = pts1.length ? Math.min(...pts1.map(p => p.x)) : 0;
-        const xMax1 = pts1.length ? Math.max(...pts1.map(p => p.x)) : 1;
-        const trend1 = regressionLine(pts1, xMin1, xMax1);
-        mkChart('chart-tokens-f1', {
-          type: 'scatter',
-          data: {
-            datasets: [
-              {
-                data: data.map((d, i) => ({
-                  x: d.tokens, y: d.functions_f1, title: d.title, semantic: d.semantic, files_f1: d.files_f1,
-                  backgroundColor: colors[i], borderColor: 'transparent', borderWidth: 0,
-                  pointStyle: makeCharPoint('$', colors[i], 18), pointRadius: 9, pointHoverRadius: 13,
-                }))
-              },
-              {
-                type: 'line', data: trend1, borderColor: '#000000', borderWidth: 1,
-                borderDash: [5, 3], pointRadius: 0, fill: false, tension: 0
-              },
-            ]
-          },
-          options: {
-            responsive: true, maintainAspectRatio: false, animation: { duration: 400 },
-            plugins: {
-              legend: { display: false },
-              title: {
-                display: r1 !== null, text: `Pearson r = ${r1?.toFixed(3)}`, position: 'bottom',
-                color: '#666666', font: { family: 'Courier New', size: 10 }, padding: { top: 6 }
-              },
-              tooltip: tooltipBase(ctx => {
-                if (ctx.dataset.type === 'line') return null;
-                const d = ctx.raw;
-                return [`Tokens: ${fmtK(d.x)}`, `Funcs F1: ${fmt(d.y)}`, `Files F1: ${fmt(d.files_f1)}`, `Sem: ${fmt(d.semantic)}`];
-              }),
-            },
-            scales: scaleOpts('Total Tokens', 'Functions F1', 0, 1),
-          },
-        });
+    function renderEmptyFnChart(s) {
+      const cmp = s.empty_fn_comparison;
+      if (!cmp) return;
+      const subtitle = document.getElementById('empty-fn-subtitle');
+      if (subtitle) {
+        subtitle.textContent =
+          `${s.count_with_empty_fn ?? '?'} PRs — empty fn in GT  ·  ` +
+          `${s.count_without_empty_fn ?? '?'} PRs — clean GT`;
       }
-
-      /* ── Correlation: Token Usage vs Semantic Score ─────────────────── */
-      {
-        const pts2 = data.map(d => ({ x: d.tokens, y: d.semantic })).filter(p => p.x != null && p.y != null);
-        const r2 = pearsonR(pts2);
-        const xMin2 = pts2.length ? Math.min(...pts2.map(p => p.x)) : 0;
-        const xMax2 = pts2.length ? Math.max(...pts2.map(p => p.x)) : 1;
-        const trend2 = regressionLine(pts2, xMin2, xMax2);
-        mkChart('chart-calls-f1', {
-          type: 'scatter',
-          data: {
-            datasets: [
-              {
-                data: data.map((d, i) => ({
-                  x: d.tokens, y: d.semantic, title: d.title, functions_f1: d.functions_f1,
-                  backgroundColor: colors[i], borderColor: 'transparent', borderWidth: 0,
-                  pointStyle: makeCharPoint('*', colors[i], 18), pointRadius: 9, pointHoverRadius: 13,
-                }))
-              },
-              {
-                type: 'line', data: trend2, borderColor: '#000000', borderWidth: 1,
-                borderDash: [5, 3], pointRadius: 0, fill: false, tension: 0
-              },
-            ]
-          },
-          options: {
-            responsive: true, maintainAspectRatio: false, animation: { duration: 400 },
-            plugins: {
-              legend: { display: false },
-              title: {
-                display: r2 !== null, text: `Pearson r = ${r2?.toFixed(3)}`, position: 'bottom',
-                color: '#666666', font: { family: 'Courier New', size: 10 }, padding: { top: 6 }
-              },
-              tooltip: tooltipBase(ctx => {
-                if (ctx.dataset.type === 'line') return null;
-                const d = ctx.raw;
-                return [`Tokens: ${fmtK(d.x)}`, `Semantic: ${fmt(d.y)}`, `Funcs F1: ${fmt(d.functions_f1)}`];
-              }),
-            },
-            scales: scaleOpts('Total Tokens', 'Semantic Score', 0, 1),
-          },
-        });
-      }
-
-      /* ── Functions F1 Distribution ──────────────────────────────────── */
-      const binLabels = ['0.0', '0.1', '0.2', '0.3', '0.4', '0.5', '0.6', '0.7', '0.8', '0.9'];
-      mkChart('chart-f1-dist', {
+      mkChart('empty-fn-chart', {
         type: 'bar',
         data: {
-          labels: binLabels, datasets: [{
-            data: summary.functions_f1_distribution || [],
-            backgroundColor: '#000000', borderColor: '#000000', borderWidth: 0,
-          }]
-        },
-        options: {
-          responsive: true, maintainAspectRatio: false, animation: { duration: 400 },
-          plugins: {
-            legend: { display: false }, tooltip: {
-              backgroundColor: '#000000', bodyFont: { family: 'Courier New', size: 11 }, padding: 8,
-              callbacks: {
-                title: ctx => `F1 [${ctx[0].label}–${(+ctx[0].label + 0.1).toFixed(1)})`,
-                label: ctx => `Count: ${ctx.raw}`
-              },
-            }
-          },
-          scales: {
-            x: { grid: { display: false }, ticks: { color: '#666666', font: { family: 'Courier New', size: 9 } }, border: { color: '#000000' } },
-            y: { grid: { color: 'rgba(0,0,0,0.08)' }, ticks: { color: '#666666', font: { family: 'Courier New', size: 9 } }, border: { color: '#000000' } },
-          },
-        },
-      });
-
-      /* ── Semantic Distribution ──────────────────────────────────────── */
-      mkChart('chart-sem-dist', {
-        type: 'bar',
-        data: {
-          labels: binLabels, datasets: [{
-            data: summary.semantic_distribution || [],
-            backgroundColor: '#333333', borderColor: '#333333', borderWidth: 0,
-          }]
-        },
-        options: {
-          responsive: true, maintainAspectRatio: false, animation: { duration: 400 },
-          plugins: {
-            legend: { display: false }, tooltip: {
-              backgroundColor: '#000000', bodyFont: { family: 'Courier New', size: 11 }, padding: 8,
-              callbacks: {
-                title: ctx => `Sem [${ctx[0].label}–${(+ctx[0].label + 0.1).toFixed(1)})`,
-                label: ctx => `Count: ${ctx.raw}`
-              },
-            }
-          },
-          scales: {
-            x: { grid: { display: false }, ticks: { color: '#666666', font: { family: 'Courier New', size: 9 } }, border: { color: '#000000' } },
-            y: { grid: { color: 'rgba(0,0,0,0.08)' }, ticks: { color: '#666666', font: { family: 'Courier New', size: 9 } }, border: { color: '#000000' } },
-          },
-        },
-      });
-
-      /* ── Functions F1 vs Semantic scatter ──────────────────────────── */
-      mkChart('chart-f1-sem', {
-        type: 'scatter',
-        data: {
-          datasets: [{
-            data: data.map((d, i) => ({
-              x: d.functions_f1, y: d.semantic, title: d.title, files_f1: d.files_f1,
-              backgroundColor: colors[i], borderColor: 'transparent',
-              pointStyle: 'rect', pointRadius: 5, pointHoverRadius: 8,
-            }))
-          }]
-        },
-        options: {
-          responsive: true, maintainAspectRatio: false, animation: { duration: 400 },
-          plugins: {
-            legend: { display: false }, tooltip: tooltipBase(ctx => {
-              const d = ctx.raw;
-              return [`Funcs F1: ${fmt(d.x)}`, `Sem: ${fmt(d.y)}`, `Files F1: ${fmt(d.files_f1)}`];
-            })
-          },
-          scales: scaleOpts('Functions F1', 'Semantic', 0, 1),
-        },
-      });
-
-      /* ── Steps: Actual vs Predicted scatter ─────────────────────────── */
-      const stepsRaw = summary.steps_chart_data || [];
-      const stepColors = chartColors(stepsRaw);
-      const stepsData = stepsRaw.map((d, i) => ({
-        x: d.steps_actual, y: d.steps_predicted, title: d.title,
-        backgroundColor: stepColors[i], borderColor: 'transparent',
-        pointStyle: 'rect', pointRadius: 6, pointHoverRadius: 9,
-      }));
-      const maxS = stepsData.length
-        ? Math.max(...stepsData.map(d => Math.max(d.x, d.y))) + 1
-        : 10;
-      mkChart('chart-steps-scatter', {
-        type: 'scatter',
-        data: {
+          labels: ['Files F1', 'Functions F1', 'Semantic'],
           datasets: [
-            { data: stepsData },
             {
-              type: 'line', data: [{ x: 0, y: 0 }, { x: maxS, y: maxS }],
-              borderColor: '#000000', borderWidth: 1, borderDash: [4, 4],
-              pointRadius: 0, fill: false, tension: 0
+              label: `Empty fn in GT (n=${s.count_with_empty_fn ?? '?'})`,
+              data: [
+                cmp.with.avg_files_f1,
+                cmp.with.avg_functions_f1,
+                cmp.with.avg_semantic,
+              ],
+              backgroundColor: 'rgba(204,0,0,0.75)',
+              borderColor: '#000',
+              borderWidth: 1,
             },
-          ]
+            {
+              label: `Clean GT (n=${s.count_without_empty_fn ?? '?'})`,
+              data: [
+                cmp.without.avg_files_f1,
+                cmp.without.avg_functions_f1,
+                cmp.without.avg_semantic,
+              ],
+              backgroundColor: 'rgba(0,102,0,0.75)',
+              borderColor: '#000',
+              borderWidth: 1,
+            },
+          ],
         },
         options: {
-          responsive: true, maintainAspectRatio: false, animation: { duration: 400 },
+          indexAxis: 'y',
+          responsive: true,
+          maintainAspectRatio: false,
           plugins: {
-            legend: { display: false }, tooltip: tooltipBase(ctx => {
-              if (ctx.dataset.type === 'line') return null;
-              const d = ctx.raw;
-              return [`Actual: ${d.x}`, `Predicted: ${d.y}`, `|Δ|: ${Math.abs(d.y - d.x)}`];
-            })
+            legend: { labels: { font: { family: 'Courier New', size: 11 } } },
           },
           scales: {
-            x: { min: 0, grid: { color: 'rgba(0,0,0,0.08)' }, ticks: { color: '#666666', font: { family: 'Courier New', size: 10 } }, border: { color: '#000000' }, title: { display: true, text: 'Actual Steps', color: '#666666', font: { family: 'Courier New', size: 10 } } },
-            y: { min: 0, grid: { color: 'rgba(0,0,0,0.08)' }, ticks: { color: '#666666', font: { family: 'Courier New', size: 10 } }, border: { color: '#000000' }, title: { display: true, text: 'Predicted Steps', color: '#666666', font: { family: 'Courier New', size: 10 } } },
+            x: { min: 0, max: 1, ticks: { font: { family: 'Courier New', size: 11 } } },
+            y: { ticks: { font: { family: 'Courier New', size: 11 } } },
           },
         },
       });
+    }
 
-      /* ── Step Δ Distribution ────────────────────────────────────────── */
-      const diffs = stepsRaw.map(d => d.steps_predicted - d.steps_actual);
-      if (diffs.length) {
-        const minD = Math.min(...diffs), maxD = Math.max(...diffs);
-        // Integer bins: one bar per exact step difference — avoids float boundary misalignment
-        const diffLabels = [], counts = [];
-        for (let v = minD; v <= maxD; v++) {
-          diffLabels.push(v === 0 ? '0' : v > 0 ? `+${v}` : String(v));
-          counts.push(diffs.filter(d => d === v).length);
-        }
-        mkChart('chart-step-diff-dist', {
-          type: 'bar',
-          data: {
-            labels: diffLabels, datasets: [{
-              data: counts,
-              backgroundColor: diffLabels.map((_, i) => {
-                const v = minD + i;
-                return v < 0 ? '#cc0000' : v > 0 ? '#0000cc' : '#000000';
-              }),
-              borderWidth: 0,
-            }]
-          },
-          options: {
-            responsive: true, maintainAspectRatio: false, animation: { duration: 400 },
-            plugins: {
-              legend: { display: false }, tooltip: {
-                backgroundColor: '#000000', bodyFont: { family: 'Courier New', size: 11 }, padding: 8,
-                callbacks: { title: ctx => `Δ = ${ctx[0].label}`, label: ctx => `Count: ${ctx.raw}` },
-              }
-            },
-            scales: {
-              x: { grid: { display: false }, ticks: { color: '#666666', font: { family: 'Courier New', size: 9 } }, border: { color: '#000000' } },
-              y: { min: 0, grid: { color: 'rgba(0,0,0,0.08)' }, ticks: { color: '#666666', font: { family: 'Courier New', size: 9 }, precision: 0 }, border: { color: '#000000' } },
-            },
-          },
-        });
-      }
-
+    function renderAllCharts(summary) {
+      // chart_data is stored for deferred rendering of the Correlations page
+      _lastCorrData = summary.chart_data || [];
+      renderEmptyFnChart(summary);
     }
 
     /* ════════════════════════════════════════════════════════════════════
@@ -3278,6 +3801,7 @@
         if (activeChips.has('pred') && !p.has_prediction) return false;
         if (activeChips.has('gt') && !p.has_ground_truth) return false;
         if (activeChips.has('scored') && !p.has_score) return false;
+        if (activeChips.has('emptyfn') && !p.has_empty_function_step) return false;
         return true;
       });
 
@@ -3741,56 +4265,203 @@
     });
 
     /* ════════════════════════════════════════════════════════════════════
-       BACKGROUND ANIMATION — drifting grid of small squares
+       BACKGROUND — long paper sheet with high-granularity grain
        ════════════════════════════════════════════════════════════════════ */
-    (function bgAnim() {
+    (function paperBg() {
       const canvas = document.getElementById('bg-canvas');
       const ctx = canvas.getContext('2d');
-      const SPACING = 48;
-      const SIZE = 3;
-      let W, H, cols, rows, t = 0;
-      const dots = [];
 
-      function resize() {
-        W = canvas.width = window.innerWidth;
-        H = canvas.height = window.innerHeight;
-        cols = Math.ceil(W / SPACING) + 2;
-        rows = Math.ceil(H / SPACING) + 2;
-        dots.length = 0;
-        for (let c = 0; c < cols; c++) {
-          for (let r = 0; r < rows; r++) {
-            dots.push({
-              bx: c * SPACING,
-              by: r * SPACING,
-              phase: Math.random() * Math.PI * 2,
-              speed: 0.3 + Math.random() * 0.4,
-              amp: 4 + Math.random() * 6,
-            });
-          }
-        }
-      }
-
-      function draw(ts) {
-        t = ts * 0.001;
+      function render() {
+        const W = canvas.width = window.innerWidth;
+        const H = canvas.height = window.innerHeight;
         ctx.clearRect(0, 0, W, H);
-        ctx.fillStyle = '#000000';
-        for (const d of dots) {
-          const x = d.bx + Math.sin(t * d.speed + d.phase) * d.amp;
-          const y = d.by + Math.cos(t * d.speed * 0.7 + d.phase) * d.amp;
-          if (x < -SPACING || x > W + SPACING || y < -SPACING || y > H + SPACING) continue;
-          ctx.fillRect(x - SIZE / 2, y - SIZE / 2, SIZE, SIZE);
+
+        // ── High-granularity paper grain via raw pixel noise ──
+        const img = ctx.createImageData(W, H);
+        const d = img.data;
+        for (let i = 0; i < d.length; i += 4) {
+          const r = Math.random();
+          if (r < 0.38) {
+            // Dark cellulose fiber
+            const v = (28 + Math.random() * 48) | 0;
+            d[i] = v + 4;
+            d[i + 1] = v;
+            d[i + 2] = Math.max(0, v - 10);
+            d[i + 3] = (6 + Math.random() * 26) | 0;
+          } else if (r < 0.54) {
+            // Bright fiber highlight
+            const v = (195 + Math.random() * 60) | 0;
+            d[i] = v;
+            d[i + 1] = v - 4;
+            d[i + 2] = v - 16;
+            d[i + 3] = (3 + Math.random() * 14) | 0;
+          }
+          // else fully transparent — sparse, high-contrast grain look
         }
-        requestAnimationFrame(draw);
+        ctx.putImageData(img, 0, 0);
+
+        // ── Horizontal paper fibers ──
+        ctx.save();
+        for (let y = 0; y < H; y += 2 + (Math.random() * 7 | 0)) {
+          const alpha = 0.012 + Math.random() * 0.038;
+          ctx.strokeStyle = `rgba(78, 52, 22, ${alpha})`;
+          ctx.lineWidth = 0.35 + Math.random() * 0.65;
+          ctx.beginPath();
+          ctx.moveTo(0, y);
+          for (let x = 120; x < W; x += 120) {
+            ctx.lineTo(x, y + (Math.random() - 0.5) * 1.8);
+          }
+          ctx.lineTo(W, y);
+          ctx.stroke();
+        }
+        ctx.restore();
+
       }
 
-      window.addEventListener('resize', resize);
-      resize();
-      requestAnimationFrame(draw);
+      render();
+      window.addEventListener('resize', render);
     })();
 
     /* ─── boot ───────────────────────────────────────────────────────── */
     init();
+
+    /* ════════════════════════════════════════════════════════════════════
+       CORRELATION CHARTS
+       ════════════════════════════════════════════════════════════════════ */
+    const _corrCharts = {};
+
+    function _linReg(pts) {
+      const n = pts.length;
+      if (n < 2) return null;
+      let sx = 0, sy = 0, sxy = 0, sxx = 0;
+      for (const p of pts) { sx += p.x; sy += p.y; sxy += p.x * p.y; sxx += p.x * p.x; }
+      const m = (n * sxy - sx * sy) / (n * sxx - sx * sx);
+      const b = (sy - m * sx) / n;
+      const xMin = Math.min(...pts.map(p => p.x));
+      const xMax = Math.max(...pts.map(p => p.x));
+      return [{ x: xMin, y: m * xMin + b }, { x: xMax, y: m * xMax + b }];
+    }
+
+    function _pearson(pts) {
+      const n = pts.length;
+      if (n < 2) return null;
+      let mx = 0, my = 0;
+      for (const p of pts) { mx += p.x; my += p.y; }
+      mx /= n; my /= n;
+      let num = 0, dx2 = 0, dy2 = 0;
+      for (const p of pts) {
+        const dx = p.x - mx, dy = p.y - my;
+        num += dx * dy; dx2 += dx * dx; dy2 += dy * dy;
+      }
+      const denom = Math.sqrt(dx2 * dy2);
+      return denom === 0 ? 0 : num / denom;
+    }
+
+    function _corrChart(canvasId, rSpanId, pts, xLabel, yLabel) {
+      const ctx = document.getElementById(canvasId);
+      if (!ctx) return;
+      if (_corrCharts[canvasId]) { _corrCharts[canvasId].destroy(); }
+      const trend = _linReg(pts);
+      const r = _pearson(pts);
+      if (rSpanId) {
+        const el = document.getElementById(rSpanId);
+        if (el) el.textContent = r != null ? `r = ${r.toFixed(3)}` : 'r = —';
+      }
+      const datasets = [
+        {
+          label: 'PR',
+          data: pts,
+          pointRadius: 4,
+          pointHoverRadius: 6,
+          backgroundColor: 'rgba(79,142,247,0.55)',
+          borderColor: 'rgba(79,142,247,0.8)',
+          borderWidth: 1,
+          type: 'scatter',
+        }
+      ];
+      if (trend) {
+        datasets.push({
+          label: 'trend',
+          data: trend,
+          type: 'line',
+          borderColor: 'rgba(255,200,50,0.7)',
+          borderWidth: 1.5,
+          borderDash: [4, 4],
+          pointRadius: 0,
+          fill: false,
+          tension: 0,
+        });
+      }
+      _corrCharts[canvasId] = new Chart(ctx, {
+        type: 'scatter',
+        data: { datasets },
+        options: {
+          animation: false,
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: (item) => {
+                  if (item.datasetIndex !== 0) return null;
+                  return `x=${item.parsed.x.toFixed(3)}  y=${item.parsed.y.toFixed(3)}`;
+                }
+              }
+            }
+          },
+          scales: {
+            x: { title: { display: true, text: xLabel, color: 'var(--text-3)', font: { size: 10 } }, grid: CHART_STYLE.grid, ticks: CHART_STYLE.tickSm, border: CHART_STYLE.border },
+            y: { title: { display: true, text: yLabel, color: 'var(--text-3)', font: { size: 10 } }, grid: CHART_STYLE.grid, ticks: CHART_STYLE.tickSm, border: CHART_STYLE.border },
+          }
+        }
+      });
+    }
+
+    function renderCorrelations(data) {
+      // filter to rows with valid values for each pair
+      function pts(arr, xKey, yKey) {
+        return arr
+          .filter(d => d[xKey] != null && d[yKey] != null)
+          .map(d => ({ x: d[xKey], y: d[yKey] }));
+      }
+      // Row 1: Tokens
+      _corrChart('corr-tok-func', 'corr-r-tok-func', pts(data, 'tokens', 'functions_f1'), 'Tokens', 'Functions F1');
+      _corrChart('corr-tok-file', 'corr-r-tok-file', pts(data, 'tokens', 'files_f1'),     'Tokens', 'Files F1');
+      _corrChart('corr-tok-sem',  'corr-r-tok-sem',  pts(data, 'tokens', 'semantic'),     'Tokens', 'Semantics');
+      // Row 2: Tool Calls
+      _corrChart('corr-tc-func', 'corr-r-tc-func', pts(data, 'tool_calls', 'functions_f1'), 'Tool Calls', 'Functions F1');
+      _corrChart('corr-tc-file', 'corr-r-tc-file', pts(data, 'tool_calls', 'files_f1'),     'Tool Calls', 'Files F1');
+      _corrChart('corr-tc-sem',  'corr-r-tc-sem',  pts(data, 'tool_calls', 'semantic'),     'Tool Calls', 'Semantics');
+      // Row 3: API Requests
+      _corrChart('corr-req-func', 'corr-r-req-func', pts(data, 'requests', 'functions_f1'), 'API Requests', 'Functions F1');
+      _corrChart('corr-req-file', 'corr-r-req-file', pts(data, 'requests', 'files_f1'),     'API Requests', 'Files F1');
+      _corrChart('corr-req-sem',  'corr-r-req-sem',  pts(data, 'requests', 'semantic'),     'API Requests', 'Semantics');
+    }
+
+    /* ════════════════════════════════════════════════════════════════════
+       PAGE NAVIGATION
+       ════════════════════════════════════════════════════════════════════ */
+    function switchPage(name) {
+      ['perf', 'corr', 'pr'].forEach(p => {
+        document.getElementById('page-'  + p)?.classList.toggle('page-active', p === name);
+        document.getElementById('snav-' + p)?.classList.toggle('snav-active',  p === name);
+      });
+      window.scrollTo({ top: 0, behavior: 'instant' });
+      if (name === 'corr' && _lastCorrData) {
+        const data = _corrCleanGt ? _lastCorrData.filter(d => !d.empty_fn_in_gt) : _lastCorrData;
+        renderCorrelations(data);
+      }
+    }
+
   </script>
+
+  <!-- sticky bottom nav -->
+  <div id="sticky-nav">
+    <button class="snav-btn snav-active" id="snav-perf" onclick="switchPage('perf')">Overview</button>
+    <button class="snav-btn" id="snav-corr" onclick="switchPage('corr')">Correlations</button>
+    <button class="snav-btn" id="snav-pr"   onclick="switchPage('pr')">Pull Requests</button>
+  </div>
 </body>
 
 </html>
