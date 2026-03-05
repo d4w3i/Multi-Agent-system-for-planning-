@@ -1,0 +1,59 @@
+{
+  "pr_number": 20938,
+  "repository": "vllm-project/vllm",
+  "title": "Fix overflow indexing in causal_conv1d kernel",
+  "body": "## Essential Elements of an Effective PR Description Checklist\n- [x] The purpose of the PR, such as \"Fix some issue (link existing issues this PR will resolve)\".\n- [x] The test plan, such as providing test command.\n- [x] The test results, such as pasting the results comparison before and after, or e2e results\n- [x] (Optional) The necessary documentation update, such as updating `supported_models.md` and `examples` for a new model.\n\n## Purpose\n\nThis PR fixes an indexing overflow issue that can occur when running mamba-based models in V1. Before V1 integration, the value of `conv_state_batch_coord` could vary from `0` to `max_num_seqs-1`. However, with V1 integration it can now vary between `0` and `num_gpu_blocks-1`. Depending on the model and deployment, the number of blocks can be orders of magnitude higher and I'm running into overflow issues unless we explicitly cast to `tl.int64`.\n\nPlease note I already made the [equivalent fix](https://github.com/vllm-project/vllm/blob/main/vllm/model_executor/layers/mamba/ops/mamba_ssm.py#L111) to the `selective_state_update` as part of https://github.com/vllm-project/vllm/pull/20016. I forgot to make the equivalent change to this kernel, my bad. \n\n@tlrmchlsmth @cyang49 @thoangtrvn \n\n## Test Plan\n\nIt is actually not that easy to catch this with a test because you need a lot of blocks and need to let it run for a while until the scheduler starts picking off blocks with a high enough index to cause the overflow. I think it could be good to write some tests to try and catch these kernel overflow issues in general, but I would advocate for getting this fix in now. \n\n## Test Result\n\nn/a\n\n## (Optional) Documentation Update\n\nn/a\n\n<!--- pyml disable-next-line no-emphasis-as-heading -->\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T01:05:52.789191",
+    "extractor_version": "1.0.0",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "vllm/model_executor/layers/mamba/ops/causal_conv1d.py",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 1,
+      "functions_modified": [
+        {
+          "function_name": "_causal_conv1d_fwd_kernel",
+          "class_name": null,
+          "full_name": "_causal_conv1d_fwd_kernel",
+          "start_line": 17,
+          "end_line": 357,
+          "lines_changed": [
+            95,
+            96
+          ]
+        }
+      ],
+      "patch": "@@ -92,7 +92,8 @@ def _causal_conv1d_fwd_kernel(  # continuous batching\n \n     if IS_CONTINUOUS_BATCHING:\n         # cache_idx\n-        conv_state_batch_coord = tl.load(conv_state_indices_ptr + idx_seq)\n+        conv_state_batch_coord = tl.load(conv_state_indices_ptr + idx_seq).to(\n+            tl.int64)\n     else:\n         # cache_idx\n         conv_state_batch_coord = idx_seq"
+    }
+  ],
+  "functions_modified": [
+    {
+      "function_name": "_causal_conv1d_fwd_kernel",
+      "class_name": null,
+      "full_name": "_causal_conv1d_fwd_kernel",
+      "start_line": 17,
+      "end_line": 357,
+      "lines_changed": [
+        95,
+        96
+      ]
+    }
+  ],
+  "step_plan": {
+    "steps": [
+      {
+        "operation": "Cast `conv_state_batch_coord` loaded from `conv_state_indices_ptr` to `tl.int64` inside the Triton forward kernel to prevent index overflow under continuous batching.",
+        "file_to_modify": "vllm/model_executor/layers/mamba/ops/causal_conv1d.py",
+        "function_to_modify": "_causal_conv1d_fwd_kernel",
+        "reason": "With V1 integration, `conv_state_batch_coord` can range up to `num_gpu_blocks-1` (potentially much larger than `max_num_seqs-1`), so leaving it at the default Triton integer width can overflow when used for pointer arithmetic/indexing; explicitly casting to `tl.int64` ensures correct address computations for large block indices.",
+        "side_effects": "May slightly increase register pressure and potentially affect kernel performance; changes the dtype feeding subsequent indexing computations in this kernel, which could influence downstream pointer math correctness and any implicit casts/assumptions in later `tl.load`/`tl.store` operations."
+      }
+    ],
+    "summary": "Fixes a potential indexing overflow in the Triton `causal_conv1d` forward kernel by casting the loaded continuous-batching cache index to `tl.int64`, making it safe when the scheduler uses high GPU block indices under V1."
+  }
+}

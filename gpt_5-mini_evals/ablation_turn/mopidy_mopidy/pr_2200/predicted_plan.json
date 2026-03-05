@@ -1,0 +1,87 @@
+{
+  "pr_number": 2200,
+  "repository": "mopidy/mopidy",
+  "title": "add workaround for gstreamer 1.25.0 to 1.26.2",
+  "body": "see-also: https://gitlab.freedesktop.org/gstreamer/gstreamer/-/commit/bbf60305ed2ee35f4ecf7a5de2bb139203dda2af",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T13:52:20.008981",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "src/mopidy/internal/gi.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "py)",
+          "class_name": "module-level initialization (src/mopidy/internal/gi",
+          "full_name": "module-level initialization (src/mopidy/internal/gi.py)",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "src/mopidy/audio/actor.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "on_playbin_state_changed",
+          "class_name": "_Handler",
+          "full_name": "_Handler.on_playbin_state_changed",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_set_state",
+          "class_name": "Audio",
+          "full_name": "Audio._set_state",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "tests/",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    }
+  ],
+  "step_plan": {
+    "summary": "Detect GStreamer versions 1.25.0–1.26.2 at startup and enable a scoped Mopidy-side workaround: set a runtime flag and log guidance in internal/gi.py, then make audio state-change handling (on_playbin_state_changed and Audio._set_state) consult that flag and apply minimal compatibility behavior to preserve correct playback state transitions.",
+    "steps": [
+      {
+        "operation": "Add GStreamer version detection and flag + logging at startup",
+        "file_to_modify": "src/mopidy/internal/gi.py",
+        "function_to_modify": "init_gst",
+        "reason": "Detect at import/initialization time whether the running GStreamer version is within the problematic range (1.25.0–1.26.2). Set a module-level flag (e.g., GST_HAS_BROKEN_STATE_CHANGES = True) so other modules can alter behavior conditionally, and emit a clear warning to users indicating the affected versions and recommended actions (upgrade/downgrade or that Mopidy will enable a compatibility workaround). Keeping detection centralized avoids scattering version checks throughout the codebase and preserves the existing REQUIRED_GST_VERSION logic.",
+        "side_effects": "Tests will need to mock Gst.version() to verify detection and logging. Other modules (notably audio/actor.py) will import or query the new flag, so ensure no circular imports. No public API changes expected, but startup logs will change and behavior may differ when the flag is set. Make sure packaging/distribution tests still pass on unaffected GStreamer versions."
+      },
+      {
+        "operation": "Modify playbin state-change handler to account for changed Gst state-change semantics",
+        "file_to_modify": "src/mopidy/audio/actor.py",
+        "function_to_modify": "_Handler.on_playbin_state_changed",
+        "reason": "This handler already contains hacks for corner-case state-change behavior; extend it so that when the GST_HAS_BROKEN_STATE_CHANGES flag from internal/gi.py is True it applies the minimal, scoped compatibility logic required by the upstream regression (for example, ignoring spurious/duplicate STATE_CHANGED messages, adjusting which state transitions are treated as complete, or mapping pending/ASYNC transitions differently). Keeping the logic conditional on the flag ensures normal behavior for unaffected GStreamer versions.",
+        "side_effects": "Alters message processing path only when the flag is set; unit tests must cover both branches (flag on/off). May change timing/ordering observed by higher-level audio logic; ensure other audio components that rely on state-change semantics are validated. Ensure changes are small and well-documented to avoid introducing new race conditions."
+      },
+      {
+        "operation": "Adjust state-setting logic to apply compatibility workarounds when needed",
+        "file_to_modify": "src/mopidy/audio/actor.py",
+        "function_to_modify": "Audio._set_state",
+        "reason": "Audio._set_state is the central point where Mopidy requests GStreamer state changes. When the broken-Gst flag is set, apply the minimal runtime workaround (for example: treat ASYNC return values conservatively, retry or inspect resulting pending state messages differently, or avoid making assumptions about immediate transitions) so that Mopidy's state machine remains consistent despite the upstream change. Centralizing the change here avoids duplicating workarounds elsewhere and keeps the behavior localized to audio state transitions.",
+        "side_effects": "May change how state transitions are driven on affected versions (e.g., additional retries or different handling of ASYNC/FAILURE). Tests that assert exact state-change timing might need updating; integration tests exercising playback transitions should be run on both affected and unaffected Gst versions. No external API changes, but subtle runtime behavior differences under the broken-range flag are possible."
+      }
+    ]
+  }
+}

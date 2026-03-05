@@ -1,0 +1,63 @@
+{
+    "repository": "mvt-project/mvt",
+    "pull_request_number": 558,
+    "title": "Fix crash when handling empty adb key list",
+    "body": "This commit fixes a crash in the ADB module when no keys were parsed. We should return an empty list by default.",
+    "pr_date": "2024-10-23T09:48:51Z",
+    "source_branch": "fix/adb-empty",
+    "language": "en",
+    "keywords_detected": {
+        "branch": [
+            "fix"
+        ],
+        "requirement": [
+            "fix"
+        ],
+        "body": [
+            "fix"
+        ]
+    },
+    "number_of_links_in_pr": 0,
+    "base_sha": "3afe218c7cb91898d7b513a2c265d39e6c2f71cd",
+    "last_commit_sha": "32730374460aa6e06683b4c9058c19bea4eb5ee6",
+    "diff_between_base_and_last": [
+        {
+            "sha": "f714db27ea2c25963a2441c30fb9b4dc820b788c",
+            "filename": "src/mvt/android/artifacts/dumpsys_adb.py",
+            "status": "modified",
+            "additions": 1,
+            "deletions": 1,
+            "changes": 2,
+            "blob_url": "https://github.com/mvt-project/mvt/blob/32730374460aa6e06683b4c9058c19bea4eb5ee6/src%2Fmvt%2Fandroid%2Fartifacts%2Fdumpsys_adb.py",
+            "raw_url": "https://github.com/mvt-project/mvt/raw/32730374460aa6e06683b4c9058c19bea4eb5ee6/src%2Fmvt%2Fandroid%2Fartifacts%2Fdumpsys_adb.py",
+            "contents_url": "https://api.github.com/repos/mvt-project/mvt/contents/src%2Fmvt%2Fandroid%2Fartifacts%2Fdumpsys_adb.py?ref=32730374460aa6e06683b4c9058c19bea4eb5ee6",
+            "patch": "@@ -120,7 +120,7 @@ def parse(self, content: bytes) -> None:\n \n         # Calculate key fingerprints for better readability\n         key_info = []\n-        for user_key in parsed.get(\"user_keys\"):\n+        for user_key in parsed.get(\"user_keys\", []):\n             user_info = self.calculate_key_info(user_key)\n             key_info.append(user_info)\n "
+        }
+    ],
+    "commits": [
+        {
+            "sha": "32730374460aa6e06683b4c9058c19bea4eb5ee6",
+            "commit_date": "2024-10-23T09:45:30Z",
+            "message": "Fix crash Handling empty adb key list",
+            "number_of_links_in_commit": 0,
+            "files_changed_count": 1,
+            "files": [
+                {
+                    "sha": "f714db27ea2c25963a2441c30fb9b4dc820b788c",
+                    "filename": "src/mvt/android/artifacts/dumpsys_adb.py",
+                    "status": "modified",
+                    "additions": 1,
+                    "deletions": 1,
+                    "changes": 2,
+                    "blob_url": "https://github.com/mvt-project/mvt/blob/32730374460aa6e06683b4c9058c19bea4eb5ee6/src%2Fmvt%2Fandroid%2Fartifacts%2Fdumpsys_adb.py",
+                    "raw_url": "https://github.com/mvt-project/mvt/raw/32730374460aa6e06683b4c9058c19bea4eb5ee6/src%2Fmvt%2Fandroid%2Fartifacts%2Fdumpsys_adb.py",
+                    "contents_url": "https://api.github.com/repos/mvt-project/mvt/contents/src%2Fmvt%2Fandroid%2Fartifacts%2Fdumpsys_adb.py?ref=32730374460aa6e06683b4c9058c19bea4eb5ee6",
+                    "patch": "@@ -120,7 +120,7 @@ def parse(self, content: bytes) -> None:\n \n         # Calculate key fingerprints for better readability\n         key_info = []\n-        for user_key in parsed.get(\"user_keys\"):\n+        for user_key in parsed.get(\"user_keys\", []):\n             user_info = self.calculate_key_info(user_key)\n             key_info.append(user_info)\n "
+                }
+            ]
+        }
+    ],
+    "pull_request_url": "https://github.com/mvt-project/mvt/pull/558",
+    "commits_url": "https://github.com/mvt-project/mvt/pull/558/commits",
+    "files_url": "https://github.com/mvt-project/mvt/pull/558/files"
+}

@@ -1,0 +1,171 @@
+{
+    "repository": "Zulko/moviepy",
+    "pull_request_number": 2195,
+    "title": "fixes for tests",
+    "body": "- set requred version of pillow to 9.5.0\r\n- test-ffmpeg-reader - change duration number to match video\r\n- ffmpeg-reader - add displaymatrix to be read as video rotation\r\n- config set binary to autodetect\r\n\r\n<!--\r\nPlease tick when you have done these. They don't need to all be completed before the PR is submitted.\r\nDelete them if they are not appropriate for this pull request.\r\n-->\r\n- [x] I have provided code that clearly demonstrates the bug and that only works correctly when applying this fix\r\n- [x] I have added suitable tests demonstrating a fixed bug or new/changed feature to the test suite in `tests/`\r\naddresses issue #2183\r\n",
+    "pr_date": "2024-06-06T17:33:04Z",
+    "source_branch": "fix_tests",
+    "language": "en",
+    "keywords_detected": {
+        "branch": [
+            "fix"
+        ],
+        "requirement": [
+            "fix"
+        ],
+        "body": [
+            "feature",
+            "add",
+            "change",
+            "fix"
+        ]
+    },
+    "number_of_links_in_pr": 0,
+    "base_sha": "0f6f6d4d9b96c69d109975549fe6293931f1a19d",
+    "last_commit_sha": "e64c696ea27dae16d9cf962d75bd28a87121d7b0",
+    "diff_between_base_and_last": [
+        {
+            "sha": "bbd1f90e8fbeca3946212785a72792a9179ecbd3",
+            "filename": "moviepy/video/io/ffmpeg_reader.py",
+            "status": "modified",
+            "additions": 6,
+            "deletions": 0,
+            "changes": 6,
+            "blob_url": "https://github.com/Zulko/moviepy/blob/e64c696ea27dae16d9cf962d75bd28a87121d7b0/moviepy%2Fvideo%2Fio%2Fffmpeg_reader.py",
+            "raw_url": "https://github.com/Zulko/moviepy/raw/e64c696ea27dae16d9cf962d75bd28a87121d7b0/moviepy%2Fvideo%2Fio%2Fffmpeg_reader.py",
+            "contents_url": "https://api.github.com/repos/Zulko/moviepy/contents/moviepy%2Fvideo%2Fio%2Fffmpeg_reader.py?ref=e64c696ea27dae16d9cf962d75bd28a87121d7b0",
+            "patch": "@@ -387,6 +387,12 @@ def parse(self):\n             elif not self._inside_file_metadata and line.startswith(\"  Metadata:\"):\n                 # enter \"  Metadata:\" group\n                 self._inside_file_metadata = True\n+            elif line.startswith(\"      displaymatrix:\"):\n+                pattern = r'\\b\\d+\\.\\d+\\b'\n+                display_matrix_matches = re.findall(pattern, line)\n+                if display_matrix_matches:\n+                    video_rotation = float(display_matrix_matches[0])\n+                    self.result[\"video_rotation\"] = int(video_rotation)\n             elif line.startswith(\"  Duration:\"):\n                 # exit \"  Metadata:\" group\n                 self._inside_file_metadata = False"
+        },
+        {
+            "sha": "97a1e5dc1d23abfbd5a8d2d17a2f2f28cd30c6e0",
+            "filename": "setup.py",
+            "status": "modified",
+            "additions": 1,
+            "deletions": 0,
+            "changes": 1,
+            "blob_url": "https://github.com/Zulko/moviepy/blob/e64c696ea27dae16d9cf962d75bd28a87121d7b0/setup.py",
+            "raw_url": "https://github.com/Zulko/moviepy/raw/e64c696ea27dae16d9cf962d75bd28a87121d7b0/setup.py",
+            "contents_url": "https://api.github.com/repos/Zulko/moviepy/contents/setup.py?ref=e64c696ea27dae16d9cf962d75bd28a87121d7b0",
+            "patch": "@@ -75,6 +75,7 @@ def run_tests(self):\n     \"imageio_ffmpeg>=0.2.0\",\n     \"numpy>=1.17.3\",\n     \"proglog<=1.0.0\",\n+    \"Pillow==9.5.0\"\n ]\n \n optional_reqs = ["
+        },
+        {
+            "sha": "bfa5c419c61f805b2020a006e03330e7ae053205",
+            "filename": "tests/test_ffmpeg_reader.py",
+            "status": "modified",
+            "additions": 1,
+            "deletions": 1,
+            "changes": 2,
+            "blob_url": "https://github.com/Zulko/moviepy/blob/e64c696ea27dae16d9cf962d75bd28a87121d7b0/tests%2Ftest_ffmpeg_reader.py",
+            "raw_url": "https://github.com/Zulko/moviepy/raw/e64c696ea27dae16d9cf962d75bd28a87121d7b0/tests%2Ftest_ffmpeg_reader.py",
+            "contents_url": "https://api.github.com/repos/Zulko/moviepy/contents/tests%2Ftest_ffmpeg_reader.py?ref=e64c696ea27dae16d9cf962d75bd28a87121d7b0",
+            "patch": "@@ -59,7 +59,7 @@ def test_ffmpeg_parse_infos_video_nframes():\n     (\"decode_file\", \"expected_duration\"),\n     (\n         (False, 30),\n-        (True, 30.02),\n+        (True, 29.99),\n     ),\n     ids=(\n         \"decode_file=False\","
+        }
+    ],
+    "commits": [
+        {
+            "sha": "f65cac0e7d584aadfdc27ed37217300512af97a9",
+            "commit_date": "2024-06-06T17:30:59Z",
+            "message": "fixes for tests\n- set requred version of pillow to 9.5.0\n- test-ffmpeg-reader - change duration number to match video\n- ffmpeg-reader - add displaymatrix to be read as video rotation\n- config set binary to autodetect",
+            "number_of_links_in_commit": 0,
+            "files_changed_count": 5,
+            "files": [
+                {
+                    "sha": "d413518744ad25f52e287f7cc6feb0ec633283cf",
+                    "filename": "moviepy/config.py",
+                    "status": "modified",
+                    "additions": 1,
+                    "deletions": 1,
+                    "changes": 2,
+                    "blob_url": "https://github.com/Zulko/moviepy/blob/f65cac0e7d584aadfdc27ed37217300512af97a9/moviepy%2Fconfig.py",
+                    "raw_url": "https://github.com/Zulko/moviepy/raw/f65cac0e7d584aadfdc27ed37217300512af97a9/moviepy%2Fconfig.py",
+                    "contents_url": "https://api.github.com/repos/Zulko/moviepy/contents/moviepy%2Fconfig.py?ref=f65cac0e7d584aadfdc27ed37217300512af97a9",
+                    "patch": "@@ -18,7 +18,7 @@\n except ImportError:\n     DOTENV = None\n \n-FFMPEG_BINARY = os.getenv(\"FFMPEG_BINARY\", \"ffmpeg-imageio\")\n+FFMPEG_BINARY = os.getenv(\"FFMPEG_BINARY\", \"auto-detect\")\n IMAGEMAGICK_BINARY = os.getenv(\"IMAGEMAGICK_BINARY\", \"auto-detect\")\n \n IS_POSIX_OS = os.name == \"posix\""
+                },
+                {
+                    "sha": "bbd1f90e8fbeca3946212785a72792a9179ecbd3",
+                    "filename": "moviepy/video/io/ffmpeg_reader.py",
+                    "status": "modified",
+                    "additions": 6,
+                    "deletions": 0,
+                    "changes": 6,
+                    "blob_url": "https://github.com/Zulko/moviepy/blob/f65cac0e7d584aadfdc27ed37217300512af97a9/moviepy%2Fvideo%2Fio%2Fffmpeg_reader.py",
+                    "raw_url": "https://github.com/Zulko/moviepy/raw/f65cac0e7d584aadfdc27ed37217300512af97a9/moviepy%2Fvideo%2Fio%2Fffmpeg_reader.py",
+                    "contents_url": "https://api.github.com/repos/Zulko/moviepy/contents/moviepy%2Fvideo%2Fio%2Fffmpeg_reader.py?ref=f65cac0e7d584aadfdc27ed37217300512af97a9",
+                    "patch": "@@ -387,6 +387,12 @@ def parse(self):\n             elif not self._inside_file_metadata and line.startswith(\"  Metadata:\"):\n                 # enter \"  Metadata:\" group\n                 self._inside_file_metadata = True\n+            elif line.startswith(\"      displaymatrix:\"):\n+                pattern = r'\\b\\d+\\.\\d+\\b'\n+                display_matrix_matches = re.findall(pattern, line)\n+                if display_matrix_matches:\n+                    video_rotation = float(display_matrix_matches[0])\n+                    self.result[\"video_rotation\"] = int(video_rotation)\n             elif line.startswith(\"  Duration:\"):\n                 # exit \"  Metadata:\" group\n                 self._inside_file_metadata = False"
+                },
+                {
+                    "sha": "97a1e5dc1d23abfbd5a8d2d17a2f2f28cd30c6e0",
+                    "filename": "setup.py",
+                    "status": "modified",
+                    "additions": 1,
+                    "deletions": 0,
+                    "changes": 1,
+                    "blob_url": "https://github.com/Zulko/moviepy/blob/f65cac0e7d584aadfdc27ed37217300512af97a9/setup.py",
+                    "raw_url": "https://github.com/Zulko/moviepy/raw/f65cac0e7d584aadfdc27ed37217300512af97a9/setup.py",
+                    "contents_url": "https://api.github.com/repos/Zulko/moviepy/contents/setup.py?ref=f65cac0e7d584aadfdc27ed37217300512af97a9",
+                    "patch": "@@ -75,6 +75,7 @@ def run_tests(self):\n     \"imageio_ffmpeg>=0.2.0\",\n     \"numpy>=1.17.3\",\n     \"proglog<=1.0.0\",\n+    \"Pillow==9.5.0\"\n ]\n \n optional_reqs = ["
+                },
+                {
+                    "sha": "bfa5c419c61f805b2020a006e03330e7ae053205",
+                    "filename": "tests/test_ffmpeg_reader.py",
+                    "status": "modified",
+                    "additions": 1,
+                    "deletions": 1,
+                    "changes": 2,
+                    "blob_url": "https://github.com/Zulko/moviepy/blob/f65cac0e7d584aadfdc27ed37217300512af97a9/tests%2Ftest_ffmpeg_reader.py",
+                    "raw_url": "https://github.com/Zulko/moviepy/raw/f65cac0e7d584aadfdc27ed37217300512af97a9/tests%2Ftest_ffmpeg_reader.py",
+                    "contents_url": "https://api.github.com/repos/Zulko/moviepy/contents/tests%2Ftest_ffmpeg_reader.py?ref=f65cac0e7d584aadfdc27ed37217300512af97a9",
+                    "patch": "@@ -59,7 +59,7 @@ def test_ffmpeg_parse_infos_video_nframes():\n     (\"decode_file\", \"expected_duration\"),\n     (\n         (False, 30),\n-        (True, 30.02),\n+        (True, 29.99),\n     ),\n     ids=(\n         \"decode_file=False\","
+                },
+                {
+                    "sha": "07337fcfca45fbff8c64b64ec5ddeff1d6c15a28",
+                    "filename": "tests/test_tools.py",
+                    "status": "modified",
+                    "additions": 0,
+                    "deletions": 1,
+                    "changes": 1,
+                    "blob_url": "https://github.com/Zulko/moviepy/blob/f65cac0e7d584aadfdc27ed37217300512af97a9/tests%2Ftest_tools.py",
+                    "raw_url": "https://github.com/Zulko/moviepy/raw/f65cac0e7d584aadfdc27ed37217300512af97a9/tests%2Ftest_tools.py",
+                    "contents_url": "https://api.github.com/repos/Zulko/moviepy/contents/tests%2Ftest_tools.py?ref=f65cac0e7d584aadfdc27ed37217300512af97a9",
+                    "patch": "@@ -145,7 +145,6 @@ def test_download_webfile(static_files_server, util, url, expected_result):\n @pytest.mark.parametrize(\n     (\"ffmpeg_binary\", \"ffmpeg_binary_error\"),\n     (\n-        pytest.param(\"ffmpeg-imageio\", None, id=\"FFMPEG_BINARY=ffmpeg-imageio\"),\n         pytest.param(\"auto-detect\", None, id=\"FFMPEG_BINARY=auto-detect\"),\n         pytest.param(\n             \"foobarbazimpossible\","
+                }
+            ]
+        },
+        {
+            "sha": "e64c696ea27dae16d9cf962d75bd28a87121d7b0",
+            "commit_date": "2024-06-11T13:01:43Z",
+            "message": "fix: reverted changes for binary",
+            "number_of_links_in_commit": 0,
+            "files_changed_count": 2,
+            "files": [
+                {
+                    "sha": "1ba214f1693ba3a4e9c8b0351217bc484946add5",
+                    "filename": "moviepy/config.py",
+                    "status": "modified",
+                    "additions": 1,
+                    "deletions": 1,
+                    "changes": 2,
+                    "blob_url": "https://github.com/Zulko/moviepy/blob/e64c696ea27dae16d9cf962d75bd28a87121d7b0/moviepy%2Fconfig.py",
+                    "raw_url": "https://github.com/Zulko/moviepy/raw/e64c696ea27dae16d9cf962d75bd28a87121d7b0/moviepy%2Fconfig.py",
+                    "contents_url": "https://api.github.com/repos/Zulko/moviepy/contents/moviepy%2Fconfig.py?ref=e64c696ea27dae16d9cf962d75bd28a87121d7b0",
+                    "patch": "@@ -18,7 +18,7 @@\n except ImportError:\n     DOTENV = None\n \n-FFMPEG_BINARY = os.getenv(\"FFMPEG_BINARY\", \"auto-detect\")\n+FFMPEG_BINARY = os.getenv(\"FFMPEG_BINARY\", \"ffmpeg-imageio\")\n IMAGEMAGICK_BINARY = os.getenv(\"IMAGEMAGICK_BINARY\", \"auto-detect\")\n \n IS_POSIX_OS = os.name == \"posix\""
+                },
+                {
+                    "sha": "552d29c4e6617e29bd14ff252fa4a8e1cd6f530a",
+                    "filename": "tests/test_tools.py",
+                    "status": "modified",
+                    "additions": 1,
+                    "deletions": 0,
+                    "changes": 1,
+                    "blob_url": "https://github.com/Zulko/moviepy/blob/e64c696ea27dae16d9cf962d75bd28a87121d7b0/tests%2Ftest_tools.py",
+                    "raw_url": "https://github.com/Zulko/moviepy/raw/e64c696ea27dae16d9cf962d75bd28a87121d7b0/tests%2Ftest_tools.py",
+                    "contents_url": "https://api.github.com/repos/Zulko/moviepy/contents/tests%2Ftest_tools.py?ref=e64c696ea27dae16d9cf962d75bd28a87121d7b0",
+                    "patch": "@@ -145,6 +145,7 @@ def test_download_webfile(static_files_server, util, url, expected_result):\n @pytest.mark.parametrize(\n     (\"ffmpeg_binary\", \"ffmpeg_binary_error\"),\n     (\n+        pytest.param(\"ffmpeg-imageio\", None, id=\"FFMPEG_BINARY=ffmpeg-imageio\"),\n         pytest.param(\"auto-detect\", None, id=\"FFMPEG_BINARY=auto-detect\"),\n         pytest.param(\n             \"foobarbazimpossible\","
+                }
+            ]
+        }
+    ],
+    "pull_request_url": "https://github.com/Zulko/moviepy/pull/2195",
+    "commits_url": "https://github.com/Zulko/moviepy/pull/2195/commits",
+    "files_url": "https://github.com/Zulko/moviepy/pull/2195/files"
+}

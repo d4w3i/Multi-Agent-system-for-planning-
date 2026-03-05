@@ -1,0 +1,80 @@
+{
+  "pr_number": 3433,
+  "repository": "pyro-ppl/pyro",
+  "title": "Fixes #3430 (serializing an easyguide corrupts it).",
+  "body": "- The issue is that on Python 3.12 the `super()` object of `easyguide.Group` started having the `__getstate__` attribute (this doesn't happen in python 3.9), which is then called to return the state object, which is then modified without making a copy before modification, which causes the corruption.\r\n- The solution is to ensure that we always make a copy of the state object before modifying it.\r\n- This was tested on both python 3.9 and 3.12.\r\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T12:39:43.953796",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "pyro/contrib/easyguide/easyguide.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "__getstate__",
+          "class_name": "Group",
+          "full_name": "Group.__getstate__",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "__setstate__",
+          "class_name": "Group",
+          "full_name": "Group.__setstate__",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "tests/contrib/easyguide/test_easyguide.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "test_serialize",
+          "class_name": null,
+          "full_name": "test_serialize",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Fix `pyro.contrib.easyguide.Group` pickling on Python 3.12 by ensuring `__getstate__` always copies the base state before mutating `_guide`. Re-enable the existing serialization test as a regression check so `torch.save`/`torch.load` round-trips an EasyGuide without corruption.",
+    "steps": [
+      {
+        "operation": "Fix `__getstate__` to always work on a copied state mapping before mutating `_guide`",
+        "file_to_modify": "pyro/contrib/easyguide/easyguide.py",
+        "function_to_modify": "Group.__getstate__",
+        "reason": "On Python 3.12, `super()` may expose `__getstate__`, so calling it can return a state object that aliases internal state; mutating it in-place (to swap a weakref for a strong ref) can corrupt the object. Taking a shallow copy of the returned state before modification prevents aliasing/corruption while keeping behavior unchanged for older Python versions.",
+        "side_effects": "Pickled representation may differ slightly (due to copying) but should be backward-compatible. If a parent `__getstate__` returns a non-dict mapping, the implementation must still copy safely (e.g., `dict(state)` or `state.copy()` where supported). Serialization behavior for `Group` becomes stable across Python versions."
+      },
+      {
+        "operation": "Review/adjust `__setstate__` to ensure it remains symmetric with the updated `__getstate__` behavior and robustly restores `_guide` to a weakref",
+        "file_to_modify": "pyro/contrib/easyguide/easyguide.py",
+        "function_to_modify": "Group.__setstate__",
+        "reason": "With `__getstate__` now guaranteeing it mutates only a copied mapping and stores `_guide` as a strong reference for pickling, `__setstate__` must reliably accept that state and convert `_guide` back into a weakref without relying on accidental aliasing or in-place mutation of shared objects.",
+        "side_effects": "Potentially changes how state is applied (e.g., copying state before updating `__dict__`), which could affect subclasses if they rely on reference identity of the state dict. Should be covered by serialization tests and any existing EasyGuide/Group usage."
+      },
+      {
+        "operation": "Enable serialization regression coverage by removing the xfail and asserting round-trip correctness",
+        "file_to_modify": "tests/contrib/easyguide/test_easyguide.py",
+        "function_to_modify": "test_serialize",
+        "reason": "The bug was previously captured by `test_serialize` being marked `xfail` for #3430. Once `Group.__getstate__` is fixed, the test should pass and assert that `torch.save`/`torch.load` (pickle) round-trips an EasyGuide instance without corrupting nested `Group` objects (type, structure, and behavior via existing `check_guide(...)`/equivalent assertions).",
+        "side_effects": "Test suite will now fail on regressions instead of being expected-failing. May require small tweaks to assertions to be robust across Python 3.9 vs 3.12 pickle details, but should not require skipping by version once the fix is correct."
+      }
+    ]
+  }
+}

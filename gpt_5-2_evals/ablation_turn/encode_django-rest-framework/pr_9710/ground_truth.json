@@ -1,0 +1,295 @@
+{
+  "pr_number": 9710,
+  "repository": "encode/django-rest-framework",
+  "title": "Fix serializer method field hidden unique together (#9700)",
+  "body": "\r\nFix: SerializerMethodField as HiddenField in unique_together\r\n\r\nCorrects an issue where a `SerializerMethodField` that shares its name\r\nwith a model field involved in a `unique_together` constraint (or\r\n`UniqueConstraint`) could be incorrectly treated as a `HiddenField`.\r\n\r\nThis typically occurred if the underlying model field was nullable or had\r\na default value, and the `SerializerMethodField` was not being correctly\r\nprioritized during the uniqueness metadata processing.\r\n\r\nThe `ModelSerializer.get_uniqueness_extra_kwargs` method has been updated\r\nto ensure that if a field name corresponding to a model field in a\r\nuniqueness constraint is explicitly declared as a `SerializerMethodField`\r\non the serializer, it is not converted into a `HiddenField`.\r\n\r\nA test case has been added to `tests/test_model_serializer.py`\r\n(`TestSerializerMethodFieldInUniqueTogether`) to verify this behavior.\r\n\r\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-02-26T01:06:50.469225",
+    "extractor_version": "1.0.0",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "rest_framework/serializers.py",
+      "status": "modified",
+      "additions": 10,
+      "deletions": 2,
+      "functions_modified": [
+        {
+          "function_name": "get_uniqueness_extra_kwargs",
+          "class_name": "ModelSerializer",
+          "full_name": "ModelSerializer.get_uniqueness_extra_kwargs",
+          "start_line": 1445,
+          "end_line": 1527,
+          "lines_changed": [
+            1486,
+            1487,
+            1488,
+            1489,
+            1490,
+            1491,
+            1516,
+            1517,
+            1518,
+            1519
+          ]
+        }
+      ],
+      "patch": "@@ -1483,6 +1483,12 @@ def get_uniqueness_extra_kwargs(self, field_names, declared_fields, extra_kwargs\n         hidden_fields = {}\n         uniqueness_extra_kwargs = {}\n \n+        # Identify declared SerializerMethodFields to prevent them from becoming HiddenFields\n+        serializer_method_field_names = {\n+            name for name, field_instance in declared_fields.items()\n+            if isinstance(field_instance, SerializerMethodField)\n+        }\n+\n         for unique_constraint_name in unique_constraint_names:\n             # Get the model field that is referred too.\n             unique_constraint_field = model._meta.get_field(unique_constraint_name)\n@@ -1507,8 +1513,10 @@ def get_uniqueness_extra_kwargs(self, field_names, declared_fields, extra_kwargs\n             elif default is not empty:\n                 # The corresponding field is not present in the\n                 # serializer. We have a default to use for it, so\n-                # add in a hidden field that populates it.\n-                hidden_fields[unique_constraint_name] = HiddenField(default=default)\n+                # add in a hidden field that populates it,\n+                # unless it's a SerializerMethodField.\n+                if unique_constraint_name not in serializer_method_field_names:\n+                    hidden_fields[unique_constraint_name] = HiddenField(default=default)\n \n         # Update `extra_kwargs` with any new options.\n         for key, value in uniqueness_extra_kwargs.items():"
+    },
+    {
+      "filename": "tests/test_model_serializer.py",
+      "status": "modified",
+      "additions": 90,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "__str__",
+          "class_name": "UniqueTestModel",
+          "full_name": "UniqueTestModel.__str__",
+          "start_line": 1357,
+          "end_line": 1358,
+          "lines_changed": [
+            1357,
+            1358
+          ]
+        },
+        {
+          "function_name": "get_description",
+          "class_name": "UniqueTestModelSerializer",
+          "full_name": "UniqueTestModelSerializer.get_description",
+          "start_line": 1368,
+          "end_line": 1371,
+          "lines_changed": [
+            1368,
+            1369,
+            1370,
+            1371
+          ]
+        },
+        {
+          "function_name": "test_serializer_method_field_not_hidden_in_unique_together",
+          "class_name": "TestSerializerMethodFieldInUniqueTogether",
+          "full_name": "TestSerializerMethodFieldInUniqueTogether.test_serializer_method_field_not_hidden_in_unique_together",
+          "start_line": 1426,
+          "end_line": 1487,
+          "lines_changed": [
+            1426,
+            1427,
+            1428,
+            1429,
+            1430,
+            1431,
+            1432,
+            1433,
+            1434,
+            1435,
+            1436,
+            1437,
+            1438,
+            1439,
+            1440,
+            1441,
+            1442,
+            1443,
+            1444,
+            1445,
+            1446,
+            1447,
+            1448,
+            1449,
+            1450,
+            1451,
+            1452,
+            1453,
+            1454,
+            1455,
+            1456,
+            1457,
+            1458,
+            1459,
+            1460,
+            1461,
+            1462,
+            1463,
+            1464,
+            1465,
+            1466,
+            1467,
+            1468,
+            1469,
+            1470,
+            1471,
+            1472,
+            1473,
+            1474,
+            1475,
+            1476,
+            1477,
+            1478,
+            1479,
+            1480,
+            1481,
+            1482,
+            1483,
+            1484,
+            1485,
+            1486,
+            1487
+          ]
+        }
+      ],
+      "patch": "@@ -1346,6 +1346,31 @@ class Meta:\n         fields = ('name',)\n \n \n+class UniqueTestModel(models.Model):\n+    name = models.CharField(max_length=100)\n+    description = models.CharField(max_length=100, null=True, blank=True)\n+    other_field = models.CharField(max_length=100, default=\"default_value\")\n+\n+    class Meta:\n+        unique_together = [(\"name\", \"description\")]\n+\n+    def __str__(self):\n+        return f\"{self.name} - {self.description or 'No description'}\"\n+\n+\n+class UniqueTestModelSerializer(serializers.ModelSerializer):\n+    description = serializers.SerializerMethodField()\n+\n+    class Meta:\n+        model = UniqueTestModel\n+        fields = [\"name\", \"description\", \"other_field\"]\n+\n+    def get_description(self, obj):\n+        if obj.description:\n+            return f\"Serialized: {obj.description}\"\n+        return \"Serialized: No description provided\"\n+\n+\n class Issue6110Test(TestCase):\n     def test_model_serializer_custom_manager(self):\n         instance = Issue6110ModelSerializer().create({'name': 'test_name'})\n@@ -1395,3 +1420,68 @@ class Meta:\n         serializer.save()\n \n         self.assertEqual(instance.char_field, 'value changed by signal')\n+\n+\n+class TestSerializerMethodFieldInUniqueTogether(TestCase):\n+    def test_serializer_method_field_not_hidden_in_unique_together(self):\n+        \"\"\"\n+        Tests that a SerializerMethodField named the same as a model field\n+        in a unique_together constraint is not treated as a HiddenField and\n+        that unique_together validation still functions correctly.\n+        \"\"\"\n+        serializer = UniqueTestModelSerializer()\n+\n+        self.assertFalse(\n+            isinstance(serializer.fields['description'], serializers.HiddenField),\n+            \"Field 'description' should not be a HiddenField.\"\n+        )\n+        self.assertTrue(\n+            isinstance(serializer.fields['description'], serializers.SerializerMethodField),\n+            \"Field 'description' should be a SerializerMethodField.\"\n+        )\n+\n+        instance = UniqueTestModel.objects.create(name=\"TestName\", description=\"TestDesc\")\n+        serializer_output = UniqueTestModelSerializer(instance).data\n+        self.assertIn(\"description\", serializer_output)\n+        self.assertEqual(serializer_output[\"description\"], \"Serialized: TestDesc\")\n+\n+        instance_no_desc = UniqueTestModel.objects.create(name=\"TestNameNoDesc\")\n+        serializer_output_no_desc = UniqueTestModelSerializer(instance_no_desc).data\n+        self.assertEqual(serializer_output_no_desc[\"description\"], \"Serialized: No description provided\")\n+\n+        UniqueTestModel.objects.create(name=\"UniqueName\", description=\"UniqueDesc\")\n+        invalid_data = {\"name\": \"UniqueName\", \"description\": \"UniqueDesc\", \"other_field\": \"some_value\"}\n+        serializer_invalid = UniqueTestModelSerializer(data=invalid_data)\n+        with self.assertRaises(serializers.ValidationError) as context:\n+            serializer_invalid.is_valid(raise_exception=True)\n+        self.assertIn(\"non_field_errors\", context.exception.detail)\n+        self.assertTrue(any(\"unique test model with this name and description already exists\" in str(err)\n+                            for err_list in context.exception.detail.values() for err in err_list))\n+\n+        UniqueTestModel.objects.create(name=\"UniqueNameNull\", description=None)\n+        invalid_data_null = {\"name\": \"UniqueNameNull\", \"description\": None, \"other_field\": \"some_value\"}\n+        serializer_invalid_null = UniqueTestModelSerializer(data=invalid_data_null)\n+        with self.assertRaises(serializers.ValidationError) as context_null:\n+            serializer_invalid_null.is_valid(raise_exception=True)\n+        self.assertIn(\"non_field_errors\", context_null.exception.detail)\n+        self.assertTrue(any(\"unique test model with this name and description already exists\" in str(err)\n+                            for err_list in context_null.exception.detail.values() for err in err_list))\n+\n+        valid_data = {\"name\": \"NewName\", \"description\": \"NewDesc\", \"other_field\": \"another_value\"}\n+        serializer_valid = UniqueTestModelSerializer(data=valid_data)\n+        self.assertTrue(serializer_valid.is_valid(raise_exception=True))\n+        self.assertEqual(serializer_valid.validated_data['name'], \"NewName\")\n+\n+        valid_data_no_desc = {\"name\": \"NameOnly\"}\n+        serializer_valid_no_desc = UniqueTestModelSerializer(data=valid_data_no_desc)\n+        self.assertTrue(serializer_valid_no_desc.is_valid(raise_exception=True))\n+        self.assertIsNone(serializer_valid_no_desc.validated_data.get('description'))\n+        self.assertEqual(serializer_valid_no_desc.validated_data['other_field'], \"default_value\")\n+\n+        saved_instance = serializer_valid_no_desc.save()\n+        self.assertEqual(saved_instance.name, \"NameOnly\")\n+        self.assertIsNone(saved_instance.description)\n+        self.assertEqual(saved_instance.other_field, \"default_value\")\n+\n+        output_after_save = UniqueTestModelSerializer(saved_instance).data\n+        self.assertEqual(output_after_save['description'], \"Serialized: No description provided\")"
+    }
+  ],
+  "functions_modified": [
+    {
+      "function_name": "get_uniqueness_extra_kwargs",
+      "class_name": "ModelSerializer",
+      "full_name": "ModelSerializer.get_uniqueness_extra_kwargs",
+      "start_line": 1445,
+      "end_line": 1527,
+      "lines_changed": [
+        1486,
+        1487,
+        1488,
+        1489,
+        1490,
+        1491,
+        1516,
+        1517,
+        1518,
+        1519
+      ]
+    },
+    {
+      "function_name": "__str__",
+      "class_name": "UniqueTestModel",
+      "full_name": "UniqueTestModel.__str__",
+      "start_line": 1357,
+      "end_line": 1358,
+      "lines_changed": [
+        1357,
+        1358
+      ]
+    },
+    {
+      "function_name": "get_description",
+      "class_name": "UniqueTestModelSerializer",
+      "full_name": "UniqueTestModelSerializer.get_description",
+      "start_line": 1368,
+      "end_line": 1371,
+      "lines_changed": [
+        1368,
+        1369,
+        1370,
+        1371
+      ]
+    },
+    {
+      "function_name": "test_serializer_method_field_not_hidden_in_unique_together",
+      "class_name": "TestSerializerMethodFieldInUniqueTogether",
+      "full_name": "TestSerializerMethodFieldInUniqueTogether.test_serializer_method_field_not_hidden_in_unique_together",
+      "start_line": 1426,
+      "end_line": 1487,
+      "lines_changed": [
+        1426,
+        1427,
+        1428,
+        1429,
+        1430,
+        1431,
+        1432,
+        1433,
+        1434,
+        1435,
+        1436,
+        1437,
+        1438,
+        1439,
+        1440,
+        1441,
+        1442,
+        1443,
+        1444,
+        1445,
+        1446,
+        1447,
+        1448,
+        1449,
+        1450,
+        1451,
+        1452,
+        1453,
+        1454,
+        1455,
+        1456,
+        1457,
+        1458,
+        1459,
+        1460,
+        1461,
+        1462,
+        1463,
+        1464,
+        1465,
+        1466,
+        1467,
+        1468,
+        1469,
+        1470,
+        1471,
+        1472,
+        1473,
+        1474,
+        1475,
+        1476,
+        1477,
+        1478,
+        1479,
+        1480,
+        1481,
+        1482,
+        1483,
+        1484,
+        1485,
+        1486,
+        1487
+      ]
+    }
+  ],
+  "step_plan": {
+    "steps": [
+      {
+        "operation": "Update uniqueness metadata generation to detect declared SerializerMethodFields and exclude them from HiddenField injection",
+        "file_to_modify": "rest_framework/serializers.py",
+        "function_to_modify": "ModelSerializer.get_uniqueness_extra_kwargs",
+        "reason": "When a model field participating in a unique_together/UniqueConstraint is nullable or has a default, DRF may add a HiddenField to supply that value if the serializer field is missing. If the serializer explicitly declares a SerializerMethodField with the same name (shadowing the model field), it must take precedence and not be replaced by a HiddenField.",
+        "side_effects": "Affects how ModelSerializer builds fields/extra_kwargs for serializers involving uniqueness constraints; may change behavior for edge cases where users intentionally relied on the previous (incorrect) HiddenField insertion when a name-colliding SerializerMethodField existed."
+      },
+      {
+        "operation": "Add a dedicated regression model with a nullable/defaulted field participating in unique_together",
+        "file_to_modify": "tests/test_model_serializer.py",
+        "function_to_modify": null,
+        "reason": "Create a concrete test fixture that reproduces the bug scenario: a model field in unique_together that is nullable (and another with a default) so that the uniqueness processing previously attempted to inject a HiddenField for the colliding field name.",
+        "side_effects": "Introduces a new test-only Django model; impacts test DB schema/migrations within the test runner and increases test setup time slightly."
+      },
+      {
+        "operation": "Add a ModelSerializer that explicitly shadows the unique_together model field with a SerializerMethodField",
+        "file_to_modify": "tests/test_model_serializer.py",
+        "function_to_modify": null,
+        "reason": "Model the exact failure mode: declaring `description = SerializerMethodField()` on the serializer while the model also has `description` in unique_together ensures the serializer field resolution order is exercised and verifies it is not converted to HiddenField.",
+        "side_effects": "Expands test coverage for serializer field declaration precedence; could reveal other ordering/precedence issues if future changes alter declared_fields handling."
+      },
+      {
+        "operation": "Add a regression test asserting the field remains a SerializerMethodField and uniqueness validation still behaves correctly across null/default cases",
+        "file_to_modify": "tests/test_model_serializer.py",
+        "function_to_modify": null,
+        "reason": "Verify both aspects of the fix: (1) the serializer’s `description` field is not a HiddenField and renders via `get_description`, and (2) unique_together validation still raises ValidationError for duplicates, including when the constrained field is NULL, while allowing valid/new combinations and default population for other fields.",
+        "side_effects": "Test suite now enforces the new behavior; future changes to error message wording, uniqueness error formatting, or NULL-uniqueness semantics across DB backends may require adjusting assertions."
+      }
+    ],
+    "summary": "Fixes DRF ModelSerializer uniqueness handling so that explicitly declared SerializerMethodFields that shadow model fields in uniqueness constraints are not replaced with HiddenFields. Adds a regression test model/serializer and test case to ensure correct field typing, serialization output, and unique_together validation behavior."
+  }
+}

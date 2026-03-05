@@ -1,0 +1,194 @@
+{
+  "pr_number": 1270,
+  "repository": "NVIDIA/Megatron-LM",
+  "title": "[ENHANCEMENT] Add z-loss",
+  "body": "z-loss regularization was shown to stabilize training by preventing logits in the last layer to explode: https://arxiv.org/abs/2309.14322\r\n\r\nThis PR: \r\n- allows one to add zloss regularization\r\n- since the total loss is not cross entropy anymore but cross entropy + zloss, this PR also allows one to additionally log the original cross-entropy and the z-loss",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T11:51:43.477786",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "megatron/training/arguments.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "parse_args",
+          "class_name": null,
+          "full_name": "parse_args",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_add_regularization_args",
+          "class_name": null,
+          "full_name": "_add_regularization_args",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "validate_args",
+          "class_name": null,
+          "full_name": "validate_args",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "megatron/core/tensor_parallel/cross_entropy.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "calculate_cross_entropy_loss",
+          "class_name": "VocabParallelCrossEntropy",
+          "full_name": "VocabParallelCrossEntropy.calculate_cross_entropy_loss",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "forward",
+          "class_name": "_VocabParallelCrossEntropy",
+          "full_name": "_VocabParallelCrossEntropy.forward",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "megatron/core/fusions/fused_cross_entropy.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "calculate_cross_entropy_loss",
+          "class_name": null,
+          "full_name": "calculate_cross_entropy_loss",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "forward",
+          "class_name": "_VocabParallelCrossEntropy",
+          "full_name": "_VocabParallelCrossEntropy.forward",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "pretrain_gpt.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "loss_func",
+          "class_name": null,
+          "full_name": "loss_func",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "megatron/inference/gpt/loss_func.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "loss_func",
+          "class_name": null,
+          "full_name": "loss_func",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Add optional z-loss regularization to stabilize training by penalizing large logits, controlled via a new CLI coefficient. When enabled, total loss becomes cross-entropy plus z-loss, and the code logs cross-entropy and z-loss as separate metrics (for both GPT pretrain and inference/KD loss paths), including support for fused and unfused tensor-parallel cross entropy.",
+    "steps": [
+      {
+        "operation": "Add CLI flag plumbing for z-loss (coefficient, default disabled)",
+        "file_to_modify": "megatron/training/arguments.py",
+        "function_to_modify": "_add_regularization_args",
+        "reason": "Expose a user-facing knob (e.g., --z-loss-coeff, default 0.0) so z-loss can be enabled/disabled without code changes and can be configured via existing argument/YAML mechanisms.",
+        "side_effects": "Adds a new training configuration surface; downstream launch scripts/configs may need to set this explicitly. No behavior change when left at default."
+      },
+      {
+        "operation": "Parse and propagate z-loss arguments into the global args object",
+        "file_to_modify": "megatron/training/arguments.py",
+        "function_to_modify": "parse_args",
+        "reason": "Ensure the new argument is actually recognized and available everywhere loss is computed (task loss_func and cross-entropy helpers typically access get_args()).",
+        "side_effects": "Potential conflicts if any existing argument name overlaps; requires updating any docs/examples that enumerate supported args."
+      },
+      {
+        "operation": "Validate z-loss configuration and guard against invalid values/interactions",
+        "file_to_modify": "megatron/training/arguments.py",
+        "function_to_modify": "validate_args",
+        "reason": "Prevent silent misconfiguration (e.g., negative coefficient). Optionally warn if z-loss is enabled in combinations where logits are not available or where a particular loss path won’t return z-loss stats.",
+        "side_effects": "May raise new ValueErrors for previously-accepted (but nonsensical) configs; could require minor updates to CI configs if they pass invalid values."
+      },
+      {
+        "operation": "Compute a tensor-parallel-correct z-loss term alongside cross entropy in the unfused vocab-parallel CE implementation",
+        "file_to_modify": "megatron/core/tensor_parallel/cross_entropy.py",
+        "function_to_modify": "VocabParallelCrossEntropy.calculate_cross_entropy_loss",
+        "reason": "This is the numerically stable/TP-correct place to derive z-loss because it already computes (or can cheaply compute) the per-token logsumexp over vocab; z-loss is typically proportional to logsumexp^2, so adding it here avoids reconstructing full logits and ensures correctness under tensor parallelism.",
+        "side_effects": "May slightly increase compute/memory when enabled; must ensure any required collectives (e.g., all-reduce for logsumexp) are not added when coeff=0.0. Requires agreeing on a return contract (e.g., return ce_loss and z_loss components) used by callers."
+      },
+      {
+        "operation": "Extend unfused autograd forward to return or stash z-loss-related values needed for logging/backprop without breaking existing call sites",
+        "file_to_modify": "megatron/core/tensor_parallel/cross_entropy.py",
+        "function_to_modify": "_VocabParallelCrossEntropy.forward",
+        "reason": "If z-loss is computed inside the CE function, forward needs to (a) include it in outputs (or in an auxiliary output structure) so higher-level loss_func can log it separately, and (b) ensure gradients from total loss flow correctly to logits. This step aligns the autograd API with the new “CE + optional z-loss” capability.",
+        "side_effects": "Changing forward outputs can break callers; to minimize risk, keep the original primary loss output unchanged and add optional extra returns guarded by args/flags, or provide backward-compatible return types. Requires updating any unit tests or downstream users that assume a fixed tuple shape."
+      },
+      {
+        "operation": "Add z-loss support to the fused cross-entropy calculation path (feature parity with unfused)",
+        "file_to_modify": "megatron/core/fusions/fused_cross_entropy.py",
+        "function_to_modify": "calculate_cross_entropy_loss",
+        "reason": "When fused CE is enabled, this code path bypasses the unfused implementation; z-loss must be computed here too to ensure enabling fusion doesn’t silently disable z-loss or logging.",
+        "side_effects": "Kernel/fusion code may have constraints on additional outputs; could require extra outputs or auxiliary tensors and may impact performance when enabled. Must keep behavior identical when coeff=0.0."
+      },
+      {
+        "operation": "Extend fused autograd forward to surface z-loss metrics while preserving backward compatibility and correct gradients",
+        "file_to_modify": "megatron/core/fusions/fused_cross_entropy.py",
+        "function_to_modify": "_VocabParallelCrossEntropy.forward",
+        "reason": "As with the unfused autograd Function, the fused forward must provide a way to retrieve z-loss (for logging) and incorporate it into total loss (for gradients) without breaking existing consumers that expect only CE loss output.",
+        "side_effects": "Risk of API/return-shape mismatch with existing fused CE callers; may necessitate conditional returns or a structured return. Could require updating any tests/benchmarks that assume specific outputs."
+      },
+      {
+        "operation": "Augment GPT pretraining loss_func to form total_loss = CE + z-loss and log CE vs z-loss separately",
+        "file_to_modify": "pretrain_gpt.py",
+        "function_to_modify": "loss_func",
+        "reason": "This is the task-level entry point that returns the loss used for backprop and the metrics dict logged by the training loop. It must: (1) use the new CE implementation outputs to add z-loss to the backward loss when enabled, (2) keep existing total-loss key stable, and (3) add metrics like “lm loss (ce)” and “z loss” for monitoring.",
+        "side_effects": "Training curves/log keys will change (new metrics appear). If any external tooling assumes only a single “lm loss” metric, it may need adjustment. Must ensure normalization (masking, token count) matches existing CE loss normalization so the z-loss scale is interpretable."
+      },
+      {
+        "operation": "Add optional z-loss regularization + separate CE/z-loss logging to inference/KD GPT loss wrapper for consistency",
+        "file_to_modify": "megatron/inference/gpt/loss_func.py",
+        "function_to_modify": "loss_func",
+        "reason": "Inference/knowledge-distillation flows may use a separate loss_func; adding the same z-loss augmentation and metric reporting ensures consistent behavior and allows users to inspect CE vs z-loss when running training-like passes through this entry point.",
+        "side_effects": "May change reported loss numbers in inference/KD runs when enabled; ensures no behavior change when coeff=0.0. Could require updating any downstream code that parses the returned loss dict keys."
+      }
+    ]
+  }
+}

@@ -1,0 +1,67 @@
+{
+  "pr_number": 184,
+  "repository": "chengazhen/cursor-auto-free",
+  "title": "update build.py as to use env prioritized",
+  "body": "Developers would prefer to build the src locally thus taking their own `.env` (if not exists then use env.example) to build the final `CursorPro` executable. Do you like it @chengazhen ?",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T00:59:00.533355",
+    "extractor_version": "1.0.0",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "build.py",
+      "status": "modified",
+      "additions": 6,
+      "deletions": 7,
+      "functions_modified": [
+        {
+          "function_name": "build",
+          "class_name": null,
+          "full_name": "build",
+          "start_line": 82,
+          "end_line": 174,
+          "lines_changed": [
+            165,
+            166,
+            167,
+            168,
+            169,
+            170
+          ]
+        }
+      ],
+      "patch": "@@ -162,13 +162,12 @@ def build():\n         else:\n             subprocess.run([\"cp\", \"config.ini.example\", f\"{output_dir}/config.ini\"])\n \n-    # Copy .env.example file\n-    if os.path.exists(\".env.example\"):\n-        simulate_progress(\"Copying environment file...\", 0.5)\n-        if system == \"windows\":\n-            subprocess.run([\"copy\", \".env.example\", f\"{output_dir}\\\\.env\"], shell=True)\n-        else:\n-            subprocess.run([\"cp\", \".env.example\", f\"{output_dir}/.env\"])\n+    # Copy .env file or .env.example if .env doesn't exist\n+    env_file = \".env\" if os.path.exists(\".env\") else \".env.example\"\n+    if os.path.exists(env_file):\n+        simulate_progress(f\"Copying {'example ' if env_file == '.env.example' else ''}environment file...\", 0.5)\n+        copy_command = \"copy\" if system == \"windows\" else \"cp\"\n+        subprocess.run([copy_command, env_file, f\"{output_dir}/.env\"], shell=(system == \"windows\"))\n \n     print(\n         f\"\\n\\033[92mBuild completed successfully! Output directory: {output_dir}\\033[0m\""
+    }
+  ],
+  "functions_modified": [
+    {
+      "function_name": "build",
+      "class_name": null,
+      "full_name": "build",
+      "start_line": 82,
+      "end_line": 174,
+      "lines_changed": [
+        165,
+        166,
+        167,
+        168,
+        169,
+        170
+      ]
+    }
+  ],
+  "step_plan": {
+    "steps": [
+      {
+        "operation": "Update the build process to prefer copying a local `.env` file into the build output, falling back to `.env.example` when `.env` is missing, and unify the platform-specific copy invocation.",
+        "file_to_modify": "build.py",
+        "function_to_modify": "build",
+        "reason": "Developers building locally want the executable to be packaged with their own environment configuration when available, while still supporting a default example configuration for fresh checkouts; consolidating the copy logic reduces duplicated branching between Windows and non-Windows paths.",
+        "side_effects": "Local builds may now embed developer-specific secrets or settings into the generated `CursorPro` output directory; CI/build environments without a `.env` will continue to use `.env.example`. The Windows copy behavior now relies on `shell=True` with the `copy` builtin, and the destination path format is standardized to `output_dir/.env`, which could affect path handling if Windows tooling expects backslashes."
+      }
+    ],
+    "summary": "Modify `build.py` so the build output includes a prioritized `.env` from the local workspace, falling back to `.env.example` when necessary, while simplifying the copy logic across platforms."
+  }
+}

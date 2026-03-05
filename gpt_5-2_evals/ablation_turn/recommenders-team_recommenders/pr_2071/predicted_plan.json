@@ -1,0 +1,42 @@
+{
+  "pr_number": 2071,
+  "repository": "recommenders-team/recommenders",
+  "title": "Fixing TF to < 2.16",
+  "body": "### Description\n<!--- Describe your changes in detail -->\n<!--- Why is this change required? What problem does it solve? -->\n\n\n### Related Issues\n<!--- If it fixes an open issue, please link to the issue here. -->\n#2073\n\n### References\n<!--- References would be helpful to understand the changes. -->\n<!--- References can be books, links, etc. -->\n\n\n### Checklist:\n<!--- Go over all the following points, and put an `x` in all the boxes that apply. -->\n<!--- If you're unsure about any of these, don't hesitate to ask. We're here to help! -->\n- [ ] I have followed the [contribution guidelines](CONTRIBUTING.md) and code style for this project.\n- [ ] I have added tests covering my contributions.\n- [ ] I have updated the documentation accordingly.\n- [ ] I have [signed the commits](https://github.com/recommenders-team/recommenders/wiki/How-to-sign-commits), e.g. `git commit -s -m \"your commit message\"`.\n- [ ] This PR is being made to `staging branch` AND NOT TO `main branch`.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T12:40:46.108743",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "setup.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "(module-level) extras_require['gpu'] dependency list definition",
+          "class_name": null,
+          "full_name": "(module-level) extras_require['gpu'] dependency list definition",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Pin the TensorFlow dependency used by the optional GPU extra to disallow TensorFlow 2.16+ (while keeping existing exclusions), preventing installations that hit known incompatibilities.",
+    "steps": [
+      {
+        "operation": "Update the TensorFlow upper-bound pin in the GPU extra to explicitly exclude TF 2.16+ while preserving existing known-bad exclusions",
+        "file_to_modify": "setup.py",
+        "function_to_modify": null,
+        "reason": "TensorFlow 2.16+ is reported incompatible (issue #2073). The project currently constrains TF in `extras_require['gpu']` with `<=2.15.0`, which implicitly blocks 2.16 but can unnecessarily prevent newer 2.15.x patch releases. Switching to an explicit `<2.16` upper bound makes the intent clear and future-proofs within the 2.15 line while still preventing 2.16+ installs.",
+        "side_effects": "Changes dependency resolution for `pip install .[gpu]` (and any downstream depending on the extra). Users may now resolve to newer 2.15.x patch versions; ensure CI (if any GPU/TF jobs exist) remains stable. No runtime code paths should change, but packaging metadata consumers (pip/poetry/conda conversion) will see the new constraint."
+      }
+    ]
+  }
+}

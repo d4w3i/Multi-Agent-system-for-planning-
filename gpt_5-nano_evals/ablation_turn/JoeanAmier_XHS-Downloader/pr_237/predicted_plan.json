@@ -1,0 +1,42 @@
+{
+  "pr_number": 237,
+  "repository": "JoeanAmier/XHS-Downloader",
+  "title": "fix can't run by source code",
+  "body": "the error is:    fix NoMatches: No nodes match <class 'textual.widgets._rich_log.RichLog'> on XHSDownloader\n\nExplore the source code to identify the files and functions to modify.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T11:52:57.243866",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "base_project/source/TUI/app.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "on_mount",
+          "class_name": "XHSDownloader",
+          "full_name": "XHSDownloader.on_mount",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Guard RichLog widget retrieval in XHSDownloader.on_mount to prevent startup crash when RichLog is not present, enabling the TUI to start and settings validation to run even if RichLog is absent.",
+    "steps": [
+      {
+        "operation": "Guard RichLog retrieval with fallback",
+        "file_to_modify": "base_project/source/TUI/app.py",
+        "function_to_modify": "XHSDownloader.on_mount",
+        "reason": "During startup, screen.query_one(RichLog) may raise NoMatches if RichLog is not yet added to the screen. By wrapping the call in try/except and passing None when absent, startup becomes resilient and settings validation can proceed.",
+        "side_effects": "Potentially requires Settings.check_keys to gracefully handle a None log widget; no UI changes to initial layout; ensures app startup does not crash when RichLog is unavailable; may require a follow-up adjustment if downstream code assumes a non-null logger"
+      }
+    ]
+  }
+}

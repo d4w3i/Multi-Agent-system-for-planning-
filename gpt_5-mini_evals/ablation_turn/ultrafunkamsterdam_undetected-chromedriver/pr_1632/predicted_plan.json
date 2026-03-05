@@ -1,0 +1,65 @@
+{
+  "pr_number": 1632,
+  "repository": "ultrafunkamsterdam/undetected-chromedriver",
+  "title": "fixed options not having headless attribute",
+  "body": "Fixes errors:\n\nline 398, in __init__\n    if headless or options.headless:\n                   ^^^^^^^^^^^^^^^^\nAttributeError: 'ChromeOptions' object has no attribute 'headless'\n\n\nline 488, in __init__\n    if options.headless:\n       ^^^^^^^^^^^^^^^^\nAttributeError: 'ChromeOptions' object has no attribute 'headless'\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T14:54:39.488370",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "undetected_chromedriver/options.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "__init__",
+          "class_name": "ChromeOptions",
+          "full_name": "ChromeOptions.__init__",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "undetected_chromedriver/__init__.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "__init__",
+          "class_name": "Chrome",
+          "full_name": "Chrome.__init__",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Add a default headless attribute to ChromeOptions and make Chrome.__init__ defensively access options.headless using getattr to prevent AttributeError when options lacks the attribute.",
+    "steps": [
+      {
+        "operation": "Add __init__ to set default headless attribute",
+        "file_to_modify": "undetected_chromedriver/options.py",
+        "function_to_modify": "ChromeOptions.__init__",
+        "reason": "Chrome.__init__ expects options.headless to exist. The project's ChromeOptions currently inherits from selenium.webdriver.chromium.options.ChromiumOptions without defining headless. Adding an __init__ that calls the parent constructor and sets self.headless = False guarantees the attribute exists and preserves existing behavior when no headless flag is set.",
+        "side_effects": "Should be backward-compatible: it only introduces a default attribute and does not change how Selenium handles headless mode via arguments. Tests that previously raised AttributeError when reading options.headless will no longer fail. Consumers relying on the absence of this attribute (unlikely) may observe it present. No public API signature changes beyond behaviorally safe defaulting. Ensure unit tests cover creation of ChromeOptions and that pickling/serialization (if used) still behaves as expected."
+      },
+      {
+        "operation": "Defensive read of options.headless in Chrome.__init__",
+        "file_to_modify": "undetected_chromedriver/__init__.py",
+        "function_to_modify": "Chrome.__init__",
+        "reason": "Even with ChromeOptions updated, other Options-like objects may be passed that lack a headless attribute. Replace direct accesses like `if headless or options.headless:` and `if options.headless:` with `if headless or getattr(options, 'headless', False):` and `if getattr(options, 'headless', False):` respectively to avoid AttributeError and make the code more robust to varying options objects.",
+        "side_effects": "Behavior is unchanged for typical options objects that have headless set; the change only prevents AttributeError when an object lacks the attribute. This reduces the chance of crashes but could mask misconfigured options objects by silently treating missing headless as False. Update tests that expect AttributeError in such cases (if any). No external API changes. Downstream code that inspects options.headless remain unaffected, but consider documenting that missing headless is interpreted as False."
+      }
+    ]
+  }
+}

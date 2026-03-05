@@ -1,0 +1,65 @@
+{
+  "pr_number": 7339,
+  "repository": "getredash/redash",
+  "title": "Sanitize NaN, Infinite, -Infinite causing error when saving as PostgreSQL JSON",
+  "body": "## Description\n## What type of PR is this? \n- [x] Bug Fix\n\n## Description\nWhen running query that output NaN, Infinite, or -Infinite, redash executor crashes with the error \"Out of range float values are not JSON compliant\" like below. Redash does not output any rows when the error was occurred.\n\n```\n[2025-02-19 04:48:49,040][PID:593][ERROR][rq.worker] [Job 6cfa1d1c-2a32-48c6-8bf4-0cd8f8ba6f32]: exception raised while executing (redash.tasks.queries.execution.execute_query)\nTraceback (most recent call last):\n...\n  File \"/app/redash/tasks/queries/execution.py\", line 309, in execute_query\n    ).run()\n  File \"/app/redash/tasks/queries/execution.py\", line 253, in run\n    updated_query_ids = models.Query.update_latest_result(query_result)\n  File \"/app/redash/models/__init__.py\", line 738, in update_latest_result\n    for q in queries:\n  File \"/usr/local/lib/python3.10/site-packages/sqlalchemy/orm/query.py\", line 3534, in __iter__\n    self.session._autoflush()\n...\nsqlalchemy.exc.StatementError: (raised as a result of Query-invoked autoflush; consider using a session.no_autoflush block if this flush is occurring prematurely)\n(builtins.ValueError) Out of range float values are not JSON compliant\n[SQL: INSERT INTO query_results (org_id, data_source_id, query_hash, query, data, runtime, retrieved_at) VALUES (%(org_id)s, %(data_source_id)s, %(query_hash)s, %(query)s, %(data)s, %(runtime)s, %(retrieved_at)s) RETURNING query_results.id]\n...\n```\n\nThe error occurs because JSON(PostgreSQL JSON type) does not support NaN, Infinite, -Infinite.\n\nThis PR fixes the issue by sanitize NaN, Infinite, -Infinite value to None. This is the save behavior that JavaScript JSON.stringify() does.\n\nWe can reproduce the issue by running following query on BigQuery or PostgreSQL.\n\nBigQuery:\n```\nselect 1.0, cast('NaN' as float64), cast('Infinity' as float64), cast('-Infinity' as float64)\n```\n\nPostgreSQL:\n```\nselect 1.0::float, 'NaN'::float, 'Infinity'::float, '-Infinity'::float\n```\n\nThe issue was introduced by #6685 which removes simplejson. Before #6685 , NaN / Inf was converted to null by simplejson with ignore_nan=True. This PR change behavior for NaN/Inf as same as before #6685 .\n\n## How is this tested?\n\n- [x] Unit tests (pytest, jest)\n- [x] Manually\n\nUnit test was added.\nAlso, we can confirm by running the query on the description. \n\nBefore this PR:\n\n<img width=\"793\" alt=\"image\" src=\"https://github.com/user-attachments/assets/8a929b4d-cde4-426a-af34-160091b0ad6b\" />\n\nAfter this PR:\n\n<img width=\"709\" alt=\"image\" src=\"https://github.com/user-attachments/assets/d59e481f-26fa-4c51-8111-9861d8268251\" />\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T12:48:46.506922",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "redash/utils/__init__.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "sanitize_for_json",
+          "class_name": null,
+          "full_name": "sanitize_for_json",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "redash/models/__init__.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "store_result",
+          "class_name": "QueryResult",
+          "full_name": "QueryResult.store_result",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Sanitize NaN/Infinite values to None to avoid JSON encoding errors when saving query results to PostgreSQL JSON, and apply this sanitization at the data persistence point. This restores compatibility with JSON storage while preserving existing data flow and behavior for finite values.",
+    "steps": [
+      {
+        "operation": "Add sanitize_for_json utility function",
+        "file_to_modify": "redash/utils/__init__.py",
+        "function_to_modify": "sanitize_for_json",
+        "reason": "Introduce a centralized, recursive sanitizer that converts non-finite floats (NaN, Infinity, -Infinity) to None so JSON storage/serialization will not fail when results contain such values.",
+        "side_effects": "Adds a new utility dependency; downstream code (e.g., store_result) will import and use this function. Minor performance overhead proportional to payload size; requires unit tests to cover nested structures."
+      },
+      {
+        "operation": "Apply sanitization before persisting query results",
+        "file_to_modify": "redash/models/__init__.py",
+        "function_to_modify": "QueryResult.store_result",
+        "reason": "Before JSON serialization for storage, sanitize the payload to replace NaN/Inf with None, preventing PostgreSQL JSON errors and aligning with JavaScript JSON.stringify() behavior.",
+        "side_effects": "Ensures stored results are JSON-safe; may affect tests that rely on raw NaN/Inf presence; requires tests to validate sanitized data is saved and that API responses reflect sanitized nulls where applicable."
+      }
+    ]
+  }
+}

@@ -1,0 +1,56 @@
+{
+  "evaluated_at": "2026-03-04T14:45:39.515643",
+  "pr_dir": "/Users/davidecroatto/code/planningtest0/gpt_5-2_evals/ablation_turn/intel_ipex-llm/pr_13205",
+  "pr_number": 13205,
+  "repository": "intel/ipex-llm",
+  "files": {
+    "precision": 0.0,
+    "recall": 0.0,
+    "f1": 0.0,
+    "predicted_count": 1,
+    "actual_count": 1,
+    "correct_count": 0
+  },
+  "functions": {
+    "precision": 0.0,
+    "recall": 0.0,
+    "f1": 0.0,
+    "predicted_count": 4,
+    "actual_count": 2,
+    "correct_count": 0
+  },
+  "steps": {
+    "predicted_steps": 4,
+    "actual_steps": 2,
+    "step_diff": 2,
+    "target_coverage": 0.0,
+    "targets_matched": 0,
+    "targets_total": 4
+  },
+  "semantic": {
+    "summary_similarity": 0.6861,
+    "avg_step_similarity": 0.2574,
+    "step_matches": [
+      {
+        "pred_idx": 1,
+        "pred_text": "Operation: Harden single-chat input tensor preparation: keep text tensors on device, and gate/correc...",
+        "gt_idx": 0,
+        "gt_text": "Operation: Fix FP16 module selection logic by preserving any previously-determined module list and a...",
+        "similarity": 0.5144
+      },
+      {
+        "pred_idx": 3,
+        "pred_text": "Operation: Add FP16-on-XPU attention safety: upcast softmax/attention math or force a supported fall...",
+        "gt_idx": 1,
+        "gt_text": "Operation: Adjust the arguments passed into `optimize_model(...)` by ensuring the `modules` list is ...",
+        "similarity": 0.5151
+      }
+    ],
+    "overall_semantic_score": 0.386,
+    "computed": true,
+    "error": null
+  },
+  "has_prediction": true,
+  "has_ground_truth": true,
+  "error": null
+}

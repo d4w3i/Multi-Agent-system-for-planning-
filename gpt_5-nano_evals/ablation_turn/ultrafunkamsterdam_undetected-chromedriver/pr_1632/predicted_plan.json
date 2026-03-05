@@ -1,0 +1,42 @@
+{
+  "pr_number": 1632,
+  "repository": "ultrafunkamsterdam/undetected-chromedriver",
+  "title": "fixed options not having headless attribute",
+  "body": "Bug fix: guard against missing headless attribute on ChromeOptions.\n\nRoot cause:\n- Chrome.__init__ referenced options.headless directly in multiple places. If a Selenium/Chromium version or a custom ChromeOptions instance does not define a headless attribute, this raises AttributeError (as seen in the PR description).\n\nWhat this change does:\n- Use defensive access (getattr) when reading options.headless.\n- When parsing startup args, if a headless flag is detected, set the headless state safely even if the attribute doesn’t exist on the options object.\n- Only enable headless configuration if the headless flag is actually present (via getattr), preventing unintended AttributeError.\n\nImpact:\n- Fixes the AttributeError in environments where ChromeOptions may not expose a headless attribute.\n- Maintains backward compatibility with existing code paths when headless is provided.\n\nTests to consider:\n- Instantiate uc.Chrome with default options (no headless) should not crash.\n- Instantiate uc.Chrome with a pre-populated options object that lacks a headless attribute, run through startup and ensure no AttributeError.\n- Ensure behavior remains correct when headless=True is passed to Chrome.__init__ and when headless is specified via options.arguments.\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T14:04:38.115362",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "undetected_chromedriver/__init__.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "__init__",
+          "class_name": "Chrome",
+          "full_name": "Chrome.__init__",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Bug fix: guard against missing headless attribute on ChromeOptions by using getattr and safely parsing startup args; prevents AttributeError and maintains backward compatibility.",
+    "steps": [
+      {
+        "operation": "Refactor Chrome.__init__ to robustly handle missing headless attribute on ChromeOptions",
+        "file_to_modify": "undetected_chromedriver/__init__.py",
+        "function_to_modify": "Chrome.__init__",
+        "reason": "To prevent AttributeError when ChromeOptions may not define a headless attribute; preserves compatibility across Selenium/Chromium versions and custom ChromeOptions",
+        "side_effects": "Tests must cover options without headless; downstream code relying on options.headless should still function; internal behavior changes to use safe getattr; no public API changes"
+      }
+    ]
+  }
+}

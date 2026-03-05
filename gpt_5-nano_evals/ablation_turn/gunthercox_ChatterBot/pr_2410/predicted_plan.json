@@ -1,0 +1,57 @@
+{
+  "pr_number": 2410,
+  "repository": "gunthercox/ChatterBot",
+  "title": "Fix file path resolution",
+  "body": "This PR focuses on improving how corpus file paths are resolved and loaded:\n\n1) Fix single file handling: ensure generator semantics are preserved when loading a single corpus file. The code already uses a yield-based approach for load_corpus, which yields results per file; this aligns with the desired behavior for single-file and multi-file usage.\n2) Add absolute path hints for missing files: when a corpus file cannot be opened, provide an absolute path in the error message to make debugging easier.\n3) More descriptive error messages: improve error messaging when reading corpus files to clearly indicate the path that failed and the resolved absolute path.\n\nThese changes increase robustness and debuggability without breaking existing APIs or tests.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T12:53:09.734629",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "chatterbot/corpus.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "read_corpus",
+          "class_name": "chatterbot",
+          "full_name": "chatterbot.corpus.read_corpus",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "load_corpus",
+          "class_name": "chatterbot",
+          "full_name": "chatterbot.corpus.load_corpus",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Improve corpus file path resolution and error messaging while preserving generator-based loading behavior for single and multi-file inputs.",
+    "steps": [
+      {
+        "operation": "Enhance error handling in read_corpus",
+        "file_to_modify": "chatterbot/corpus.py",
+        "function_to_modify": "read_corpus",
+        "reason": "When a corpus file cannot be opened, raise an IOError that includes both the original path and the resolved absolute path to aid debugging, aligning with the MASCA PR goals for descriptive errors and easier tracing.",
+        "side_effects": "Tests may need adjustments to assertions checking error messages; downstream code catching IOError should continue to work; may affect logging of the error message."
+      },
+      {
+        "operation": "Ensure generator-based corpus loading semantics for single/multi-file usage",
+        "file_to_modify": "chatterbot/corpus.py",
+        "function_to_modify": "load_corpus",
+        "reason": "Preserve and verify the generator-based behavior (yield semantics) so that both single-file and multi-file loading remain compatible with existing usage patterns and tests.",
+        "side_effects": "No public API changes; downstream tests relying on generator consumption should remain valid; minor review of tests that assume exact iteration timing may be needed."
+      }
+    ]
+  }
+}

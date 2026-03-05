@@ -1,0 +1,42 @@
+{
+  "pr_number": 3433,
+  "repository": "pyro-ppl/pyro",
+  "title": "Fixes #3430 (serializing an easyguide corrupts it).",
+  "body": "- The issue is that on Python 3.12 the `super()` object of `easyguide.Group` started having the `__getstate__` attribute (this doesn't happen in python 3.9), which is then called to return the state object, which is then modified without making a copy before modification, which causes the corruption.\n- The solution is to ensure that we always make a copy of the state object before modifying it.\n- This was tested on both python 3.9 and 3.12.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T14:22:38.556487",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "pyro/contrib/easyguide/easyguide.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "__getstate__",
+          "class_name": "Group",
+          "full_name": "Group.__getstate__",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Prevent in-place modification of an object's internal state when Group.__getstate__ obtains state from super() by making a shallow copy (copy.copy) before performing modifications; add a module-level import for copy.",
+    "steps": [
+      {
+        "operation": "Make a shallow copy of the state returned by super() and add copy import",
+        "file_to_modify": "pyro/contrib/easyguide/easyguide.py",
+        "function_to_modify": "Group.__getstate__",
+        "reason": "On Python 3.12 super() may provide a __getstate__ that returns the object's live/internal state; mutating that return value in-place corrupts the original object. Creating a shallow copy (via copy.copy(state)) before modifying it preserves the original internal state while allowing the returned pickling state to be adjusted (convert weakref to direct reference) as intended.",
+        "side_effects": "- Tests: Add or run unit tests that pickle.dumps and pickle.loads an EasyGuide containing a Group on Python 3.9 and 3.12 to confirm no corruption. Existing tests that rely on identity of the returned state object may need updating if they inspected and mutated that object.\\n- Dependents: Any code that assumed __getstate__ returned the exact mutable internal mapping (and relied on in-place changes) will now receive a shallow copy instead; this is the correct behavior for pickling but could change edge-case behavior.\\n- API: No public API changes to EasyGuide.Group. The behavior of pickling becomes safer and more robust across Python versions.\\n- Implementation note: Add top-level \"import copy\" to the module. Using copy.copy performs a shallow copy and will respect any custom __copy__ defined on the returned state object. This keeps the change minimal and low-risk."
+      }
+    ]
+  }
+}

@@ -1,0 +1,42 @@
+{
+  "pr_number": 3534,
+  "repository": "redis/redis-py",
+  "title": "fix(lock): Fix LockError message when releasing a lock.",
+  "body": "Fix #3535 \n\n### Pull Request check-list\n\n_Please make sure to review and check all of these items:_\n\n- [ ] Do tests and lints pass with this change?\n- [ ] Do the CI tests pass with this change (enable it first in your forked repo and wait for the github action build to finish)?\n- [ ] Is the new or changed code fully tested?\n- [ ] Is a documentation update included (if this change modifies existing APIs, or introduces new ones)?\n- [ ] Is there an example added to the examples folder (if applicable)?\n- [ ] Was the change added to CHANGES file?\n\n_NOTE: these things are not required to open a PR and can be done\nafterwards / while the PR is open._\n\n### Description of change\n\nWe can get expect result for the test code in #3535  with this implementation:\n```\nThread 2: Lock error: Cannot release a lock that's no longer owned\n```\n\nExplore the source code to identify the files and functions to modify.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T14:28:09.230754",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "redis/exceptions.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "__init__",
+          "class_name": "LockError",
+          "full_name": "LockError.__init__",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Ensure LockError initializes its base Exception with the provided message so that str(exception) and logging include the message, while preserving self.message and self.lock_name for backward compatibility (this also fixes LockNotOwnedError).",
+    "steps": [
+      {
+        "operation": "Initialize base Exception with message in LockError.__init__",
+        "file_to_modify": "redis/exceptions.py",
+        "function_to_modify": "LockError.__init__",
+        "reason": "LockError currently stores the message on self.message but does not pass it to Exception.__init__ (nor set self.args), so str(exc) and printing/logging the exception yield an empty string. Calling super().__init__(message) (or setting self.args = (message,)) ensures the message is available via standard Exception interfaces while preserving existing attributes (self.message and self.lock_name) for backward compatibility. LockNotOwnedError inherits from LockError, so this change also fixes it.",
+        "side_effects": "Populates exception.args and makes str(exception) include the message. This will improve logging and printing of LockError/LockNotOwnedError. Potential impacts: any code or tests that relied on args being empty may need updates; however, existing code/tests that read .message and .lock_name will continue to work because those attributes will still be set. Downstream libraries relying on the previous behavior (empty args) could observe different exception representations. No API surface changes beyond standard Exception behavior; unit tests that assert exception messages (or that previously failed to see them) may now pass, and new tests should be added to assert str(exception) contains the message."
+      }
+    ]
+  }
+}

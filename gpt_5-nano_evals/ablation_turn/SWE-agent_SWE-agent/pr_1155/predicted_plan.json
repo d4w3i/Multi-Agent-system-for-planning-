@@ -1,0 +1,42 @@
+{
+  "pr_number": 1155,
+  "repository": "SWE-agent/SWE-agent",
+  "title": "Fix: Correctly format commit message for PR creation",
+  "body": "This PR fixes a bug in the SWE agent's PR creation flow where the commit message was not formatted with the actual issue title and number. The code previously quoted the literal string '{issue.title}' and '{issue.number}', resulting in a commit message that didn't reference the issue. The change uses f-strings to interpolate issue.title and issue.number, e.g.:\n- commit_msg now uses shlex.quote(f\"Fix: {issue.title}\")\n- and shlex.quote(f\"Closes #{issue.number}\")\nThe rest of PR creation logic remains unchanged (branch creation, push, and PR creation via GH API).\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T12:07:52.015765",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "open_pr.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "open_pr",
+          "class_name": null,
+          "full_name": "open_pr",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Fix PR creation to interpolate issue title and number in commit messages using f-strings before quoting, ensuring the commit message references the correct issue.",
+    "steps": [
+      {
+        "operation": "Update commit_msg construction to interpolate issue.title and issue.number using f-strings before shlex.quote",
+        "file_to_modify": "base_project/open_pr.py",
+        "function_to_modify": "open_pr",
+        "reason": "Current commit message lines quote literal braces, resulting in '{issue.title}' and '{issue.number}' being stored. Using f-strings ensures dynamic values are embedded, preserving existing quoting and dry-run behavior.",
+        "side_effects": "Tests may need updates to validate the interpolated content; potential minor API content differences if issue data contains unusual characters; no changes to PR creation flow aside from the commit message content."
+      }
+    ]
+  }
+}

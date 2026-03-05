@@ -1,0 +1,94 @@
+{
+  "pr_number": 2778,
+  "repository": "eosphoros-ai/DB-GPT",
+  "title": "fix: Change plan manager prompt in order to avoid calling tools directly",
+  "body": "# Description\n\nRelated to #2777 \n在默认plan manager prompt中加入了对tool直接调用的严格限制\n\n# How Has This Been Tested?\n\n经过对话测试，plan manager 成功避免直接调用 Tools\n\n![final](https://github.com/user-attachments/assets/c7a3095f-1b34-4495-a597-15d6dfebda8d)\n\n# Snapshots:\n\n![en prompt](https://github.com/user-attachments/assets/3d8cac34-7764-4461-8ca8-964a0099b9ef)\n![cnprompt](https://github.com/user-attachments/assets/b6896063-382d-4203-b194-27e1f4ebc357)\n\n\n# Checklist:\n\n- [x] My code follows the style guidelines of this project\n- [x] I have already rebased the commits and make the commit message conform to the project standard.\n- [x] I have performed a self-review of my own code\n- [x] I have commented my code, particularly in hard-to-understand areas\n- [x] I have made corresponding changes to the documentation\n- [x] Any dependent changes have been merged and published in downstream modules\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T12:10:01.034437",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "packages/dbgpt-core/src/dbgpt/agent/core/plan/team_auto_plan.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "__init__",
+          "class_name": "AutoPlanChatManager",
+          "full_name": "AutoPlanChatManager.__init__",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "act",
+          "class_name": "AutoPlanChatManager",
+          "full_name": "AutoPlanChatManager.act",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "packages/dbgpt-core/src/dbgpt/agent/core/plan/planner_agent.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "_init_reply_message",
+          "class_name": "PlannerAgent",
+          "full_name": "PlannerAgent._init_reply_message",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "docs/docs/agents/modules/plan/plan.md",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    },
+    {
+      "filename": "docs/docs/agents/introduction/planning.md",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    }
+  ],
+  "step_plan": {
+    "summary": "Update the default Plan Manager prompt (and supporting planner context) to strictly prevent the PlanManager from directly calling tools, enforcing delegation to worker agents instead, with an optional runtime safeguard to catch accidental tool-call formatted outputs.",
+    "steps": [
+      {
+        "operation": "Tighten PlanManager ProfileConfig prompt to explicitly forbid direct tool calls (EN/ZH), and guide delegation to worker agents instead",
+        "file_to_modify": "packages/dbgpt-core/src/dbgpt/agent/core/plan/team_auto_plan.py",
+        "function_to_modify": "AutoPlanChatManager.__init__",
+        "reason": "The PR goal is prompt-level behavior change: ensure the Plan Manager never emits tool/function-call payloads and instead coordinates other agents that may use tools. The most reliable place is the manager’s ProfileConfig construction/override during initialization so every session inherits the restriction.",
+        "side_effects": "May change PlanManager behavior across all auto-plan runs; overly strict constraints could reduce autonomy if no worker agents are available. Requires updating/confirming both English and Chinese prompt variants to avoid language-dependent regressions."
+      },
+      {
+        "operation": "Add a runtime guardrail in the manager loop to prevent/repair accidental tool-call formatted outputs from the PlanManager",
+        "file_to_modify": "packages/dbgpt-core/src/dbgpt/agent/core/plan/team_auto_plan.py",
+        "function_to_modify": "AutoPlanChatManager.act",
+        "reason": "Prompt-only changes can still occasionally leak tool-call syntax depending on model/tooling. A lightweight safeguard in the orchestration loop can detect tool-call markers (e.g., function_call/tool_calls JSON patterns) and force a retry or convert the response into a delegation instruction to the proper agent.",
+        "side_effects": "Could introduce extra turns/retries, affecting latency and token usage. Must be careful not to block legitimate structured messages used internally for agent routing; add narrow detection criteria and log/trace when it triggers."
+      },
+      {
+        "operation": "Ensure plan-generation messages include an explicit reminder that the planner must not instruct the PlanManager to call tools directly",
+        "file_to_modify": "packages/dbgpt-core/src/dbgpt/agent/core/plan/planner_agent.py",
+        "function_to_modify": "PlannerAgent._init_reply_message",
+        "reason": "Even if the PlanManager prompt forbids tool calls, the Planner can generate steps that implicitly/explicitly tell the manager to invoke tools. Adding a short constraint/reminder in the planner’s constructed context helps keep the produced plan aligned with the new execution contract (manager delegates; workers use tools).",
+        "side_effects": "May slightly change plan wording/structure and downstream parsing if any component expects tool-invocation verbs in the plan. Should be validated with an auto-plan dialogue to confirm the plan remains executable and that tool usage occurs only in worker-agent turns."
+      }
+    ]
+  }
+}

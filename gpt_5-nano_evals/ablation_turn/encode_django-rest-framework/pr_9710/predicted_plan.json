@@ -1,0 +1,42 @@
+{
+  "pr_number": 9710,
+  "repository": "encode/django-rest-framework",
+  "title": "Fix serializer method field hidden unique together (#9700)",
+  "body": "Fix: SerializerMethodField as HiddenField in unique_together\n\nCorrects an issue where a `SerializerMethodField` that shares its name\nwith a model field involved in a `unique_together` constraint (or\n`UniqueConstraint`) could be incorrectly treated as a `HiddenField`.\n\nThis typically occurred if the underlying model field was nullable or had\na default value, and the `SerializerMethodField` was not being correctly\nprioritized during the uniqueness metadata processing.\n\nThe `ModelSerializer.get_uniqueness_extra_kwargs` method has been updated\nto ensure that if a field name corresponding to a model field in a\nuniqueness constraint is explicitly declared as a `SerializerMethodField`\non the serializer, it is not converted into a `HiddenField`.\n\nA test case has been added to `tests/test_model_serializer.py`\n(`TestSerializerMethodFieldInUniqueTogether`) to verify this behavior.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T12:37:01.890258",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "rest_framework/serializers.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "get_uniqueness_extra_kwargs",
+          "class_name": "ModelSerializer",
+          "full_name": "ModelSerializer.get_uniqueness_extra_kwargs",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Fixes a bug where a SerializerMethodField shadowing a model field under a unique_together constraint could be misinterpreted as a HiddenField by updating ModelSerializer.get_uniqueness_extra_kwargs to preserve correct behavior for SerializerMethodField in this edge case.",
+    "steps": [
+      {
+        "operation": "Add guard in get_uniqueness_extra_kwargs to skip HiddenField conversion for SerializerMethodField shadowing a uniqueness field",
+        "file_to_modify": "rest_framework/serializers.py",
+        "function_to_modify": "ModelSerializer.get_uniqueness_extra_kwargs",
+        "reason": "If a field name is part of a UniqueConstraint and is explicitly declared as a SerializerMethodField on the serializer, do not convert it into a HiddenField when building uniqueness-related kwargs",
+        "side_effects": "Minimally invasive change; tests should pass; may require updating/adding tests for the edge case (e.g., TestSerializerMethodFieldInUniqueTogether); ensures no regressions for other field types and existing uniqueness logic"
+      }
+    ]
+  }
+}

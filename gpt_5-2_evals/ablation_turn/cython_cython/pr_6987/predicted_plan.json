@@ -1,0 +1,87 @@
+{
+  "pr_number": 6987,
+  "repository": "cython/cython",
+  "title": "Fix return type of bytes.join()",
+  "body": "This was already tested in `tests/run/bytesmethods.pyx`, but there were apparently (non-trivial?) cases where the return type wasn't correctly inferred.\n\nExplore the source code to identify the files and functions to modify.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T12:07:30.453747",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "Cython/Compiler/Builtin.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "find_return_type_of_builtin_method",
+          "class_name": null,
+          "full_name": "find_return_type_of_builtin_method",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "declare_in_type",
+          "class_name": "BuiltinMethod",
+          "full_name": "BuiltinMethod.declare_in_type",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "Cython/Compiler/Optimize.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "_optimise_for_loop",
+          "class_name": "IterationTransform",
+          "full_name": "IterationTransform._optimise_for_loop",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "tests/run/bytesmethods.pyx",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    }
+  ],
+  "step_plan": {
+    "summary": "Ensure Cython always infers `bytes.join()` as returning a `bytes` object by fixing both builtin method typing (signature and inference helper) and any optimisation rewrites that currently lose the precise return type. Extend coverage as needed to catch previously-missed call shapes and confirm inference remains `bytes object`.",
+    "steps": [
+      {
+        "operation": "Adjust builtin method return-type inference so `bytes.join` is consistently inferred as returning `bytes` across call forms (including less-direct/special-cased paths)",
+        "file_to_modify": "Cython/Compiler/Builtin.py",
+        "function_to_modify": "find_return_type_of_builtin_method",
+        "reason": "Some compilation/optimisation paths may not rely on the builtin method’s C-signature return code and instead consult (or should consult) the centralized return-type inference helper. Ensuring `bytes.join` maps to `Builtin.bytes_type` (or receiver type `T` resolved to bytes) here provides a single authoritative source for inference when signature-based typing is bypassed.",
+        "side_effects": "May change inferred types for any call paths that consult this helper (potentially improving type precision). Could affect downstream optimisations/codegen decisions and might expose latent assumptions where code expected `object`."
+      },
+      {
+        "operation": "Fix the builtin-method declaration for `bytes.join` so its `CFuncType.return_type` is `bytes` rather than generic `object` (align with `str.join`)",
+        "file_to_modify": "Cython/Compiler/Builtin.py",
+        "function_to_modify": "BuiltinMethod.declare_in_type",
+        "reason": "If `bytes.join` is declared with return code `\"O\"`, any typing that uses the method signature directly will infer a generic Python object. Updating the declaration logic/table usage so `bytes.join` returns `\"T\"` (receiver type) or explicitly `Builtin.bytes_type` ensures all signature-driven inference yields `bytes` and matches runtime semantics.",
+        "side_effects": "Can affect specialised-call generation and C-API wrapper selection when return types drive coercions or temp management. Requires checking that other bytes methods are unaffected and that `str.join` remains unchanged."
+      },
+      {
+        "operation": "Audit and update optimisation rewrites for `.join()` (and related call-pattern rewrites encountered during loop/iteration optimisation) to preserve/set the resulting expression node type to `bytes` when optimising `bytes.join`",
+        "file_to_modify": "Cython/Compiler/Optimize.py",
+        "function_to_modify": "IterationTransform._optimise_for_loop",
+        "reason": "Optimiser rewrites can replace a Python-level method call with a specialised node/C-API call and accidentally drop precise typing (defaulting to `py_object_type`). Ensuring that join-related rewritten nodes explicitly carry `Builtin.bytes_type` (or propagate the inferred return type from the original call) prevents regressions in “non-trivial” call shapes that take optimised paths.",
+        "side_effects": "May alter which optimised code paths are selected and the generated C code’s coercion/temporary handling. Needs regression testing to ensure no semantic changes for error paths (TypeError, non-bytes inputs) and no impact on `str.join` optimisation."
+      }
+    ]
+  }
+}

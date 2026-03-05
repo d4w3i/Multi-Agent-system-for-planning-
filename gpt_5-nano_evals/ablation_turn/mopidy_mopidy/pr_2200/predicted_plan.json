@@ -1,0 +1,49 @@
+{
+  "pr_number": 2200,
+  "repository": "mopidy/mopidy",
+  "title": "add workaround for gstreamer 1.25.0 to 1.26.2",
+  "body": "see-also: https://gitlab.freedesktop.org/gstreamer/gstreamer/-/commit/bbf60305ed2ee35f4ecf7a5de2bb139203dda2af\n\nExplore the source code to identify the files and functions to modify.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T13:19:00.863643",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "src/mopidy/internal/gi.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "check_gst_compatibility",
+          "class_name": "gi",
+          "full_name": "gi.check_gst_compatibility",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Add a dedicated GStreamer compatibility helper and route the existing version check through it to implement a targeted workaround for GStreamer 1.25.x–1.26.2, while keeping the minimum version guard intact.",
+    "steps": [
+      {
+        "operation": "Add check_gst_compatibility helper",
+        "file_to_modify": "src/mopidy/internal/gi.py",
+        "function_to_modify": "check_gst_compatibility",
+        "reason": "Introduce a small, testable helper that encapsulates GST version compatibility logic and the known workaround for GStreamer 1.25.0–1.26.2. This isolates the workaround from the core version guard and enables independent testing and maintenance.",
+        "side_effects": "Adds a new public helper used by the version check; requires unit tests to cover new logic; may require minor import adjustments and documentation within the module"
+      },
+      {
+        "operation": "Refactor GST version check to use the new helper",
+        "file_to_modify": "src/mopidy/internal/gi.py",
+        "function_to_modify": "check_gst_version",
+        "reason": "Replace the hard-coded version comparison with a call to check_gst_compatibility so the workaround path is explicit and testable, while preserving the existing minimum-version enforcement.",
+        "side_effects": "If the wrapper signature or call sites change, downstream imports/tests may require updates; ensures the workaround path is triggered only for 1.25.0–1.26.2 and logs a warning when active; potential need to add/adjust tests to mock Gst.version()"
+      }
+    ]
+  }
+}

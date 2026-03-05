@@ -1,0 +1,140 @@
+{
+  "pr_number": 4251,
+  "repository": "ManimCommunity/manim",
+  "title": "Fix(graph): Allow any Line subclass as edge_type in Graph/DiGraph",
+  "body": "## Overview: What does this pull request change?\r\n<!--changelog-start-->\r\nFix #4250 \r\n<!--changelog-end-->\r\n**More broadly, this fix allows any subclass of `Line` to be used as an `edge_type`** in the `Graph` and `DiGraph`, making the implementation more flexible and extensible.\r\n\r\n## Motivation and Explanation: Why and how do your changes improve the library?\r\nPreviously, the `Graph` and `DiGraph` classes assumed that the `edge_type`  will always have its first two arguments as start and end point.\r\nBut, such is not true for subclasses of `Line`. This change lets user use any subclass of `Line` in `Graph` and `DiGraph`.\r\n\r\n## Changes\r\n\r\n- **Refactored Graph and DiGraph:**\r\n  - Fixed edge handling logic to support all subclasses of `Line`, not just `LabeledLine`.\r\n  - Modified `_add_edge` accordingly.\r\n- **Testing:**\r\n  - Added/updated tests for `LabeledLine` as edge types in `test_graph.py`.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T11:48:23.459176",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "manim/mobject/graph.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "_add_edge",
+          "class_name": "GenericGraph",
+          "full_name": "GenericGraph._add_edge",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_populate_edge_dict",
+          "class_name": "Graph",
+          "full_name": "Graph._populate_edge_dict",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_populate_edge_dict",
+          "class_name": "DiGraph",
+          "full_name": "DiGraph._populate_edge_dict",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "update_edges",
+          "class_name": "Graph",
+          "full_name": "Graph.update_edges",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "update_edges",
+          "class_name": "DiGraph",
+          "full_name": "DiGraph.update_edges",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "tests/module/mobject/test_graph.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "test_graph_add_edges",
+          "class_name": null,
+          "full_name": "test_graph_add_edges",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "test_graph_creation",
+          "class_name": null,
+          "full_name": "test_graph_creation",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Update Graph and DiGraph edge creation to construct edges using keyword arguments (start=, end=) so any Line subclass—including those with non-standard __init__ positional parameters like LabeledLine—can be used as edge_type. Add/adjust graph tests to cover both construction-time and add_edges-time usage of LabeledLine as an edge type.",
+    "steps": [
+      {
+        "operation": "Refactor edge instantiation in _add_edge to use keyword start/end and safely merge edge_config overrides",
+        "file_to_modify": "manim/mobject/graph.py",
+        "function_to_modify": "GenericGraph._add_edge",
+        "reason": "Current implementation assumes the first two positional args of edge_type are (start, end), which breaks for Line subclasses like LabeledLine that take other positional args (e.g. label) and require start/end as keyword arguments. Centralizing a robust construction strategy here makes add_edges/add_edge consistent and backwards-compatible.",
+        "side_effects": "May change which values win when both edge_config and internal logic specify start/end; ensure explicit start/end derived from vertices cannot be accidentally overridden (or document/guard). Could affect any downstream code relying on positional construction or on edge_config overriding endpoints; run existing graph tests and edge-related scenes for regressions."
+      },
+      {
+        "operation": "Align initial edge population with new construction semantics (use start=/end= keywords when creating each edge)",
+        "file_to_modify": "manim/mobject/graph.py",
+        "function_to_modify": "Graph._populate_edge_dict",
+        "reason": "Graph’s initial edge creation during __init__ must not use positional start/end; otherwise Graph(edge_type=LabeledLine, edge_config={\"label\": ...}) still fails at construction time even if _add_edge is fixed for later additions.",
+        "side_effects": "Could alter how per-edge configs are applied at construction vs. later add_edges calls; verify edge z_index/buff/path_arc defaults remain unchanged and that edge dict keys and stored objects remain compatible with existing APIs."
+      },
+      {
+        "operation": "Make directed edge population use the same keyword-based start/end construction and preserve any tip/arrow-specific behavior",
+        "file_to_modify": "manim/mobject/graph.py",
+        "function_to_modify": "DiGraph._populate_edge_dict",
+        "reason": "DiGraph is subject to the same constructor-signature issue; it must also be able to build edges using any Line subclass. Additionally, DiGraph may apply directed-edge specifics (tips, arrow styles), which must remain functional after refactor.",
+        "side_effects": "Potential interaction with arrow/tip configuration if DiGraph previously depended on a specific edge_type like Arrow; verify Arrow and other common directed edge types still render correctly, and confirm no double-tip or missing-tip regressions."
+      },
+      {
+        "operation": "Audit/update edge updater logic to be signature-agnostic and rely only on Line APIs (set_points_by_ends) and stable config access",
+        "file_to_modify": "manim/mobject/graph.py",
+        "function_to_modify": "Graph.update_edges",
+        "reason": "Even if edges can be constructed, they must continue to update correctly when vertices move. The updater should not assume constructor arg ordering; it should update geometry via set_points_by_ends (supported by Line subclasses) and handle any needed parameters (buff/path_arc) without depending on edge_type init signature.",
+        "side_effects": "If updater currently reads parameters from edge_config in a way that is inconsistent across edge types, this could change runtime behavior (e.g., buff handling). Validate with existing tests and any scenes that animate vertex movement; ensure labels (LabeledLine) stay attached and edges don’t lose styling on update."
+      },
+      {
+        "operation": "Ensure directed edge updater keeps endpoints and tips consistent for arbitrary Line subclasses",
+        "file_to_modify": "manim/mobject/graph.py",
+        "function_to_modify": "DiGraph.update_edges",
+        "reason": "DiGraph updating must remain correct when using non-standard Line subclasses as edges. The updater should update endpoints via set_points_by_ends and preserve directed-edge affordances (tips) without relying on init-time positional args.",
+        "side_effects": "Tip placement or orientation might change if update logic is sensitive to buff/path_arc; confirm Arrow-like edges still behave and that LabeledLine (if used in DiGraph) doesn’t break updater assumptions. Run directed-graph related tests (if present) and consider adding a smoke test if gaps remain."
+      },
+      {
+        "operation": "Extend add_edges test coverage to include a Line subclass with non-(start,end) positional signature (e.g., LabeledLine) and required edge_config (label)",
+        "file_to_modify": "tests/module/mobject/test_graph.py",
+        "function_to_modify": "test_graph_add_edges",
+        "reason": "This is the regression surface described in the PR: add_edges should succeed with edge_type=LabeledLine when label is provided via edge_config, proving that edge construction no longer depends on positional start/end.",
+        "side_effects": "May require importing LabeledLine and adjusting assertions to avoid brittle rendering/geometry checks; keep it to type/instance and edge-count assertions. Could expose any remaining mismatches between Graph construction and add_edges behavior."
+      },
+      {
+        "operation": "Add a construction-time smoke test verifying Graph can be instantiated with edge_type=LabeledLine and produces correct edge objects",
+        "file_to_modify": "tests/module/mobject/test_graph.py",
+        "function_to_modify": "test_graph_creation",
+        "reason": "Covers the other main entry point: Graph(..., edges=..., edge_type=...) should work at initialization, not only when edges are added after construction. Ensures _populate_edge_dict uses the same robust construction approach.",
+        "side_effects": "Test may need to avoid relying on exact label positioning or LaTeX availability; prefer a simple label (e.g., Text/MarkupText if supported by LabeledLine expectations) or a minimal label object accepted by LabeledLine. Running this test might require additional test dependencies if label creation is non-trivial."
+      }
+    ]
+  }
+}

@@ -1,0 +1,42 @@
+{
+  "pr_number": 228,
+  "repository": "facebookresearch/vggt",
+  "title": "Fix a typo in batch_np_matrix_to_pycolmap",
+  "body": "The current implementation can cause `reproj_mask` to be undefined in `batch_np_matrix_to_pycolmap()` if `max_reproj_error = None` causing the following: \n\n```\nif masks is not None and reproj_mask is not None:\nUnboundLocalError: local variable 'reproj_mask' referenced before assignment\n```\n\nInitializing `reproj_mask` beforehand fix that error.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T13:03:55.902131",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "np_to_pycolmap.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "batch_np_matrix_to_pycolmap",
+          "class_name": null,
+          "full_name": "batch_np_matrix_to_pycolmap",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Defensive fix in batch_np_matrix_to_pycolmap: initialize reproj_mask = None before the reprojection-error conditional to avoid UnboundLocalError when max_reproj_error is None while preserving existing control flow and assertions.",
+    "steps": [
+      {
+        "operation": "Initialize reproj_mask to None before computing reprojection mask",
+        "file_to_modify": "np_to_pycolmap.py",
+        "function_to_modify": "batch_np_matrix_to_pycolmap",
+        "reason": "Prevent UnboundLocalError when max_reproj_error is None. The variable reproj_mask is only assigned inside the `if max_reproj_error is not None:` block but is referenced later when masks is None. Initializing reproj_mask = None right after the input shape assertions ensures the name exists regardless of the conditional flow and preserves current behavior.",
+        "side_effects": "Behavioral impact is minimal: no API or return-signature changes. If both masks and max_reproj_error are None the existing assertion `assert masks is not None` will still fail, preserving intended validation. Tests that previously hit the UnboundLocalError will now surface the intended assertion failure instead. Downstream code that depends on masks will be unaffected except that the previous crash is prevented. Recommend running unit/integration tests for functions that call batch_np_matrix_to_pycolmap and verifying behavior for cases where max_reproj_error is None and masks is (a) provided, (b) None."
+      }
+    ]
+  }
+}

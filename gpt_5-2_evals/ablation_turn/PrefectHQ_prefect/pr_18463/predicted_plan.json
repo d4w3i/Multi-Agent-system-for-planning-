@@ -1,0 +1,101 @@
+{
+  "pr_number": 18463,
+  "repository": "PrefectHQ/prefect",
+  "title": "Fix failing unit tests",
+  "body": "These changes fix the failing tests introduced by https://github.com/PrefectHQ/prefect/pull/18450",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T11:54:56.780275",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "src/prefect/_versioning.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "get_commit_message_first_line",
+          "class_name": null,
+          "full_name": "get_commit_message_first_line",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "get_inferred_version_info",
+          "class_name": null,
+          "full_name": "get_inferred_version_info",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "get_git_version_info",
+          "class_name": null,
+          "full_name": "get_git_version_info",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "get_github_version_info",
+          "class_name": null,
+          "full_name": "get_github_version_info",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "src/prefect/cli/deploy.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    },
+    {
+      "filename": "tests/cli/test_deploy.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    }
+  ],
+  "step_plan": {
+    "summary": "Fixes unit test regressions introduced by recent version-inference changes by making Prefect’s VCS/version metadata inference more robust (string-vs-enum handling, empty git repos, missing remotes, and missing CI env vars). The deploy CLI’s downstream behavior becomes stable in common test setups like temporary directories and minimal git initialization.",
+    "steps": [
+      {
+        "operation": "Harden git commit message extraction to handle empty/no-commit repositories and git failures gracefully",
+        "file_to_modify": "src/prefect/_versioning.py",
+        "function_to_modify": "get_commit_message_first_line",
+        "reason": "Unit tests commonly create temporary git repos (sometimes with `git init` but no commits). If `git log -1` yields no output or errors, the current `splitlines()[0]`-style logic can raise (IndexError/CalledProcessError), causing deploy/version inference tests to fail nondeterministically.",
+        "side_effects": "May change behavior from raising to returning `None`/empty string (depending on existing return contract). Any callers/tests asserting an exception will need updates; downstream version inference may now proceed further instead of crashing."
+      },
+      {
+        "operation": "Normalize `version_type` inputs and fix enum comparisons to ensure correct inference for both strings and `VersionType` values",
+        "file_to_modify": "src/prefect/_versioning.py",
+        "function_to_modify": "get_inferred_version_info",
+        "reason": "Regression likely stems from comparing a string-typed `version_type` to an enum member using identity (`is`), which will never match when callers pass string values (e.g. from CLI args/config). Converting `version_type` to `VersionType` (when possible) and using equality/robust mapping prevents incorrect branching and spurious `Unknown version type` errors in deploy-related tests.",
+        "side_effects": "Could alter which getter runs for a given input and change error semantics (e.g., from ValueError to fallback/None). Might require minor alignment in CLI deploy behavior and tests if they relied on previous (buggy) branching."
+      },
+      {
+        "operation": "Make git-based version inference resilient when git metadata is missing (no remote, not a repo, git not installed) and return consistent, catchable failure signals",
+        "file_to_modify": "src/prefect/_versioning.py",
+        "function_to_modify": "get_git_version_info",
+        "reason": "Tests often run outside real repositories or with minimal git setup (no `origin`, detached HEAD, shallow data). This helper should not raise unexpected exceptions mid-way; it should either return `None` (so inference can continue to other sources) or raise a consistent exception that `get_inferred_version_info` can handle predictably.",
+        "side_effects": "Downstream commands (notably CLI deploy) may now omit git fields instead of failing. Some tests may need to adjust expected version info content (e.g., absent remote URL / repo URL) if they previously depended on exceptions or partial outputs."
+      },
+      {
+        "operation": "Validate GitHub environment inputs before constructing repo/commit URLs to avoid malformed URLs in test environments",
+        "file_to_modify": "src/prefect/_versioning.py",
+        "function_to_modify": "get_github_version_info",
+        "reason": "In unit tests, CI environment variables like `GITHUB_SERVER_URL` may be unset, leading to malformed URLs (e.g. `None/<repo>/tree/<sha>`). Adding guards (require server URL + repository + sha) and returning `None`/partial info consistently avoids failing assertions and keeps inference behavior aligned with other providers.",
+        "side_effects": "GitHub-derived version info may become `None` more often in local/test runs, shifting inference to git/local/simple strategies. Any tests asserting URL construction with missing env vars will need updates, but behavior will be more predictable across environments."
+      }
+    ]
+  }
+}

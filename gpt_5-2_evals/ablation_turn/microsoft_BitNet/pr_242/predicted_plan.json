@@ -1,0 +1,65 @@
+{
+  "pr_number": 242,
+  "repository": "microsoft/BitNet",
+  "title": "Fix build error with GCC by forcing Clang in CMake on android/aarch64",
+  "body": "GCC does not recognize Clang-specific warning flags like -Wunreachable-code-break and -Wunreachable-code-return, which are passed by upstream submodules (e.g., ggml). This patch forces CMake to use Clang via command-line arguments, avoiding the need to patch nested submodules.\n\nThis resolves compiler errors without modifying submodule source code.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T12:23:53.495981",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "CMakeLists.txt",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "(CMake logic block) project()/compiler selection logic",
+          "class_name": null,
+          "full_name": "(CMake logic block) project()/compiler selection logic",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "src/CMakeLists.txt",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "(CMake logic block) compiler sanity check",
+          "class_name": null,
+          "full_name": "(CMake logic block) compiler sanity check",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Ensure Android/aarch64 builds never use GCC by adding CMake gating that requires Clang at configure time and by tightening existing compiler validation in src/ to reject GNU on that target, avoiding failures from upstream Clang-only warning flags without patching submodules.",
+    "steps": [
+      {
+        "operation": "Add early Android/aarch64 compiler enforcement (require Clang or fail with actionable instructions) before subdirectories are configured",
+        "file_to_modify": "CMakeLists.txt",
+        "function_to_modify": null,
+        "reason": "CMake compiler selection must be finalized at (or before) the top-level configuration so that all subprojects/submodules (e.g., llama.cpp/ggml) inherit a Clang toolchain; otherwise GCC will choke on upstream Clang-only warning flags like -Wunreachable-code-break/-return.",
+        "side_effects": "Android/aarch64 configurations that currently pick up GCC will now fail fast (or be forced) during configure with a clear message; may require users/CI to pass -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ (or NDK clang paths). Non-Android targets should remain unaffected if gated correctly. Re-configure required after changing compilers."
+      },
+      {
+        "operation": "Tighten compiler sanity checks to disallow GNU specifically on Android/aarch64 (keep existing allowances elsewhere)",
+        "file_to_modify": "src/CMakeLists.txt",
+        "function_to_modify": null,
+        "reason": "The src-level check currently allows GCC or Clang, but on Android/aarch64 GCC is not compatible with Clang-specific warning flags coming from upstream submodules; aligning this check with the top-level enforcement prevents late-stage build failures and produces a clearer diagnostic.",
+        "side_effects": "Any build that reaches src/ configuration on Android/aarch64 with GNU will now hard-fail earlier with an explanatory error. May affect downstream consumers that include this project as a subdirectory if they attempt to use GCC for Android/aarch64; documentation/CI may need updates to ensure Clang is selected."
+      }
+    ]
+  }
+}

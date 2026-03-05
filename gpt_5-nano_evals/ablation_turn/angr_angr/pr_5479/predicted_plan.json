@@ -1,0 +1,42 @@
+{
+  "pr_number": 5479,
+  "repository": "angr/angr",
+  "title": "arg_session: Ensure created void* types have arch.",
+  "body": "Root cause: SimCC.arg_session may create a void pointer type for implicit out-params using SimTypePointer(SimTypeBottom()) without attaching an architecture. This leads to a ValueError when size/alignment are queried (size requires an arch). The fix is to attach the current architecture to the void* type at creation time so size/arch-dependent properties are available.\n\nWhat I propose:\n- Change in SimCC.arg_session (return_in_implicit_outparam(ret_ty) branch): construct the void pointer as SimTypePointer(SimTypeBottom()).with_arch(self.arch) so it carries arch information from the start.\n- This is a small, targeted change that preserves existing behavior for other code paths and eliminates the crash when arch is needed to compute size.\n\nImpact:\n- Minimal and backwards-compatible. Only affects the implicit outparam path when ret_ty requires a void* as a placeholder for the return value object.\n- No behavioral change for already-arch-initialized pointers or other paths that don’t exercise this code path.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T12:23:20.010357",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "angr/calling_conventions/__init__.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "arg_session",
+          "class_name": "SimCC",
+          "full_name": "SimCC.arg_session",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Attach architecture to the void* placeholder created in SimCC.arg_session for implicit out-params to prevent arch-dependent crashes while keeping changes minimal.",
+    "steps": [
+      {
+        "operation": "Patch SimCC.arg_session to attach arch to implicit void* placeholder",
+        "file_to_modify": "angr/calling_conventions/__init__.py",
+        "function_to_modify": "SimCC.arg_session",
+        "reason": "Currently the implicit outparam placeholder is created as SimTypePointer(SimTypeBottom()) without an arch, leading to ValueError when size/arch-dependent properties are accessed. Attaching the current architecture ensures size and alignment calculations work reliably across architectures.",
+        "side_effects": "Minimal risk; only affects the implicit outparam path. Downstream code that queries size or alignment will now have arch information. No behavioral change for other code paths. May require running unit tests; consider adding a targeted unit test for the implicit path."
+      }
+    ]
+  }
+}

@@ -1,0 +1,88 @@
+{
+  "pr_number": 152,
+  "repository": "trycua/cua",
+  "title": "[Agent] Improved drag tool and standardized UITARS response",
+  "body": "## Description\nThis PR standardizes the UITARS loop responses to use the AgentResponse format. The Gradio UI now displays AgentResponse objects more clearly to reflect the standardized output.\n\nAlso includes some bugfixes for the drag tool, and allows for dragging along a path with more than two points to support upcoming agent features\n\n\n## Your Task\nWhen you receive a PR title and body, you must:\n\n1. **Analyze the request**: Understand what the PR wants to achieve\n2. **Explore the code**: Use tools to navigate base_project and find relevant files/functions\n3. **Identify targets**: Determine exactly which files and functions need to be modified\n4. **Optimize MASCA**: Produce a version of the MASCA analysis focused on the specific PR",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T14:03:31.859523",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "libs/agent/agent/core/messages.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "convert_uitars_to_agent_response",
+          "class_name": null,
+          "full_name": "convert_uitars_to_agent_response",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "libs/agent/agent/providers/uitars/loop.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "run",
+          "class_name": "UITARSLoop",
+          "full_name": "UITARSLoop.run",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "libs/agent/agent/providers/uitars/tools/drag.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "drag_path",
+          "class_name": "DragTool",
+          "full_name": "DragTool.drag_path",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "This PR standardizes UITARS loop outputs to the AgentResponse format, adds a converter to harmonize payloads for Gradio UI rendering, and enhances the drag tool to support multi-point drag paths for future features. The changes introduce a dedicated UITARS loop, a converter for UITARS-to-AgentResponse translation, and a multi-point drag_path implementation, with careful consideration for tests, compatibility, and UI impact.",
+    "steps": [
+      {
+        "operation": "Add convert_uitars_to_agent_response converter",
+        "file_to_modify": "libs/agent/agent/core/messages.py",
+        "function_to_modify": "convert_uitars_to_agent_response",
+        "reason": "To translate UITARS payloads into the standardized AgentResponse format used by the Gradio UI and downstream agent components; ensures a consistent role/content structure and optional metadata across all UITARS outputs.",
+        "side_effects": "Introduces a new top-level utility; may require unit tests for multiple UITARS payload shapes; may necessitate import adjustments in modules that reference this converter."
+      },
+      {
+        "operation": "Improve DragTool.drag_path to support multi-point dragging",
+        "file_to_modify": "libs/agent/agent/providers/uitars/tools/drag.py",
+        "function_to_modify": "DragTool.drag_path",
+        "reason": "Add multi-point path support and robust error handling to enable advanced drag interactions and upcoming agent features that rely on dragging along paths with more than two points.",
+        "side_effects": "Adds new path-normalization logic and edge-case handling; requires test coverage for multi-point scenarios; may affect integration with UITARS loop and downstream consumers."
+      },
+      {
+        "operation": "Update UITARSLoop.run to emit AgentResponse-formatted outputs (via converter)",
+        "file_to_modify": "libs/agent/agent/providers/uitars/loop.py",
+        "function_to_modify": "UITARSLoop.run",
+        "reason": "Standardize UITARS loop outputs to the AgentResponse format so the Gradio UI renders UITARS results consistently; leverage the converter from step 1 and the enhanced drag tool from step 2 for seamless integration.",
+        "side_effects": "Tests and mocks may need updates; ensures compatibility with non-UITARS payloads; potential minor performance considerations; requires integration tests with the UI."
+      }
+    ]
+  }
+}

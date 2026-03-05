@@ -1,0 +1,35 @@
+{
+  "pr_number": 2303,
+  "repository": "lllyasviel/stable-diffusion-webui-forge",
+  "title": "fix for Florence-2 space",
+  "body": "previously Florence2 had flash attention as a requirement due to an error in *transformers* (issue with packages Forge uses rather than in Forge itself) (https://huggingface.co/microsoft/Florence-2-base/discussions/4#6673ffb9436907f83a8aaf2d); the workaround was to patch the imports to remove it (https://huggingface.co/microsoft/phi-1_5/discussions/72#65a0339f64520347aa3d703c).\r\nAt some point, an update has made this patch unnecessary. And turned it into an error.\r\n\r\nThis PR simply removes the patch.\r\n\r\nNow the Space loads again; tested a couple of functions as working correctly too.\r\n\r\n#2299\r\n\r\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-02-26T01:08:59.486070",
+    "extractor_version": "1.0.0",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "extensions-builtin/forge_space_florence_2/forge_app.py",
+      "status": "modified",
+      "additions": 6,
+      "deletions": 14,
+      "functions_modified": [],
+      "patch": "@@ -19,22 +19,14 @@\n \n from unittest.mock import patch\n from transformers.dynamic_module_utils import get_imports\n-def fixed_get_imports(filename: str | os.PathLike) -> list[str]:\n-    if not str(filename).endswith(\"modeling_florence2.py\"):\n-        return get_imports(filename)\n-    imports = get_imports(filename)\n-    imports.remove(\"flash_attn\")\n-    return imports\n-\n \n with spaces.capture_gpu_object() as gpu_object:\n-    with patch(\"transformers.dynamic_module_utils.get_imports\", fixed_get_imports):\n-        models = {\n-            # 'microsoft/Florence-2-large-ft': AutoModelForCausalLM.from_pretrained('microsoft/Florence-2-large-ft', attn_implementation='sdpa', trust_remote_code=True).to(\"cuda\").eval(),\n-            'microsoft/Florence-2-large': AutoModelForCausalLM.from_pretrained('microsoft/Florence-2-large', trust_remote_code=True).to(\"cuda\").eval(),\n-            # 'microsoft/Florence-2-base-ft': AutoModelForCausalLM.from_pretrained('microsoft/Florence-2-base-ft', trust_remote_code=True).to(\"cuda\").eval(),\n-            # 'microsoft/Florence-2-base': AutoModelForCausalLM.from_pretrained('microsoft/Florence-2-base', trust_remote_code=True).to(\"cuda\").eval(),\n-        }\n+    models = {\n+        # 'microsoft/Florence-2-large-ft': AutoModelForCausalLM.from_pretrained('microsoft/Florence-2-large-ft', attn_implementation='sdpa', trust_remote_code=True).to(\"cuda\").eval(),\n+        'microsoft/Florence-2-large': AutoModelForCausalLM.from_pretrained('microsoft/Florence-2-large', trust_remote_code=True).to(\"cuda\").eval(),\n+        # 'microsoft/Florence-2-base-ft': AutoModelForCausalLM.from_pretrained('microsoft/Florence-2-base-ft', trust_remote_code=True).to(\"cuda\").eval(),\n+        # 'microsoft/Florence-2-base': AutoModelForCausalLM.from_pretrained('microsoft/Florence-2-base', trust_remote_code=True).to(\"cuda\").eval(),\n+    }\n \n     processors = {\n         # 'microsoft/Florence-2-large-ft': AutoProcessor.from_pretrained('microsoft/Florence-2-large-ft', trust_remote_code=True),"
+    }
+  ],
+  "functions_modified": [],
+  "step_plan": {
+    "steps": [
+      {
+        "operation": "Remove the custom `get_imports` monkey-patch and `unittest.mock.patch` wrapper so Florence-2 loads with the upstream Transformers import logic",
+        "file_to_modify": "extensions-builtin/forge_space_florence_2/forge_app.py",
+        "function_to_modify": null,
+        "reason": "The previous workaround intercepted `transformers.dynamic_module_utils.get_imports` to drop `flash_attn` from Florence-2’s dynamic module imports, avoiding a now-resolved upstream Transformers/packaging issue. After dependency updates, this patch became incorrect and started causing errors, so it must be removed to let Transformers handle imports normally and allow the Space to boot.",
+        "side_effects": "Florence-2 (and any other dynamically imported remote-code modules) will now follow the default Transformers import resolution, which may re-introduce optional dependency requirements if future upstream changes regress. Startup behavior and dependency errors will now reflect the real environment (e.g., if `flash_attn` is genuinely required by some model code, loading may fail rather than being silently bypassed)."
+      }
+    ],
+    "summary": "Removes a no-longer-needed Transformers import monkey-patch that stripped `flash_attn` from Florence-2 dynamic imports, which had become an error after upstream updates, allowing the Space to load normally again."
+  }
+}

@@ -1,0 +1,40 @@
+{
+  "pr_number": 31674,
+  "repository": "scikit-learn/scikit-learn",
+  "title": "fix(docs): Fix glossary FIXME tags",
+  "body": "This PR addresses two doc-related issues identified during local builds:\n\n- Fix a misnamed Sphinx extension that breaks local doc builds. The doc/conf.py currently lists the extension 'sphinx-prompt', which is not the correct import name for Sphinx. It should be 'sphinx_prompt'.\n- Clean up an inline FIXME tag in the glossary. The glossary entry for meta-estimators contains a FIXME note about Pipeline and FeatureUnion not cloning contained estimators during fitting. Replace this with a neutral, up-to-date note to avoid stale or confusing TODOs in the glossary.\n\nThese changes are purely documentation/configuration changes and do not modify any runtime logic.\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T13:48:41.511054",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "doc/conf.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    },
+    {
+      "filename": "doc/glossary.rst",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    }
+  ],
+  "step_plan": {
+    "summary": "This PR fixes a misnamed Sphinx extension to restore local doc builds and cleans up a glossary FIXME tag for clarity.",
+    "steps": [
+      {
+        "operation": "Update Sphinx extension name and glossary entry",
+        "file_to_modify": "doc/conf.py",
+        "function_to_modify": "setup",
+        "reason": "Rename the Sphinx extension from 'sphinx-prompt' to 'sphinx_prompt' to match the actual import name and prevent a ModuleNotFoundError during local doc builds. Additionally, replace the FIXME tag in doc/glossary.rst within the meta-estimator entry with a neutral, up-to-date note to improve glossary clarity and avoid stale TODOs.",
+        "side_effects": "Enables local documentation builds (e.g., make html) without extension import errors; glossary now contains a clear, non-declarative note. May require the environment to have the sphinx_prompt package installed. No runtime code changes; affects docs rendering and developer guidance. Ensure a follow-up doc build verifies the fix and confirm no remaining FIXME markers in glossary sections."
+      }
+    ]
+  }
+}

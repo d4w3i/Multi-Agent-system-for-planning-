@@ -1,0 +1,140 @@
+{
+  "pr_number": 2468,
+  "repository": "Netflix/metaflow",
+  "title": "Fixup how commands show up as part of the Runner API",
+  "body": "When injecting commands to the runner, the stubs generated were not accurate or complete. This addresses this issue",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T00:57:45.643900",
+    "extractor_version": "1.0.0",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "metaflow/runner/metaflow_runner.py",
+      "status": "modified",
+      "additions": 16,
+      "deletions": 1,
+      "functions_modified": [
+        {
+          "function_name": "__new__",
+          "class_name": "RunnerMeta",
+          "full_name": "RunnerMeta.__new__",
+          "start_line": 197,
+          "end_line": 227,
+          "lines_changed": [
+            204,
+            206,
+            207,
+            208,
+            209,
+            210,
+            211,
+            212,
+            213,
+            214,
+            215,
+            216,
+            217,
+            218,
+            219
+          ]
+        },
+        {
+          "function_name": "_injected_method",
+          "class_name": "RunnerMeta",
+          "full_name": "RunnerMeta._injected_method",
+          "start_line": 200,
+          "end_line": 221,
+          "lines_changed": [
+            204,
+            206,
+            207,
+            208,
+            209,
+            210,
+            211,
+            212,
+            213,
+            214,
+            215,
+            216,
+            217,
+            218,
+            219
+          ]
+        }
+      ],
+      "patch": "@@ -1,4 +1,5 @@\n import importlib\n+import inspect\n import os\n import sys\n import json\n@@ -200,8 +201,22 @@ def _injected_method(subcommand_name, runner_subcommand):\n             def f(self, *args, **kwargs):\n                 return runner_subcommand(self, *args, **kwargs)\n \n-            f.__doc__ = runner_subcommand.__doc__ or \"\"\n+            f.__doc__ = runner_subcommand.__init__.__doc__ or \"\"\n             f.__name__ = subcommand_name\n+            sig = inspect.signature(runner_subcommand)\n+            # We take all the same parameters except replace the first with\n+            # simple \"self\"\n+            new_parameters = {}\n+            for name, param in sig.parameters.items():\n+                if new_parameters:\n+                    new_parameters[name] = param\n+                else:\n+                    new_parameters[\"self\"] = inspect.Parameter(\n+                        \"self\", inspect.Parameter.POSITIONAL_OR_KEYWORD\n+                    )\n+            f.__signature__ = inspect.Signature(\n+                list(new_parameters.values()), return_annotation=runner_subcommand\n+            )\n \n             return f\n "
+    }
+  ],
+  "functions_modified": [
+    {
+      "function_name": "__new__",
+      "class_name": "RunnerMeta",
+      "full_name": "RunnerMeta.__new__",
+      "start_line": 197,
+      "end_line": 227,
+      "lines_changed": [
+        204,
+        206,
+        207,
+        208,
+        209,
+        210,
+        211,
+        212,
+        213,
+        214,
+        215,
+        216,
+        217,
+        218,
+        219
+      ]
+    },
+    {
+      "function_name": "_injected_method",
+      "class_name": "RunnerMeta",
+      "full_name": "RunnerMeta._injected_method",
+      "start_line": 200,
+      "end_line": 221,
+      "lines_changed": [
+        204,
+        206,
+        207,
+        208,
+        209,
+        210,
+        211,
+        212,
+        213,
+        214,
+        215,
+        216,
+        217,
+        218,
+        219
+      ]
+    }
+  ],
+  "step_plan": {
+    "steps": [
+      {
+        "operation": "Import Python's introspection helper to enable signature rewriting for injected runner subcommands",
+        "file_to_modify": "metaflow/runner/metaflow_runner.py",
+        "function_to_modify": null,
+        "reason": "The generated Runner API stubs were inaccurate/incomplete because the injected methods did not expose a correct callable signature; `inspect` is required to read the subcommand callable signature and construct a new one for the injected wrapper.",
+        "side_effects": "Adds a new standard-library dependency (`inspect`) at import time; may affect runtime environments that aggressively restrict imports, and enables later code to rely on `inspect.signature` behavior for command objects."
+      },
+      {
+        "operation": "Fix injected command method metadata by using the subcommand class' constructor docstring and explicitly setting a correct `__signature__` on the injected wrapper",
+        "file_to_modify": "metaflow/runner/metaflow_runner.py",
+        "function_to_modify": "_injected_method",
+        "reason": "Previously the injected wrapper used `runner_subcommand.__doc__`, which can be empty/incorrect for class-based commands, and it did not set a signature, causing stub generation and introspection to miss/incorrectly represent parameters. Using `runner_subcommand.__init__.__doc__` improves doc accuracy for class commands, and rewriting `__signature__` preserves the subcommand parameters while replacing the first parameter with `self` to match the injected instance method shape.",
+        "side_effects": "Changes what users and tooling see via help/introspection (docstrings, autocompletion, generated stubs). If any downstream code relied on the old docstring source or on the absence of `__signature__`, behavior could change. Also assumes `runner_subcommand` is inspectable by `inspect.signature`; unusual callables may raise errors or yield unexpected parameter sets."
+      }
+    ],
+    "summary": "Improves the Runner API command injection so generated stubs and introspection accurately reflect command constructors and parameter lists by fixing docstring sourcing and explicitly setting wrapper call signatures."
+  }
+}

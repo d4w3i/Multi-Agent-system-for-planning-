@@ -1,0 +1,148 @@
+{
+  "pr_number": 18463,
+  "repository": "PrefectHQ/prefect",
+  "title": "Fix failing unit tests",
+  "body": "These changes fix the failing tests introduced by https://github.com/PrefectHQ/prefect/pull/18450",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T12:07:02.111206",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "src/prefect/settings/legacy.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "value",
+          "class_name": "Setting",
+          "full_name": "Setting.value",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_env_var_to_accessor",
+          "class_name": null,
+          "full_name": "_env_var_to_accessor",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_get_valid_setting_names",
+          "class_name": null,
+          "full_name": "_get_valid_setting_names",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_get_settings_fields",
+          "class_name": null,
+          "full_name": "_get_settings_fields",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "src/prefect/settings/models/root.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "canonical_environment_prefix",
+          "class_name": null,
+          "full_name": "canonical_environment_prefix",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "__getattribute__",
+          "class_name": "Settings",
+          "full_name": "Settings.__getattribute__",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "src/prefect/settings/__init__.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "__getattr__",
+          "class_name": null,
+          "full_name": "__getattr__",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Repair the settings compatibility layer so module-level and instance-level PREFECT_* accessors work with Pydantic v2 alias types. The plan updates legacy mapping helpers to include AliasPath/AliasChoices, makes env-var-to-accessor translation robust, preserves special-casing for test settings, and aligns canonical prefix and deprecated attribute access with test expectations.",
+    "steps": [
+      {
+        "operation": "Extend _get_settings_fields to include non-string alias types (AliasPath / AliasChoices) and register both env-var names and accessor paths",
+        "file_to_modify": "src/prefect/settings/legacy.py",
+        "function_to_modify": "_get_settings_fields",
+        "reason": "Tests and module-level setting access rely on a mapping from env-var style names and accessor strings to Setting objects. The current implementation skips non-str alias entries, which omits valid names introduced by Pydantic v2 (AliasPath/AliasChoices). Converting alias objects to deterministic env-var names and adding both the derived env-var keys and canonical accessor keys will restore compatibility.",
+        "side_effects": "Alters the canonical set of keys returned by the settings compatibility layer. Module-level imports that rely on this mapping (prefect.settings.__getattr__ and other helpers) will see additional keys; tests that assert exact key lists should be updated. Downstream code that depended on the previous incomplete mapping will now resolve previously-missing settings. Ensure determinism to avoid flakiness across runs and Pydantic versions."
+      },
+      {
+        "operation": "Update _get_valid_setting_names to include derived env-var names from AliasPath/AliasChoices",
+        "file_to_modify": "src/prefect/settings/legacy.py",
+        "function_to_modify": "_get_valid_setting_names",
+        "reason": "Module-level __getattr__ and import-time checks use _get_valid_setting_names to decide whether a given symbol (e.g., PREFECT_SOMETHING) is a valid setting name. Because non-str alias types were previously ignored, valid env-var forms were missing. Including alias-derived names ensures imports and getattr checks succeed.",
+        "side_effects": "Changes the set of names considered valid for module-level attribute access. Import-time behavior for code that tries to import a PREFECT_* constant may change (previous ImportError -> now resolved). Tests that assert the exact SUPPORTED_SETTINGS set should be re-run/updated. Potential minor impact on auto-completion or introspection utilities that list settings names."
+      },
+      {
+        "operation": "Make _env_var_to_accessor robust: consult the new settings fields mapping, handle alias path forms, and fall back deterministically",
+        "file_to_modify": "src/prefect/settings/legacy.py",
+        "function_to_modify": "_env_var_to_accessor",
+        "reason": "_env_var_to_accessor must translate environment-style names into the correct nested accessor path used by the Settings model. With alias/path alias support added, the helper needs to first consult the mapping produced by _get_settings_fields, handle AliasPath-derived names, and otherwise fall back to a deterministic prefix-stripping strategy. This will prevent mismatches between reported valid names and the accessor that code uses to retrieve values.",
+        "side_effects": "Changes how environment variable names are translated to accessors; code that relied on the old fallback behavior may observe different accessor strings. Tests expecting particular accessor outputs will need verification. Ensures consistent interaction between legacy compatibility functions and the Pydantic-backed Settings model."
+      },
+      {
+        "operation": "Adjust Setting.value special-case logic to preserve expected precedence for test-related settings",
+        "file_to_modify": "src/prefect/settings/legacy.py",
+        "function_to_modify": "Setting.value",
+        "reason": "There are targeted tests for test-specific settings (e.g., PREFECT_TEST_SETTING, PREFECT_TESTING_TEST_SETTING) that expect particular precedence (environment overrides, defaults, or testing overrides). After modifying alias handling and accessor resolution, ensure that Setting.value still respects the intended precedence and that the special-case paths remain correct.",
+        "side_effects": "May change effective values returned for a small number of test-related settings; this can alter test outcomes if precedence was previously different. Broad API behavior of Setting.value could be affected for code that relied on the old special-case semantics, so validate with full test runs. No change to public method signature is intended, only internal precedence handling."
+      },
+      {
+        "operation": "Normalize canonical_environment_prefix to return the expected canonical prefix and ensure its signature/behavior matches callers",
+        "file_to_modify": "src/prefect/settings/models/root.py",
+        "function_to_modify": "canonical_environment_prefix",
+        "reason": "Tests and compatibility helpers expect a stable canonical environment prefix (commonly 'PREFECT_') from this helper. If the helper currently returns values in a way that differs from tests (e.g., returns None, empty string, or requires args), normalize it to return the model-configured env_prefix or a sensible default string and keep the signature compatible with existing callers.",
+        "side_effects": "May change what callers receive when they request the canonical prefix; code that dynamically composes env-var names from this helper will be affected. Must ensure no callers relied on previous edge-case behavior (like a None). Running the full test suite will confirm no downstream breakage."
+      },
+      {
+        "operation": "Update Settings.__getattribute__ (deprecation accessor) to use the improved mapping and emit the exact expected DeprecationWarning message",
+        "file_to_modify": "src/prefect/settings/models/root.py",
+        "function_to_modify": "Settings.__getattribute__",
+        "reason": "The deprecated attribute-access path (Settings().PREFECT_*) is heavily exercised by tests that assert both returned values and the precise warning text. After fixing alias and mapping functions, ensure the Settings instance-level attribute lookup uses _env_var_to_accessor/_get_settings_fields consistently and produces the same deprecation message format that tests expect.",
+        "side_effects": "Alters instance attribute lookup for PREFECT_* names. If the warning message text or resolution behavior changes, tests that assert the warning contents will fail. Consumers that relied on the deprecated behavior should be directed to use the new accessors; this change only affects compatibility plumbing and should not change production APIs outside the deprecation surface."
+      },
+      {
+        "operation": "Update module-level __getattr__ to rely on the corrected valid-names set and fields mapping and to return properly-constructed Setting objects",
+        "file_to_modify": "src/prefect/settings/__init__.py",
+        "function_to_modify": "__getattr__",
+        "reason": "Module-level attribute access (e.g., from prefect.settings import PREFECT_FOO) is used directly in many tests. With the improved name/field mappings and accessor translation, __getattr__ must query the updated helpers and return Setting instances whose .accessor and .name align with tests' expectations. This finalizes the compatibility fixes so import-time accesses succeed.",
+        "side_effects": "Changes import-time behavior for PREFECT_* attributes. Tests that previously failed due to missing names should now import correctly. If __getattr__'s contract (return type, errors raised, or warning emission) changes, dependent code and tests may need adjustment. Ensure that module docstrings/introspection still behave as before for user-facing discoverability."
+      }
+    ]
+  }
+}

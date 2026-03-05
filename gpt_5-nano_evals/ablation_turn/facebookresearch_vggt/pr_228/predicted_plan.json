@@ -1,0 +1,42 @@
+{
+  "pr_number": 228,
+  "repository": "facebookresearch/vggt",
+  "title": "Fix a typo in batch_np_matrix_to_pycolmap",
+  "body": "Bug: In batch_np_matrix_to_pycolmap, reproj_mask is only defined when max_reproj_error is not None. If max_reproj_error is None, reproj_mask remains undefined and the line that combines masks can raise UnboundLocalError.\n\nFix: Initialize reproj_mask to None before the conditional that may define it. This ensures the subsequent logic handling masks works whether or not max_reproj_error is provided.\n\nImpact: This preserves existing behavior while making the function robust when max_reproj_error is None. No change in public API or expected outputs beyond preventing a crash. Consider adding a small unit test that exercises both code paths (max_reproj_error=None and max_reproj_error set) for future regression protection.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T12:45:26.115484",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "base_project/context_output/np_to_pycolmap.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "batch_np_matrix_to_pycolmap",
+          "class_name": "base_project/context_output/np_to_pycolmap",
+          "full_name": "base_project/context_output/np_to_pycolmap.py.batch_np_matrix_to_pycolmap",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Fix a bug in batch_np_matrix_to_pycolmap by initializing reproj_mask to None to prevent an UnboundLocalError when max_reproj_error is None, preserving behavior and enabling robust handling across both code paths.",
+    "steps": [
+      {
+        "operation": "Initialize reproj_mask to None before the max_reproj_error conditional",
+        "file_to_modify": "base_project/context_output/np_to_pycolmap.py",
+        "function_to_modify": "batch_np_matrix_to_pycolmap",
+        "reason": "reproj_mask is referenced outside the conditional where it's defined; initializing it ensures it's always defined regardless of max_reproj_error, preventing UnboundLocalError and preserving existing behavior",
+        "side_effects": "No API changes; may require adding or updating unit tests to cover both branches; downstream code should remain unaffected and outputs unchanged when max_reproj_error is provided"
+      }
+    ]
+  }
+}

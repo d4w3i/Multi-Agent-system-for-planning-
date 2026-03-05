@@ -1,0 +1,64 @@
+{
+    "repository": "microsoft/BitNet",
+    "pull_request_number": 242,
+    "title": "Fix build error with GCC by forcing Clang in CMake on android/aarch64",
+    "body": "GCC does not recognize Clang-specific warning flags like -Wunreachable-code-break and -Wunreachable-code-return, which are passed by upstream submodules (e.g., ggml). This patch forces CMake to use Clang via command-line arguments, avoiding the need to patch nested submodules.\r\n\r\nThis resolves compiler errors without modifying submodule source code.",
+    "pr_date": "2025-05-01T05:10:22Z",
+    "source_branch": "gcc-fix",
+    "language": "en",
+    "keywords_detected": {
+        "branch": [
+            "fix"
+        ],
+        "requirement": [
+            "fix",
+            "build"
+        ],
+        "body": [
+            "resolve"
+        ]
+    },
+    "number_of_links_in_pr": 0,
+    "base_sha": "c17d1c5d77c48af7d6fb29c9f28a3da0277fc394",
+    "last_commit_sha": "71c1ef539d642c1ae0943cb4c12fcf23291c4acf",
+    "diff_between_base_and_last": [
+        {
+            "sha": "dfad6c3e700f71a6450de04070bf1ca11e70f91f",
+            "filename": "setup_env.py",
+            "status": "modified",
+            "additions": 2,
+            "deletions": 2,
+            "changes": 4,
+            "blob_url": "https://github.com/microsoft/BitNet/blob/71c1ef539d642c1ae0943cb4c12fcf23291c4acf/setup_env.py",
+            "raw_url": "https://github.com/microsoft/BitNet/raw/71c1ef539d642c1ae0943cb4c12fcf23291c4acf/setup_env.py",
+            "contents_url": "https://api.github.com/repos/microsoft/BitNet/contents/setup_env.py?ref=71c1ef539d642c1ae0943cb4c12fcf23291c4acf",
+            "patch": "@@ -199,7 +199,7 @@ def compile():\n         logging.error(f\"Arch {arch} is not supported yet\")\n         exit(0)\n     logging.info(\"Compiling the code using CMake.\")\n-    run_command([\"cmake\", \"-B\", \"build\", *COMPILER_EXTRA_ARGS[arch], *OS_EXTRA_ARGS.get(platform.system(), [])], log_step=\"generate_build_files\")\n+    run_command([\"cmake\", \"-B\", \"build\", *COMPILER_EXTRA_ARGS[arch], *OS_EXTRA_ARGS.get(platform.system(), []), \"-DCMAKE_C_COMPILER=clang\", \"-DCMAKE_CXX_COMPILER=clang++\"], log_step=\"generate_build_files\")\n     # run_command([\"cmake\", \"--build\", \"build\", \"--target\", \"llama-cli\", \"--config\", \"Release\"])\n     run_command([\"cmake\", \"--build\", \"build\", \"--config\", \"Release\"], log_step=\"compile\")\n \n@@ -229,4 +229,4 @@ def signal_handler(sig, frame):\n     args = parse_args()\n     Path(args.log_dir).mkdir(parents=True, exist_ok=True)\n     logging.basicConfig(level=logging.INFO)\n-    main()\n\\ No newline at end of file\n+    main()"
+        }
+    ],
+    "commits": [
+        {
+            "sha": "71c1ef539d642c1ae0943cb4c12fcf23291c4acf",
+            "commit_date": "2025-05-01T05:09:17Z",
+            "message": "Fix build error with GCC by forcing Clang compiler in CMake on android/aarch64\n\nGCC does not recognize Clang-specific warning flags like\r\n-Wunreachable-code-break and -Wunreachable-code-return, which are passed\r\nby upstream submodules (e.g., ggml). This patch forces CMake to use Clang\r\nvia command-line arguments, avoiding the need to patch nested submodules.\r\n\r\nThis resolves compiler errors without modifying submodule source code.",
+            "number_of_links_in_commit": 0,
+            "files_changed_count": 1,
+            "files": [
+                {
+                    "sha": "dfad6c3e700f71a6450de04070bf1ca11e70f91f",
+                    "filename": "setup_env.py",
+                    "status": "modified",
+                    "additions": 2,
+                    "deletions": 2,
+                    "changes": 4,
+                    "blob_url": "https://github.com/microsoft/BitNet/blob/71c1ef539d642c1ae0943cb4c12fcf23291c4acf/setup_env.py",
+                    "raw_url": "https://github.com/microsoft/BitNet/raw/71c1ef539d642c1ae0943cb4c12fcf23291c4acf/setup_env.py",
+                    "contents_url": "https://api.github.com/repos/microsoft/BitNet/contents/setup_env.py?ref=71c1ef539d642c1ae0943cb4c12fcf23291c4acf",
+                    "patch": "@@ -199,7 +199,7 @@ def compile():\n         logging.error(f\"Arch {arch} is not supported yet\")\n         exit(0)\n     logging.info(\"Compiling the code using CMake.\")\n-    run_command([\"cmake\", \"-B\", \"build\", *COMPILER_EXTRA_ARGS[arch], *OS_EXTRA_ARGS.get(platform.system(), [])], log_step=\"generate_build_files\")\n+    run_command([\"cmake\", \"-B\", \"build\", *COMPILER_EXTRA_ARGS[arch], *OS_EXTRA_ARGS.get(platform.system(), []), \"-DCMAKE_C_COMPILER=clang\", \"-DCMAKE_CXX_COMPILER=clang++\"], log_step=\"generate_build_files\")\n     # run_command([\"cmake\", \"--build\", \"build\", \"--target\", \"llama-cli\", \"--config\", \"Release\"])\n     run_command([\"cmake\", \"--build\", \"build\", \"--config\", \"Release\"], log_step=\"compile\")\n \n@@ -229,4 +229,4 @@ def signal_handler(sig, frame):\n     args = parse_args()\n     Path(args.log_dir).mkdir(parents=True, exist_ok=True)\n     logging.basicConfig(level=logging.INFO)\n-    main()\n\\ No newline at end of file\n+    main()"
+                }
+            ]
+        }
+    ],
+    "pull_request_url": "https://github.com/microsoft/BitNet/pull/242",
+    "commits_url": "https://github.com/microsoft/BitNet/pull/242/commits",
+    "files_url": "https://github.com/microsoft/BitNet/pull/242/files"
+}

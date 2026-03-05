@@ -1,0 +1,65 @@
+{
+    "repository": "Mikubill/sd-webui-controlnet",
+    "pull_request_number": 2952,
+    "title": "Fix issue with > in pip cmd causing file creation",
+    "body": "### Problem Summary\n\nWhen starting the Web UI, the `install.py` script reads `requirements.txt`. If a package version uses \">\", it is treated as a redirection in `pip install`, creating an unintended file.\n\n### Steps to Reproduce\n\nRunning `webui.bat` or `webui.sh` creates a file named \"=4.8.0\" due to \"opencv-python>=4.8.0\" in `requirements.txt` being misinterpreted.\n\n### Fix\n\nI enclosed the package and version specification in double quotes in `install.py`.",
+    "pr_date": "2024-06-09T10:24:55Z",
+    "source_branch": "fix-pip-redirect",
+    "language": "en",
+    "keywords_detected": {
+        "branch": [
+            "fix"
+        ],
+        "requirement": [
+            "fix"
+        ],
+        "body": [
+            "requirement",
+            "create",
+            "fix"
+        ]
+    },
+    "number_of_links_in_pr": 0,
+    "base_sha": "bb3c2a9bf7329c7d39e7b8b85a606cd5d567e57a",
+    "last_commit_sha": "4102788cb974907e9d4cc6f13a65a8600744b714",
+    "diff_between_base_and_last": [
+        {
+            "sha": "9c675f2ac80da62ed5265744b5b82c46c76e4b4d",
+            "filename": "install.py",
+            "status": "modified",
+            "additions": 4,
+            "deletions": 4,
+            "changes": 8,
+            "blob_url": "https://github.com/Mikubill/sd-webui-controlnet/blob/4102788cb974907e9d4cc6f13a65a8600744b714/install.py",
+            "raw_url": "https://github.com/Mikubill/sd-webui-controlnet/raw/4102788cb974907e9d4cc6f13a65a8600744b714/install.py",
+            "contents_url": "https://api.github.com/repos/Mikubill/sd-webui-controlnet/contents/install.py?ref=4102788cb974907e9d4cc6f13a65a8600744b714",
+            "patch": "@@ -38,7 +38,7 @@ def install_requirements(req_file):\n                     installed_version = get_installed_version(package_name)\n                     if installed_version != package_version:\n                         launch.run_pip(\n-                            f\"install -U {package}\",\n+                            f'install -U \"{package}\"',\n                             f\"sd-webui-controlnet requirement: changing {package_name} version from {installed_version} to {package_version}\",\n                         )\n                 elif \">=\" in package:\n@@ -48,7 +48,7 @@ def install_requirements(req_file):\n                         installed_version\n                     ) < comparable_version(package_version):\n                         launch.run_pip(\n-                            f\"install -U {package}\",\n+                            f'install -U \"{package}\"',\n                             f\"sd-webui-controlnet requirement: changing {package_name} version from {installed_version} to {package_version}\",\n                         )\n                 elif \"<=\" in package:\n@@ -58,12 +58,12 @@ def install_requirements(req_file):\n                         installed_version\n                     ) > comparable_version(package_version):\n                         launch.run_pip(\n-                            f\"install {package_name}=={package_version}\",\n+                            f'install \"{package_name}=={package_version}\"',\n                             f\"sd-webui-controlnet requirement: changing {package_name} version from {installed_version} to {package_version}\",\n                         )\n                 elif not launch.is_installed(extract_base_package(package)):\n                     launch.run_pip(\n-                        f\"install {package}\",\n+                        f'install \"{package}\"',\n                         f\"sd-webui-controlnet requirement: {package}\",\n                     )\n             except Exception as e:"
+        }
+    ],
+    "commits": [
+        {
+            "sha": "4102788cb974907e9d4cc6f13a65a8600744b714",
+            "commit_date": "2024-06-09T09:47:23Z",
+            "message": "Fix issue with > in pip cmd causing file creation",
+            "number_of_links_in_commit": 0,
+            "files_changed_count": 1,
+            "files": [
+                {
+                    "sha": "9c675f2ac80da62ed5265744b5b82c46c76e4b4d",
+                    "filename": "install.py",
+                    "status": "modified",
+                    "additions": 4,
+                    "deletions": 4,
+                    "changes": 8,
+                    "blob_url": "https://github.com/Mikubill/sd-webui-controlnet/blob/4102788cb974907e9d4cc6f13a65a8600744b714/install.py",
+                    "raw_url": "https://github.com/Mikubill/sd-webui-controlnet/raw/4102788cb974907e9d4cc6f13a65a8600744b714/install.py",
+                    "contents_url": "https://api.github.com/repos/Mikubill/sd-webui-controlnet/contents/install.py?ref=4102788cb974907e9d4cc6f13a65a8600744b714",
+                    "patch": "@@ -38,7 +38,7 @@ def install_requirements(req_file):\n                     installed_version = get_installed_version(package_name)\n                     if installed_version != package_version:\n                         launch.run_pip(\n-                            f\"install -U {package}\",\n+                            f'install -U \"{package}\"',\n                             f\"sd-webui-controlnet requirement: changing {package_name} version from {installed_version} to {package_version}\",\n                         )\n                 elif \">=\" in package:\n@@ -48,7 +48,7 @@ def install_requirements(req_file):\n                         installed_version\n                     ) < comparable_version(package_version):\n                         launch.run_pip(\n-                            f\"install -U {package}\",\n+                            f'install -U \"{package}\"',\n                             f\"sd-webui-controlnet requirement: changing {package_name} version from {installed_version} to {package_version}\",\n                         )\n                 elif \"<=\" in package:\n@@ -58,12 +58,12 @@ def install_requirements(req_file):\n                         installed_version\n                     ) > comparable_version(package_version):\n                         launch.run_pip(\n-                            f\"install {package_name}=={package_version}\",\n+                            f'install \"{package_name}=={package_version}\"',\n                             f\"sd-webui-controlnet requirement: changing {package_name} version from {installed_version} to {package_version}\",\n                         )\n                 elif not launch.is_installed(extract_base_package(package)):\n                     launch.run_pip(\n-                        f\"install {package}\",\n+                        f'install \"{package}\"',\n                         f\"sd-webui-controlnet requirement: {package}\",\n                     )\n             except Exception as e:"
+                }
+            ]
+        }
+    ],
+    "pull_request_url": "https://github.com/Mikubill/sd-webui-controlnet/pull/2952",
+    "commits_url": "https://github.com/Mikubill/sd-webui-controlnet/pull/2952/commits",
+    "files_url": "https://github.com/Mikubill/sd-webui-controlnet/pull/2952/files"
+}

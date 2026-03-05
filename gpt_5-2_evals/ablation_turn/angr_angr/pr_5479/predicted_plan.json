@@ -1,0 +1,87 @@
+{
+  "pr_number": 5479,
+  "repository": "angr/angr",
+  "title": "arg_session: Ensure created void* types have arch.",
+  "body": "This PR fixes the following exception:\n\n```python\nFile F:\\angr\\angr\\angr\\calling_conventions.py:878, in SimCC.arg_locs(self, prototype)\n    876 if prototype._arch is None:\n    877     prototype = prototype.with_arch(self.arch)\n--> 878 session = self.arg_session(prototype.returnty)\n    879 return [self.next_arg(session, arg_ty) for arg_ty in prototype.args]\n\nFile F:\\angr\\angr\\angr\\calling_conventions.py:728, in SimCC.arg_session(self, ret_ty)\n    726 session = self.ArgSession(self)\n    727 if self.return_in_implicit_outparam(ret_ty):\n--> 728     self.next_arg(session, SimTypePointer(SimTypeBottom()))\n    729 return session\n\nFile F:\\angr\\angr\\angr\\calling_conventions.py:1614, in SimCCSystemVAMD64.next_arg(self, session, arg_type)\n   1612     arg_type = SimTypePointer(arg_type.elem_type).with_arch(self.arch)\n   1613 state = session.getstate()\n-> 1614 classification = self._classify(arg_type)\n   1615 try:\n   1616     mapped_classes = []\n\nFile F:\\angr\\angr\\angr\\calling_conventions.py:1678, in SimCCSystemVAMD64._classify(self, ty, chunksize)\n   1676     chunksize = self.arch.bytes\n   1677 # treat BOT as INTEGER\n-> 1678 nchunks = 1 if isinstance(ty, SimTypeBottom) else (ty.size // self.arch.byte_width + chunksize - 1) // chunksize\n   1679 if isinstance(ty, (SimTypeFloat,)):\n   1680     return [\"SSE\"] + [\"SSEUP\"] * (nchunks - 1)\n\nFile F:\\angr\\angr\\angr\\sim_type.py:778, in SimTypePointer.size(self)\n    775 @property\n    776 def size(self):\n    777     if self._arch is None:\n--> 778         raise ValueError(\"Can't tell my size without an arch!\")\n    779     return self._arch.bits\n\nValueError: Can't tell my size without an arch!\n```\n\nExplore the source code to identify the files and functions to modify.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T12:03:35.090715",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "angr/calling_conventions.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "arg_session",
+          "class_name": "SimCC",
+          "full_name": "SimCC.arg_session",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "return_val",
+          "class_name": "SimCC",
+          "full_name": "SimCC.return_val",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "next_arg",
+          "class_name": "SimCCSystemVAMD64",
+          "full_name": "SimCCSystemVAMD64.next_arg",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_classify",
+          "class_name": "SimCCSystemVAMD64",
+          "full_name": "SimCCSystemVAMD64._classify",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Fix a crash in calling convention argument layout by ensuring internally synthesized implicit-outparam pointer types (void*/BOT*) are created with the current architecture before any size/classification logic runs, especially for SysV AMD64.",
+    "steps": [
+      {
+        "operation": "Attach the calling convention arch to the synthesized implicit sret/outparam pointer type before passing it to next_arg()",
+        "file_to_modify": "angr/calling_conventions.py",
+        "function_to_modify": "SimCC.arg_session",
+        "reason": "SimCC.arg_session() currently constructs SimTypePointer(SimTypeBottom()) without an arch, but downstream CC implementations (e.g., SysV AMD64) may query ty.size during classification/layout, which raises when _arch is None. Creating the temporary void*/BOT* with .with_arch(self.arch) ensures .size is always available and preserves ABI behavior.",
+        "side_effects": "May slightly change internal type objects (they become arch-bound) but should not change computed arg locations/ABI decisions; prevents ValueError in arg_locs() for implicit-outparam returns. Any tests that assert exact repr/identity of the synthesized type may need updates."
+      },
+      {
+        "operation": "Audit and fix any similar implicit-outparam construction in return value handling by ensuring synthesized pointer types are arch-bound",
+        "file_to_modify": "angr/calling_conventions.py",
+        "function_to_modify": "SimCC.return_val",
+        "reason": "SimCC.return_val() has an implicit-outparam-related path that can also synthesize a SimTypePointer(SimTypeBottom()) (or similar placeholder) and may trigger the same missing-arch size query in some return-path layouts. Normalizing the internally created type with self.arch prevents latent crashes beyond the arg_session() traceback.",
+        "side_effects": "Could affect return-value layout code paths that previously relied on arch-less placeholder types; should be behavior-preserving for ABI, but may surface other callers that were unintentionally passing arch-less types around."
+      },
+      {
+        "operation": "Optionally add a defensive normalization in SysV AMD64 next_arg() for any arch-less arg types before classification",
+        "file_to_modify": "angr/calling_conventions.py",
+        "function_to_modify": "SimCCSystemVAMD64.next_arg",
+        "reason": "Even with the primary fix, other call sites may still pass arch-less SimTypes into next_arg(). Adding a narrow guard (e.g., if arg_type._arch is None: arg_type = arg_type.with_arch(self.arch)) makes SysV AMD64 robust and prevents future regressions where _classify() triggers ty.size on arch-less types.",
+        "side_effects": "Slightly broadens behavior by auto-attaching arch in this CC’s argument mapping; should be safe, but could hide bugs where callers expected an exception for missing arch. May require adjusting or adding tests for normalization behavior."
+      },
+      {
+        "operation": "Ensure classification never reads .size from an arch-less type (validate/normalize at entry, or provide clearer error)",
+        "file_to_modify": "angr/calling_conventions.py",
+        "function_to_modify": "SimCCSystemVAMD64._classify",
+        "reason": "_classify() directly computes nchunks using ty.size and will raise if ty lacks arch. Adding a small entry normalization/validation (preferably normalization to self.arch when possible) makes the failure mode impossible (or at least clearer) and complements the upstream fix to keep the classifier resilient.",
+        "side_effects": "May change exception behavior (fewer ValueErrors; possibly different error messages). If normalization is added here, it could overlap with next_arg()’s guard; ensure no double-wrapping or unintended arch overriding occurs."
+      }
+    ]
+  }
+}

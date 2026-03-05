@@ -1,0 +1,139 @@
+{
+  "pr_number": 1362,
+  "repository": "maurosoria/dirsearch",
+  "title": "python cleanup",
+  "body": "Description\r\n---------------\r\n\r\n`lib/core/dictionary.py` -> fix typo, remove redundant parenthesis since you are returning a tuple anyway\r\n`lib/core/structures.py` -> remove redundant class parenthesis (not needed in python3)\r\n`lib/reports/html_report.py` -> simplify comparison statements",
+  "extraction_metadata": {
+    "extracted_at": "2026-02-26T01:09:21.001377",
+    "extractor_version": "1.0.0",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "lib/core/dictionary.py",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 2,
+      "functions_modified": [
+        {
+          "function_name": "__getstate__",
+          "class_name": "Dictionary",
+          "full_name": "Dictionary.__getstate__",
+          "start_line": 81,
+          "end_line": 82,
+          "lines_changed": [
+            82
+          ]
+        },
+        {
+          "function_name": "generate",
+          "class_name": "Dictionary",
+          "full_name": "Dictionary.generate",
+          "start_line": 93,
+          "end_line": 193,
+          "lines_changed": [
+            154
+          ]
+        }
+      ],
+      "patch": "@@ -79,7 +79,7 @@ def __contains__(self, item):\n         return item in self._items\n \n     def __getstate__(self):\n-        return (self._items, self._index)\n+        return self._items, self._index\n \n     def __setstate__(self, state):\n         self._items, self._index = state\n@@ -151,7 +151,7 @@ def generate(self, files=[], is_blacklist=False):\n                         options[\"overwrite_extensions\"]\n                         and not line.endswith(options[\"extensions\"] + EXCLUDE_OVERWRITE_EXTENSIONS)\n                         # Paths that have queries in wordlist are usually used for exploiting\n-                        # diclosed vulnerabilities of services, skip such paths\n+                        # disclosed vulnerabilities of services, skip such paths\n                         and \"?\" not in line\n                         and \"#\" not in line\n                         and re.search(EXTENSION_RECOGNITION_REGEX, line)"
+    },
+    {
+      "filename": "lib/core/structures.py",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "functions_modified": [],
+      "patch": "@@ -39,7 +39,7 @@ def _convert_keys(self):\n             self.__setitem__(key, value)\n \n \n-class OrderedSet():\n+class OrderedSet:\n     def __init__(self, items=[]):\n         self._data = dict()\n "
+    },
+    {
+      "filename": "lib/reports/html_report.py",
+      "status": "modified",
+      "additions": 3,
+      "deletions": 3,
+      "functions_modified": [
+        {
+          "function_name": "generate",
+          "class_name": "HTMLReport",
+          "full_name": "HTMLReport.generate",
+          "start_line": 30,
+          "end_line": 59,
+          "lines_changed": [
+            41,
+            43,
+            45
+          ]
+        }
+      ],
+      "patch": "@@ -38,11 +38,11 @@ def generate(self, entries):\n \n         for entry in entries:\n             status_color_class = \"\"\n-            if entry.status >= 200 and entry.status <= 299:\n+            if 200 <= entry.status <= 299:\n                 status_color_class = \"text-success\"\n-            elif entry.status >= 300 and entry.status <= 399:\n+            elif 300 <= entry.status <= 399:\n                 status_color_class = \"text-warning\"\n-            elif entry.status >= 400 and entry.status <= 599:\n+            elif 400 <= entry.status <= 599:\n                 status_color_class = \"text-danger\"\n \n             results.append("
+    }
+  ],
+  "functions_modified": [
+    {
+      "function_name": "__getstate__",
+      "class_name": "Dictionary",
+      "full_name": "Dictionary.__getstate__",
+      "start_line": 81,
+      "end_line": 82,
+      "lines_changed": [
+        82
+      ]
+    },
+    {
+      "function_name": "generate",
+      "class_name": "Dictionary",
+      "full_name": "Dictionary.generate",
+      "start_line": 93,
+      "end_line": 193,
+      "lines_changed": [
+        154
+      ]
+    },
+    {
+      "function_name": "generate",
+      "class_name": "HTMLReport",
+      "full_name": "HTMLReport.generate",
+      "start_line": 30,
+      "end_line": 59,
+      "lines_changed": [
+        41,
+        43,
+        45
+      ]
+    }
+  ],
+  "step_plan": {
+    "steps": [
+      {
+        "operation": "Refactor object serialization return to a bare tuple (remove redundant parentheses) in the pickling hook",
+        "file_to_modify": "lib/core/dictionary.py",
+        "function_to_modify": "__getstate__",
+        "reason": "Parentheses are unnecessary when returning a tuple; returning `self._items, self._index` is equivalent but cleaner and aligns with the PR’s cleanup goal.",
+        "side_effects": "No behavioral change expected, but any code relying on pickling/unpickling this object will still exercise `__getstate__`/`__setstate__`; if downstream code introspects the exact returned type/shape, it remains the same tuple of two elements."
+      },
+      {
+        "operation": "Fix typo in an inline comment inside path filtering logic",
+        "file_to_modify": "lib/core/dictionary.py",
+        "function_to_modify": "generate",
+        "reason": "Correct a misspelling (“diclosed” -> “disclosed”) to improve code readability/maintainability without changing runtime behavior.",
+        "side_effects": "None at runtime; only affects developer-facing documentation/comment clarity."
+      },
+      {
+        "operation": "Remove redundant empty base-class parentheses from a class definition",
+        "file_to_modify": "lib/core/structures.py",
+        "function_to_modify": null,
+        "reason": "In Python 3, `class OrderedSet:` and `class OrderedSet():` are equivalent; removing parentheses is a stylistic cleanup consistent with modern Python conventions.",
+        "side_effects": "No functional change expected; any tooling that diffs class declarations or enforces style may be affected (in a positive way), but runtime behavior and MRO remain unchanged."
+      },
+      {
+        "operation": "Simplify numeric range comparisons using chained comparisons",
+        "file_to_modify": "lib/reports/html_report.py",
+        "function_to_modify": "generate",
+        "reason": "Chained comparisons (e.g., `200 <= status <= 299`) are more idiomatic, concise, and reduce repetition while preserving the same boolean logic for status code classification.",
+        "side_effects": "Behavior should remain identical; if `entry.status` can be a non-numeric type or a type with unusual comparison semantics, evaluation order/short-circuiting is similar but could reveal type issues earlier."
+      }
+    ],
+    "summary": "This PR performs small Python 3 style cleanups: removes redundant tuple/class parentheses, fixes a comment typo, and simplifies HTTP status range checks using chained comparisons."
+  }
+}

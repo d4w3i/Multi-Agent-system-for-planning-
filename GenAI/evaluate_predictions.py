@@ -798,7 +798,13 @@ def print_pr_score(score: PRScore, verbose: bool = True):
         print(f"   {Fore.RED}❌ Poor prediction{Style.RESET_ALL}")
 
 
-def evaluate_batch(base_path: Path, limit: Optional[int] = None, compute_semantic: bool = False, skip_existing: bool = False) -> BatchReport:
+def evaluate_batch(
+    base_path: Path,
+    limit: Optional[int] = None,
+    compute_semantic: bool = False,
+    skip_existing: bool = False,
+    ablation: bool = False,
+) -> BatchReport:
     """
     Evaluate all PRs in a directory.
 
@@ -806,14 +812,24 @@ def evaluate_batch(base_path: Path, limit: Optional[int] = None, compute_semanti
         base_path: Base directory containing the PRs
         limit: Maximum number of PRs to evaluate
         compute_semantic: If True, also compute semantic similarity (requires API key)
+        skip_existing: If True, skip PRs that already have a valid evaluation_score.json
+        ablation: If True, evaluate results from pr_dir/evals/ablation_turn/ instead of pr_dir/
     """
     report = BatchReport(timestamp=datetime.now().isoformat())
 
-    # Find all PRs that have ground_truth.json (with or without predicted_plan.json)
-    pr_dirs = sorted({
-        gt_path.parent
-        for gt_path in base_path.rglob("ground_truth.json")
-    })
+    # Find all relevant directories that have ground_truth.json
+    if ablation:
+        # base_path IS the ablation directory — no filtering needed
+        pr_dirs = sorted({
+            gt_path.parent
+            for gt_path in base_path.rglob("ground_truth.json")
+        })
+    else:
+        pr_dirs = sorted({
+            gt_path.parent
+            for gt_path in base_path.rglob("ground_truth.json")
+            if "/evals/ablation_turn/" not in str(gt_path)
+        })
 
     if skip_existing:
         def _has_valid_score(d: Path) -> bool:
@@ -1034,6 +1050,12 @@ Metrics:
         help="Also compute semantic similarity using OpenAI embeddings (requires OPENAI_API_KEY)"
     )
 
+    parser.add_argument(
+        "--ablation",
+        action="store_true",
+        help="Evaluate ablation results stored in pr_dir/evals/ablation_turn/ (only with --batch)"
+    )
+
     args = parser.parse_args()
     path = Path(args.path).resolve()
 
@@ -1049,7 +1071,7 @@ Metrics:
     if args.batch:
         # Batch evaluation
         print(f"{Fore.CYAN}🔍 Searching for PRs with predicted_plan.json and ground_truth.json...{Style.RESET_ALL}")
-        report = evaluate_batch(path, args.limit, compute_semantic=args.semantic, skip_existing=args.skip_existing)
+        report = evaluate_batch(path, args.limit, compute_semantic=args.semantic, skip_existing=args.skip_existing, ablation=args.ablation)
 
         if not args.quiet:
             print_batch_report(report)

@@ -1,0 +1,33 @@
+{
+  "pr_number": 1496,
+  "repository": "openinterpreter/open-interpreter",
+  "title": "Fix: Change date format string for Windows compatibility",
+  "body": "Summary:\n- Fix an OS compatibility crash on Windows when running with the --os flag by correcting a date format string used in the system prompt.\n- Replaced a Windows-incompatible date format specifier (%-d) with a portable one (%d).\n\nRoot Cause:\n- The code base constructs a SYSTEM_PROMPT that includes the current date via datetime.today().strftime('%A, %B %-d, %Y'). The %-d specifier (day of month without leading zeros) is not supported on Windows, causing a ValueError during interpreter startup on Windows.\n\nFix:\n- Updated the date format strings in interpreter/computer_use/loop.py to use a Windows-compatible format. Specifically, changed '%A, %B %-d, %Y' to '%A, %B %d, %Y' (two occurrences of the same format are present in the file).\n\nImpact:\n- Only affects the system prompt text that displays the current date. Functionality and logic remain unchanged.\n- Display of the date may now include a leading zero for single-digit days on Windows (e.g., 01 instead of 1). This aligns with Windows strftime behavior and avoids the crash.\n\nTesting:\n- Validate on Windows 11 with Python 3.11 and Open Interpreter version 0.4.1 as described in the PR.\n- Run interpreter --os to ensure the OS mode starts without ValueError and the date in the prompt renders correctly.\n\nFixes #1495",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T13:23:25.443813",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "interpreter/computer_use/loop.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    }
+  ],
+  "step_plan": {
+    "summary": "Fix Windows compatibility crash by replacing the non-portable date format in the system prompt with a Windows-friendly format. This preserves overall behavior while avoiding ValueError during OS-mode startup.",
+    "steps": [
+      {
+        "operation": "Replace Windows-incompatible date format in system prompt construction",
+        "file_to_modify": "interpreter/computer_use/loop.py",
+        "function_to_modify": "get_system_prompt",
+        "reason": "The current SYSTEM_PROMPT uses datetime.today().strftime('%A, %B %-d, %Y'), where '%-d' (day without leading zeros) is not supported on Windows and causes a ValueError during interpreter startup when --os is used. Replacing with a portable format '%d' ensures cross-platform compatibility.",
+        "side_effects": "The date may render with a leading zero for single-digit days on Windows (e.g., 'January 09' instead of 'January 9'). No changes to logic beyond prompt text; OS mode behavior remains otherwise identical. Requires Windows-specific validation to confirm crash is avoided and formatting is acceptable."
+      }
+    ]
+  }
+}

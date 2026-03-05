@@ -1,0 +1,42 @@
+{
+  "pr_number": 242,
+  "repository": "microsoft/BitNet",
+  "title": "Fix build error with GCC by forcing Clang in CMake on android/aarch64",
+  "body": "Summary of changes to force Clang for Android builds to avoid GCC misinterpreting Clang-specific warning flags coming from upstream submodules (e.g., ggml).\n\nRoot cause: GCC on Android can fail when encountering Clang-specific flags like -Wunreachable-code-break and -Wunreachable-code-return that upstream submodules pass through.\n\nApproach: Detect Android ARM64 builds and force CMake to use Clang by injecting -DCMAKE_C_COMPILER=clang and -DCMAKE_CXX_COMPILER=clang++ at build configuration time via the existing build script, instead of patching submodules.\n\nRationale: This avoids invasive changes to submodules and relies on standard toolchain usage provided by an installed Clang in the Android NDK/toolchain. It limits the change to the build orchestration script so that normal builds outside Android aren’t affected.\n\nFiles touched (high level):\n- setup_env.py: Enhance compile flow to auto-apply clang-only compilers when building for android/aarch64.\n\nNotes:\n- This relies on Clang being available in the environment (as is typical with Android NDK toolchains). If Clang isn’t present, the build will fail as expected.\n- The change is selective to Android and ARM64 (aarch64) via the existing arch detection (mapped to arm64).\n- No changes to submodules are required.\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T13:13:42.680894",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "setup_env.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "compile",
+          "class_name": "setup_env",
+          "full_name": "setup_env.compile",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Extend setup_env.py to force Clang for android/aarch64 by injecting -DCMAKE_C_COMPILER=clang and -DCMAKE_CXX_COMPILER=clang++ during the CMake configuration step, ensuring GCC does not misinterpret upstream clang-specific flags.",
+    "steps": [
+      {
+        "operation": "Modify compile function to detect Android aarch64 and inject CMake compiler flags",
+        "file_to_modify": "setup_env.py",
+        "function_to_modify": "compile",
+        "reason": "To ensure CMake uses clang/clang++ when building for Android ARM64, preventing GCC from misinterpreting upstream clang-specific flags",
+        "side_effects": "Android builds will require Clang to be available in the toolchain; non-Android builds unaffected; may require CI environment checks; downstream build scripts that rely on gcc detection may be affected; verify that CMake logs show clang being used when ANDROID_ROOT/NDK_ROOT are present"
+      }
+    ]
+  }
+}

@@ -1,0 +1,42 @@
+{
+  "pr_number": 7339,
+  "repository": "getredash/redash",
+  "title": "Sanitize NaN, Infinite, -Infinite causing error when saving as PostgreSQL JSON",
+  "body": "## What type of PR is this? \n- [x] Bug Fix\n\n## Description\nWhen running query that output NaN, Infinite, or -Infinite, redash executor crashes with the error \"Out of range float values are not JSON compliant\". Redash does not output any rows when the error occurs.\n\nThe error occurs because PostgreSQL JSON does not support NaN / Infinity values.\n\nThis PR fixes the issue by sanitizing NaN, Infinite, -Infinite values to None before serializing to JSON. This matches JavaScript JSON.stringify() behaviour (it renders these as null).\n\nThe issue was introduced by #6685 which removed simplejson (which used ignore_nan=True). This PR restores the previous behaviour by converting NaN/Inf to null before json.dumps.\n\nUnit tests and manual testing were added.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T13:07:37.857924",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "redash/utils/__init__.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "json_dumps",
+          "class_name": null,
+          "full_name": "json_dumps",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Sanitize non-finite float and Decimal values (NaN, Infinity, -Infinity) to None before JSON serialization in json_dumps, preventing json.dumps from raising and matching JavaScript JSON.stringify behavior (NaN/Infinity -> null).",
+    "steps": [
+      {
+        "operation": "Add recursive sanitizer for non-finite numbers and call it from json_dumps",
+        "file_to_modify": "redash/utils/__init__.py",
+        "function_to_modify": "json_dumps",
+        "reason": "json.dumps(..., allow_nan=False) raises ValueError on float('nan') and infinities. To restore previous simplejson ignore_nan behavior and match JavaScript JSON.stringify (NaN/Infinity -> null) we must convert non-finite float and Decimal values to None before serializing. Implement a small, recursive sanitizer that walks dicts/lists/tuples and replaces non-finite float/Decimal values with None, then call this sanitizer at the start of json_dumps before delegating to json.dumps.",
+        "side_effects": "Changes the serialized representation of NaN/Infinity/-Infinity to null (None) across all call sites of json_dumps (including database bind processing like JSONText.process_bind_param). This may alter behavior for any consumers that previously relied on NaN/Infinity values in stored JSON; this is intended. Unit tests that expect ValueError on such values will need updating; added tests should verify that serialization succeeds and produces null for non-finite numbers. Downstream systems reading stored JSON will now see nulls instead of NaN/Infinity; no API schema change is required but consumers interpreting numeric results should be aware of the semantic change. Database-related code paths that previously crashed on flush will no longer raise the 'Out of range float values' error. Ensure existing JSONEncoder behavior (Decimal->float conversion, datetimes formatting, etc.) remains intact by sanitizing primitive numeric values before json.dumps. Run full test suite (pytest) to catch any unexpected impacts."
+      }
+    ]
+  }
+}

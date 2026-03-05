@@ -1,0 +1,57 @@
+{
+  "pr_number": 3286,
+  "repository": "py-pdf/pypdf",
+  "title": "BUG: Add delimiters to NameObject.renumber_table",
+  "body": "Per the PDF specification, name objects cannot contain unescaped delimiters, including angle brackets, curly braces, and square brackets. The current implementation of NameObject.renumber_table does not provide mappings for these delimiters, which can lead to incorrectly escaped names and invalid PDFs when appending to a PdfWriter.\n\nProposed change:\n- Extend NameObject.renumber_table to include the following delimiter mappings:\n  - \"<\": b\"#3C\"  (less-than)\n  - \">\": b\"#3E\"  (greater-than)\n  - \"[\": b\"#5B\"  (open bracket)\n  - \"]\": b\"#5D\"  (close bracket)\n  - \"{\": b\"#7B\"  (open brace)\n  - \"}\": b\"#7D\"  (close brace)\n- These characters are currently delimited by the existing delimiter_pattern (which already includes brackets and braces), but they are not escaped in the renumber_table, so they would be emitted as-is for many typical names.\n- Since NameObject.renumber() uses renumber_table for characters up to '~', adding these entries ensures proper escaping during name serialization.\n- This change is additive and maintains backward compatibility; it only affects how certain characters are escaped when serializing NameObject values.\n- Optional follow-up: add a unit test that asserts a NameObject containing these delimiters is correctly escaped (e.g., NameObject(\"/Test<Brackets>\") should produce a name string with \"#3C\" for '<' and so on).\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T13:31:38.250361",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "pypdf/generic/_base.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "renumber",
+          "class_name": "NameObject",
+          "full_name": "NameObject.renumber",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "renumber_table",
+          "class_name": "NameObject",
+          "full_name": "NameObject.renumber_table",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Add delimiter escapes to NameObject.renumber_table as per PDF spec (escape <, >, [, ], {, }) and ensure NameObject.renumber uses the updated mapping, maintaining compatibility and enabling a future unit test for proper escaping.",
+    "steps": [
+      {
+        "operation": "Extend renumber_table mappings to escape delimiters",
+        "file_to_modify": "pypdf/generic/_base.py",
+        "function_to_modify": "NameObject.renumber_table",
+        "reason": "PDF name objects must escape delimiters; adding mappings for <, >, [, ], {, } prevents invalid PDFs when names contain these characters",
+        "side_effects": "Broadens escaping; may require updating or adding unit tests to cover new mappings; preserves backward compatibility"
+      },
+      {
+        "operation": "Verify and ensure NameObject.renumber uses renumber_table for escaping (and adjust if necessary)",
+        "file_to_modify": "pypdf/generic/_base.py",
+        "function_to_modify": "NameObject.renumber",
+        "reason": "Make sure renumber() leverages the extended renumber_table so new delimiter mappings are applied during serialization",
+        "side_effects": "Possible minor regression risk if renumber logic diverges; may require tests to validate new escaping behavior for delimiters"
+      }
+    ]
+  }
+}

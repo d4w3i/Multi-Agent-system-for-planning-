@@ -1,0 +1,66 @@
+{
+    "repository": "intel/ipex-llm",
+    "pull_request_number": 13205,
+    "title": "Fix internvl fp16 error",
+    "body": "## Description\r\n\r\n<!-- For small changes (<=3 files and <=50 lines of codes in the source folder), -->\r\n<!-- you may remove Sections 1-4 below and just provide a simple description here -->\r\n\r\n### 1. Why the change?\r\n\r\n<!-- Provide the related github issue link if available -->\r\n\r\n### 2. User API changes\r\n\r\n<!-- Describe API changes (i.e., how users will use the feature) if any; -->\r\n<!-- alternatively, provide a link to the github issue for the design -->\r\n\r\n### 3. Summary of the change \r\n\r\n<!-- Provide the design for the implementation; -->\r\n<!-- alternatively, provide a link to the github issue for the design -->\r\n\r\n### 4. How to test?\r\n- [ ] N/A\r\n- [ ] Unit test: Please manually trigger the PR Validation [here](https://github.com/intel-analytics/ipex-llm-workflow/actions/workflows/llm-PR-validation.yml) by inputting the PR number (e.g., `1234`). And paste your action link here once it has been successfully finished.\r\n- [ ] Application test\r\n- [ ] Document test\r\n- [ ] ...\r\n\r\n### 5. New dependencies\r\n\r\n<!-- If no new dependency is introduced, remove this section -->\r\n\r\n- [ ] New Python dependencies\r\n       - Dependency1 \r\n       - Dependency2\r\n       - ...\r\n- [ ] New Java/Scala dependencies and their license\r\n       - Dependency1 and license1\r\n       - Dependency2 and license2\r\n       - ...\r\n",
+    "pr_date": "2025-06-05T03:16:09Z",
+    "source_branch": "fix_internvl_fp16_error",
+    "language": "en",
+    "keywords_detected": {
+        "branch": [
+            "fix"
+        ],
+        "requirement": [
+            "fix"
+        ],
+        "body": [
+            "feature",
+            "implement",
+            "remove",
+            "change"
+        ]
+    },
+    "number_of_links_in_pr": 2,
+    "base_sha": "45864790f768a75c6b4d619066d3d71b38c5ea6e",
+    "last_commit_sha": "0f2cbcf1e94fa68ddea5bec814d7eeb97687e880",
+    "diff_between_base_and_last": [
+        {
+            "sha": "8c3c8f65245bad5154573b457ca96673916ed31a",
+            "filename": "python/llm/src/ipex_llm/vllm/xpu/model_convert.py",
+            "status": "modified",
+            "additions": 5,
+            "deletions": 1,
+            "changes": 6,
+            "blob_url": "https://github.com/intel/ipex-llm/blob/0f2cbcf1e94fa68ddea5bec814d7eeb97687e880/python%2Fllm%2Fsrc%2Fipex_llm%2Fvllm%2Fxpu%2Fmodel_convert.py",
+            "raw_url": "https://github.com/intel/ipex-llm/raw/0f2cbcf1e94fa68ddea5bec814d7eeb97687e880/python%2Fllm%2Fsrc%2Fipex_llm%2Fvllm%2Fxpu%2Fmodel_convert.py",
+            "contents_url": "https://api.github.com/repos/intel/ipex-llm/contents/python%2Fllm%2Fsrc%2Fipex_llm%2Fvllm%2Fxpu%2Fmodel_convert.py?ref=0f2cbcf1e94fa68ddea5bec814d7eeb97687e880",
+            "patch": "@@ -133,7 +133,11 @@ def _ipex_llm_load_model(self) -> None:\n                     modules = [\"vision_encoder\", \"embed_tokens_extend\"]\n                 if low_bit == \"fp16\":\n                     # to fix qwen2.5-vl and glm-4v\n-                    modules = [\"vision\", \"visual\"]\n+                    if modules is None:\n+                        modules = [\"vision\", \"visual\"]\n+                    else:\n+                        modules.append(\"vision\")\n+                        modules.append(\"visual\")\n                 optimize_model(self.model,\n                                low_bit=low_bit,\n                                torch_dtype=self.vllm_config.model_config.dtype,"
+        }
+    ],
+    "commits": [
+        {
+            "sha": "0f2cbcf1e94fa68ddea5bec814d7eeb97687e880",
+            "commit_date": "2025-06-05T03:15:35Z",
+            "message": "fix internvl fp16 error",
+            "number_of_links_in_commit": 0,
+            "files_changed_count": 1,
+            "files": [
+                {
+                    "sha": "8c3c8f65245bad5154573b457ca96673916ed31a",
+                    "filename": "python/llm/src/ipex_llm/vllm/xpu/model_convert.py",
+                    "status": "modified",
+                    "additions": 5,
+                    "deletions": 1,
+                    "changes": 6,
+                    "blob_url": "https://github.com/intel/ipex-llm/blob/0f2cbcf1e94fa68ddea5bec814d7eeb97687e880/python%2Fllm%2Fsrc%2Fipex_llm%2Fvllm%2Fxpu%2Fmodel_convert.py",
+                    "raw_url": "https://github.com/intel/ipex-llm/raw/0f2cbcf1e94fa68ddea5bec814d7eeb97687e880/python%2Fllm%2Fsrc%2Fipex_llm%2Fvllm%2Fxpu%2Fmodel_convert.py",
+                    "contents_url": "https://api.github.com/repos/intel/ipex-llm/contents/python%2Fllm%2Fsrc%2Fipex_llm%2Fvllm%2Fxpu%2Fmodel_convert.py?ref=0f2cbcf1e94fa68ddea5bec814d7eeb97687e880",
+                    "patch": "@@ -133,7 +133,11 @@ def _ipex_llm_load_model(self) -> None:\n                     modules = [\"vision_encoder\", \"embed_tokens_extend\"]\n                 if low_bit == \"fp16\":\n                     # to fix qwen2.5-vl and glm-4v\n-                    modules = [\"vision\", \"visual\"]\n+                    if modules is None:\n+                        modules = [\"vision\", \"visual\"]\n+                    else:\n+                        modules.append(\"vision\")\n+                        modules.append(\"visual\")\n                 optimize_model(self.model,\n                                low_bit=low_bit,\n                                torch_dtype=self.vllm_config.model_config.dtype,"
+                }
+            ]
+        }
+    ],
+    "pull_request_url": "https://github.com/intel/ipex-llm/pull/13205",
+    "commits_url": "https://github.com/intel/ipex-llm/pull/13205/commits",
+    "files_url": "https://github.com/intel/ipex-llm/pull/13205/files"
+}

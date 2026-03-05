@@ -1,0 +1,42 @@
+{
+  "pr_number": 184,
+  "repository": "chengazhen/cursor-auto-free",
+  "title": "update build.py as to use env prioritized",
+  "body": "Developers would prefer to build the src locally thus taking their own `.env` (if not exists then use env.example) to build the final `CursorPro` executable. Do you like it @chengazhen ?",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T12:45:38.034968",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "build.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "build",
+          "class_name": null,
+          "full_name": "build",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Update build.py so the build() function prefers a local .env when packaging (falling back to .env.example) and perform the copy with shutil.copy for cross-platform robustness.",
+    "steps": [
+      {
+        "operation": "Modify build() to prefer project .env and fall back to .env.example using shutil.copy",
+        "file_to_modify": "build.py",
+        "function_to_modify": "build",
+        "reason": "Currently the build() function always copies .env.example into the distribution. Developers want the build to prioritize a local project .env (if present) when packaging so that local environment overrides are preserved in the generated distribution; fall back to .env.example only if .env is absent. Using shutil.copy makes the copy cross-platform and avoids shell-specific copy commands.",
+        "side_effects": "Changes distribution contents: builds created on developer machines will include the developer's .env (if present) instead of .env.example. This may change runtime behavior of the packaged app for developers. Tests or CI that assume .env.example is always copied may need to be updated. No public API changes. Dependent tooling that expects a guaranteed .env in the dist should ensure either a .env or .env.example exists in the repo; otherwise the build will produce no environment file in the output (the script should log a warning). Using shutil.copy reduces Windows/unix shell differences and removes reliance on shell=True executions."
+      }
+    ]
+  }
+}

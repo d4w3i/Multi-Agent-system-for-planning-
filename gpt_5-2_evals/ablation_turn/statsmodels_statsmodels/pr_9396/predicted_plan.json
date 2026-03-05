@@ -1,0 +1,79 @@
+{
+  "pr_number": 9396,
+  "repository": "statsmodels/statsmodels",
+  "title": "BUG: Remove method setting in summary2 of genmod",
+  "body": "- [X] closes #9315 \n- [X] tests added / passed. \n- [X] code/documentation is well formatted.  \n- [X] properly formatted commit message. See \n      [NumPy's guide](https://docs.scipy.org/doc/numpy-1.15.1/dev/gitwash/development_workflow.html#writing-the-commit-message). \n\n<details>\n\n\n**Notes**:\n\n* It is essential that you add a test when making code changes. Tests are not \n  needed for doc changes.\n* When adding a new function, test values should usually be verified in another package (e.g., R/SAS/Stata).\n* When fixing a bug, you must add a test that would produce the bug in main and\n  then show that it is fixed with the new code.\n* New code additions must be well formatted. Changes should pass flake8. If on Linux or OSX, you can\n  verify you changes are well formatted by running \n  ```\n  git diff upstream/main -u -- \"*.py\" | flake8 --diff --isolated\n  ```\n  assuming `flake8` is installed. This command is also available on Windows \n  using the Windows System for Linux once `flake8` is installed in the \n  local Linux environment. While passing this test is not required, it is good practice and it help \n  improve code quality in `statsmodels`.\n* Docstring additions must render correctly, including escapes and LaTeX.\n\n</details>\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T12:48:00.079458",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "statsmodels/genmod/generalized_linear_model.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "summary2",
+          "class_name": "GLMResults",
+          "full_name": "GLMResults.summary2",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "statsmodels/genmod/generalized_estimating_equations.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "summary2",
+          "class_name": "GEEResults",
+          "full_name": "GEEResults.summary2",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "statsmodels/genmod/tests/test_glm.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    },
+    {
+      "filename": "statsmodels/genmod/tests/test_gee.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    }
+  ],
+  "step_plan": {
+    "summary": "Fix genmod `summary2()` to be side-effect free by removing any assignment to the fitted results’ `method` attribute (in GLM and GEE results) while still reporting the method via a read-only lookup or local fallback.",
+    "steps": [
+      {
+        "operation": "Remove any mutation/assignment of the fitted result's `method` attribute during `summary2()` construction and instead use a local display value/fallback when populating the summary info",
+        "file_to_modify": "statsmodels/genmod/generalized_linear_model.py",
+        "function_to_modify": "GLMResults.summary2",
+        "reason": "`summary2()` must be read-only/reporting; setting `self.method` (or otherwise mutating results state) while generating output can corrupt metadata and cause downstream behavior changes. If the summary needs a “Method” line, it should read an existing `res.method` set at fit time or use a local `getattr(res, 'method', '')` fallback without touching object state.",
+        "side_effects": "Summary output content should remain the same (or become more accurate), but if older behavior relied on `summary2()` to create a missing `method` attribute, some callers expecting that side-effect will stop seeing it. Requires running genmod test suite; may need minor adjustments if any tests implicitly depended on the mutation."
+      },
+      {
+        "operation": "Remove any mutation/assignment of the fitted result's `method` attribute during `summary2()` construction and ensure the displayed “Method” uses an existing attribute or a non-mutating fallback",
+        "file_to_modify": "statsmodels/genmod/generalized_estimating_equations.py",
+        "function_to_modify": "GEEResults.summary2",
+        "reason": "If GEE results follow the same pattern as GLM results, `summary2()` must not override or set `res.method` as part of formatting. The method used to fit should be established at fit time and treated as read-only during reporting.",
+        "side_effects": "If GEE previously papered over missing `method` by setting it inside `summary2()`, the summary may need an explicit fallback string for display. Run existing GEE summary tests and any doctests that include summary output."
+      }
+    ]
+  }
+}

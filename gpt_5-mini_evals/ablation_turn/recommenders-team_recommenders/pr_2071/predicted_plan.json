@@ -1,0 +1,42 @@
+{
+  "pr_number": 2071,
+  "repository": "recommenders-team/recommenders",
+  "title": "Fixing TF to < 2.16",
+  "body": "### Description\n<!--- Describe your changes in detail -->\n<!--- Why is this change required? What problem does it solve? -->\n\n\n### Related Issues\n<!--- If it fixes an open issue, please link to the issue here. -->\n#2073\n\n### References\n<!--- References would be helpful to understand the changes. -->\n<!--- References can be books, links, etc. -->\n\n\n### Checklist:\n<!--- Go over all the following points, and put an `x` in all the boxes that apply. -->\n<!--- If you're unsure about any of these, don't hesitate to ask! We're here to help! -->\n- [ ] I have followed the [contribution guidelines](CONTRIBUTING.md) and code style for this project.\n- [ ] I have added tests covering my contributions.\n- [ ] I have updated the documentation accordingly.\n- [ ] I have [signed the commits](https://github.com/recommenders-team/recommenders/wiki/How-to-sign-commits), e.g. `git commit -s -m \"your commit message\"`. \n- [ ] This PR is being made to `staging branch` AND NOT TO `main branch`.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T14:26:49.034126",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "setup.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "py)",
+          "class_name": "extras_require['gpu'] (entry in setup",
+          "full_name": "extras_require['gpu'] (entry in setup.py)",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Change the TensorFlow dependency in setup.py extras_require['gpu'] from a <=2.15.0 cap to a <2.16 cap (keeping existing exclusion list) so the package allows all TF 2.15.x patch releases while preventing TF >= 2.16.",
+    "steps": [
+      {
+        "operation": "Update TensorFlow version spec in gpu extras",
+        "file_to_modify": "setup.py",
+        "function_to_modify": "extras_require['gpu']",
+        "reason": "Replace the hard cap '<=2.15.0' with a more future-proof '<2.16' so permitted TensorFlow versions include all 2.15.x patch releases while still excluding known-broken versions (keep the existing !=2.9.*, !=2.10.0.* exclusions). This matches the PR intent to allow TF < 2.16 and prevents unnecessarily pinning to a specific patch.",
+        "side_effects": "Alters package dependency resolution for installations that request the 'gpu' extras: installers may now pick later 2.15.x patches. No code changes are required, but TensorFlow-related unit and regression tests (e.g., tests/regression/test_compatibility_tf.py and tests/unit/recommenders/utils/test_tf_utils.py) must be run to validate compatibility. Downstream consumers or CI configs that pin TF separately (Dockerfiles, CI matrix) may need review to ensure consistency. Packaging metadata change should have no API impact but could change installed TF minor/patch version in environments."
+      }
+    ]
+  }
+}

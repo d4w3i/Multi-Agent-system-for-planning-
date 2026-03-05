@@ -1,0 +1,140 @@
+{
+  "pr_number": 1895,
+  "repository": "Acly/krita-ai-diffusion",
+  "title": "feat: Switch to enum queue mode, add 'replace' mode.",
+  "body": "Follow up to https://github.com/Acly/krita-ai-diffusion/pull/1879\n\nIdea:\n- Move away from a boolean queue_front flag to a 3-way enum QueueMode (front, back, replace).\n- Introduce a new Replace mode so a caller can replace the current queue with a fresh batch, avoiding buildup of older queued/executing jobs when a new request comes in.\n- Propagate the mode through the first job of a batch so subsequent jobs in the same batch inherit the same queue behavior.\n\nNotes:\n- The current implementation uses Model.queue_front (bool) to decide whether to enqueue in front or back. This PR suggests making queue behavior explicit via an enum and exposing a new Replace mode.\n- Tentative plan mentions “Alternate queue mode” for ctrl-click, so a multi-mode UI toggle is expected (Front, Back, Replace).\n- This change affects how jobs are enqueued and how the UI persists/reflects queue behavior, and will require migration of persisted settings.\n\nWhat I’ll analyze in this PR:\n- Identify all points where the queue mode is consumed or exposed (Model, JobQueue, UI, Settings).\n- Map out code paths that must be updated to read a queue_mode enum instead of a boolean queue_front.\n- Propose changes to support the new Replace mode (and a migration path for existing settings).\n- Outline tests and risk considerations for behavior changes when replacing the queue.\n\nGoal for PR: enable explicit queue semantics via an enum, add a Replace mode to clear existing queue before enqueuing new jobs, and prepare UI and persistence for the new mode.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T11:43:24.759759",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "ai_diffusion/settings.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "load",
+          "class_name": "ai_diffusion",
+          "full_name": "ai_diffusion.settings.Settings.load",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "ai_diffusion/jobs.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "add_job",
+          "class_name": "ai_diffusion",
+          "full_name": "ai_diffusion.jobs.JobQueue.add_job",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "clear",
+          "class_name": "ai_diffusion",
+          "full_name": "ai_diffusion.jobs.JobQueue.clear",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "ai_diffusion/model.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "enqueue_jobs",
+          "class_name": "ai_diffusion",
+          "full_name": "ai_diffusion.model.Model.enqueue_jobs",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "ai_diffusion/ui/widget.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "_update",
+          "class_name": "ai_diffusion",
+          "full_name": "ai_diffusion.ui.widget.QueueButton._update",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "ai_diffusion/ui/settings_widgets.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    },
+    {
+      "filename": "ai_diffusion/ui/__init__.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    }
+  ],
+  "step_plan": {
+    "summary": "This PR switches the queueing system from a boolean flag to a three-way QueueMode enum (front, back, replace), propagates the mode through batches, and updates persistence and UI to reflect and migrate to the new semantics. The steps implement enum introduction and migration, per-batch mode propagation, replacement semantics, enqueue logic, and UI bindings.",
+    "steps": [
+      {
+        "operation": "Add QueueMode enum and migrate Settings.load to map legacy queue_front to new enum and persist queue_mode",
+        "file_to_modify": "ai_diffusion/settings.py",
+        "function_to_modify": "Settings.load",
+        "reason": "Introduce explicit enum-based queue semantics (front, back, replace) and migrate existing boolean settings to the new scheme; ensure a sensible default when the setting is missing.",
+        "side_effects": "Requires tests for migration path; may impact any component reading queue_front in legacy sessions; updates to settings persistence to handle Enum values."
+      },
+      {
+        "operation": "Update JobQueue.add_job to carry per-batch queue_mode and derive from first job; propagate mode to batch",
+        "file_to_modify": "ai_diffusion/jobs.py",
+        "function_to_modify": "JobQueue.add_job",
+        "reason": "Introduce per-batch queue mode so that subsequent jobs in the same batch inherit the same behavior and enable Replace semantics to operate on the whole batch.",
+        "side_effects": "Potentially affects enqueue tests and batch handling; requires updates to code paths that assumed a boolean flag and to any tests validating enqueue order."
+      },
+      {
+        "operation": "Extend JobQueue.clear to support replacement semantics and provide mechanism to clear pending/executing jobs when Replace is invoked",
+        "file_to_modify": "ai_diffusion/jobs.py",
+        "function_to_modify": "JobQueue.clear",
+        "reason": "Provide a robust path to discard existing queue when a new batch is enqueued with Replace mode; ensures consistent and predictable behavior for queue replacement.",
+        "side_effects": "May cancel in-flight work; requires careful user-visible indication and corresponding tests."
+      },
+      {
+        "operation": "Modify Model.enqueue_jobs to respect queue_mode: when Replace, clear queue before enqueuing; propagate mode to batch",
+        "file_to_modify": "ai_diffusion/model.py",
+        "function_to_modify": "Model.enqueue_jobs",
+        "reason": "Enforce new queue semantics across enqueue paths and ensure the batch inherits the queue_mode; if Replace, proactively clear existing queue before adding new jobs.",
+        "side_effects": "Impact all enqueue paths; necessitates regression tests and UI consistency checks for queue state after enqueue."
+      },
+      {
+        "operation": "Update UI QueueButton._update to present 3-way QueueMode (Front, Back, Replace) and bind to model.queue_mode; adjust tooltips/icons",
+        "file_to_modify": "ai_diffusion/ui/widget.py",
+        "function_to_modify": "QueueButton._update",
+        "reason": "Expose the new queue mode in the UI and ensure UI reflects and persists the selection; Replace mode should warn or indicate queue replacement behavior.",
+        "side_effects": "UI tests and potential UX adjustments; ensure default aligns with settings and existing user expectations."
+      }
+    ]
+  }
+}

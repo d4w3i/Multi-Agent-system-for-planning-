@@ -1,0 +1,42 @@
+{
+  "pr_number": 6890,
+  "repository": "sqlfluff/sqlfluff",
+  "title": "Fix RawFileSlice idx and tags in lexer_test",
+  "body": "While running the lexer test in rust mode, these `RawFileSlice` tags came across with type errors. This fixes the order of the `block_idx` and `tag`.\n\nNo other side effects.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T14:44:07.281771",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "test/core/parser/lexer_test.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "test__parser__lexer_slicing_from_template_file",
+          "class_name": null,
+          "full_name": "test__parser__lexer_slicing_from_template_file",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Correct the order of the last two positional arguments when constructing RawFileSlice instances in test/core/parser/lexer_test.py so block_idx (int) is passed before tag (Optional[str]). This fixes type errors in the lexer tests without changing production code.",
+    "steps": [
+      {
+        "operation": "Fix RawFileSlice argument order in test fixtures used by the parameterized test",
+        "file_to_modify": "test/core/parser/lexer_test.py",
+        "function_to_modify": "test__parser__lexer_slicing_from_template_file",
+        "reason": "The RawFileSlice NamedTuple is defined as RawFileSlice(raw, slice_type, source_idx, block_idx: int = 0, tag: Optional[str] = None). In the test fixtures the last two positional arguments are reversed (e.g. (..., source_idx, None, 0)), which assigns None to block_idx and 0 to tag and causes type errors. Swap the 4th and 5th arguments for all RawFileSlice instantiations in the TemplatedFile cases so they follow (source_idx, 0, None), or replace with explicit keyword args (block_idx=0, tag=None) to ensure correct typing and clarity.",
+        "side_effects": "This change only touches the test file and should resolve type errors when running the lexer tests. No production code or API changes. Tests that expect the previous (incorrectly-typed) fixtures may need updates if they asserted on the raw representation of RawFileSlice (unlikely). Running the test suite may reveal other tests that instantiate RawFileSlice with misordered positional args; those would need similar fixes."
+      }
+    ]
+  }
+}

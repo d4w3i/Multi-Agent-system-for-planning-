@@ -1,0 +1,42 @@
+{
+  "pr_number": 498,
+  "repository": "datalab-to/marker",
+  "title": "OCR Error Detection Hotfix",
+  "body": "Summary of changes:\n- Adjust input handling for the OCR error-detection LLM to rely on tokenizer-based length control rather than manual character-based splitting.\n- Join multiple extracted text lines into a single newline-delimited string and pass that as input to the model, instead of passing an array of lines.\n- Keep the output handling (corrected_lines) intact so downstream processing continues to map corrected lines back to line blocks and create spans with proper formatting.\n\nRationale:\n- Tokenizers segment text by tokens rather than characters, so splitting logic based on #chars is brittle and unnecessary. By passing a newline-joined string, we let the tokenizer govern length constraints and improve robustness.\n- Joining lines with newline characters ensures the model preserves line breaks when producing corrected output, simplifying alignment with the original lines.\n\nImpact:\n- Minimal code surface changes focused on the LLM text rewriting path. Downstream consumers (mapping corrected_lines back to text lines) remain unchanged.\n- No changes to the structure of the returned data; the model still returns corrected_lines which are applied line-by-line.\n\nFiles touched (planned):\n- marker/processors/llm/llm_text.py (LLMTextProcessor.process_rewriting)\n\nNotes:\n- If tests exist for LLM input format, they may need to be updated to reflect the input being a single newline-joined string instead of an array of lines.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T12:35:11.413686",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "marker/processors/llm/llm_text.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "process_rewriting",
+          "class_name": "LLMTextProcessor",
+          "full_name": "LLMTextProcessor.process_rewriting",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "OCR Error Detection Hotfix: adjust the LLM input path to use a newline-joined string for extracted lines, enabling tokenizer-based length control while preserving downstream output handling.",
+    "steps": [
+      {
+        "operation": "Refactor input construction in LLMTextProcessor.process_rewriting to join extracted_lines with newline characters into a single string and pass it as the extracted_lines payload to the model",
+        "file_to_modify": "marker/processors/llm/llm_text.py",
+        "function_to_modify": "LLMTextProcessor.process_rewriting",
+        "reason": "Switch from per-line character-based splitting to token-based length control by supplying a single newline-delimited string to the LLM. This aligns with tokenizer behavior and preserves downstream mapping of corrected_lines to original lines.",
+        "side_effects": "Tests that assert input payload shape may need updates to reflect a string instead of an array; prompt construction changes may affect mocks or fixtures; downstream processing (mapping corrected_lines to spans) remains unchanged and should continue to pass."
+      }
+    ]
+  }
+}

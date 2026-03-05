@@ -1,0 +1,65 @@
+{
+  "pr_number": 1270,
+  "repository": "NVIDIA/Megatron-LM",
+  "title": "[ENHANCEMENT] Add z-loss",
+  "body": "Summary of changes to introduce z-loss regularization in GPT pretraining and logging:\n\n- Add an optional z-loss regularization term to the GPT loss calculation to help stabilize training by preventing logits in the last layer from exploding.\n- Extend logging to optionally report both the original cross-entropy (LM loss) and the z-loss values separately, and expose a combined total loss when z-loss is enabled.\n- Gate z-loss with a weight (z_loss_weight) so it can be tuned or disabled by default (backward-compatible when not set).\n- Remain compatible with existing KD/distillation flows: if KD is active, behavior can be adjusted to compute KD on the total loss or the LM loss depending on design choice; the PR focused on enabling z-loss and logging while preserving existing defaults when z-loss is disabled.\n\nNotes:\n- The implementation plan keeps the changes localized to loss computation/logging paths and a new configuration flag. This minimizes risk to training/inference code paths that do not opt into z-loss.\n- The z-loss formula in this PR is introduced as a placeholder implementation that can be refined to the exact arXiv formulation (the code is designed to be updated with the precise formula without touching the surrounding API). It is wired behind a weight so it can be tuned or toggled off easily.\n\nFiles touched:\n- megatron/inference/gpt/loss_func.py: add z-loss computation, combine with cross-entropy to form total loss, and log both components.\n- megatron/training/arguments.py (suggested): add new arguments to enable and weight z-loss (z_loss_weight) with a sensible default (0.0).\n- (Optional) megatron/core/loss_helpers.py: placeholder area for the z-loss function if you want to centralize the implementation later.\n\nHow this will be used at runtime:\n- Users can enable z-loss by setting --z-loss-weight to a positive value (or --enable-z-loss if preferred) in the training/experiments configuration. When z_loss_weight is 0 or not set, the behavior is identical to the current cross-entropy loss path.\n- The training logs will include separate entries for lm loss and z loss, and a total loss entry when z-loss is enabled.\n\nRationale:\n- This keeps compatibility with existing training scripts while giving practitioners a knob to stabilize training of very large models.\n- Logging granularity helps diagnose whether z-loss contributes to training stability or affects convergence behavior.\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T12:00:31.803818",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "megatron/inference/gpt/loss_func.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "loss_func",
+          "class_name": null,
+          "full_name": "loss_func",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_mask_loss",
+          "class_name": null,
+          "full_name": "_mask_loss",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_allreduce_loss",
+          "class_name": null,
+          "full_name": "_allreduce_loss",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "megatron/training/arguments.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    }
+  ],
+  "step_plan": {
+    "summary": "Adds optional z-loss regularization to GPT pretraining with enhanced loss logging. Introduces a tunable z_loss_weight gated term behind the loss computation while preserving current behavior when disabled.",
+    "steps": [
+      {
+        "operation": "Integrate placeholder z-loss into GPT loss calculation and logging",
+        "file_to_modify": "megatron/inference/gpt/loss_func.py",
+        "function_to_modify": "loss_func",
+        "reason": "Introduce a gated z-loss term computed from logits, combine with the existing LM loss to form a total_loss, and extend logging to include separate lm loss, z loss, and a total loss when z-loss is enabled. This keeps changes localized to the loss/logging path and preserves backward compatibility when z-loss is disabled.",
+        "side_effects": "Backpropagation will use total_loss (LM loss + z_loss) when z_loss_weight > 0; possible KD/distillation interaction nuances depending on downstream usage; minor performance overhead due to extra z-loss computation; requires test updates and log format expectations; unchanged behavior when z_loss_weight == 0."
+      }
+    ]
+  }
+}

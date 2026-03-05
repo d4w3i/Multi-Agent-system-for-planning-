@@ -2432,11 +2432,178 @@
       border-bottom: 1px solid var(--border);
       padding-bottom: 5px;
     }
+
+    /* MODE SELECTION LANDING ─────────────────────────────────── */
+    #mode-landing {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      background: #000000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Courier New', Courier, monospace;
+    }
+
+    #mode-landing.hidden {
+      display: none;
+    }
+
+    .mode-landing-inner {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 40px;
+    }
+
+    .mode-landing-title-block {
+      text-align: center;
+    }
+
+    .mode-landing-logo {
+      font-size: 3rem;
+      font-weight: 900;
+      color: #ffffff;
+      letter-spacing: 0.18em;
+      font-family: 'Courier New', Courier, monospace;
+    }
+
+    .mode-landing-subtitle {
+      font-size: 0.65rem;
+      letter-spacing: 0.35em;
+      color: #555555;
+      font-family: 'Courier New', Courier, monospace;
+      text-transform: uppercase;
+      margin-top: 6px;
+    }
+
+    .mode-landing-prompt {
+      font-size: 0.6rem;
+      letter-spacing: 0.25em;
+      color: #666666;
+      text-transform: uppercase;
+      border-top: 1px solid #2a2a2a;
+      border-bottom: 1px solid #2a2a2a;
+      padding: 10px 32px;
+    }
+
+    .mode-cards {
+      display: flex;
+      border: 2px solid #ffffff;
+    }
+
+    .mode-card {
+      padding: 44px 64px;
+      background: #000000;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 10px;
+      border-right: 1px solid #333333;
+      transition: background 0.12s;
+      text-align: left;
+      min-width: 260px;
+    }
+
+    .mode-card:last-child {
+      border-right: none;
+    }
+
+    .mode-card:hover {
+      background: #ffffff;
+    }
+
+    .mode-card:hover .mode-card-label,
+    .mode-card:hover .mode-card-desc,
+    .mode-card:hover .mode-card-tag {
+      color: #000000;
+    }
+
+    .mode-card-tag {
+      font-size: 0.58rem;
+      letter-spacing: 0.14em;
+      color: #555555;
+      font-family: 'Courier New', Courier, monospace;
+      text-transform: uppercase;
+    }
+
+    .mode-card-label {
+      font-size: 1.25rem;
+      font-weight: 900;
+      letter-spacing: 0.06em;
+      color: #ffffff;
+      font-family: 'Courier New', Courier, monospace;
+      text-transform: uppercase;
+    }
+
+    .mode-card-desc {
+      font-size: 0.68rem;
+      color: #777777;
+      font-family: 'Courier New', Courier, monospace;
+      max-width: 210px;
+      line-height: 1.7;
+      margin-top: 4px;
+    }
+
+    /* run-type badge in nav */
+    .run-badge {
+      font-size: 0.56rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      padding: 4px 10px;
+      border: 1px solid #444444;
+      color: #888888;
+      cursor: pointer;
+      font-family: 'Courier New', Courier, monospace;
+      background: transparent;
+      transition: border-color 0.12s, color 0.12s;
+      white-space: nowrap;
+    }
+
+    .run-badge:hover {
+      border-color: #ffffff;
+      color: #ffffff;
+    }
+
+    .run-badge.ablation {
+      border-color: #664400;
+      color: #cc8800;
+    }
+
+    .run-badge.ablation:hover {
+      border-color: #cc8800;
+      color: #ffaa00;
+    }
   </style>
 
 </head>
 
 <body>
+
+  <!-- MODE SELECTION LANDING -->
+  <div id="mode-landing">
+    <div class="mode-landing-inner">
+      <div class="mode-landing-title-block">
+        <div class="mode-landing-logo">PR4CODE</div>
+        <div class="mode-landing-subtitle">Evaluation Dashboard</div>
+      </div>
+      <div class="mode-landing-prompt">Select evaluation mode</div>
+      <div class="mode-cards">
+        <button class="mode-card" onclick="selectMode('complete')">
+          <div class="mode-card-tag">first_turn/</div>
+          <div class="mode-card-label">Complete Run</div>
+          <div class="mode-card-desc">Full pipeline with LLM-summarized context and MASCA analysis</div>
+        </button>
+        <button class="mode-card" onclick="selectMode('ablation')">
+          <div class="mode-card-tag">ablation_turn/</div>
+          <div class="mode-card-label">Ablation Run</div>
+          <div class="mode-card-desc">Raw file content without LLM summarization — context ablation study</div>
+        </button>
+      </div>
+    </div>
+  </div>
 
   <canvas id="bg-canvas"></canvas>
 
@@ -2453,6 +2620,7 @@
         <button class="eval-btn" data-eval="gpt_5-mini" onclick="switchEval('gpt_5-mini')">GPT-5-mini</button>
         <button class="eval-btn" data-eval="gpt_5-nano" onclick="switchEval('gpt_5-nano')">GPT-5-nano</button>
       </div>
+      <button class="run-badge" id="run-badge" onclick="showModeLanding()" title="Change evaluation mode">COMPLETE</button>
       <span class="nav-status"><span id="nav-pr-count">—</span> pull requests</span>
     </div>
   </nav>
@@ -2975,6 +3143,7 @@
     let activeChips = new Set();
     let chartRefs = {};
     let currentEval = 'gpt_5-2';
+    let currentRunType = null;   // 'complete' | 'ablation' — set by landing screen
     let summaryData = null;
 
     const DC_STATE = { steps: 0, tokens: 0, files: 0, funcs: 0, sem: 0, time: 0, req: 0 };
@@ -3014,6 +3183,29 @@
       time: [null, 'chart-kpi-time-hist'],
       req: [null, 'chart-kpi-req-hist'],
     };
+
+    /* ── run-type helpers ─────────────────────────────────────────────── */
+    function getEvalKey() {
+      return currentRunType === 'ablation' ? currentEval + '_ablation' : currentEval;
+    }
+
+    function selectMode(type) {
+      currentRunType = type;
+      const badge = document.getElementById('run-badge');
+      if (badge) {
+        badge.textContent = type === 'ablation' ? 'ABLATION' : 'COMPLETE';
+        badge.classList.toggle('ablation', type === 'ablation');
+      }
+      document.getElementById('mode-landing').classList.add('hidden');
+      // reset and load
+      allPRs = [];
+      document.getElementById('nav-pr-count').textContent = '—';
+      init();
+    }
+
+    function showModeLanding() {
+      document.getElementById('mode-landing').classList.remove('hidden');
+    }
 
     function switchEval(key) {
       if (key === currentEval) return;
@@ -3090,8 +3282,8 @@
     async function init() {
       try {
         const [summaryRes, prsRes] = await Promise.all([
-          fetch(`/api/summary?eval=${currentEval}`),
-          fetch(`/api/prs?eval=${currentEval}`),
+          fetch(`/api/summary?eval=${getEvalKey()}`),
+          fetch(`/api/prs?eval=${getEvalKey()}`),
         ]);
         const summary = await summaryRes.json();
         allPRs = await prsRes.json();
@@ -3897,7 +4089,7 @@
       switchTab('overview');
 
       try {
-        const res = await fetch(`/api/pr/${encodeURIComponent(id).replace('%2F', '/')}?eval=${currentEval}`);
+        const res = await fetch(`/api/pr/${encodeURIComponent(id).replace('%2F', '/')}?eval=${getEvalKey()}`);
         const d = await res.json();
         renderDetail(id, d);
       } catch (e) {
@@ -4323,7 +4515,7 @@
     })();
 
     /* ─── boot ───────────────────────────────────────────────────────── */
-    init();
+    showModeLanding();
 
     /* ════════════════════════════════════════════════════════════════════
        CORRELATION CHARTS

@@ -1,0 +1,42 @@
+{
+  "pr_number": 925,
+  "repository": "plasma-umass/scalene",
+  "title": "Fix for overwriting LD_PRELOAD if it contains libscalene.so and other values",
+  "body": "It looks like in some cases setup_preload gets called more than once, so it was adding `libscalene.so` to `LD_PRELOAD` the first time then later replacing `LD_PRELOAD`  with just `libscalene.so`, this fixes that case.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T14:01:30.124784",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "scalene/scalene_preload.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "get_preload_environ",
+          "class_name": "ScalenePreload",
+          "full_name": "ScalenePreload.get_preload_environ",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Modify ScalenePreload.get_preload_environ to explicitly handle three LD_PRELOAD scenarios so existing LD_PRELOAD values that already include 'libscalene.so' are preserved and not overwritten when setup_preload runs multiple times.",
+    "steps": [
+      {
+        "operation": "Fix LD_PRELOAD construction to preserve existing entries when libscalene.so is already present",
+        "file_to_modify": "scalene/scalene_preload.py",
+        "function_to_modify": "ScalenePreload.get_preload_environ",
+        "reason": "The current conditional conflates the cases \"LD_PRELOAD absent\" and \"LD_PRELOAD already contains 'libscalene.so'\", causing the latter to be overwritten and losing other libraries. Implement explicit branching for the three cases: LD_PRELOAD absent -> set to 'libscalene.so'; LD_PRELOAD present and missing 'libscalene.so' -> prepend 'libscalene.so:'; LD_PRELOAD present and already containing 'libscalene.so' -> preserve os.environ['LD_PRELOAD'] (do not replace). This prevents corruption when setup_preload is invoked multiple times.",
+        "side_effects": "Low risk change limited to environment construction for LD_PRELOAD. Tests that previously observed the incorrect overwrite must be updated or new tests added; otherwise behavior is unchanged for first-time setup. Downstream callers (e.g., setup_preload logic that compares requested env to os.environ) will now correctly detect matching values and avoid unnecessary respawns. No external API changes, but any code that implicitly relied on LD_PRELOAD being replaced (instead of preserved) may observe different behavior. Recommend adding unit tests covering: LD_PRELOAD absent, present without libscalene, present with only libscalene, and present with libscalene plus other entries to prevent regressions."
+      }
+    ]
+  }
+}

@@ -1,0 +1,65 @@
+{
+  "pr_number": 563,
+  "repository": "netease-youdao/QAnything",
+  "title": "修复错误将chunk_size更新为chunks_number的问题",
+  "body": "KnowledgeBaseManager类中，更新File表的chunk_number字段使用的方法update_chunks_number存在sql语句错误。\n实际为\"UPDATE File SET chunk_size = %s WHERE file_id = %s\"。这会错误地修改chunk_size，导致chunk_size和chunks_number值相同。\n\n同时，在文件插入向量数据库结束后，原代码会有针对chunks_number等信息的统一修改。\n\n所以可以将insert_files_server.py中，process_data中对chunks_number做的更新语句：mysql_client.update_chunks_number(local_file.file_id, chunks_number)进行删除。\n修改后，文件上传成功后chunks_number和chunk_size的值完全正确。",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T13:54:45.593742",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "qanything_kernel/connector/database/mysql/mysql_client.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "update_chunks_number",
+          "class_name": "KnowledgeBaseManager",
+          "full_name": "KnowledgeBaseManager.update_chunks_number",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "qanything_kernel/dependent_server/insert_files_serve/insert_files_server.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "process_data",
+          "class_name": null,
+          "full_name": "process_data",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Fix a SQL typo in KnowledgeBaseManager.update_chunks_number so it updates the chunks_number column (not chunk_size), and remove a redundant early call to update_chunks_number in process_data to avoid duplicate/incorrect updates; this ensures chunk_size and chunks_number are written correctly and only once.",
+    "steps": [
+      {
+        "operation": "Fix SQL to update chunks_number column",
+        "file_to_modify": "qanything_kernel/connector/database/mysql/mysql_client.py",
+        "function_to_modify": "KnowledgeBaseManager.update_chunks_number",
+        "reason": "Current SQL mistakenly updates the chunk_size column: 'UPDATE File SET chunk_size = %s WHERE file_id = %s'. This assigns the chunks_number value into chunk_size. Changing the statement to update the chunks_number column ensures the intended database field is written.",
+        "side_effects": "All callers of update_chunks_number (current and future) will now correctly update the chunks_number column. Tests interacting with the File table should be run (integration tests that upload files and unit tests for DB updates). If any code expected the previous buggy behavior (unlikely), those behaviors will change. No API changes, but database contents will differ: chunk_size will no longer be overwritten by chunks_number."
+      },
+      {
+        "operation": "Remove redundant premature DB update of chunks_number",
+        "file_to_modify": "qanything_kernel/dependent_server/insert_files_serve/insert_files_server.py",
+        "function_to_modify": "process_data",
+        "reason": "process_data currently calls mysql_client.update_chunks_number(local_file.file_id, chunks_number) immediately after retriever.insert_documents(...). This is redundant because the final update (including chunks_number) is performed later in check_and_process. Removing this call prevents double updates and avoids invoking the buggy update in the early stage (even after the SQL fix, it's unnecessary duplication).",
+        "side_effects": "Chunks number will be persisted only by the later unified update (check_and_process). Ensure check_and_process always executes its final update on successful insertion paths; otherwise chunks_number might not be persisted in some edge/error cases. Run integration tests: upload files and verify File.chunk_size and File.chunks_number values are correct; check for regressions in concurrent uploads. No API surface change, but DB update timing changes (earlier update removed)."
+      }
+    ]
+  }
+}

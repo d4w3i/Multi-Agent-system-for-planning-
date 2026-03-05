@@ -1,0 +1,80 @@
+{
+  "pr_number": 2410,
+  "repository": "gunthercox/ChatterBot",
+  "title": "Fix file path resolution",
+  "body": "This pull request makes a few changes:\r\n\r\n1. It fixes the single file case where a `yield` should be used instead of a `return` - the difference seems to be that the former results in an empty generator evaluation when a single file is provided.\r\n2. Absolute path resolution has been added for easier identification of file locations if the specified file is not found.\r\n3. A more descriptive error message.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T12:15:15.993390",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "chatterbot/corpus.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "get_file_path",
+          "class_name": null,
+          "full_name": "get_file_path",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "list_corpus_files",
+          "class_name": null,
+          "full_name": "list_corpus_files",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "chatterbot/trainers.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "train",
+          "class_name": "ChatterBotCorpusTrainer",
+          "full_name": "ChatterBotCorpusTrainer.train",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Fix corpus file path handling so single-file inputs iterate correctly in generator-based flows, and improve debuggability by resolving paths to absolute locations and emitting clearer “not found” errors. Updates focus on corpus path resolution/listing and the trainer’s consumption of the resulting iterable.",
+    "steps": [
+      {
+        "operation": "Update corpus path resolution to return an absolute, normalized path and raise a more descriptive error when resolution fails",
+        "file_to_modify": "chatterbot/corpus.py",
+        "function_to_modify": "get_file_path",
+        "reason": "`get_file_path` is the canonical entry point for turning either a dotted corpus reference or a filesystem path into a concrete location. Normalizing to an absolute path improves debuggability and ensures downstream error messages can point to the exact attempted location when the file/package is not found.",
+        "side_effects": "May change behavior/expectations for callers/tests that asserted relative paths or compared paths as raw strings; error message text/contents may change and require test updates. Any downstream code that joins paths onto the returned value should be checked to ensure it doesn’t double-resolve or incorrectly concatenate absolute paths."
+      },
+      {
+        "operation": "Fix single-file corpus listing to produce a consistent iterable (use `yield` rather than `return` in generator-style logic), and validate existence with absolute path in errors",
+        "file_to_modify": "chatterbot/corpus.py",
+        "function_to_modify": "list_corpus_files",
+        "reason": "The PR indicates the single-file code path currently uses `return` where `yield` is required, which can cause empty iteration when callers treat the result as a generator/iterable. This function is also the right place to enforce consistent directory-vs-file handling: resolve to absolute paths, verify file existence, and emit actionable errors that include the resolved location and expected corpus extension(s).",
+        "side_effects": "Could change ordering/type of the returned object (e.g., generator vs list) depending on the existing implementation; callers relying on concrete lists may need minor adjustment. Improved validation may cause earlier failures (now raising on missing/invalid inputs instead of silently returning nothing), which can surface new errors in existing integrations."
+      },
+      {
+        "operation": "Adjust trainer training loop to consume corpus file iterables robustly and propagate enriched corpus resolution errors",
+        "file_to_modify": "chatterbot/trainers.py",
+        "function_to_modify": "ChatterBotCorpusTrainer.train",
+        "reason": "This trainer is the primary consumer of `list_corpus_files`/`load_corpus`. Ensuring it iterates over the corpus file iterable (including the single-file case) without accidentally short-circuiting and that it surfaces the improved, absolute-path-based error messages will satisfy the acceptance criteria that single-file training produces non-empty iteration and missing files produce actionable diagnostics.",
+        "side_effects": "Behavior of exceptions surfaced from training may change (more descriptive messages, possibly different exception types). If this function previously assumed a list, it may need to avoid multiple passes over a generator (e.g., avoid calling `len()` or iterating twice), which can affect logging/debug output and any related tests."
+      }
+    ]
+  }
+}

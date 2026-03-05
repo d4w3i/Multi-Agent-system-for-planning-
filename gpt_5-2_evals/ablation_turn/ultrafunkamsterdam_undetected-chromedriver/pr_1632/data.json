@@ -1,0 +1,63 @@
+{
+    "repository": "ultrafunkamsterdam/undetected-chromedriver",
+    "pull_request_number": 1632,
+    "title": "fixed options not having headless attribute",
+    "body": "Fixes errors:\r\n\r\nline 398, in __init__\r\n    if headless or options.headless:\r\n                   ^^^^^^^^^^^^^^^^\r\nAttributeError: 'ChromeOptions' object has no attribute 'headless'\r\n\r\n\r\nline 488, in __init__\r\n    if options.headless:\r\n       ^^^^^^^^^^^^^^^^\r\nAttributeError: 'ChromeOptions' object has no attribute 'headless'\r\n\r\n\r\n",
+    "pr_date": "2023-10-26T14:10:12Z",
+    "source_branch": "fix-error",
+    "language": "en",
+    "keywords_detected": {
+        "branch": [
+            "fix"
+        ],
+        "requirement": [
+            "fix"
+        ],
+        "body": [
+            "fix"
+        ]
+    },
+    "number_of_links_in_pr": 0,
+    "base_sha": "cea80717c5a3d95ccf5c40e6e38081d5454ec7a5",
+    "last_commit_sha": "60766f4aca5f4f655a808332405a80d7a667307a",
+    "diff_between_base_and_last": [
+        {
+            "sha": "4e66eea331b9e2da51f3bda3dcc13d6a46cc23c0",
+            "filename": "undetected_chromedriver/__init__.py",
+            "status": "modified",
+            "additions": 4,
+            "deletions": 2,
+            "changes": 6,
+            "blob_url": "https://github.com/ultrafunkamsterdam/undetected-chromedriver/blob/60766f4aca5f4f655a808332405a80d7a667307a/undetected_chromedriver%2F__init__.py",
+            "raw_url": "https://github.com/ultrafunkamsterdam/undetected-chromedriver/raw/60766f4aca5f4f655a808332405a80d7a667307a/undetected_chromedriver%2F__init__.py",
+            "contents_url": "https://api.github.com/repos/ultrafunkamsterdam/undetected-chromedriver/contents/undetected_chromedriver%2F__init__.py?ref=60766f4aca5f4f655a808332405a80d7a667307a",
+            "patch": "@@ -395,7 +395,7 @@ def __init__(\n         if no_sandbox:\n             options.arguments.extend([\"--no-sandbox\", \"--test-type\"])\n \n-        if headless or options.headless:\n+        if headless or (hasattr(options, 'headless') and options.headless):\n             #workaround until a better checking is found\n             try:\n                 if self.patcher.version_main < 108:\n@@ -406,7 +406,9 @@ def __init__(\n                 logger.warning(\"could not detect version_main.\"\n                                \"therefore, we are assuming it is chrome 108 or higher\")\n                 options.add_argument(\"--headless=new\")\n-\n+        else:\n+            options.headless = False\n+            \n         options.add_argument(\"--window-size=1920,1080\")\n         options.add_argument(\"--start-maximized\")\n         options.add_argument(\"--no-sandbox\")"
+        }
+    ],
+    "commits": [
+        {
+            "sha": "60766f4aca5f4f655a808332405a80d7a667307a",
+            "commit_date": "2023-10-26T14:08:50Z",
+            "message": "fixed options not having headless attribute",
+            "number_of_links_in_commit": 0,
+            "files_changed_count": 1,
+            "files": [
+                {
+                    "sha": "4e66eea331b9e2da51f3bda3dcc13d6a46cc23c0",
+                    "filename": "undetected_chromedriver/__init__.py",
+                    "status": "modified",
+                    "additions": 4,
+                    "deletions": 2,
+                    "changes": 6,
+                    "blob_url": "https://github.com/ultrafunkamsterdam/undetected-chromedriver/blob/60766f4aca5f4f655a808332405a80d7a667307a/undetected_chromedriver%2F__init__.py",
+                    "raw_url": "https://github.com/ultrafunkamsterdam/undetected-chromedriver/raw/60766f4aca5f4f655a808332405a80d7a667307a/undetected_chromedriver%2F__init__.py",
+                    "contents_url": "https://api.github.com/repos/ultrafunkamsterdam/undetected-chromedriver/contents/undetected_chromedriver%2F__init__.py?ref=60766f4aca5f4f655a808332405a80d7a667307a",
+                    "patch": "@@ -395,7 +395,7 @@ def __init__(\n         if no_sandbox:\n             options.arguments.extend([\"--no-sandbox\", \"--test-type\"])\n \n-        if headless or options.headless:\n+        if headless or (hasattr(options, 'headless') and options.headless):\n             #workaround until a better checking is found\n             try:\n                 if self.patcher.version_main < 108:\n@@ -406,7 +406,9 @@ def __init__(\n                 logger.warning(\"could not detect version_main.\"\n                                \"therefore, we are assuming it is chrome 108 or higher\")\n                 options.add_argument(\"--headless=new\")\n-\n+        else:\n+            options.headless = False\n+            \n         options.add_argument(\"--window-size=1920,1080\")\n         options.add_argument(\"--start-maximized\")\n         options.add_argument(\"--no-sandbox\")"
+                }
+            ]
+        }
+    ],
+    "pull_request_url": "https://github.com/ultrafunkamsterdam/undetected-chromedriver/pull/1632",
+    "commits_url": "https://github.com/ultrafunkamsterdam/undetected-chromedriver/pull/1632/commits",
+    "files_url": "https://github.com/ultrafunkamsterdam/undetected-chromedriver/pull/1632/files"
+}

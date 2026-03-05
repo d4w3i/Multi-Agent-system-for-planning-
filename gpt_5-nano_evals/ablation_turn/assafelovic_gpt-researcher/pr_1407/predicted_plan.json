@@ -1,0 +1,42 @@
+{
+  "pr_number": 1407,
+  "repository": "assafelovic/gpt-researcher",
+  "title": "Fix return statements in PyMuPDFScraper",
+  "body": "Summary of changes:\n- Add explicit return statements in the exception paths of PyMuPDFScraper.scrape, returning a stable 3-tuple of (text, image_list, title) instead of None. This aligns with the actual return shape and prevents unpacking errors in callers.\n- Update the scrape method's return type annotation to reflect the actual return type: tuple[str, list[str], str].\n- Update the docstring (implicitly via updated return type) to reflect the new, stable return format.\n\nRationale:\n- The original implementation did not return in except blocks, causing the function to implicitly return None. Callers that unpack three values would fail.\n- The method was annotated as returning str but actually returns a 3-tuple. This mismatch can lead to runtime errors and misinterpretation of the API surface.\n\nImpact:\n- Public API remains the same shape for successful loads (still returning (text, image, title)), but with robust error handling ensuring a consistent 3-tuple on failure as well. If external callers relied on a single string return before, they will need to adapt to the 3-tuple format.\n- No other files are touched; changes are isolated to base_project/pymupdf.py.\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T12:25:10.944831",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "pymupdf.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "scrape",
+          "class_name": "PyMuPDFScraper",
+          "full_name": "PyMuPDFScraper.scrape",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "This PR fixes the PyMuPDFScraper.scrape method to always return a stable 3-tuple (text, image_list, title) by adding explicit returns in exception paths and updating the return type annotation and docstring to reflect this API.",
+    "steps": [
+      {
+        "operation": "Update PyMuPDFScraper.scrape to return a consistent (text, image_list, title) tuple on all execution paths and update the function's type annotation and docstring",
+        "file_to_modify": "base_project/pymupdf.py",
+        "function_to_modify": "PyMuPDFScraper.scrape",
+        "reason": "Previously, exception paths could return None and the function incorrectly declared a string return type; aligning all paths to a 3-tuple prevents unpacking errors and clarifies the API surface",
+        "side_effects": "Public API change requires downstream callers to unpack the 3-tuple; unit tests should cover success and error paths; may require updating code that consumed scrape() as a single string; potential impact on external integrations"
+      }
+    ]
+  }
+}

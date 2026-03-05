@@ -1,0 +1,64 @@
+{
+  "pr_number": 429,
+  "repository": "yihong0618/bilingual_book_maker",
+  "title": "fix: Fix parameter mismatch in EPUBBookLoaderHelper.translate_with_ba…",
+  "body": "## Problem\nThe `translate_with_backoff` method in `EPUBBookLoaderHelper` class was raising TypeError because of parameter mismatch between the method signature and actual calls through the backoff decorator.\n\nError message:\nTypeError: EPUBBookLoaderHelper.translate_with_backoff() takes 1 positional argument but 3 were given\n\n## Solution\n1. Modified the method signature to properly handle parameters:\n   - Added explicit parameters for text and context_flag\n   - Added jitter=None to backoff decorator\n   \n2. Improved error handling and logging\n#bug",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T12:52:30.093703",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "book_maker/loader/helper.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "translate_with_backoff",
+          "class_name": "EPUBBookLoaderHelper",
+          "full_name": "EPUBBookLoaderHelper.translate_with_backoff",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "deal_new",
+          "class_name": "EPUBBookLoaderHelper",
+          "full_name": "EPUBBookLoaderHelper.deal_new",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "book_maker/loader/epub_loader.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    }
+  ],
+  "step_plan": {
+    "summary": "Fixes a TypeError in `EPUBBookLoaderHelper.translate_with_backoff` caused by a signature mismatch with positional calls under a backoff decorator by aligning the wrapper’s parameters, making backoff deterministic with `jitter=None`, and improving logging/error context. Updates the calling site in `deal_new` to use explicit keywords for clarity and robustness.",
+    "steps": [
+      {
+        "operation": "Fix backoff-wrapped translate wrapper signature and decorator options; add structured error logging while preserving retries",
+        "file_to_modify": "book_maker/loader/helper.py",
+        "function_to_modify": "EPUBBookLoaderHelper.translate_with_backoff",
+        "reason": "The method is currently defined to accept only **kwargs but is called with positional args from deal_new, causing `TypeError: ... takes 1 positional argument but 3 were given` once wrapped by backoff. Updating the signature to explicitly accept `(text, context_flag)` (and forwarding to `self.translate_model.translate(...)`) aligns the wrapper with all call sites and ensures the backoff decorator can re-invoke the function with the same args. Adding `jitter=None` matches the PR’s stated retry behavior change and makes retry delays deterministic. Adding clearer logging/exception context makes repeated failures actionable without changing the retry semantics.",
+        "side_effects": "Changes the public/implicit calling contract of translate_with_backoff (callers relying on kwargs-only behavior may need adjustment). Retry timing becomes non-jittered (may alter load/traffic patterns). Additional logs may increase verbosity; ensure not to log full sensitive paragraph content (prefer length/preview). Tests/integration runs that exercise translation should be updated/verified."
+      },
+      {
+        "operation": "Update the paragraph translation call to use explicit keyword arguments and improve local error handling around translation per paragraph",
+        "file_to_modify": "book_maker/loader/helper.py",
+        "function_to_modify": "EPUBBookLoaderHelper.deal_new",
+        "reason": "Even after fixing the wrapper signature, switching the call to `translate_with_backoff(text=p.text, context_flag=self.context_flag)` prevents future positional/ordering mistakes and makes the intent clear. deal_new is the immediate caller that triggered the mismatch; adding targeted try/except (or letting exceptions bubble with better context) can improve diagnostics at the paragraph level and integrate with the improved logging in translate_with_backoff.",
+        "side_effects": "If deal_new adds catching behavior, it may change whether translation failures stop the pipeline or are skipped/marked (behavior must remain consistent with current expectations). Using keywords can surface parameter name mismatches earlier (good) but may break if translate_with_backoff chooses different parameter names—keep them consistent. Any downstream logic that assumes exceptions propagate unchanged could be affected; re-run translation flow tests."
+      }
+    ]
+  }
+}

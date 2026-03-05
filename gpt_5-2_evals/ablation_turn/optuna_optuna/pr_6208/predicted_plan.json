@@ -1,0 +1,63 @@
+{
+  "pr_number": 6208,
+  "repository": "optuna/optuna",
+  "title": "Fix `test_log_completed_trial_skip_storage_access`",
+  "body": "## Motivation\nFix the first problem on #6206. `test_log_completed_trial_skip_storage_access` is incorrectly dependent on previously executed tests.\n\n## Description of the changes\nReset the logger and set the logging level.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T12:29:19.191966",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "tests/study_tests/test_study.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "test_log_completed_trial_skip_storage_access",
+          "class_name": null,
+          "full_name": "test_log_completed_trial_skip_storage_access",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Fixes a flaky, order-dependent test by making it control Optuna’s global logging state: reset the library-root logger and set verbosity explicitly so `_log_completed_trial` deterministically skips storage access when INFO logging is disabled.",
+    "steps": [
+      {
+        "operation": "Make the test deterministic by resetting Optuna’s library-root logger and explicitly setting verbosity for each sub-assertion (WARNING vs INFO/DEBUG) so the storage-access expectation is independent of prior tests’ logging configuration.",
+        "file_to_modify": "tests/study_tests/test_study.py",
+        "function_to_modify": "test_log_completed_trial_skip_storage_access",
+        "reason": "This test is currently order-dependent because Optuna’s global logging state (handlers/levels/propagation) can be mutated by other tests. Resetting the library-root logger and then setting verbosity inside the test ensures `Study._log_completed_trial` sees a consistent effective log level and therefore deterministically skips or performs storage access.",
+        "side_effects": "May require updating imports in the test file (e.g., using `optuna.logging._reset_library_root_logger()`); could change expectations if the test previously (accidentally) relied on logging state from other tests. Should be validated by running the test alone and in full suite/random order."
+      },
+      {
+        "operation": "Review and (only if needed) tighten the early-return guard to ensure no storage-touching code paths execute when `INFO` is disabled (e.g., keep all best-trial lookups behind `if not _logger.isEnabledFor(logging.INFO): return`).",
+        "file_to_modify": "optuna/study/study.py",
+        "function_to_modify": "Study._log_completed_trial",
+        "reason": "The test asserts that storage access is skipped when logging is effectively below INFO. Confirming (and if necessary enforcing) that *all* calls that could touch storage (like best-trial retrieval) are guarded by the INFO-enabled check ensures the behavior under test is correct and robust, not just the test isolation.",
+        "side_effects": "If modified, could change runtime behavior by further reducing storage calls when INFO is disabled (typically desirable). May affect downstream logging output and any code depending on side effects of `_log_completed_trial`; requires running study/optimize-related tests."
+      },
+      {
+        "operation": "Ensure `_reset_library_root_logger` fully restores a canonical, test-friendly state (handlers/levels/propagation) that makes subsequent `set_verbosity` calls deterministic across test order.",
+        "file_to_modify": "optuna/logging.py",
+        "function_to_modify": "_reset_library_root_logger",
+        "reason": "The fix relies on `_reset_library_root_logger()` producing a stable baseline. If it leaves behind mutated handlers or an unexpected level/propagation setting, tests can remain flaky even if they call the reset helper.",
+        "side_effects": "Any change affects global Optuna logging behavior in tests and potentially in user code that calls this internal helper. Requires rerunning logging-related tests (e.g., `tests/test_logging.py`) and ensuring no new cross-test interference is introduced."
+      },
+      {
+        "operation": "Verify that `set_verbosity` deterministically sets the effective log level seen by the study module logger after a reset (e.g., it should set the library-root logger’s level in a way that makes `_logger.isEnabledFor(INFO)` predictable).",
+        "file_to_modify": "optuna/logging.py",
+        "function_to_modify": "set_verbosity",
+        "reason": "The test depends on `set_verbosity(WARNING)` making `Study._log_completed_trial` return early via `isEnabledFor(INFO)`. If `set_verbosity` interacts unexpectedly with logger hierarchy/propagation/handlers, then even after reset the effective level could still vary. Ensuring determinism here prevents similar flakes elsewhere.",
+        "side_effects": "May alter how verbosity affects Optuna logging globally (including user-facing behavior). Should be validated against existing logging tests and any documented verbosity semantics."
+      }
+    ]
+  }
+}

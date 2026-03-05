@@ -1,0 +1,88 @@
+{
+    "repository": "statsmodels/statsmodels",
+    "pull_request_number": 9396,
+    "title": "BUG: Remove method setting in summary2 of genmod",
+    "body": "- [X] closes #9315 \r\n- [X] tests added / passed. \r\n- [X] code/documentation is well formatted.  \r\n- [X] properly formatted commit message. See \r\n      [NumPy's guide](https://docs.scipy.org/doc/numpy-1.15.1/dev/gitwash/development_workflow.html#writing-the-commit-message). \r\n\r\n<details>\r\n\r\n\r\n**Notes**:\r\n\r\n* It is essential that you add a test when making code changes. Tests are not \r\n  needed for doc changes.\r\n* When adding a new function, test values should usually be verified in another package (e.g., R/SAS/Stata).\r\n* When fixing a bug, you must add a test that would produce the bug in main and\r\n  then show that it is fixed with the new code.\r\n* New code additions must be well formatted. Changes should pass flake8. If on Linux or OSX, you can\r\n  verify you changes are well formatted by running \r\n  ```\r\n  git diff upstream/main -u -- \"*.py\" | flake8 --diff --isolated\r\n  ```\r\n  assuming `flake8` is installed. This command is also available on Windows \r\n  using the Windows System for Linux once `flake8` is installed in the \r\n  local Linux environment. While passing this test is not required, it is good practice and it help \r\n  improve code quality in `statsmodels`.\r\n* Docstring additions must render correctly, including escapes and LaTeX.\r\n\r\n</details>\r\n",
+    "pr_date": "2024-10-17T09:53:36Z",
+    "source_branch": "KevinGregory-fix/summary2-sets-glm-fitting-9257",
+    "language": "en",
+    "keywords_detected": {
+        "branch": [
+            "fix"
+        ],
+        "requirement": [
+            "remove"
+        ],
+        "body": [
+            "add",
+            "change",
+            "develop",
+            "fix"
+        ]
+    },
+    "number_of_links_in_pr": 2,
+    "base_sha": "4fde69f6725c2bea27bcadb96863b26073348156",
+    "last_commit_sha": "b45c2ea562bfc085f2e89879c55b4fbe1ecbe56c",
+    "diff_between_base_and_last": [
+        {
+            "sha": "3dfdd1d6cca43011440a059fcd0343ed6032277f",
+            "filename": "statsmodels/genmod/generalized_linear_model.py",
+            "status": "modified",
+            "additions": 0,
+            "deletions": 1,
+            "changes": 1,
+            "blob_url": "https://github.com/statsmodels/statsmodels/blob/b45c2ea562bfc085f2e89879c55b4fbe1ecbe56c/statsmodels%2Fgenmod%2Fgeneralized_linear_model.py",
+            "raw_url": "https://github.com/statsmodels/statsmodels/raw/b45c2ea562bfc085f2e89879c55b4fbe1ecbe56c/statsmodels%2Fgenmod%2Fgeneralized_linear_model.py",
+            "contents_url": "https://api.github.com/repos/statsmodels/statsmodels/contents/statsmodels%2Fgenmod%2Fgeneralized_linear_model.py?ref=b45c2ea562bfc085f2e89879c55b4fbe1ecbe56c",
+            "patch": "@@ -2567,7 +2567,6 @@ def summary2(self, yname=None, xname=None, title=None, alpha=.05,\n         --------\n         statsmodels.iolib.summary2.Summary : class to hold summary results\n         \"\"\"\n-        self.method = 'IRLS'\n         from statsmodels.iolib import summary2\n         smry = summary2.Summary()\n         with warnings.catch_warnings():"
+        },
+        {
+            "sha": "dbd99690584afef6fb4b48fb9267f22809536c72",
+            "filename": "statsmodels/genmod/tests/test_glm.py",
+            "status": "modified",
+            "additions": 1073,
+            "deletions": 667,
+            "changes": 1740,
+            "blob_url": "https://github.com/statsmodels/statsmodels/blob/b45c2ea562bfc085f2e89879c55b4fbe1ecbe56c/statsmodels%2Fgenmod%2Ftests%2Ftest_glm.py",
+            "raw_url": "https://github.com/statsmodels/statsmodels/raw/b45c2ea562bfc085f2e89879c55b4fbe1ecbe56c/statsmodels%2Fgenmod%2Ftests%2Ftest_glm.py",
+            "contents_url": "https://api.github.com/repos/statsmodels/statsmodels/contents/statsmodels%2Fgenmod%2Ftests%2Ftest_glm.py?ref=b45c2ea562bfc085f2e89879c55b4fbe1ecbe56c"
+        }
+    ],
+    "commits": [
+        {
+            "sha": "b45c2ea562bfc085f2e89879c55b4fbe1ecbe56c",
+            "commit_date": "2024-07-18T02:30:22Z",
+            "message": "BUG:res.method=irls removed",
+            "number_of_links_in_commit": 0,
+            "files_changed_count": 2,
+            "files": [
+                {
+                    "sha": "3dfdd1d6cca43011440a059fcd0343ed6032277f",
+                    "filename": "statsmodels/genmod/generalized_linear_model.py",
+                    "status": "modified",
+                    "additions": 0,
+                    "deletions": 1,
+                    "changes": 1,
+                    "blob_url": "https://github.com/statsmodels/statsmodels/blob/b45c2ea562bfc085f2e89879c55b4fbe1ecbe56c/statsmodels%2Fgenmod%2Fgeneralized_linear_model.py",
+                    "raw_url": "https://github.com/statsmodels/statsmodels/raw/b45c2ea562bfc085f2e89879c55b4fbe1ecbe56c/statsmodels%2Fgenmod%2Fgeneralized_linear_model.py",
+                    "contents_url": "https://api.github.com/repos/statsmodels/statsmodels/contents/statsmodels%2Fgenmod%2Fgeneralized_linear_model.py?ref=b45c2ea562bfc085f2e89879c55b4fbe1ecbe56c",
+                    "patch": "@@ -2567,7 +2567,6 @@ def summary2(self, yname=None, xname=None, title=None, alpha=.05,\n         --------\n         statsmodels.iolib.summary2.Summary : class to hold summary results\n         \"\"\"\n-        self.method = 'IRLS'\n         from statsmodels.iolib import summary2\n         smry = summary2.Summary()\n         with warnings.catch_warnings():"
+                },
+                {
+                    "sha": "dbd99690584afef6fb4b48fb9267f22809536c72",
+                    "filename": "statsmodels/genmod/tests/test_glm.py",
+                    "status": "modified",
+                    "additions": 1073,
+                    "deletions": 667,
+                    "changes": 1740,
+                    "blob_url": "https://github.com/statsmodels/statsmodels/blob/b45c2ea562bfc085f2e89879c55b4fbe1ecbe56c/statsmodels%2Fgenmod%2Ftests%2Ftest_glm.py",
+                    "raw_url": "https://github.com/statsmodels/statsmodels/raw/b45c2ea562bfc085f2e89879c55b4fbe1ecbe56c/statsmodels%2Fgenmod%2Ftests%2Ftest_glm.py",
+                    "contents_url": "https://api.github.com/repos/statsmodels/statsmodels/contents/statsmodels%2Fgenmod%2Ftests%2Ftest_glm.py?ref=b45c2ea562bfc085f2e89879c55b4fbe1ecbe56c"
+                }
+            ]
+        }
+    ],
+    "pull_request_url": "https://github.com/statsmodels/statsmodels/pull/9396",
+    "commits_url": "https://github.com/statsmodels/statsmodels/pull/9396/commits",
+    "files_url": "https://github.com/statsmodels/statsmodels/pull/9396/files"
+}

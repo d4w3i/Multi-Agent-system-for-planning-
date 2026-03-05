@@ -1,0 +1,102 @@
+{
+  "pr_number": 39358,
+  "repository": "huggingface/transformers",
+  "title": "fix(siglip2): improve pooled output logic in modular file",
+  "body": "Fixes # (issue)\n\nThe PR description is a template and does not specify the exact bug/behavior change, but the title indicates a fix to pooled output logic in the modular SigLIP2 implementation.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T12:18:11.492852",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "modular_siglip2.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "forward",
+          "class_name": "Siglip2VisionTransformer",
+          "full_name": "Siglip2VisionTransformer.forward",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "forward",
+          "class_name": "Siglip2MultiheadAttentionPoolingHead",
+          "full_name": "Siglip2MultiheadAttentionPoolingHead.forward",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "forward",
+          "class_name": "Siglip2Model",
+          "full_name": "Siglip2Model.forward",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "get_image_features",
+          "class_name": "Siglip2Model",
+          "full_name": "Siglip2Model.get_image_features",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "forward",
+          "class_name": "Siglip2ForImageClassification",
+          "full_name": "Siglip2ForImageClassification.forward",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Improve SigLIP2 pooled output behavior by fixing mask-aware pooling in the multi-head attention pooling head and making pooled embeddings robust (non-None, correctly shaped, finite) across the vision transformer, the main multimodal forward pass, image feature extraction, and image-classification pooling.",
+    "steps": [
+      {
+        "operation": "Fix attention-mask expansion/broadcasting for multi-head attention pooling so it matches the attention module’s expected shape and remains numerically safe",
+        "file_to_modify": "modular_siglip2.py",
+        "function_to_modify": "Siglip2MultiheadAttentionPoolingHead.forward",
+        "reason": "Current logic prepares a 4D mask and then repeats/reshapes it into a 3D tensor; this is a common source of pooled-output bugs (wrong repeat factor, incorrect target_len/source_len, dtype/device mismatch, or incompatible shape with `self.attention(..., attn_mask=...)`). Correct mask handling ensures padded tokens are excluded from pooling and prevents NaNs/incorrect pooled vectors.",
+        "side_effects": "May change pooled embeddings when `pixel_attention_mask` is provided (expected improvement). Could expose shape assumptions in upstream mask generation; requires forward-pass verification with and without masks, and with edge cases like all-masked tokens."
+      },
+      {
+        "operation": "Ensure vision pooled output is always well-defined and uses the corrected pooling-mask semantics (including a safe fallback when head pooling is disabled or cannot be computed)",
+        "file_to_modify": "modular_siglip2.py",
+        "function_to_modify": "Siglip2VisionTransformer.forward",
+        "reason": "`pooler_output` is currently computed only when `self.use_head` and depends on `attention_mask` plumbing. If pooling head is disabled or produces invalid output for some mask shapes, downstream code that assumes a non-None `(B, D)` pooled vector will break. Adding a robust path (e.g., masked mean pool fallback, and/or strict shape normalization for `attention_mask`) stabilizes the model API.",
+        "side_effects": "Could alter outputs when `use_head=False` (from None to a pooled tensor) and may slightly change numerical results. Must ensure returned `BaseModelOutputWithPooling.pooler_output` remains `(batch, hidden_dim)` and on correct dtype/device."
+      },
+      {
+        "operation": "Harden pooled-embedding consumption: validate non-None pooled outputs, prevent divide-by-zero during normalization, and keep device placement consistent",
+        "file_to_modify": "modular_siglip2.py",
+        "function_to_modify": "Siglip2Model.forward",
+        "reason": "This function directly normalizes `vision_outputs.pooler_output` and `text_outputs.pooler_output`. If either is None, incorrectly shaped, or contains all-zeros (e.g., from all-masked pooling), `norm()` can be zero and produce NaNs. Adding checks and an epsilon clamp (or safe normalization utility) ensures stable logits and loss computation.",
+        "side_effects": "May change behavior for pathological inputs (all masked) from NaNs to finite values. Could affect numerical equivalence; tests should assert finiteness and expected shapes for embeddings and logits."
+      },
+      {
+        "operation": "Align `get_image_features` with the corrected pooled-output contract (guarantee a valid pooled embedding and optionally apply the same safety checks as in `forward`)",
+        "file_to_modify": "modular_siglip2.py",
+        "function_to_modify": "Siglip2Model.get_image_features",
+        "reason": "This method is a public API expected to return image embeddings derived from pooled output. If pooled output logic changes (e.g., fallback pooling or stricter mask handling), `get_image_features` should mirror the same invariants as `forward` (non-None, finite, correct shape).",
+        "side_effects": "May change outputs for masked inputs or when head pooling is disabled. If normalization is added here (or explicitly not added), update expectations in downstream callers and documentation accordingly."
+      },
+      {
+        "operation": "Fix image-classification pooling to use the same mask semantics as vision pooling (correct mask shape, correct broadcast, and safe denominator)",
+        "file_to_modify": "modular_siglip2.py",
+        "function_to_modify": "Siglip2ForImageClassification.forward",
+        "reason": "This code performs independent mean pooling using `pixel_attention_mask[..., None]` and divides by `sum(pool_mask)`. Given the module’s stated mask shapes and the vision model’s token sequence shape, this is prone to shape mismatch (2D patch-token mask vs 2D/3D pixel mask) and divide-by-zero when everything is masked. Aligning it with the corrected pooled-output logic ensures consistent behavior across the module.",
+        "side_effects": "May change classification logits when masks are used (expected correction). Requires re-checking any documentation claiming mask shape `(batch, image_size, image_size)` vs token-level `(batch, seq_len)`, and running a small forward test to ensure no NaNs and correct output shapes."
+      }
+    ]
+  }
+}

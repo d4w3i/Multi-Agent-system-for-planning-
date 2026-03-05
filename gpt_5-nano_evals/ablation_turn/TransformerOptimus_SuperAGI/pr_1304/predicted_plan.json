@@ -1,0 +1,42 @@
+{
+  "pr_number": 1304,
+  "repository": "TransformerOptimus/SuperAGI",
+  "title": "Fix Recruitment Workflow",
+  "body": "This pull request targets the recruitment workflow seed definitions inside the single-file seeds in base_project/workflow_seed.py. The Recruitment Workflow seed currently establishes a multi-step flow (read input, read resume, read job description, possibly compare, and send follow-ups). The fix focuses on solidifying the step chain and ensuring the completion path is unambiguous, reducing chances of dangling or skipped steps and clarifying the intent of the job-description/resume comparison step.\n\nWhat this change addresses:\n- Ensures the recruitment seed defines a clear start (TRIGGER) and a defined end (COMPLETE) path.\n- Aligns step descriptions and transitions to avoid ambiguous or broken flows when the seed is re-run.\n- Keeps the existing behavior intact for idempotent seeding, while making the flow more robust against partial seeds or re-seeding in CI/local environments.\n\nNotes:\n- No changes to external integrations or business logic beyond the seed wiring, so runtime behavior depends on the underlying models/tools in the repository.\n- Tests are not present in this repository snapshot; consider adding targeted tests for AgentWorkflowSeed.build_recruitment_workflow to verify step chaining and completion handling in future iterations.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T12:17:18.911862",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "workflow_seed.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "build_recruitment_workflow",
+          "class_name": "AgentWorkflowSeed",
+          "full_name": "AgentWorkflowSeed.build_recruitment_workflow",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Fix recruitment workflow seed: solidify step chain, ensure explicit end path, and clarify the job-description/resume comparison step; preserve idempotent seeding while improving flow robustness.",
+    "steps": [
+      {
+        "operation": "Refactor the recruitment workflow seeding to fix step chaining and clarify the resume-vs-job-description comparison logic",
+        "file_to_modify": "base_project/workflow_seed.py",
+        "function_to_modify": "AgentWorkflowSeed.build_recruitment_workflow",
+        "reason": "The current seed wires Step4 with an ambiguous extra argument and the completion path from Step2 to COMPLETE is potentially brittle. Clarifying the comparison step and ensuring a deterministic COMPLETE path improves robustness during reseed and in CI/local environments.",
+        "side_effects": "Potential changes to the Recruitment Workflow in the database; may affect idempotent reseeding, downstream automation flows, and test fixtures (if seeded in CI). Requires re-seeding to verify end-to-end path and idempotency; consider adding tests for build_recruitment_workflow in future."
+      }
+    ]
+  }
+}

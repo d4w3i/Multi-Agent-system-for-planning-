@@ -1,0 +1,95 @@
+{
+  "pr_number": 235,
+  "repository": "facebookresearch/AnimatedDrawings",
+  "title": "fix: repair window size in macOS",
+  "body": "When a program is running on macOS with an external monitor connected, the values obtained through \n`glfw.get_framebuffer_size(self.win)`\nwill be larger. \nIt is more appropriate to use \n`glfw.get_window_size(self.win)`\nto retrieve the logical size.\n\nExplore the source code to identify the files and functions to modify.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T12:11:27.307527",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "animated_drawings/view/window_view.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "get_framebuffer_size",
+          "class_name": "WindowView",
+          "full_name": "WindowView.get_framebuffer_size",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "__init__",
+          "class_name": "WindowView",
+          "full_name": "WindowView.__init__",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "render",
+          "class_name": "WindowView",
+          "full_name": "WindowView.render",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "animated_drawings/view/view.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "get_framebuffer_size",
+          "class_name": "View",
+          "full_name": "View.get_framebuffer_size",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Fix macOS external-monitor sizing issues by using GLFW logical window size rather than framebuffer pixel size when computing projection, setting the viewport, and sizing background blits. Align the View API semantics so size queries are unambiguous and consistent across implementations.",
+    "steps": [
+      {
+        "operation": "Clarify/extend the view sizing API to distinguish logical window size from framebuffer pixel size, and document the intended use for projection/viewport calculations on macOS",
+        "file_to_modify": "animated_drawings/view/view.py",
+        "function_to_modify": "View.get_framebuffer_size",
+        "reason": "The current abstract method name suggests pixel (framebuffer) dimensions, but the PR requires logical window sizing on macOS. Updating the base contract (either by redefining what this method returns or by documenting/adding a logical-size expectation) prevents downstream confusion and keeps implementations consistent.",
+        "side_effects": "Any other View implementations must continue to satisfy the abstract method contract; if any callers relied on pixel dimensions, they may need adjustment. This can be an API semantics change, so update docstrings/type expectations accordingly and re-run any integration demos relying on custom View implementations."
+      },
+      {
+        "operation": "Switch the window-size accessor used by WindowView from GLFW framebuffer pixel size to GLFW logical window size (macOS external monitor fix)",
+        "file_to_modify": "animated_drawings/view/window_view.py",
+        "function_to_modify": "WindowView.get_framebuffer_size",
+        "reason": "On macOS with external monitors/Retina scaling, `glfw.get_framebuffer_size` can be larger than the logical size and causes incorrect sizing. Returning `glfw.get_window_size(self.win)` provides the logical dimensions the PR intends to use for window sizing.",
+        "side_effects": "If any rendering path truly needs pixel-accurate framebuffer dimensions (e.g., for certain blit/viewport operations), this change may alter scaling behavior. Visual output should be manually validated on HiDPI and non-HiDPI displays."
+      },
+      {
+        "operation": "Update initial projection-matrix setup to use the corrected logical window size dimensions",
+        "file_to_modify": "animated_drawings/view/window_view.py",
+        "function_to_modify": "WindowView.__init__",
+        "reason": "The projection matrix is currently computed from `get_framebuffer_size()`. After changing that accessor to return logical size, ensure the initialization remains consistent and uses the intended coordinate space so objects are projected correctly on macOS external monitors.",
+        "side_effects": "Any cached projection assumptions at startup may change; confirm that resizing behavior and initial scene framing remain correct. May require re-checking any code that assumes 1:1 mapping between window coordinates and framebuffer pixels."
+      },
+      {
+        "operation": "Update render-time viewport and background blit sizing to use logical window dimensions (and keep coordinate spaces consistent)",
+        "file_to_modify": "animated_drawings/view/window_view.py",
+        "function_to_modify": "WindowView.render",
+        "reason": "`render()` uses `get_framebuffer_size()` for `glViewport` and for background blit destination sizing. To fix macOS external monitor sizing, these should reflect logical window size as per PR description so viewport/projection/background composition align with the logical coordinate system.",
+        "side_effects": "OpenGL viewport/blit often expects framebuffer pixel dimensions; using logical dimensions may introduce scaling differences (potential blur/stretch) depending on how FBOs/textures are sized. Validate rendering on macOS Retina + external monitor, and also on Windows/Linux to ensure no regression. Consider adding a follow-up if pixel-size viewport is needed while keeping logical-size projection."
+      }
+    ]
+  }
+}

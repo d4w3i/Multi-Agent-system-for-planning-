@@ -1,0 +1,42 @@
+{
+  "pr_number": 104,
+  "repository": "g1879/DrissionPage",
+  "title": "fixed json decoding bug in daemon thread",
+  "body": "fixed bug in daemon thread that is triggered when trying to convert an empty message_json to dict. Still raising the JSONDecodeError in case decoding fails for any other reason",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T12:12:54.457437",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "DrissionPage/chromium_driver.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "_recv_loop",
+          "class_name": "ChromiumDriver",
+          "full_name": "ChromiumDriver._recv_loop",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Fixes a daemon websocket receiver bug by skipping empty/whitespace messages before calling `json.loads()`, preventing thread crashes while still raising `JSONDecodeError` for non-empty malformed JSON.",
+    "steps": [
+      {
+        "operation": "Harden the websocket daemon receive loop to skip empty/whitespace payloads before JSON decoding, while preserving JSONDecodeError behavior for non-empty malformed messages",
+        "file_to_modify": "DrissionPage/chromium_driver.py",
+        "function_to_modify": "ChromiumDriver._recv_loop",
+        "reason": "`json.loads('')` raises `JSONDecodeError`, which can crash the daemon receiver thread when `recv()` yields an empty/whitespace-only message. Guarding against empty payloads prevents the spurious failure without changing error semantics for genuinely invalid JSON.",
+        "side_effects": "Receiver thread will silently ignore empty/whitespace messages (optionally with debug logging if implemented), which may slightly change observability but should not affect protocol handling. Non-empty malformed JSON will still raise `JSONDecodeError`, so any callers/tests that rely on that exception behavior remain unchanged; verify thread lifecycle/error propagation remains acceptable under your existing exception handling."
+      }
+    ]
+  }
+}

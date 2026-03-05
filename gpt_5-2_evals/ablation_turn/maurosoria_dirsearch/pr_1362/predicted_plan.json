@@ -1,0 +1,72 @@
+{
+  "pr_number": 1362,
+  "repository": "maurosoria/dirsearch",
+  "title": "python cleanup",
+  "body": "Description\n---------------\n\n`lib/core/dictionary.py` -> fix typo, remove redundant parenthesis since you are returning a tuple anyway\n`lib/core/structures.py` -> remove redundant class parenthesis (not needed in python3)\n`lib/reports/html_report.py` -> simplify comparison statements",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T12:23:22.285624",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "lib/core/dictionary.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "__getstate__",
+          "class_name": "Dictionary",
+          "full_name": "Dictionary.__getstate__",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "lib/core/structures.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    },
+    {
+      "filename": "lib/reports/html_report.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "generate",
+          "class_name": "HTMLReport",
+          "full_name": "HTMLReport.generate",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Applies small Python 3 style cleanups: removes redundant parentheses in a tuple return used for object state export, and simplifies status-code range comparisons in HTML report generation without changing behavior.",
+    "steps": [
+      {
+        "operation": "Fix typo (if present) and remove redundant tuple-return parentheses in pickling state export",
+        "file_to_modify": "lib/core/dictionary.py",
+        "function_to_modify": "Dictionary.__getstate__",
+        "reason": "`__getstate__` should return the same `(items, index)` tuple state but can do so without redundant parentheses; also address any nearby typo referenced by the PR to keep serialization state consistent and readable.",
+        "side_effects": "Behavior should remain identical for pickling/unpickling; verify `__setstate__` still matches the returned structure and run any serialization-related tests or smoke checks that load/save dictionary objects."
+      },
+      {
+        "operation": "Simplify HTTP status range checks using chained comparisons",
+        "file_to_modify": "lib/reports/html_report.py",
+        "function_to_modify": "HTMLReport.generate",
+        "reason": "Replace verbose `>=`/`<=` pairs joined by `and` with Pythonic chained comparisons (e.g., `200 <= status <= 299`) for clarity while preserving the exact same range semantics used to map statuses to report categories/styles.",
+        "side_effects": "No intended behavior change, but affects how response codes are categorized/styled in HTML output; run/report generation smoke tests and confirm boundary codes (200, 299, 300, 399, 400, 599) still map to the same formatting."
+      }
+    ]
+  }
+}

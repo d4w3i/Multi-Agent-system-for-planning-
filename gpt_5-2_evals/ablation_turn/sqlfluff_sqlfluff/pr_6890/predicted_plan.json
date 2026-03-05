@@ -1,0 +1,65 @@
+{
+  "pr_number": 6890,
+  "repository": "sqlfluff/sqlfluff",
+  "title": "Fix RawFileSlice idx and tags in lexer_test",
+  "body": "While running the lexer test in rust mode, these `RawFileSlice` tags came across with type errors. This fixes the order of the `block_idx` and `tag`.\n\nSide effects: None.\n\nChecklist indicates tests + docs updated (per author).",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T12:45:57.664417",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "test/core/parser/lexer_test.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "test__parser__lexer_slicing_from_template_file",
+          "class_name": null,
+          "full_name": "test__parser__lexer_slicing_from_template_file",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "src/sqlfluff/core/templaters/base.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "RawFileSlice",
+          "class_name": null,
+          "full_name": "RawFileSlice",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Fix lexer test failures by ensuring `RawFileSlice` objects in `lexer_test` are constructed with the correct argument order for `block_idx` and `tag` (preferably via keyword arguments), aligned with the `RawFileSlice` definition in the templater base module.",
+    "steps": [
+      {
+        "operation": "Confirm (and if needed, clarify) the `RawFileSlice` field order and defaults so test construction matches the runtime API",
+        "file_to_modify": "src/sqlfluff/core/templaters/base.py",
+        "function_to_modify": "RawFileSlice",
+        "reason": "The reported failure is a type error caused by positional construction using an order that doesn’t match the `NamedTuple` signature. Verifying and optionally adding a short clarifying comment/typing note near the definition provides the authoritative contract: `(raw, slice_type, source_idx, block_idx=0, tag=None)` where `block_idx` must be an `int` and `tag` is optional `str`.",
+        "side_effects": "If only comments/typing clarifications are added, there should be no runtime impact. Any actual signature change would be a breaking API change for templaters/tests, so avoid altering field order; ensure downstream code and tests still construct `RawFileSlice` correctly."
+      },
+      {
+        "operation": "Update lexer slicing test fixtures to construct `RawFileSlice` with correct `block_idx`/`tag` placement (prefer keyword args)",
+        "file_to_modify": "test/core/parser/lexer_test.py",
+        "function_to_modify": "test__parser__lexer_slicing_from_template_file",
+        "reason": "This test builds `TemplatedFile(raw_sliced=[RawFileSlice(...) ...])` and currently has at least one positional call where `block_idx` and `tag` are swapped (e.g., a string passed in the 4th positional slot). Converting all `RawFileSlice(...)` instantiations in this test to use keyword arguments for `block_idx=` and `tag=` (or correcting the positional order) eliminates the type errors and makes the test resilient to future signature evolution.",
+        "side_effects": "Test expectations should remain identical; only the test data construction changes. If some cases implicitly relied on the wrong ordering, correcting it may change the produced slice metadata, potentially requiring small assertion updates in this test file. Run the lexer tests (including any rust-mode variant) to confirm no regressions."
+      }
+    ]
+  }
+}

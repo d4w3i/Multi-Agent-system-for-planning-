@@ -1,0 +1,117 @@
+{
+  "pr_number": 2644,
+  "repository": "TomSchimansky/CustomTkinter",
+  "title": "Fix CTkEntry place_holder",
+  "body": "- Fixed place holder behavior when assigning a textvariable to a CTkEntry\n- Added flag to control textvariable_callback event",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T12:22:36.640235",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "customtkinter/windows/widgets/ctk_entry.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "__init__",
+          "class_name": "CTkEntry",
+          "full_name": "CTkEntry.__init__",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_textvariable_callback",
+          "class_name": "CTkEntry",
+          "full_name": "CTkEntry._textvariable_callback",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_activate_placeholder",
+          "class_name": "CTkEntry",
+          "full_name": "CTkEntry._activate_placeholder",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_deactivate_placeholder",
+          "class_name": "CTkEntry",
+          "full_name": "CTkEntry._deactivate_placeholder",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "configure",
+          "class_name": "CTkEntry",
+          "full_name": "CTkEntry.configure",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "destroy",
+          "class_name": "CTkEntry",
+          "full_name": "CTkEntry.destroy",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Add proper trace lifecycle management and a suppression flag to CTkEntry so placeholder activation/deactivation correctly uses Variable.get(), traces are added/removed when textvariable changes, and internal programmatic updates do not trigger the textvariable trace.",
+    "steps": [
+      {
+        "operation": "Initialize textvariable trace management and callback flag",
+        "file_to_modify": "customtkinter/windows/widgets/ctk_entry.py",
+        "function_to_modify": "CTkEntry.__init__",
+        "reason": "Add a boolean flag (self._textvariable_callback_enabled = True) to allow temporarily suppressing reactions to Variable trace events during internal programmatic changes. Also ensure that if an initial textvariable is provided, a trace_add is registered and its trace name stored (self._textvariable_callback_name). Replace any checks that compare the Variable object directly to '' with checks using .get() where appropriate during initialization so placeholder logic uses the variable's value.",
+        "side_effects": "Tests that relied on the textvariable trace firing during initialization might change; ensures safe internal updates. Introducing new attributes (callback flag and trace name) is internal and should not affect public API, but code introspecting widget attributes might observe them."
+      },
+      {
+        "operation": "Handle reassignment of the textvariable and trace lifecycle",
+        "file_to_modify": "customtkinter/windows/widgets/ctk_entry.py",
+        "function_to_modify": "CTkEntry.configure",
+        "reason": "When configure(..., textvariable=...) is called, remove the trace from the previous Variable (if any) via trace_remove using the stored trace name, set self._textvariable to the new Variable, add a new trace_add to the new Variable and store its trace name in self._textvariable_callback_name. While updating the Entry/Variable to reflect the new variable's current value, temporarily disable the textvariable callback flag to avoid reacting to these programmatic changes. After attaching the trace, set the placeholder state based on new_variable.get() (activate if empty, otherwise deactivate).",
+        "side_effects": "Properly managing trace lifecycles prevents dangling callbacks and duplicate callbacks when reassigning variables. Could affect code that expected traces to remain on old Variables. Tests involving configure('textvariable') will need updates/verification."
+      },
+      {
+        "operation": "Suppress trace while inserting placeholder text into the Entry",
+        "file_to_modify": "customtkinter/windows/widgets/ctk_entry.py",
+        "function_to_modify": "CTkEntry._activate_placeholder",
+        "reason": "When showing the placeholder the code uses entry.insert() which will update the linked Variable and trigger its trace; wrap the insert logic with self._textvariable_callback_enabled = False (use try/finally to restore True) so the trace callback does not run in response to this internal change. Also change any checks that compare the Variable object to '' to use self._textvariable.get() when the variable is present.",
+        "side_effects": "Prevents recursive or spurious placeholder re-activation caused by the variable trace. Tests that rely on the trace being triggered by internal placeholder insertion would be affected. Ensures consistent placeholder state when variable and entry are linked."
+      },
+      {
+        "operation": "Suppress trace while removing placeholder text from the Entry",
+        "file_to_modify": "customtkinter/windows/widgets/ctk_entry.py",
+        "function_to_modify": "CTkEntry._deactivate_placeholder",
+        "reason": "When removing placeholder text the code uses entry.delete() which will update the linked Variable and trigger its trace; temporarily set self._textvariable_callback_enabled = False around delete operations (with try/finally) to avoid invoking the trace for this internal change. Also ensure logic that determines whether to remove placeholder uses self._textvariable.get() when a Variable is attached.",
+        "side_effects": "Avoids re-triggering the placeholder activation through the trace when clearing the placeholder. Tests/behaviour expecting trace invocation on internal delete will change. Keeps UI predictable when user focuses/edits entry programmatically."
+      },
+      {
+        "operation": "Respect callback enable flag and use variable.get() to decide placeholder state",
+        "file_to_modify": "customtkinter/windows/widgets/ctk_entry.py",
+        "function_to_modify": "CTkEntry._textvariable_callback",
+        "reason": "Make the trace callback return immediately if self._textvariable_callback_enabled is False to prevent handling events that were caused by internal changes. When proceeding, evaluate the Variable's current value with self._textvariable.get() to decide whether to activate or deactivate the placeholder (activate if get() == ''). This prevents incorrect comparisons of the Variable object to strings and avoids recursion.",
+        "side_effects": "Prevents unwanted reactions to internally-initiated changes; external traces (other listeners) are unaffected. Tests expecting immediate trace handling during programmatic changes must account for the new suppression behavior; however, user-facing behavior becomes more consistent and predictable."
+      },
+      {
+        "operation": "Remove textvariable trace on widget destruction",
+        "file_to_modify": "customtkinter/windows/widgets/ctk_entry.py",
+        "function_to_modify": "CTkEntry.destroy",
+        "reason": "Ensure that before the widget is destroyed any trace associated with self._textvariable is removed (using trace_remove and the stored self._textvariable_callback_name) to avoid dangling callbacks referencing destroyed widget methods or leaking references to Variables.",
+        "side_effects": "Prevents callbacks from running after widget teardown and reduces risk of memory leaks; tests that introspect Variable traces should be updated. No public API change, but safer lifecycle handling for widgets using textvariable."
+      }
+    ]
+  }
+}

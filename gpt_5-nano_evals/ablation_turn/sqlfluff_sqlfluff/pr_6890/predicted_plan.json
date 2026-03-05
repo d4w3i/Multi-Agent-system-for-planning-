@@ -1,0 +1,40 @@
+{
+  "pr_number": 6890,
+  "repository": "sqlfluff/sqlfluff",
+  "title": "Fix RawFileSlice idx and tags in lexer_test",
+  "body": "During lexer tests, RawFileSlice instances in lexer_test were created using positional arguments, which can be brittle given the current field order (raw, slice_type, source_idx, block_idx, tag). The test data included 5-argument constructors where the 4th and 5th arguments are intended to map to block_idx and tag, respectively. To reduce confusion and potential type-mismatch (e.g., tag being an int like 0), the PR updates the tests to instantiate RawFileSlice with explicit keyword arguments for block_idx and tag (or replace sentinel ints with None). This aligns test usage with the actual RawFileSlice field definitions and avoids subtle bugs when field ordering changes or is misinterpreted in different environments (e.g., Rust-mode testing).",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T13:57:00.911319",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "test/core/parser/lexer_test.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    }
+  ],
+  "step_plan": {
+    "summary": "This PR fixes brittle RawFileSlice test usage by introducing a test helper and refactoring test constructors to use explicit keyword arguments for block_idx and tag, eliminating dependence on positional argument order in lexer_test.",
+    "steps": [
+      {
+        "operation": "Add test helper function construct_raw_file_slice to lexer_test.py",
+        "file_to_modify": "test/core/parser/lexer_test.py",
+        "function_to_modify": "construct_raw_file_slice",
+        "reason": "Introduce a single entry point to build RawFileSlice instances with explicit keyword arguments, reducing positional arg brittleness and aligning with the RawFileSlice field definitions.",
+        "side_effects": "Adds a new helper function used by tests; may require updating imports or test setup if the module structure changes."
+      },
+      {
+        "operation": "Update RawFileSlice instantiations in lexer_test.py to use keyword args via the helper",
+        "file_to_modify": "test/core/parser/lexer_test.py",
+        "function_to_modify": "construct_raw_file_slice",
+        "reason": "Replace 5-argument positional RawFileSlice calls with calls to the helper to explicitly set block_idx and tag, preventing misalignment when field order changes.",
+        "side_effects": "Tests become more readable and robust; minimal risk to production code; may require minor import adjustments and re-running tests to confirm no regressions."
+      }
+    ]
+  }
+}

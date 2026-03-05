@@ -1,0 +1,42 @@
+{
+  "pr_number": 988,
+  "repository": "babysor/MockingBird",
+  "title": "fix-issues-963: preprocess_audio.py--The .npy file failed to save",
+  "body": "Root cause: In models/synthesizer/preprocess_audio.py, preprocess_general calls _process_utterance with incorrect arguments for mel_fpath and wav_fpath. The call passes a boolean False and hparams in place of the expected Path args, which leads to numpy.save receiving an invalid path and failing to write the .npy files (the issue referenced by #963).\n\nWhat’s changed:\n- Fix the argument order in the call to _process_utterance within preprocess_general so that mel_fpath and wav_fpath (Path objects) are passed correctly.\n- This ensures that numpy.save(..., path) receives valid paths and the .npy files are written as intended.\n\nAdditionally (optional improvement suggestion): consider ensuring that the target directories (out_dir/mels and out_dir/audio) exist before saving, to avoid FileNotFoundError in environments where the folders haven’t been created yet.\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T12:25:52.701192",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "models/synthesizer/preprocess_audio.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "preprocess_general",
+          "class_name": null,
+          "full_name": "preprocess_general",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Fix the argument order in preprocess_general so that mel_fpath and wav_fpath are passed as Path objects to _process_utterance, ensuring proper saving of mel and audio .npy files. This targets the root cause of issue #963 with a low-risk, isolated patch.",
+    "steps": [
+      {
+        "operation": "Fix incorrect argument order in _process_utterance call to pass mel_fpath and wav_fpath as Path objects",
+        "file_to_modify": "models/synthesizer/preprocess_audio.py",
+        "function_to_modify": "preprocess_general",
+        "reason": "The current call passes incorrect arguments (False and hparams) for mel_fpath and wav_fpath, causing numpy.save to receive an invalid path and preventing the .npy files from being written. Correct argument order ensures valid Path objects are saved.",
+        "side_effects": "Low risk change confined to preprocessing; downstream steps that rely on saved .npy files (mel and audio features) should proceed once fixed. May require running existing tests or adding a small test to verify np.save is invoked with valid Path objects; optional directory existence checks are not implemented in this step but could be added later."
+      }
+    ]
+  }
+}

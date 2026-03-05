@@ -1,0 +1,63 @@
+{
+    "repository": "JoeanAmier/XHS-Downloader",
+    "pull_request_number": 237,
+    "title": "fix can't run by source code",
+    "body": "the error is:    fix NoMatches: No nodes match <class 'textual.widgets._rich_log.RichLog'> on XHSDownloader",
+    "pr_date": "2025-04-02T06:05:37Z",
+    "source_branch": "RichLogFix",
+    "language": "en",
+    "keywords_detected": {
+        "branch": [
+            "fix"
+        ],
+        "requirement": [
+            "fix"
+        ],
+        "body": [
+            "fix"
+        ]
+    },
+    "number_of_links_in_pr": 0,
+    "base_sha": "936b4f9075131f8e1e1a6c4c85c5fd213d52ee44",
+    "last_commit_sha": "bbecc2dc136aa110649a71a5f3b80086f3d80d08",
+    "diff_between_base_and_last": [
+        {
+            "sha": "422bd7b7309e82478eda7e652c10af96ecf9343d",
+            "filename": "source/TUI/app.py",
+            "status": "modified",
+            "additions": 6,
+            "deletions": 0,
+            "changes": 6,
+            "blob_url": "https://github.com/JoeanAmier/XHS-Downloader/blob/bbecc2dc136aa110649a71a5f3b80086f3d80d08/source%2FTUI%2Fapp.py",
+            "raw_url": "https://github.com/JoeanAmier/XHS-Downloader/raw/bbecc2dc136aa110649a71a5f3b80086f3d80d08/source%2FTUI%2Fapp.py",
+            "contents_url": "https://api.github.com/repos/JoeanAmier/XHS-Downloader/contents/source%2FTUI%2Fapp.py?ref=bbecc2dc136aa110649a71a5f3b80086f3d80d08",
+            "patch": "@@ -54,6 +54,12 @@ async def on_mount(self) -> None:\n         self.install_screen(Loading(), name=\"loading\")\n         self.install_screen(About(), name=\"about\")\n         self.install_screen(Record(self.APP, ), name=\"record\")\n+        \n+        # 1. first add RichLog component\n+        rich_log = RichLog()\n+        await self.mount(rich_log)\n+        \n+        # 2. then use query_one\n         await self.push_screen(\"index\")\n         self.SETTINGS.check_keys(\n             self.parameter,"
+        }
+    ],
+    "commits": [
+        {
+            "sha": "bbecc2dc136aa110649a71a5f3b80086f3d80d08",
+            "commit_date": "2025-04-02T05:52:48Z",
+            "message": "fix NoMatches: No nodes match <class 'textual.widgets._rich_log.RichLog'> on XHSDownloader",
+            "number_of_links_in_commit": 0,
+            "files_changed_count": 1,
+            "files": [
+                {
+                    "sha": "422bd7b7309e82478eda7e652c10af96ecf9343d",
+                    "filename": "source/TUI/app.py",
+                    "status": "modified",
+                    "additions": 6,
+                    "deletions": 0,
+                    "changes": 6,
+                    "blob_url": "https://github.com/JoeanAmier/XHS-Downloader/blob/bbecc2dc136aa110649a71a5f3b80086f3d80d08/source%2FTUI%2Fapp.py",
+                    "raw_url": "https://github.com/JoeanAmier/XHS-Downloader/raw/bbecc2dc136aa110649a71a5f3b80086f3d80d08/source%2FTUI%2Fapp.py",
+                    "contents_url": "https://api.github.com/repos/JoeanAmier/XHS-Downloader/contents/source%2FTUI%2Fapp.py?ref=bbecc2dc136aa110649a71a5f3b80086f3d80d08",
+                    "patch": "@@ -54,6 +54,12 @@ async def on_mount(self) -> None:\n         self.install_screen(Loading(), name=\"loading\")\n         self.install_screen(About(), name=\"about\")\n         self.install_screen(Record(self.APP, ), name=\"record\")\n+        \n+        # 1. first add RichLog component\n+        rich_log = RichLog()\n+        await self.mount(rich_log)\n+        \n+        # 2. then use query_one\n         await self.push_screen(\"index\")\n         self.SETTINGS.check_keys(\n             self.parameter,"
+                }
+            ]
+        }
+    ],
+    "pull_request_url": "https://github.com/JoeanAmier/XHS-Downloader/pull/237",
+    "commits_url": "https://github.com/JoeanAmier/XHS-Downloader/pull/237/commits",
+    "files_url": "https://github.com/JoeanAmier/XHS-Downloader/pull/237/files"
+}

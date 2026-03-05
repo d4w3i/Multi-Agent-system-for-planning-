@@ -1,0 +1,50 @@
+{
+  "pr_number": 1407,
+  "repository": "assafelovic/gpt-researcher",
+  "title": "Fix return statements in PyMuPDFScraper",
+  "body": "Hi, just a quick fix for two bugs in `PyMuPDFScraper`:\n\n1. In case of problems, there were no `return` statements in the except blocks, that caused the function to implicitly return `None`, and that errors out [in here](https://github.com/assafelovic/gpt-researcher/blob/master/gpt_researcher/scraper/scraper.py#L103C1-L113C22), because `None` can not be unpacked to three variables. I added returning of empty strings/lists, as is done in other scraper classes as well.\n\n2. It was typed to return `str`, but actually it returns `tuple[str, list[str], str]`\n\nExplore the source code to identify the files and functions to modify.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T12:04:49.110338",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "pymupdf.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "scrape",
+          "class_name": "PyMuPDFScraper",
+          "full_name": "PyMuPDFScraper.scrape",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "is_url",
+          "class_name": "PyMuPDFScraper",
+          "full_name": "PyMuPDFScraper.is_url",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Ensure `PyMuPDFScraper.scrape()` always returns a consistent 3-tuple `(content, images, title)` by adding explicit returns in error handlers, and fix its return type annotation/docstring to match the actual tuple returned.",
+    "steps": [
+      {
+        "operation": "Fix `scrape` to always return a 3-tuple and correct its return type annotation/docstring",
+        "file_to_modify": "base_project/pymupdf.py",
+        "function_to_modify": "PyMuPDFScraper.scrape",
+        "reason": "`scrape()` currently returns a 3-tuple on success but falls through in exception paths (implicit `None`), which breaks downstream tuple-unpacking. The type hint/docstring also incorrectly state it returns `str` rather than the actual `(content, images, title)` tuple.",
+        "side_effects": "Changes the public typing contract of `scrape()` to match real behavior; may require updating/appeasing type checkers in dependents. Runtime behavior on errors changes from returning `None` to returning safe defaults like `(\"\", [], \"\")`, which may cause callers to proceed with empty values rather than failing fast; add/adjust tests that assert consistent tuple returns on timeout/exception cases."
+      }
+    ]
+  }
+}

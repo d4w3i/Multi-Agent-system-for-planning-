@@ -1,0 +1,79 @@
+{
+  "pr_number": 3286,
+  "repository": "py-pdf/pypdf",
+  "title": "BUG: Add delimiters to NameObject.renumber_table",
+  "body": "Per the spec, name objects cannot contain unescaped delimiters, which include angle, curly and square brackets (currently missing).\n\nI've attached a sample input PDF with a valid, correctly escaped name object. When appending this to a new PdfWriter the output is invalid (incorrectly escaped):\n\n```\n>>> w = PdfWriter()\n>>> w.append('nameobj.pdf')\n>>> w.write('out.pdf')\n```\n[out.pdf](https://github.com/user-attachments/files/20173760/out.pdf)\n[nameobj.pdf](https://github.com/user-attachments/files/20173761/nameobj.pdf)",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T12:35:04.362393",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "pypdf/generic/_base.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "renumber",
+          "class_name": "NameObject",
+          "full_name": "NameObject.renumber",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "write_to_stream",
+          "class_name": "NameObject",
+          "full_name": "NameObject.write_to_stream",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "read_from_stream",
+          "class_name": "NameObject",
+          "full_name": "NameObject.read_from_stream",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "tests/test_generic.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    }
+  ],
+  "step_plan": {
+    "summary": "Fix PDF NameObject serialization by escaping all delimiter characters (including angle, square, and curly brackets) when writing, preventing PdfWriter from emitting invalid name syntax after append+write. Add regression tests to verify both `renumber()`-based serialization and end-to-end writer round-trips preserve correctly escaped names.",
+    "steps": [
+      {
+        "operation": "Extend NameObject escaping to include missing PDF delimiter characters by adding `<`, `>`, `[`, `]`, `{`, `}` entries to the class-level `renumber_table` (as `#3C/#3E/#5B/#5D/#7B/#7D`) and ensure the method continues to apply the table to raw name bytes.",
+        "file_to_modify": "pypdf/generic/_base.py",
+        "function_to_modify": "NameObject.renumber",
+        "reason": "PDF name objects must not contain unescaped delimiter characters; current write-side escaping omits angle/square/curly brackets, causing valid input names to be re-emitted invalidly after append+write. The escaping table is consumed by `renumber()`, so this is the central place to align serialization with the delimiter set used during parsing.",
+        "side_effects": "Changes serialized output bytes for any name containing these characters; may affect downstream tests that assert exact output, and could slightly change round-trip behavior for previously (incorrectly) written PDFs."
+      },
+      {
+        "operation": "Add/adjust a regression test that exercises the writer path: create a NameObject containing delimiter characters (e.g., `A<B>[C]{D}`), place it into an object written by `PdfWriter` (as a dictionary value and/or key), write to bytes, then re-read and assert the name is preserved and/or the raw output contains the expected `#XX` escapes.",
+        "file_to_modify": "tests/test_generic.py",
+        "function_to_modify": "test_name_object_escapes_delimiters_on_write_roundtrip",
+        "reason": "The reported failure happens through `PdfWriter.append()` + `write()` (serialization), not just `renumber()` in isolation. A round-trip test prevents regressions by validating that writer output remains spec-compliant and readable when names include delimiter characters.",
+        "side_effects": "May require importing writer/reader utilities and using in-memory streams; could increase test runtime slightly and may need updates if test suite conventions differ (e.g., existing helpers/fixtures)."
+      },
+      {
+        "operation": "Ensure parsing/writing consistency by adding a focused test that confirms a name containing escaped delimiters is correctly parsed by `read_from_stream` (e.g., input bytes `/A#3CB#5B#5D#7B#7D`) and results in the expected `NameObject` value, matching what `write_to_stream` produces.",
+        "file_to_modify": "pypdf/generic/_base.py",
+        "function_to_modify": "NameObject.read_from_stream",
+        "reason": "`delimiter_pattern` already treats `< > [ ] { }` as delimiters during parsing; this test ensures the read path correctly interprets hex-escaped delimiter sequences and stays consistent with the updated write-side escaping used during append+write flows.",
+        "side_effects": "No behavioral change intended if parsing already works; adds coverage that may expose existing edge cases in name decoding and could require small adjustments if current decoding differs from the spec expectations."
+      }
+    ]
+  }
+}

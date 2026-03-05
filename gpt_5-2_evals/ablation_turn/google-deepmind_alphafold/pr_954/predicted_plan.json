@@ -1,0 +1,42 @@
+{
+  "pr_number": 954,
+  "repository": "google-deepmind/alphafold",
+  "title": "Fix deprecation warning / error from BioPython",
+  "body": "Hi,\n\n   Here is a small PR to fix a deprecation issue related to BioPython. It would be great if y'all could run this through CI to make sure it doesn't have any side effects, but BioPython _seems_ to promise it's a safe change.\n\n## Description:\nThis PR swaps the BioPython.SCOPData module import in the mmcif_parsing module for BioPython.PDBData.\n\n## Related issue:\nSee https://github.com/biopython/biopython/blob/master/DEPRECATED.rst#biodatascopdata for information about the SCOPData deprecation.\n\n## Motivation:\nSCOPData was removed in version 1.82 of BioPython, so its usage throws an error when imported. This change allows upgrading BioPython beyond version 1.79, which brings improvements in security and stability. I had been trying to use AlphaFold2 with an updated BioPython but kept receiving deprecation warnings / errors depending on which version I was using.\n\n## Verification\n  [X] Package still installs after change\n  [X] `run_alphafold_test.py` returns `ok` after this change.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T12:14:40.155609",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "alphafold/data/mmcif_parsing.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "parse",
+          "class_name": null,
+          "full_name": "parse",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Update `alphafold/data/mmcif_parsing.py` to stop importing `Bio.Data.SCOPData` (removed in Biopython 1.82) and use `Bio.Data.PDBData` for the 3-letter to 1-letter residue mapping within `parse()`, preserving mmCIF parsing behavior while eliminating deprecation/errors on newer Biopython.",
+    "steps": [
+      {
+        "operation": "Replace deprecated BioPython SCOPData import with PDBData (with optional backward-compatible fallback) and update residue 3-letter→1-letter mapping lookup used to build chain_to_seqres",
+        "file_to_modify": "alphafold/data/mmcif_parsing.py",
+        "function_to_modify": "parse",
+        "reason": "`Bio.Data.SCOPData` was removed in Biopython 1.82, causing import-time errors. The `parse()` function relies on `SCOPData.protein_letters_3to1` to translate residue names; `Bio.Data.PDBData.protein_letters_3to1` provides the supported equivalent mapping, preserving existing behavior while allowing newer Biopython versions.",
+        "side_effects": "Changes module import behavior; if a try/except fallback is added, it may maintain compatibility with very old Biopython versions. Sequence mapping outputs should remain identical for standard residues; any subtle differences in mapping tables between SCOPData and PDBData could affect uncommon residue handling (still expected to map to 'X' under the existing guards). Requires running `run_alphafold_test.py`/CI to confirm no downstream parsing or feature-generation regressions."
+      }
+    ]
+  }
+}

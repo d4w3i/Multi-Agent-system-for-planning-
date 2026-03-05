@@ -1,0 +1,81 @@
+{
+  "pr_number": 2200,
+  "repository": "mopidy/mopidy",
+  "title": "add workaround for gstreamer 1.25.0 to 1.26.2",
+  "body": "see-also: https://gitlab.freedesktop.org/gstreamer/gstreamer/-/commit/bbf60305ed2ee35f4ecf7a5de2bb139203dda2af",
+  "extraction_metadata": {
+    "extracted_at": "2026-02-26T01:09:45.047158",
+    "extractor_version": "1.0.0",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "src/mopidy/audio/scan.py",
+      "status": "modified",
+      "additions": 13,
+      "deletions": 2,
+      "functions_modified": [
+        {
+          "function_name": "_process",
+          "class_name": null,
+          "full_name": "_process",
+          "start_line": 282,
+          "end_line": 392,
+          "lines_changed": [
+            343,
+            344,
+            345,
+            346,
+            347,
+            348,
+            349,
+            350,
+            351,
+            352,
+            353,
+            354,
+            355
+          ]
+        }
+      ],
+      "patch": "@@ -338,10 +338,21 @@ def _process(  # noqa: C901, PLR0911, PLR0912, PLR0915\n                 and (\n                     (structure := missing_message.get_structure())\n                     and (caps := structure.get_value(\"detail\"))\n-                    and (mime := caps.get_structure(0).get_name())\n                 )\n             ):\n-                return tags, mime, have_audio, duration\n+                # gstreamer 1.25.0 to 1.26.2 (inclusive) broke the accessing\n+                # `caps.get_structure(0).get_name()`, but allow wrapping the\n+                # object in a context manager. with gstreamer 1.24.x one can\n+                # not use the structure as a context manager at all. version\n+                # 1.26.3 will supposedly revert it to the previous behaviour.\n+                struct = caps.get_structure(0)\n+                try:\n+                    mime = struct.get_name()\n+                except AttributeError:\n+                    with struct as _struct:\n+                        mime = _struct.get_name()\n+                if mime:\n+                    return tags, mime, have_audio, duration\n             raise exceptions.ScannerError(str(error))\n         elif msg.type == Gst.MessageType.EOS:\n             return tags, mime, have_audio, duration"
+    }
+  ],
+  "functions_modified": [
+    {
+      "function_name": "_process",
+      "class_name": null,
+      "full_name": "_process",
+      "start_line": 282,
+      "end_line": 392,
+      "lines_changed": [
+        343,
+        344,
+        345,
+        346,
+        347,
+        348,
+        349,
+        350,
+        351,
+        352,
+        353,
+        354,
+        355
+      ]
+    }
+  ],
+  "step_plan": {
+    "steps": [
+      {
+        "operation": "Add a defensive workaround when extracting the MIME type from GStreamer caps by falling back to using the structure as a context manager when direct `get_name()` access raises `AttributeError` (GStreamer 1.25.0–1.26.2 behavior), and only returning early if `mime` is successfully determined.",
+        "file_to_modify": "src/mopidy/audio/scan.py",
+        "function_to_modify": "_process",
+        "reason": "GStreamer 1.25.0 through 1.26.2 broke direct access to `caps.get_structure(0).get_name()`, causing scanning to fail when handling `missing_plugin_message` details; the workaround preserves compatibility across 1.24.x (no context manager support) and the affected versions by trying the old behavior first and conditionally using the context-manager wrapping.",
+        "side_effects": "Alters the control flow of the error-handling path for missing plugin messages: in affected GStreamer versions, MIME detection may succeed where it previously crashed; in other versions it should behave the same. This could change whether a `ScannerError` is raised versus returning `(tags, mime, have_audio, duration)` early, potentially impacting downstream code that relies on scan failures for certain media types."
+      }
+    ],
+    "summary": "Implements a compatibility workaround in the audio scanner to handle a GStreamer regression (1.25.0–1.26.2) when reading MIME type from caps structures, preventing attribute errors during scanning."
+  }
+}

@@ -1,0 +1,87 @@
+{
+  "pr_number": 2410,
+  "repository": "gunthercox/ChatterBot",
+  "title": "Fix file path resolution",
+  "body": "This pull request makes a few changes:\n\n1. It fixes the single file case where a `yield` should be used instead of a `return` - the difference seems to be that the former results in an empty generator evaluation when a single file is provided.\n2. Absolute path resolution has been added for easier identification of file locations if the specified file is not found.\n3. A more descriptive error message.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T13:10:53.645411",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "chatterbot/corpus.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "get_file_path",
+          "class_name": null,
+          "full_name": "get_file_path",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "list_corpus_files",
+          "class_name": null,
+          "full_name": "list_corpus_files",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "read_corpus",
+          "class_name": null,
+          "full_name": "read_corpus",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "load_corpus",
+          "class_name": null,
+          "full_name": "load_corpus",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Make corpus file path handling and error reporting robust: always return absolute candidate paths from get_file_path, have list_corpus_files return absolute paths for files or directory globs, raise a descriptive FileNotFoundError with absolute path in read_corpus, and ensure load_corpus is a generator that yields results even for a single file.",
+    "steps": [
+      {
+        "operation": "Normalize and return absolute candidate paths",
+        "file_to_modify": "chatterbot/corpus.py",
+        "function_to_modify": "get_file_path",
+        "reason": "Make get_file_path produce absolute, normalized filesystem paths whether the caller passes a filesystem path or a dotted module path. This ensures downstream callers and error messages show exact locations and makes existence checks deterministic. Also return the absolute candidate even when the path does not exist so later errors include the full path.",
+        "side_effects": "All callers that previously received relative paths will now receive absolute paths; tests that assert exact path strings may need updating. Any code that performs its own normalization might be redundant but will continue to work. No public API signature change, only normalized return values."
+      },
+      {
+        "operation": "Use get_file_path and return absolute file lists / single-file absolute path",
+        "file_to_modify": "chatterbot/corpus.py",
+        "function_to_modify": "list_corpus_files",
+        "reason": "list_corpus_files should rely on get_file_path so it consistently receives an absolute candidate path. If that candidate is a directory, glob all matching corpus files and return their absolute paths (sorted). If it is a file, return a single-element list with the absolute file path. This avoids mixing relative and absolute paths and makes downstream file openings and error messages clearer.",
+        "side_effects": "Callers that expect relative paths or certain ordering might need test updates. The change affects behavior for single-file inputs (now returns [absolute_path]) and directory inputs (glob returns absolute paths). No API signature change, but output format (absolute vs relative) changes."
+      },
+      {
+        "operation": "Wrap file opening to raise descriptive FileNotFoundError with absolute path and hint",
+        "file_to_modify": "chatterbot/corpus.py",
+        "function_to_modify": "read_corpus",
+        "reason": "When attempting to open a corpus file, catch FileNotFoundError and raise a new, more descriptive FileNotFoundError that includes the absolute file path (os.path.abspath) and guidance (e.g., verify path, check installation of chatterbot_corpus). Re-raise from the original exception to preserve the traceback. Keep the existing OptionalDependencyImportError behavior for missing yaml.",
+        "side_effects": "Test assertions that match exact exception messages will need updating. Callers catching FileNotFoundError will continue to receive the same exception type and traceback information. This change improves debuggability but does not change the exception type or semantics beyond message content."
+      },
+      {
+        "operation": "Ensure load_corpus is implemented as a generator that yields for each file",
+        "file_to_modify": "chatterbot/corpus.py",
+        "function_to_modify": "load_corpus",
+        "reason": "Make load_corpus consistently return a generator even when provided a single file. Use yield to emit (corpus, categories, file_path) tuples for each discovered file instead of returning a single value for the single-file case. This makes caller behavior uniform and fixes the bug where a single-file case produced a non-iterable or empty result.",
+        "side_effects": "Callers that previously expected a non-generator return value for single-file calls may need to adapt (e.g., list() the result). Unit tests must be checked/updated to iterate over the returned generator. No change to the yielded tuple structure (corpus, categories, file_path), only the guarantee that results are always produced by iteration."
+      }
+    ]
+  }
+}

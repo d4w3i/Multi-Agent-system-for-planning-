@@ -1,0 +1,42 @@
+{
+  "pr_number": 6899,
+  "repository": "scrapy/scrapy",
+  "title": "Fix typing of dynamic `request` attribute on `Failure` with a cast subclass",
+  "body": "This PR addresses a longstanding `TODO` in the `call_spider_async` method regarding the typing of the dynamically added `request` attribute on `twisted.python.failure.Failure` objects.\n\nSince `Failure` does not originally define the `request` attribute, adding it dynamically causes static type checkers (e.g., mypy) to raise errors.\n\nTo resolve this without changing runtime behavior or introducing new `Failure` instances, this PR introduces a lightweight subclass `FailureWithRequest` used solely for static typing purposes via `cast()`. This approach:\n\n- Provides type safety and clarity for static analysis tools  \n- Avoids creating new `Failure` instances, preserving error context and traceback  \n- Keeps runtime behavior unchanged  \n- Offers a balanced solution (middle ground) between ignoring type checks and a full refactor of `Failure` usage",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T14:33:43.373621",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "scrapy/core/scraper.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "call_spider_async",
+          "class_name": "Scraper",
+          "full_name": "Scraper.call_spider_async",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Introduce a minimal typing-only subclass FailureWithRequest and use typing.cast in Scraper.call_spider_async to give the dynamically-attached request attribute a proper static type, removing a '# type: ignore' while preserving runtime behavior.",
+    "steps": [
+      {
+        "operation": "Add FailureWithRequest typing subclass, import cast, and replace the type-ignored dynamic assignment with a cast-based assignment inside call_spider_async",
+        "file_to_modify": "scrapy/core/scraper.py",
+        "function_to_modify": "Scraper.call_spider_async",
+        "reason": "Static type checkers complain because twisted.python.failure.Failure does not declare a dynamically attached request attribute. Declaring a tiny subclass FailureWithRequest(Failure) with a request: Request annotation and using typing.cast(FailureWithRequest, result) before assigning request provides correct static typing without changing runtime behavior (cast is a no-op). This avoids creating new Failure instances (preserving traceback and context) and removes the previous '# type: ignore' suppression.",
+        "side_effects": "This is a typing-only change: runtime behavior and Failure instances remain unchanged. Static type errors (mypy/pyright) for this assignment should be resolved. Downstream code should be unaffected at runtime, but CI should run tests and static type checks to confirm no remaining typing issues. No public API changes are introduced; consumers of Scraper.call_spider_async are unaffected. If other parts of the code relied on the previous '# type: ignore' and had incompatible annotations, they may now surface additional type issues to be addressed separately."
+      }
+    ]
+  }
+}

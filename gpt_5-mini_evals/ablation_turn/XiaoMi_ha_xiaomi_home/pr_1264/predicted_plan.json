@@ -1,0 +1,42 @@
+{
+  "pr_number": 1264,
+  "repository": "XiaoMi/ha_xiaomi_home",
+  "title": "feat: do not subscribe BLE device online/offline state message",
+  "body": "## Title\nfeat: do not subscribe BLE device online/offline state message\n\n## Description\n# Why\nIn the issue #1251, MIoT cloud published an offline state message when the device became offline, but did not publish an online state message when the device became online. So, even xiaomi_home got properties_changed and event_occured message, the device entities was still shown unavailable.\nMIoT cloud can not accurately determine the BLE device's online/offline state. Also see #1207. \n\n# Changed\n- Do not subscribe BLE device online/offline state message. Assume that all BLE devices are online.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T12:29:34.184740",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "custom_components/xiaomi_home/miot/miot_client.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "__on_mips_cloud_state_changed",
+          "class_name": "MIoTClient",
+          "full_name": "MIoTClient.__on_mips_cloud_state_changed",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Modify MIoT client behavior so it does not subscribe to or act on cloud online/offline state messages for BLE devices (dids starting with 'blt.'), and avoid marking BLE devices offline on cloud disconnect, treating BLE devices as always online.",
+    "steps": [
+      {
+        "operation": "Skip subscribing to BLE device cloud state and avoid marking BLE devices offline on cloud disconnect",
+        "file_to_modify": "custom_components/xiaomi_home/miot/miot_client.py",
+        "function_to_modify": "MIoTClient.__on_mips_cloud_state_changed",
+        "reason": "BLE devices (dids starting with 'blt.') receive unreliable online/offline cloud state messages (cloud may publish 'offline' without ever publishing 'online'), which causes entities to be shown unavailable even when property/event messages arrive. To prevent spurious offline state flips, do not subscribe to per-device cloud state for BLE devices when MIPS cloud connects, and do not set BLE devices' cloud 'online' to False when the MIPS cloud disconnects. This preserves existing behavior in __update_devices_from_cloud_async that forces BLE devices to be considered online.",
+        "side_effects": "Unit/integration tests that assert cloud state subscriptions or offline marking semantics may need updates. BLE devices will be treated as always online by this code-path, which could hide genuinely offline BLE devices if cloud state were the only source of truth; however, property/event messages will still be processed normally. No external API changes. Other non-BLE devices keep existing subscription/disconnect behavior. Downstream code that relied on cloud-state messages for BLE devices will no longer receive them (they will still work for non-BLE devices)."
+      }
+    ]
+  }
+}

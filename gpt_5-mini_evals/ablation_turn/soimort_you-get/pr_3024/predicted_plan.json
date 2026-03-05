@@ -1,0 +1,79 @@
+{
+  "pr_number": 3024,
+  "repository": "soimort/you-get",
+  "title": "[YouTube] Fix 403 error and throttling",
+  "body": "Decrypting `signatureCipher` to fix the recent 403 error, as well as to solve the long-standing download speed throttling issue (#2950). This was made possible thanks to the lightweight JavaScript interpreter [dukpy](https://pypi.org/project/dukpy/).",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T14:39:00.768689",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "src/you_get/extractors/youtube.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "s_to_sig",
+          "class_name": "YouTube",
+          "full_name": "YouTube.s_to_sig",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "prepare",
+          "class_name": "YouTube",
+          "full_name": "YouTube.prepare",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "extract",
+          "class_name": "YouTube",
+          "full_name": "YouTube.extract",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "setup.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    }
+  ],
+  "step_plan": {
+    "summary": "Replace the fragile JavaScript-to-Python decipher with a dukpy-based evaluator inside YouTube.s_to_sig (with a fallback), and update YouTube.prepare and YouTube.extract to use the new implementation and append ratebypass so stream URLs are correctly signed and avoid 403/throttling.",
+    "steps": [
+      {
+        "operation": "Implement dukpy-based JS decipher with robust fallback",
+        "file_to_modify": "src/you_get/extractors/youtube.py",
+        "function_to_modify": "YouTube.s_to_sig",
+        "reason": "Replace the brittle JS-to-Python translation + exec approach with a direct evaluation of the original YouTube player JS decipher function using dukpy. The new implementation should: (1) attempt to import dukpy; (2) extract the decipher function name from the player JS via regex; (3) collect the helper object/function definitions the decipher function depends on; (4) assemble a minimal JS snippet that defines those helpers and invokes the decipher function with a provided 's' value (carefully escaped); (5) call dukpy.evaljs (or equivalent) to obtain the deciphered signature; (6) return the deciphered signature. If dukpy is not installed or the dukpy evaluation fails for any reason, fall back to the existing translation/exec-based logic so behavior is preserved.",
+        "side_effects": "Adds an optional runtime dependency on dukpy (kept optional — code should run without it). Improves correctness (fixes 403 and throttling) and should be faster/more reliable than translated exec. Requires unit tests for both dukpy-enabled and dukpy-missing/failure paths. Potential risks: executing untrusted JS in-process (mitigate by keeping dukpy optional and catching exceptions). Downstream callers (prepare/extract) should not need interface changes but may observe fewer signature errors; caching of the extracted decipher snippet/function per player JS may be added later for performance."
+      },
+      {
+        "operation": "Adjust preparation logic to use the new s_to_sig behavior and handle failures gracefully",
+        "file_to_modify": "src/you_get/extractors/youtube.py",
+        "function_to_modify": "YouTube.prepare",
+        "reason": "After s_to_sig is replaced, ensure prepare still obtains player JS when necessary and calls s_to_sig exactly as before. Add defensive handling around s_to_sig: if dukpy-based decipher returns an exception or None, fall back to the previous path (or skip attaching signature in a way that preserves previous behavior). Ensure the prepared stream URLs receive the deciphered signature (append '&sig=' or replace the 's' param appropriately) and add 'ratebypass=yes' when appending the signature to avoid throttling.",
+        "side_effects": "May change how and when player JS is fetched (ensure existing caching/requests remain). Tests must verify that prepare builds valid URLs for both dukpy-enabled and dukpy-missing scenarios, and that ratebypass is appended. Small API impact: callers still receive the same stream map, but fewer 403s and improved throughput. Error handling changes could alter log output or how failing streams are reported; ensure behavior is consistent with existing expectations."
+      },
+      {
+        "operation": "Ensure extraction uses updated s_to_sig and append signature+ratebypass robustly",
+        "file_to_modify": "src/you_get/extractors/youtube.py",
+        "function_to_modify": "YouTube.extract",
+        "reason": "YouTube.extract calls s_to_sig when converting stream entries that include 's' or 'signatureCipher'. After changing s_to_sig, make sure extract: (1) handles dukpy exceptions and falls back transparently; (2) appends the deciphered signature to the final stream URL in the same manner as before (ensuring proper escaping and not duplicating parameters); (3) appends '&ratebypass=yes' to avoid throttling. Also ensure that the function preserves previous return structure and error semantics so external callers are unaffected.",
+        "side_effects": "Should reduce 403 errors and avoid throttled downloads for extracted streams. Requires tests verifying extract behavior with sample signatureCipher payloads, with and without dukpy available. Ensure no behavioral change for streams that do not require deciphering. If extract previously relied on specific exception types from s_to_sig, maintain compatibility or document changed exceptions."
+      }
+    ]
+  }
+}

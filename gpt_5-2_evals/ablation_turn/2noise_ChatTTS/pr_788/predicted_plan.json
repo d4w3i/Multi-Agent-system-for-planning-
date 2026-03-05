@@ -1,0 +1,80 @@
+{
+  "pr_number": 788,
+  "repository": "2noise/ChatTTS",
+  "title": "Fix for Ascend NPU when using ChatTTS to sample the voice of a real speaker",
+  "body": "## Overview\nThis PR is a bugfix for Ascend NPU when using ChatTTS to sample the voice of a real speaker.\n\n## Environment\n- OS: ubuntu 20.04\n- NPU: Atlas 300T A2\n- CANN: 8.0.RC2\n- torch-npu: 2.1.0.post6\n- torch: 2.1.0\n\n## Problem\nComplex dtype used in the process of computing MelSpectrogram is not supported in `torch_npu` now, and we could get a error when sampling the voice of a real speaker.\n\nTrace shows failure path:\nexamples/web/funcs.py:on_upload_sample_audio -> ChatTTS/core.py:Chat.sample_audio_speaker -> ChatTTS/model/dvae.py:DVAE.sample_audio -> DVAE.forward(mode='encode') -> MelSpectrogramFeatures.forward -> torchaudio.transforms.MelSpectrogram\n\nThe issue: torchaudio’s MelSpectrogram internally uses complex operations (STFT) which torch-npu does not support yet, causing an exception on NPU during speaker sampling.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T11:41:54.033784",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "ChatTTS/model/dvae.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "forward",
+          "class_name": "MelSpectrogramFeatures",
+          "full_name": "MelSpectrogramFeatures.forward",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "forward",
+          "class_name": "DVAE",
+          "full_name": "DVAE.forward",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "ChatTTS/core.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "sample_audio_speaker",
+          "class_name": "Chat",
+          "full_name": "Chat.sample_audio_speaker",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Fix Ascend NPU failures during real-speaker voice sampling by avoiding torchaudio MelSpectrogram/STFT complex ops on NPU. Compute MelSpectrogram on CPU when running on NPU, then move the resulting mel features back to NPU for the remainder of the DVAE encode pipeline, with a small safeguard at the speaker-sampling entrypoint.",
+    "steps": [
+      {
+        "operation": "Implement Ascend NPU-safe CPU fallback for MelSpectrogram computation (run torchaudio MelSpectrogram on CPU, then move real-valued mel features back to the original device)",
+        "file_to_modify": "ChatTTS/model/dvae.py",
+        "function_to_modify": "MelSpectrogramFeatures.forward",
+        "reason": "torch-npu does not currently support complex dtype ops used internally by torchaudio’s MelSpectrogram/STFT. Speaker sampling hits this path during DVAE encode, so the mel computation must avoid running on NPU while preserving expected shapes/dtypes for downstream conv/encoder layers.",
+        "side_effects": "Introduces extra host-device transfers (audio→CPU, mel→NPU) when on NPU; may slightly reduce performance for speaker sampling. Must ensure dtype/device match downstream expectations (e.g., float32/float16) and avoid inadvertently keeping tensors on CPU in later stages."
+      },
+      {
+        "operation": "Ensure DVAE encode branch correctly handles mel features returned from the preprocessor (including device placement and dtype) without re-triggering NPU-incompatible ops",
+        "file_to_modify": "ChatTTS/model/dvae.py",
+        "function_to_modify": "DVAE.forward",
+        "reason": "After adding CPU fallback in MelSpectrogramFeatures.forward, DVAE’s encode path must reliably continue on the intended device (NPU) for conv/encoder/vq. This step ensures no additional `.to(self.device)` or preprocessing calls cause mel/STFT to be recomputed on NPU and that the returned mel tensor is normalized/reshaped as expected.",
+        "side_effects": "May change device/dtype handling in encode mode; could affect memory usage and precision (e.g., casting mel back to model dtype). Needs validation that CUDA/CPU paths remain identical and that encode output statistics are unchanged."
+      },
+      {
+        "operation": "Add a small defensive device-handling/logging tweak in speaker sampling entrypoint to keep behavior consistent on NPU and aid debugging (e.g., ensure DVAE encode runs with the expected device and emit a clear message when CPU fallback is used)",
+        "file_to_modify": "ChatTTS/core.py",
+        "function_to_modify": "Chat.sample_audio_speaker",
+        "reason": "This is the user-facing failing workflow. Even if the primary fix is in DVAE/mel preprocessing, adding a lightweight guard (or structured logging) makes the behavior explicit on NPU, aligns with existing NPU CPU-fallback strategy used elsewhere (e.g., vocos decode), and reduces ambiguity if device selection is misconfigured.",
+        "side_effects": "Potentially changes logs/console output and makes speaker sampling more explicit about device behavior; if implemented as a hard guard it could alter user control over device placement. Should not affect non-NPU execution paths."
+      }
+    ]
+  }
+}

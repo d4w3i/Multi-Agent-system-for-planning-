@@ -1,0 +1,63 @@
+{
+  "pr_number": 464,
+  "repository": "karpathy/nanoGPT",
+  "title": "fix: h100-mfu-calculation",
+  "body": "I was getting 104% MFU on h100 then i realized that MFU calculation might of been based on a100 312 tflops \r\n\r\nh100 is 989 tflops at bfloat16. nvidia claims 1,979tflops but that is for 2:4 sparsity.\r\n\r\n<img width=\"515\" alt=\"image\" src=\"https://github.com/karpathy/nanoGPT/assets/47992694/7ed83ae5-3769-4c48-91a6-7cc4d8f6e140\">\r\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T01:01:43.241381",
+    "extractor_version": "1.0.0",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "model.py",
+      "status": "modified",
+      "additions": 4,
+      "deletions": 1,
+      "functions_modified": [
+        {
+          "function_name": "estimate_mfu",
+          "class_name": "GPT",
+          "full_name": "GPT.estimate_mfu",
+          "start_line": 289,
+          "end_line": 306,
+          "lines_changed": [
+            301,
+            302,
+            303,
+            304
+          ]
+        }
+      ],
+      "patch": "@@ -298,7 +298,10 @@ def estimate_mfu(self, fwdbwd_per_iter, dt):\n         flops_per_iter = flops_per_fwdbwd * fwdbwd_per_iter\n         # express our flops throughput as ratio of A100 bfloat16 peak flops\n         flops_achieved = flops_per_iter * (1.0/dt) # per second\n-        flops_promised = 312e12 # A100 GPU bfloat16 peak flops is 312 TFLOPS\n+        if torch.cuda.get_device_name() == 'NVIDIA H100 80GB HBM3':\n+            flops_promised = 989e12 # H100 GPU bfloat16 peak flops is 989 TFLOPs\n+        else:\n+            flops_promised = 312e12 # A100 GPU bfloat16 peak flops is 312 TFLOPS\n         mfu = flops_achieved / flops_promised\n         return mfu\n "
+    }
+  ],
+  "functions_modified": [
+    {
+      "function_name": "estimate_mfu",
+      "class_name": "GPT",
+      "full_name": "GPT.estimate_mfu",
+      "start_line": 289,
+      "end_line": 306,
+      "lines_changed": [
+        301,
+        302,
+        303,
+        304
+      ]
+    }
+  ],
+  "step_plan": {
+    "steps": [
+      {
+        "operation": "Adjust MFU normalization to use H100 BF16 peak FLOPs when running on an NVIDIA H100 80GB HBM3, otherwise default to A100 peak FLOPs",
+        "file_to_modify": "model.py",
+        "function_to_modify": "estimate_mfu",
+        "reason": "The MFU metric was previously normalized against A100 (312 TFLOPs BF16) for all GPUs, which causes inflated/incorrect MFU values (e.g., >100%) on H100 hardware; using H100’s ~989 TFLOPs BF16 peak provides a correct baseline.",
+        "side_effects": "MFU values reported/logged on H100 will drop to reflect the higher theoretical peak; device-name string matching may fail on other H100 variants or different name formats (leading to fallback A100 baseline and inaccurate MFU), potentially affecting monitoring/benchmark comparisons across heterogeneous GPU setups."
+      }
+    ],
+    "summary": "Fixes MFU calculation by normalizing achieved FLOPs against the correct BF16 peak throughput on NVIDIA H100 (989 TFLOPs) instead of always using the A100 baseline (312 TFLOPs)."
+  }
+}

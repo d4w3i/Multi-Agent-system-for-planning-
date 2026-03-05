@@ -1,0 +1,72 @@
+{
+  "pr_number": 2303,
+  "repository": "lllyasviel/stable-diffusion-webui-forge",
+  "title": "fix for Florence-2 space",
+  "body": "previously Florence2 had flash attention as a requirement due to an error in *transformers* (issue with packages Forge uses rather than in Forge itself) (https://huggingface.co/microsoft/Florence-2-base/discussions/4#6673ffb9436907f83a8aaf2d); the workaround was to patch the imports to remove it (https://huggingface.co/microsoft/phi-1_5/discussions/72#65a0339f64520347aa3d703c).\nAt some point, an update has made this patch unnecessary. And turned it into an error.\n\nThis PR simply removes the patch.\n\nNow the Space loads again; tested a couple of functions as working correctly too.\n\n#2299",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T13:35:23.692637",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "extensions-builtin/forge_space_florence_2/forge_app.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "fixed_get_imports (top-level helper function)",
+          "class_name": null,
+          "full_name": "fixed_get_imports (top-level helper function)",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "capture_gpu_object())",
+          "class_name": "module-level model loading block (inside with spaces",
+          "full_name": "module-level model loading block (inside with spaces.capture_gpu_object())",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "imports at top of module",
+          "class_name": null,
+          "full_name": "imports at top of module",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Remove an obsolete monkeypatch that intercepts transformers.dynamic_module_utils.get_imports (fixed_get_imports + patch) from the Florence-2 Space extension so models/processors are loaded normally; also delete the related unused imports and optional obsolete commented pip line.",
+    "steps": [
+      {
+        "operation": "Remove the helper monkeypatch function fixed_get_imports",
+        "file_to_modify": "extensions-builtin/forge_space_florence_2/forge_app.py",
+        "function_to_modify": "fixed_get_imports",
+        "reason": "The fixed_get_imports helper exists solely to filter out 'flash_attn' from transformers.dynamic_module_utils.get_imports as a workaround for an older transformers issue. Upstream fixes make this workaround unnecessary and the presence of the helper (and use of it) now triggers errors. Deleting the function removes the dead/erroneous compatibility code.",
+        "side_effects": "No runtime behavior should change aside from removing the monkeypatch; if a user runs with an old transformers version that still requires 'flash_attn' suppression, model loading may fail. Unit/integration tests that explicitly import or reference this helper (unlikely) will need updating or removal. No API surface changes for external callers, since this was internal to the module."
+      },
+      {
+        "operation": "Remove the unittest.mock.patch wrapper around model/processor creation and load models/processors directly inside the existing GPU capture context",
+        "file_to_modify": "extensions-builtin/forge_space_florence_2/forge_app.py",
+        "function_to_modify": "initialize_models",
+        "reason": "The current code wraps AutoModelForCausalLM.from_pretrained and AutoProcessor.from_pretrained in a with patch(\"transformers.dynamic_module_utils.get_imports\", fixed_get_imports): context, applying the monkeypatch at model-load time. With fixed_get_imports removed, the patch context must also be removed and the model/processor creation should be executed directly (still within spaces.capture_gpu_object() to preserve GPU capture behavior). This restores normal import behavior and prevents the patch-related error.",
+        "side_effects": "Model loading will now use transformers' native import resolution; if an environment still requires the previous workaround, loading will fail. Tests that implicitly relied on the monkeypatch behavior must be updated. Keep GPU capture context unchanged so the Space runtime semantics remain the same; otherwise GPU-related tests could be impacted."
+      },
+      {
+        "operation": "Remove now-unused imports and obsolete commented pip-install line from module top-level",
+        "file_to_modify": "extensions-builtin/forge_space_florence_2/forge_app.py",
+        "function_to_modify": "module_imports",
+        "reason": "The imports 'from unittest.mock import patch' and 'from transformers.dynamic_module_utils import get_imports' were added only to support the monkeypatch. After removing the monkeypatch and helper, these imports are unused and should be deleted to avoid unused-import errors and to keep the module clean. Optionally remove the commented subprocess pip install line for flash-attn as it's now obsolete and noisy.",
+        "side_effects": "No runtime behavior change. Lint/static analysis will no longer flag unused imports. If the commented pip-install line is removed, documentation of past workaround is gone (but it's obsolete); this has no effect on runtime or API. If any other code in the module (unlikely) referenced get_imports, those references must be updated — run tests to confirm."
+      }
+    ]
+  }
+}

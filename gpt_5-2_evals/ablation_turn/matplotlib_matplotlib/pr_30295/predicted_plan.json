@@ -1,0 +1,71 @@
+{
+  "pr_number": 30295,
+  "repository": "matplotlib/matplotlib",
+  "title": "DOC: clarify Annotation clipping behavior with set_clip_path after axis limit changes",
+  "body": "This PR updates the docstring for `Annotation.__init__()` to clarify that when `.set_clip_path()` is used (e.g., to clip an annotation to an `axvspan` patch), subsequent axis limit changes (like `set_xlim()`) may cause the clipping to become misaligned.\n\nThe new `Notes` section advises users to:\n- Set axis limits *before* applying the clip path, or\n- Reassign the clip path using a new patch with the appropriate transform, e.g., `ax.transData`.\n\nThis clarification was inspired by the behavior discussed in issue #28717 and related use cases.\n\n## PR summary\n\n- **Why is this change necessary?**  \n  The current documentation does not mention that axis limits applied after setting a clip path can lead to incorrect visual behavior. This can confuse users working with annotations clipped to spans or patches.\n\n- **What problem does it solve?**  \n  Prevents misunderstandings by documenting how to maintain correct clipping behavior after axis limit changes.\n\n- **What is the reasoning for this implementation?**  \n  A simple docstring clarification is sufficient since the behavior is not a bug but an undocumented side effect.\n\n- **Minimum reproducible example:**\n\n```python\nfig, ax = plt.subplots()\nrect = ax.axvspan(2, 3.05, ymin=0, ymax=1, color='red', alpha=0.5)\nann = ax.annotate(\"Hello\", xy=(3, 0.5), xycoords=(\"data\", \"axes fraction\"),\n                  xytext=(0, 0), textcoords=\"offset points\", va=\"center\", clip_on=True)\nann.set_clip_path(rect)\n\n# This causes clipping to break visually\nax.set_xlim(0, 3)\n```",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T12:23:00.708101",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "lib/matplotlib/text.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "__init__",
+          "class_name": "Annotation",
+          "full_name": "Annotation.__init__",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "set_clip_path",
+          "class_name": "Text",
+          "full_name": "Text.set_clip_path",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "doc/api/text_api.rst",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    },
+    {
+      "filename": "galleries/users_explain/text/annotations.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    }
+  ],
+  "step_plan": {
+    "summary": "Clarifies in the `matplotlib.text.Annotation.__init__` documentation that using `set_clip_path()` with a patch (e.g., from `axvspan`) can become visually misaligned after later axis-limit changes, and documents practical user workarounds. No runtime behavior is changed; this is a documentation-only update.",
+    "steps": [
+      {
+        "operation": "Expand the `Annotation.__init__` docstring with a numpydoc-compliant `Notes` section describing clip-path misalignment after axis limit changes and the recommended workarounds (set limits before clipping, or reassign the clip path using a patch with an appropriate transform such as `ax.transData`), including Sphinx cross-references to the relevant APIs.",
+        "file_to_modify": "lib/matplotlib/text.py",
+        "function_to_modify": "Annotation.__init__",
+        "reason": "`Annotation.__init__` is the primary API-doc entry point for users of `Axes.annotate()` / `Annotation`; clarifying this caveat where users will look prevents confusion without changing runtime behavior.",
+        "side_effects": "Documentation output for the `Annotation` API page will change; wording must be accurate and not imply a bug. Ensure RST formatting and references render correctly in doc builds."
+      },
+      {
+        "operation": "Review and (if needed) adjust the `Text.set_clip_path` docstring to ensure it accurately describes delegation/behavior (e.g., interaction with `Artist.set_clip_path` and transforms), and that `Annotation.__init__` can link to it cleanly (e.g., using `.set_clip_path`/`~matplotlib.artist.Artist.set_clip_path` references).",
+        "file_to_modify": "lib/matplotlib/text.py",
+        "function_to_modify": "Text.set_clip_path",
+        "reason": "`Annotation` inherits `Text`, and the new `Notes` will reference `.set_clip_path`; aligning wording and references avoids contradictory or misleading documentation about how clip transforms are stored and updated.",
+        "side_effects": "May slightly change public docs for `Text.set_clip_path`; doc build/reference checks may be needed to confirm links resolve and formatting remains correct."
+      }
+    ]
+  }
+}

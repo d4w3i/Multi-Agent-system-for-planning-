@@ -1,0 +1,42 @@
+{
+  "pr_number": 243,
+  "repository": "darrenburns/posting",
+  "title": "fix(collection): prevent markup parsing",
+  "body": "Prevent the request description trying to parse the content with markup.\r\n\r\nFixes #241.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T12:07:54.455975",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "src/posting/widgets/collection/browser.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "watch_request",
+          "class_name": "RequestPreview",
+          "full_name": "RequestPreview.watch_request",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Prevent request descriptions in the collection browser preview from being interpreted as Rich markup by rendering them as plain text (e.g., via a Rich `Text` renderable) instead of updating the widget with a raw string.",
+    "steps": [
+      {
+        "operation": "Render request descriptions as plain text (no Rich/Textual markup parsing) by updating the preview widget with a Rich `Text` object (or equivalent escaping) instead of a raw string",
+        "file_to_modify": "src/posting/widgets/collection/browser.py",
+        "function_to_modify": "RequestPreview.watch_request",
+        "reason": "`Static.update(str)` (and similar Textual/Rich rendering paths) may interpret bracketed sequences as Rich markup. Passing a `rich.text.Text` instance (or explicitly escaping markup) ensures the request description is displayed literally, preserving brackets and preventing accidental styling/links.",
+        "side_effects": "Descriptions will no longer render any intentional Rich markup (if users were relying on it). Newlines should still display correctly, but verify the chosen rendering approach preserves line breaks and wrapping. May require adding/importing `rich.text.Text` (or another Rich renderable) and adjusting type expectations for `Static.update`. Run or manually verify the collection browser preview and any tests/snapshots that assert preview text output."
+      }
+    ]
+  }
+}

@@ -1,0 +1,57 @@
+{
+  "pr_number": 9396,
+  "repository": "statsmodels/statsmodels",
+  "title": "BUG: Remove method setting in summary2 of genmod",
+  "body": "- [X] closes #9315 \n- [X] tests added / passed. \n- [X] code/documentation is well formatted.  \n- [X] properly formatted commit message. See \n      [NumPy's guide](https://docs.scipy.org/doc/numpy-1.15.1/dev/gitwash/development_workflow.html#writing-the-commit-message). \n\n<details>\n\n\n**Notes**:\n\n* It is essential that you add a test when making code changes. Tests are not \n  needed for doc changes.\n* When adding a new function, test values should usually be verified in another package (e.g., R/SAS/Stata).\n* When fixing a bug, you must add a test that would produce the bug in main and\n  then show that it is fixed with the new code.\n* New code additions must be well formatted. Changes should pass flake8. If on Linux or OSX, you can\n  verify your changes are well formatted by running \n  ```\n  git diff upstream/main -u -- \"*.py\" | flake8 --diff --isolated\n  ```\n  assuming `flake8` is installed. This command is also available on Windows \n  using the Windows System for Linux once `flake8` is installed in the \n  local Linux environment. While passing this test is not required, it is good practice and it help \n  improve code quality in `statsmodels`.\n* Docstring additions must render correctly, including escapes and LaTeX.\n\n</details>",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T14:50:18.181339",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "statsmodels/genmod/generalized_linear_model.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "_fit_irls",
+          "class_name": "GLM",
+          "full_name": "GLM._fit_irls",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_fit_gradient",
+          "class_name": "GLM",
+          "full_name": "GLM._fit_gradient",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Stop setting the .method attribute on GLM result objects by removing assignments in GLM._fit_irls and GLM._fit_gradient so summary2 no longer shows a 'Method' row for GLM results; update tests accordingly.",
+    "steps": [
+      {
+        "operation": "Remove assignment of .method on IRLS fit results",
+        "file_to_modify": "statsmodels/genmod/generalized_linear_model.py",
+        "function_to_modify": "GLM._fit_irls",
+        "reason": "GLM._fit_irls currently sets glm_results.method = 'IRLS' on the returned GLMResults instance. summary2.summary_model reads results.method and will display a 'Method' row when this attribute is present. Removing this assignment prevents summary2 from showing a possibly misleading or duplicate 'Method' entry for GLM results. The rest of the GLMResults object remains unchanged and summary2 already tolerates missing attributes.",
+        "side_effects": "Tests that explicitly check for a .method attribute on GLM results will fail and must be updated. Downstream code or user scripts that relied on results.method for GLM will lose that attribute and may break; document the change in the release notes if necessary. summary2 behavior will change (no 'Method' row for GLM). No API signature changes; only a removed attribute on the result object."
+      },
+      {
+        "operation": "Remove assignment of .method on gradient-based fit results",
+        "file_to_modify": "statsmodels/genmod/generalized_linear_model.py",
+        "function_to_modify": "GLM._fit_gradient",
+        "reason": "GLM._fit_gradient currently assigns glm_results.method = method (optimizer name) on the returned GLMResults instance. As with IRLS, this causes summary2 to show a 'Method' row for GLM results. Removing this assignment prevents summary2 from displaying that row and avoids exposing an optimizer implementation detail on the GLM results object.",
+        "side_effects": "Tests that expect results.method to be set by gradient-based GLM fits will need updating. Any external code relying on results.method will be affected. Summary outputs created by summary2 will no longer include 'Method' for GLM results. Ensure tests added in the PR verify the absence of the 'Method' row and that no other functionality is regressed."
+      }
+    ]
+  }
+}

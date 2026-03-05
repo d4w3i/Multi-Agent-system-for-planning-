@@ -1,0 +1,85 @@
+{
+    "repository": "pyro-ppl/pyro",
+    "pull_request_number": 3433,
+    "title": "Fixes #3430 (serializing an easyguide corrupts it).",
+    "body": "- The issue is that on Python 3.12 the `super()` object of `easyguide.Group` started having the `__getstate__` attribute (this doesn't happen in python 3.9), which is then called to return the state object, which is then modified without making a copy before modification, which causes the corruption.\r\n- The solution is to ensure that we always make a copy of the state object before modifying it.\r\n- This was tested on both python 3.9 and 3.12.\r\n",
+    "pr_date": "2025-04-14T06:57:27Z",
+    "source_branch": "fix_easyguide_serialization",
+    "language": "en",
+    "keywords_detected": {
+        "branch": [
+            "fix"
+        ],
+        "requirement": [
+            "fix"
+        ],
+        "body": []
+    },
+    "number_of_links_in_pr": 0,
+    "base_sha": "e1293e6bb5cc7f36c08b87993c7633d82d34fbe0",
+    "last_commit_sha": "6866bf55f07282e1acdae7593695cb6411ec1147",
+    "diff_between_base_and_last": [
+        {
+            "sha": "6fced7dc588a3c1e5fcef57e0c620f878a1b2e09",
+            "filename": "pyro/contrib/easyguide/easyguide.py",
+            "status": "modified",
+            "additions": 1,
+            "deletions": 1,
+            "changes": 2,
+            "blob_url": "https://github.com/pyro-ppl/pyro/blob/6866bf55f07282e1acdae7593695cb6411ec1147/pyro%2Fcontrib%2Feasyguide%2Feasyguide.py",
+            "raw_url": "https://github.com/pyro-ppl/pyro/raw/6866bf55f07282e1acdae7593695cb6411ec1147/pyro%2Fcontrib%2Feasyguide%2Feasyguide.py",
+            "contents_url": "https://api.github.com/repos/pyro-ppl/pyro/contents/pyro%2Fcontrib%2Feasyguide%2Feasyguide.py?ref=6866bf55f07282e1acdae7593695cb6411ec1147",
+            "patch": "@@ -230,7 +230,7 @@ def __init__(self, guide, sites):\n         self.event_shape = torch.Size([sum(self._site_sizes.values())])\n \n     def __getstate__(self):\n-        state = getattr(super(), \"__getstate__\", self.__dict__.copy)()\n+        state = getattr(super(), \"__getstate__\", lambda: self.__dict__)().copy()\n         state[\"_guide\"] = state[\"_guide\"]()  # weakref -> ref\n         return state\n "
+        },
+        {
+            "sha": "b4ee78d6fb3aef91d04409c1ff78fd3e15421f4b",
+            "filename": "tests/contrib/easyguide/test_easyguide.py",
+            "status": "modified",
+            "additions": 0,
+            "deletions": 1,
+            "changes": 1,
+            "blob_url": "https://github.com/pyro-ppl/pyro/blob/6866bf55f07282e1acdae7593695cb6411ec1147/tests%2Fcontrib%2Feasyguide%2Ftest_easyguide.py",
+            "raw_url": "https://github.com/pyro-ppl/pyro/raw/6866bf55f07282e1acdae7593695cb6411ec1147/tests%2Fcontrib%2Feasyguide%2Ftest_easyguide.py",
+            "contents_url": "https://api.github.com/repos/pyro-ppl/pyro/contents/tests%2Fcontrib%2Feasyguide%2Ftest_easyguide.py?ref=6866bf55f07282e1acdae7593695cb6411ec1147",
+            "patch": "@@ -79,7 +79,6 @@ def guide(self, batch, subsample, full_size):\n             self.group(match=\"state_[0-9]*\").map_estimate()\n \n \n-@pytest.mark.xfail(reason=\"https://github.com/pyro-ppl/pyro/issues/3430\")\n def test_serialize():\n     guide = PickleGuide(model)\n     check_guide(guide)"
+        }
+    ],
+    "commits": [
+        {
+            "sha": "6866bf55f07282e1acdae7593695cb6411ec1147",
+            "commit_date": "2025-04-14T06:49:54Z",
+            "message": "Fixes #3430 (serializing an easyguide corrupts it).",
+            "number_of_links_in_commit": 0,
+            "files_changed_count": 2,
+            "files": [
+                {
+                    "sha": "6fced7dc588a3c1e5fcef57e0c620f878a1b2e09",
+                    "filename": "pyro/contrib/easyguide/easyguide.py",
+                    "status": "modified",
+                    "additions": 1,
+                    "deletions": 1,
+                    "changes": 2,
+                    "blob_url": "https://github.com/pyro-ppl/pyro/blob/6866bf55f07282e1acdae7593695cb6411ec1147/pyro%2Fcontrib%2Feasyguide%2Feasyguide.py",
+                    "raw_url": "https://github.com/pyro-ppl/pyro/raw/6866bf55f07282e1acdae7593695cb6411ec1147/pyro%2Fcontrib%2Feasyguide%2Feasyguide.py",
+                    "contents_url": "https://api.github.com/repos/pyro-ppl/pyro/contents/pyro%2Fcontrib%2Feasyguide%2Feasyguide.py?ref=6866bf55f07282e1acdae7593695cb6411ec1147",
+                    "patch": "@@ -230,7 +230,7 @@ def __init__(self, guide, sites):\n         self.event_shape = torch.Size([sum(self._site_sizes.values())])\n \n     def __getstate__(self):\n-        state = getattr(super(), \"__getstate__\", self.__dict__.copy)()\n+        state = getattr(super(), \"__getstate__\", lambda: self.__dict__)().copy()\n         state[\"_guide\"] = state[\"_guide\"]()  # weakref -> ref\n         return state\n "
+                },
+                {
+                    "sha": "b4ee78d6fb3aef91d04409c1ff78fd3e15421f4b",
+                    "filename": "tests/contrib/easyguide/test_easyguide.py",
+                    "status": "modified",
+                    "additions": 0,
+                    "deletions": 1,
+                    "changes": 1,
+                    "blob_url": "https://github.com/pyro-ppl/pyro/blob/6866bf55f07282e1acdae7593695cb6411ec1147/tests%2Fcontrib%2Feasyguide%2Ftest_easyguide.py",
+                    "raw_url": "https://github.com/pyro-ppl/pyro/raw/6866bf55f07282e1acdae7593695cb6411ec1147/tests%2Fcontrib%2Feasyguide%2Ftest_easyguide.py",
+                    "contents_url": "https://api.github.com/repos/pyro-ppl/pyro/contents/tests%2Fcontrib%2Feasyguide%2Ftest_easyguide.py?ref=6866bf55f07282e1acdae7593695cb6411ec1147",
+                    "patch": "@@ -79,7 +79,6 @@ def guide(self, batch, subsample, full_size):\n             self.group(match=\"state_[0-9]*\").map_estimate()\n \n \n-@pytest.mark.xfail(reason=\"https://github.com/pyro-ppl/pyro/issues/3430\")\n def test_serialize():\n     guide = PickleGuide(model)\n     check_guide(guide)"
+                }
+            ]
+        }
+    ],
+    "pull_request_url": "https://github.com/pyro-ppl/pyro/pull/3433",
+    "commits_url": "https://github.com/pyro-ppl/pyro/pull/3433/commits",
+    "files_url": "https://github.com/pyro-ppl/pyro/pull/3433/files"
+}

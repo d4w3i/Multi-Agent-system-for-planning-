@@ -1,0 +1,94 @@
+{
+  "pr_number": 7451,
+  "repository": "huggingface/datasets",
+  "title": "Fix resuming after `ds.set_epoch(new_epoch)`",
+  "body": "close https://github.com/huggingface/datasets/issues/7447\n\nExplore the source code to identify the files and functions to modify.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T12:15:59.295162",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "src/datasets/iterable_dataset.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "set_epoch",
+          "class_name": "IterableDataset",
+          "full_name": "IterableDataset.set_epoch",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "load_state_dict",
+          "class_name": "_BaseExamplesIterable",
+          "full_name": "_BaseExamplesIterable.load_state_dict",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "state_dict",
+          "class_name": "_BaseExamplesIterable",
+          "full_name": "_BaseExamplesIterable.state_dict",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_init_state_dict",
+          "class_name": "_BaseExamplesIterable",
+          "full_name": "_BaseExamplesIterable._init_state_dict",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "tests/test_iterable_dataset.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    }
+  ],
+  "step_plan": {
+    "summary": "Fix `IterableDataset` checkpoint/resume semantics when `set_epoch(new_epoch)` is used by making epoch changes propagate correctly and by making iterable checkpoint state epoch-aware (or invalidated) so resuming cannot silently skip/duplicate examples across epoch boundaries.",
+    "steps": [
+      {
+        "operation": "Update epoch propagation and invalidate/realign resume state when epoch changes",
+        "file_to_modify": "src/datasets/iterable_dataset.py",
+        "function_to_modify": "IterableDataset.set_epoch",
+        "reason": "`set_epoch(new_epoch)` changes the deterministic ordering/seed used by shuffling. If an iterator has already progressed (or a state_dict was produced) under a previous epoch, resuming with a different epoch can produce skips/duplicates unless the epoch change is explicitly propagated and any existing checkpoint state is either made epoch-aware or invalidated/reset.",
+        "side_effects": "May change user-visible semantics: calling `set_epoch` after partial iteration may reset progress (or require re-loading state for the same epoch). Could impact any wrappers that rely on mutating epoch without restarting iteration; requires updating/adding tests to codify the contract."
+      },
+      {
+        "operation": "Persist epoch identity (or derived per-epoch RNG identity) in the iterable checkpoint state",
+        "file_to_modify": "src/datasets/iterable_dataset.py",
+        "function_to_modify": "_BaseExamplesIterable.state_dict",
+        "reason": "To make resume deterministic, the checkpoint must capture enough information to guarantee the same sample order on restore. If epoch affects shuffling seed/order, the saved state must include the epoch (or a per-epoch seed/ordering identifier) so `load_state_dict` can detect mismatches and behave predictably.",
+        "side_effects": "Changes the serialized shape of iterable state dicts; older checkpoints may still load if handled compatibly, but downstream code/tests that assert exact keys may need updates."
+      },
+      {
+        "operation": "Initialize epoch-aware state fields when creating a fresh state dict",
+        "file_to_modify": "src/datasets/iterable_dataset.py",
+        "function_to_modify": "_BaseExamplesIterable._init_state_dict",
+        "reason": "When starting iteration (or when first constructing checkpoint state), initialize epoch-related metadata in the state structure so subsequent `state_dict()` calls and nested iterables have a consistent place to store epoch identity and any per-epoch RNG bookkeeping.",
+        "side_effects": "If nested iterables override/extend state initialization, they may need to be compatible with the new field(s). Might require adjusting assumptions in subclasses about the minimal state schema."
+      },
+      {
+        "operation": "Validate epoch compatibility on restore and define behavior for mismatched epoch (reset/reseed/recompute)",
+        "file_to_modify": "src/datasets/iterable_dataset.py",
+        "function_to_modify": "_BaseExamplesIterable.load_state_dict",
+        "reason": "If a state dict saved under epoch E is loaded while the dataset/iterable is configured for epoch E', restoring raw counters/buffer state can be invalid. `load_state_dict` should detect the mismatch (via the epoch field added to the state) and either (a) refuse with a clear error, or (b) reset/realign state in a documented way (commonly: reset progress for the new epoch, or require `set_epoch(E)` before loading).",
+        "side_effects": "Could raise new exceptions in previously silent misuses; may force callers to adjust ordering of calls (e.g., call `set_epoch` before `load_state_dict`). Tests must cover both matching-epoch resume and mismatched-epoch behavior."
+      }
+    ]
+  }
+}

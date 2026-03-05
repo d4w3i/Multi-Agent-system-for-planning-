@@ -1,0 +1,42 @@
+{
+  "pr_number": 104,
+  "repository": "g1879/DrissionPage",
+  "title": "fixed json decoding bug in daemon thread",
+  "body": "Summary of changes proposed by the PR:\n- Fix a bug in JSON decoding within the daemon thread context where an empty message_json could be attempted to be converted to a dict, leading to unintended behavior.\n- Preserve current behavior of raising JSONDecodeError when decoding fails for non-empty/invalid JSON payloads.\n- Ensure that empty payloads are handled gracefully (converted to an empty dict) instead of being swallowed or causing downstream errors.\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T12:47:11.738560",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "DrissionPage/commons/web.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "body",
+          "class_name": "ResponseData",
+          "full_name": "ResponseData.body",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Fix a JSON decoding bug in the daemon thread by ensuring empty payloads are converted to an empty dict while preserving strict decoding errors for non-empty invalid JSON.",
+    "steps": [
+      {
+        "operation": "Modify ResponseData.body to gracefully handle empty payloads",
+        "file_to_modify": "DrissionPage/commons/web.py",
+        "function_to_modify": "ResponseData.body",
+        "reason": "Empty rawBody should be converted to {} to avoid swallowing errors or misinterpreting an empty message in the daemon thread; non-empty invalid JSON should still raise JSONDecodeError",
+        "side_effects": "Tests must cover empty payload -> {}; ensure downstream usage that expects a dict remains compatible when empty payload is encountered; non-empty invalid JSON will now raise JSONDecodeError as intended; potential minor impact on any code paths that previously relied on the raw string or silent failure behavior for empty payloads"
+      }
+    ]
+  }
+}

@@ -1,0 +1,42 @@
+{
+  "pr_number": 11766,
+  "repository": "pydantic/pydantic",
+  "title": "Fix example in `populate_by_name` documentation",
+  "body": "Fix the docstring of ConfigDict's populate_by_name.\n\nRelated issue number: fix #11765\n\nChecklist:\n- Unit tests exist\n- Documentation reflects the changes where applicable",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T14:09:50.328163",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "pydantic/config.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "populate_by_name (docstring)",
+          "class_name": "ConfigDict",
+          "full_name": "ConfigDict.populate_by_name (docstring)",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Correct a copy-paste error in ConfigDict.populate_by_name's docstring by changing the second example to use the attribute name (Model(my_field='foo')) so it properly demonstrates population by attribute name vs alias.",
+    "steps": [
+      {
+        "operation": "Fix example in populate_by_name docstring to demonstrate attribute-name population",
+        "file_to_modify": "pydantic/config.py",
+        "function_to_modify": "ConfigDict.populate_by_name",
+        "reason": "The docstring example currently uses the alias-based instantiation twice (copy-paste error). Replace the second example's instantiation (Model(my_alias='foo')) with the attribute-name form (Model(my_field='foo')) so the example correctly demonstrates alias vs attribute-name population, consistent with the validate_by_name docstring.",
+        "side_effects": "This is a documentation-only change with no runtime behavior change. Run unit tests (at least tests/test_config.py) and ideally the full test suite to ensure no tests assert on docstrings. Documentation builds may need to be regenerated. No API or dependent-code changes expected; only consumers reading the docs will see the fix."
+      }
+    ]
+  }
+}

@@ -1,0 +1,64 @@
+{
+  "pr_number": 3024,
+  "repository": "soimort/you-get",
+  "title": "[YouTube] Fix 403 error and throttling",
+  "body": "Decrypting `signatureCipher` to fix the recent 403 error, as well as to solve the long-standing download speed throttling issue (#2950). This was made possible thanks to the lightweight JavaScript interpreter [dukpy](https://pypi.org/project/dukpy/).",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T13:53:47.880434",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "src/you_get/extractors/youtube.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "extract",
+          "class_name": "YouTube",
+          "full_name": "YouTube.extract",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "s_to_sig",
+          "class_name": "YouTube",
+          "full_name": "YouTube.s_to_sig",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "setup.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    }
+  ],
+  "step_plan": {
+    "summary": "Introduce a dukpy-based JavaScript interpreter to decrypt YouTube's signatureCipher, replacing the brittle in-Python translator and wiring a consolidated path through YouTube.extract and YouTube.s_to_sig. This targets 403 errors and throttling by providing a more robust, testable decryption flow while maintaining a fallback to the existing path when the interpreter is unavailable.",
+    "steps": [
+      {
+        "operation": "Add dukpy-backed signatureCipher decryption helper and integrate into extraction flow",
+        "file_to_modify": "src/you_get/extractors/youtube.py",
+        "function_to_modify": "YouTube.extract",
+        "reason": "Replace brittle in-Python JS translator with a dedicated dukpy-based interpreter to reliably decrypt signatureCipher across YouTube's evolving player logic, mitigating 403 errors and throttling.",
+        "side_effects": "Introduces a runtime dependency on dukpy; requires careful handling of import errors if dukpy is unavailable; updates to tests to cover both standard and DASH/adaptive formats; may impact startup time due to interpreter initialization; ensure fallback path (s_to_sig) remains functional when dukpy cannot be used."
+      },
+      {
+        "operation": "Refactor or rework s_to_sig to delegate to dukpy-based decryption path and wire into extract flow",
+        "file_to_modify": "src/you_get/extractors/youtube.py",
+        "function_to_modify": "YouTube.s_to_sig",
+        "reason": "Consolidate decryption logic by routing through the dukpy-backed path, preserving a safe fallback and reducing brittleness of the previous translator approach.",
+        "side_effects": "Tests may need adjustments to reflect the new decryption path; ensure compatibility with both old and new code paths; potential API surface changes if the function signature or return values differ; ensure proper error messaging when dukpy is unavailable."
+      }
+    ]
+  }
+}

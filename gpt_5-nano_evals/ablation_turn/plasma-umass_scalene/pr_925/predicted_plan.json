@@ -1,0 +1,42 @@
+{
+  "pr_number": 925,
+  "repository": "plasma-umass/scalene",
+  "title": "Fix for overwriting LD_PRELOAD if it contains libscalene.so and other values",
+  "body": "Summary:\n- The Linux LD_PRELOAD handling in Scalene can overwrite an existing LD_PRELOAD value when setup_preload runs multiple times. If LD_PRELOAD already contains libscalene.so (perhaps from a previous invocation), the code previously replaces it with just libscalene.so, thereby discarding other preloaded libraries.\n\nWhat’s changing:\n- Preserve and merge with any existing LD_PRELOAD content instead of overwriting it.\n- Ensure libscalene.so is present in LD_PRELOAD without removing other entries, even if setup_preload is invoked multiple times.\n\nRationale:\n- Idempotent behavior is essential when setup_preload can be called more than once. The new logic keeps all existing LD_PRELOAD entries intact and guarantees that libscalene.so is included exactly once.\n\nImpact:\n- Minor change in the environment setup path for Linux memory profiling. No external API changes. Should fix scenarios where LD_PRELOAD values get accidentally overwritten.\n\nTests to consider:\n- Run profiling multiple times in a single process and verify LD_PRELOAD composition remains correct (libscalene.so present, no lost entries).\n- Verify that LD_LIBRARY_PATH handling and PYTHONMALLOC behavior remain unaffected.\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T13:26:03.348618",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "scalene/scalene_preload.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "get_preload_environ",
+          "class_name": "ScalenePreload",
+          "full_name": "ScalenePreload.get_preload_environ",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Fix for overwriting LD_PRELOAD by merging with existing content so repeated setup_preload invocations preserve other preloaded libraries and ensure libscalene.so is present without duplicates.",
+    "steps": [
+      {
+        "operation": "Refactor Linux LD_PRELOAD merging to preserve and merge with existing LD_PRELOAD",
+        "file_to_modify": "scalene/scalene_preload.py",
+        "function_to_modify": "ScalenePreload.get_preload_environ",
+        "reason": "Currently setup_preload overwrites LD_PRELOAD, causing loss of other preloaded libraries; merge safely to ensure idempotence and include libscalene.so",
+        "side_effects": "Tests will need to cover idempotence across multiple invocations; potential minor changes to environment variable composition; no external API changes; may affect external processes relying on LD_PRELOAD ordering, but logic should preserve other entries and add libscalene.so when missing."
+      }
+    ]
+  }
+}

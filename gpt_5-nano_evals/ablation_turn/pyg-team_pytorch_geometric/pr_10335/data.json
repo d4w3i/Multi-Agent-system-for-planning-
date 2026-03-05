@@ -1,0 +1,117 @@
+{
+    "repository": "pyg-team/pytorch_geometric",
+    "pull_request_number": 10335,
+    "title": "Fixes to WebQSP Indexer and GRetriever so that unnecessary disk writes are reduced.",
+    "body": "Quick fix to webqsp and gretriever to help with unnecessary cruft on disk and out of date api in examples.",
+    "pr_date": "2025-06-25T21:26:40Z",
+    "source_branch": "zaristei/webqsp_indexer_fix",
+    "language": "en",
+    "keywords_detected": {
+        "branch": [
+            "fix"
+        ],
+        "requirement": [
+            "fix"
+        ],
+        "body": [
+            "fix"
+        ]
+    },
+    "number_of_links_in_pr": 0,
+    "base_sha": "1c3b1e7c02939b5e4a4e993a51cc310753ef21dc",
+    "last_commit_sha": "fe90ea2e2b9fb2639ca9c4f4636bedf7364cb78a",
+    "diff_between_base_and_last": [
+        {
+            "sha": "20adfa9c74e8eecf12f5a37b76ed402c63bd8438",
+            "filename": "examples/llm/g_retriever.py",
+            "status": "modified",
+            "additions": 1,
+            "deletions": 2,
+            "changes": 3,
+            "blob_url": "https://github.com/pyg-team/pytorch_geometric/blob/fe90ea2e2b9fb2639ca9c4f4636bedf7364cb78a/examples%2Fllm%2Fg_retriever.py",
+            "raw_url": "https://github.com/pyg-team/pytorch_geometric/raw/fe90ea2e2b9fb2639ca9c4f4636bedf7364cb78a/examples%2Fllm%2Fg_retriever.py",
+            "contents_url": "https://api.github.com/repos/pyg-team/pytorch_geometric/contents/examples%2Fllm%2Fg_retriever.py?ref=fe90ea2e2b9fb2639ca9c4f4636bedf7364cb78a",
+            "patch": "@@ -284,8 +284,7 @@ def train(\n     if model_save_name == 'llm':\n         model = llm\n     else:\n-        model = GRetriever(llm=llm, gnn=gnn,\n-                           mlp_out_channels=llm.word_embedding.embedding_dim)\n+        model = GRetriever(llm=llm, gnn=gnn)\n \n     # Create optimizer\n     params = [p for _, p in model.named_parameters() if p.requires_grad]"
+        },
+        {
+            "sha": "f54dacffb26d34d8456da43fa5988a21ccb05134",
+            "filename": "torch_geometric/datasets/web_qsp_dataset.py",
+            "status": "modified",
+            "additions": 6,
+            "deletions": 9,
+            "changes": 15,
+            "blob_url": "https://github.com/pyg-team/pytorch_geometric/blob/fe90ea2e2b9fb2639ca9c4f4636bedf7364cb78a/torch_geometric%2Fdatasets%2Fweb_qsp_dataset.py",
+            "raw_url": "https://github.com/pyg-team/pytorch_geometric/raw/fe90ea2e2b9fb2639ca9c4f4636bedf7364cb78a/torch_geometric%2Fdatasets%2Fweb_qsp_dataset.py",
+            "contents_url": "https://api.github.com/repos/pyg-team/pytorch_geometric/contents/torch_geometric%2Fdatasets%2Fweb_qsp_dataset.py?ref=fe90ea2e2b9fb2639ca9c4f4636bedf7364cb78a",
+            "patch": "@@ -87,13 +87,9 @@ def __init__(\n     def raw_file_names(self) -> List[str]:\n         return [\"raw.pt\"]\n \n-    @property\n-    def _processed_split_file_names(self) -> List[str]:\n-        return [\"train_data.pt\", \"val_data.pt\", \"test_data.pt\"]\n-\n     @property\n     def processed_file_names(self) -> List[str]:\n-        return self._processed_split_file_names + [\"large_graph_indexer\"]\n+        return [\"train_data.pt\", \"val_data.pt\", \"test_data.pt\"]\n \n     def download(self) -> None:\n         import datasets\n@@ -153,7 +149,7 @@ def _build_graph(self) -> None:\n         )\n \n         print(\"\\tSaving graph...\")\n-        self.indexer.save(self.processed_paths[-1])\n+        self.indexer.save(self.indexer_path)\n \n     def _retrieve_subgraphs(self) -> None:\n         for split_name, dataset, path in zip(\n@@ -223,12 +219,13 @@ def process(self) -> None:\n         self.model: SentenceTransformer = SentenceTransformer(model_name).to(\n             device)\n         self.model.eval()\n-        if self.force_reload or not os.path.exists(self.processed_paths[-1]):\n+        self.indexer_path = os.path.join(self.processed_dir,\n+                                         \"large_graph_indexer\")\n+        if self.force_reload or not os.path.exists(self.indexer_path):\n             self._build_graph()\n         else:\n             print(\"Loading graph...\")\n-            self.indexer = LargeGraphIndexer.from_disk(\n-                self.processed_paths[-1])\n+            self.indexer = LargeGraphIndexer.from_disk(self.indexer_path)\n         self.textual_nodes = DataFrame.from_dict(\n             {\"node_attr\": self.indexer.get_node_features()})\n         self.textual_nodes[\"node_id\"] = self.textual_nodes.index"
+        }
+    ],
+    "commits": [
+        {
+            "sha": "93c97ad04f0b95958098b2365c08b1c063e63beb",
+            "commit_date": "2025-06-25T00:18:25Z",
+            "message": "fix webqsp dataset indexer check",
+            "number_of_links_in_commit": 0,
+            "files_changed_count": 1,
+            "files": [
+                {
+                    "sha": "baffb8a36a80638c8b7f4bfb34465bdb711f13cc",
+                    "filename": "torch_geometric/datasets/web_qsp_dataset.py",
+                    "status": "modified",
+                    "additions": 5,
+                    "deletions": 8,
+                    "changes": 13,
+                    "blob_url": "https://github.com/pyg-team/pytorch_geometric/blob/93c97ad04f0b95958098b2365c08b1c063e63beb/torch_geometric%2Fdatasets%2Fweb_qsp_dataset.py",
+                    "raw_url": "https://github.com/pyg-team/pytorch_geometric/raw/93c97ad04f0b95958098b2365c08b1c063e63beb/torch_geometric%2Fdatasets%2Fweb_qsp_dataset.py",
+                    "contents_url": "https://api.github.com/repos/pyg-team/pytorch_geometric/contents/torch_geometric%2Fdatasets%2Fweb_qsp_dataset.py?ref=93c97ad04f0b95958098b2365c08b1c063e63beb",
+                    "patch": "@@ -87,13 +87,9 @@ def __init__(\n     def raw_file_names(self) -> List[str]:\n         return [\"raw.pt\"]\n \n-    @property\n-    def _processed_split_file_names(self) -> List[str]:\n-        return [\"train_data.pt\", \"val_data.pt\", \"test_data.pt\"]\n-\n     @property\n     def processed_file_names(self) -> List[str]:\n-        return self._processed_split_file_names + [\"large_graph_indexer\"]\n+        return [\"train_data.pt\", \"val_data.pt\", \"test_data.pt\"]\n \n     def download(self) -> None:\n         import datasets\n@@ -153,7 +149,7 @@ def _build_graph(self) -> None:\n         )\n \n         print(\"\\tSaving graph...\")\n-        self.indexer.save(self.processed_paths[-1])\n+        self.indexer.save(self.indexer_path)\n \n     def _retrieve_subgraphs(self) -> None:\n         for split_name, dataset, path in zip(\n@@ -223,12 +219,13 @@ def process(self) -> None:\n         self.model: SentenceTransformer = SentenceTransformer(model_name).to(\n             device)\n         self.model.eval()\n-        if self.force_reload or not os.path.exists(self.processed_paths[-1]):\n+        self.indexer_path = os.path.join(self.processed_dir, \"large_graph_indexer\")\n+        if self.force_reload or not os.path.exists(self.indexer_path):\n             self._build_graph()\n         else:\n             print(\"Loading graph...\")\n             self.indexer = LargeGraphIndexer.from_disk(\n-                self.processed_paths[-1])\n+                self.indexer_path)\n         self.textual_nodes = DataFrame.from_dict(\n             {\"node_attr\": self.indexer.get_node_features()})\n         self.textual_nodes[\"node_id\"] = self.textual_nodes.index"
+                }
+            ]
+        },
+        {
+            "sha": "c381237307e68eac9f99cf1b2baf3965904b077b",
+            "commit_date": "2025-06-25T20:28:58Z",
+            "message": "update gretriever interface",
+            "number_of_links_in_commit": 0,
+            "files_changed_count": 1,
+            "files": [
+                {
+                    "sha": "20adfa9c74e8eecf12f5a37b76ed402c63bd8438",
+                    "filename": "examples/llm/g_retriever.py",
+                    "status": "modified",
+                    "additions": 1,
+                    "deletions": 2,
+                    "changes": 3,
+                    "blob_url": "https://github.com/pyg-team/pytorch_geometric/blob/c381237307e68eac9f99cf1b2baf3965904b077b/examples%2Fllm%2Fg_retriever.py",
+                    "raw_url": "https://github.com/pyg-team/pytorch_geometric/raw/c381237307e68eac9f99cf1b2baf3965904b077b/examples%2Fllm%2Fg_retriever.py",
+                    "contents_url": "https://api.github.com/repos/pyg-team/pytorch_geometric/contents/examples%2Fllm%2Fg_retriever.py?ref=c381237307e68eac9f99cf1b2baf3965904b077b",
+                    "patch": "@@ -284,8 +284,7 @@ def train(\n     if model_save_name == 'llm':\n         model = llm\n     else:\n-        model = GRetriever(llm=llm, gnn=gnn,\n-                           mlp_out_channels=llm.word_embedding.embedding_dim)\n+        model = GRetriever(llm=llm, gnn=gnn)\n \n     # Create optimizer\n     params = [p for _, p in model.named_parameters() if p.requires_grad]"
+                }
+            ]
+        },
+        {
+            "sha": "fe90ea2e2b9fb2639ca9c4f4636bedf7364cb78a",
+            "commit_date": "2025-06-25T21:28:34Z",
+            "message": "[pre-commit.ci] auto fixes from pre-commit.com hooks\n\nfor more information, see https://pre-commit.ci",
+            "number_of_links_in_commit": 1,
+            "files_changed_count": 1,
+            "files": [
+                {
+                    "sha": "f54dacffb26d34d8456da43fa5988a21ccb05134",
+                    "filename": "torch_geometric/datasets/web_qsp_dataset.py",
+                    "status": "modified",
+                    "additions": 3,
+                    "deletions": 3,
+                    "changes": 6,
+                    "blob_url": "https://github.com/pyg-team/pytorch_geometric/blob/fe90ea2e2b9fb2639ca9c4f4636bedf7364cb78a/torch_geometric%2Fdatasets%2Fweb_qsp_dataset.py",
+                    "raw_url": "https://github.com/pyg-team/pytorch_geometric/raw/fe90ea2e2b9fb2639ca9c4f4636bedf7364cb78a/torch_geometric%2Fdatasets%2Fweb_qsp_dataset.py",
+                    "contents_url": "https://api.github.com/repos/pyg-team/pytorch_geometric/contents/torch_geometric%2Fdatasets%2Fweb_qsp_dataset.py?ref=fe90ea2e2b9fb2639ca9c4f4636bedf7364cb78a",
+                    "patch": "@@ -219,13 +219,13 @@ def process(self) -> None:\n         self.model: SentenceTransformer = SentenceTransformer(model_name).to(\n             device)\n         self.model.eval()\n-        self.indexer_path = os.path.join(self.processed_dir, \"large_graph_indexer\")\n+        self.indexer_path = os.path.join(self.processed_dir,\n+                                         \"large_graph_indexer\")\n         if self.force_reload or not os.path.exists(self.indexer_path):\n             self._build_graph()\n         else:\n             print(\"Loading graph...\")\n-            self.indexer = LargeGraphIndexer.from_disk(\n-                self.indexer_path)\n+            self.indexer = LargeGraphIndexer.from_disk(self.indexer_path)\n         self.textual_nodes = DataFrame.from_dict(\n             {\"node_attr\": self.indexer.get_node_features()})\n         self.textual_nodes[\"node_id\"] = self.textual_nodes.index"
+                }
+            ]
+        }
+    ],
+    "pull_request_url": "https://github.com/pyg-team/pytorch_geometric/pull/10335",
+    "commits_url": "https://github.com/pyg-team/pytorch_geometric/pull/10335/commits",
+    "files_url": "https://github.com/pyg-team/pytorch_geometric/pull/10335/files"
+}

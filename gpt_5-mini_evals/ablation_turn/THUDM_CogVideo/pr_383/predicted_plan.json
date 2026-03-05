@@ -1,0 +1,57 @@
+{
+  "pr_number": 383,
+  "repository": "THUDM/CogVideo",
+  "title": "fix deprecation of clear_objs_and_retain_memory",
+  "body": "The API of diffusers `clear_objs_and_retain_memory` has been deprecated in [huggingface/diffusers#9543](https://github.com/huggingface/diffusers/pull/9543/files#diff-5c07adf115dbb937f26dbfedff2aef0d31b4e8e3a58ba9cfb4a0c9f64672a8c5L263) and is replaced with `free_memory`. Therefore, the corresponding parts in the LoRA training script need to be adjusted to adapt to the latest version of diffusers.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T12:19:36.818152",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "train_cogvideox_lora.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "<module_import_section>",
+          "class_name": null,
+          "full_name": "<module_import_section>",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "log_validation",
+          "class_name": null,
+          "full_name": "log_validation",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Replace deprecated diffusers.training_utils.clear_objs_and_retain_memory with the new free_memory API while preserving backward compatibility by importing free_memory with a fallback alias and updating the validation call site in log_validation.",
+    "steps": [
+      {
+        "operation": "Update module-level import to provide a backward-compatible alias for diffusers.free_memory",
+        "file_to_modify": "train_cogvideox_lora.py",
+        "function_to_modify": "<module_import_section>",
+        "reason": "diffusers.training_utils.clear_objs_and_retain_memory has been deprecated and replaced with free_memory. Replace the direct import with a try/except that prefers free_memory and falls back to importing clear_objs_and_retain_memory as free_memory to preserve compatibility with older diffusers releases. Also preserve other existing imports from diffusers.training_utils (e.g., cast_training_params).",
+        "side_effects": "Low risk change: avoids ImportError on newer diffusers and keeps support for older versions. Tests: run unit/smoke tests that import the training script to ensure no import-time exceptions. Dependents: any code in this script (and other modules, if any) that expects clear_objs_and_retain_memory will now use the compatibility alias free_memory; external projects importing this script shouldn't see an API change. API impacts: none on the script's public behavior, but it avoids breaking when running with newer diffusers where clear_objs_and_retain_memory no longer exists."
+      },
+      {
+        "operation": "Replace deprecated call in validation routine to use the compatibility alias free_memory",
+        "file_to_modify": "train_cogvideox_lora.py",
+        "function_to_modify": "log_validation",
+        "reason": "log_validation currently calls clear_objs_and_retain_memory([pipe]) which is deprecated/removed in recent diffusers; change the call to free_memory([pipe]) (the imported compatibility alias) so the script runs with both old and new diffusers versions.",
+        "side_effects": "Low risk: semantics preserved if free_memory accepts the same argument type (a list of objects). Tests: run the validation path (or a minimal smoke test that constructs a pipe and calls log_validation) to confirm no runtime errors and that memory is freed as expected. Dependents: only affects memory-cleanup behavior in validation; ensure no other call sites to the old name exist. API impacts: none beyond removing use of the deprecated API; if free_memory's signature differs in future versions, additional adaptation may be needed."
+      }
+    ]
+  }
+}

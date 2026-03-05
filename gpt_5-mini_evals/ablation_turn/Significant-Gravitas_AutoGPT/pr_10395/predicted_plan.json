@@ -1,0 +1,133 @@
+{
+  "pr_number": 10395,
+  "repository": "Significant-Gravitas/AutoGPT",
+  "title": "feat(block;backend):  Truncate execution update payload on large data & Improve ReadSpreadsheetBlock performance",
+  "body": "### Changes 🏗️\n\nThis PR introduces several key improvements to message handling, block functionality, and execution reliability:\n\n- **Renamed CSV block to Spreadsheet block** with enhanced CSV/Excel processing capabilities\n- **Added message size limiting and truncation** for Redis communication to prevent connection issues\n- **Optimized FileReadBlock** to yield content chunks instead of duplicated outputs for better performance\n- **Improved execution termination handling** with better timeout management and event publishing\n- **Enhanced continuous retry decorator** with async function support\n- **Implemented payload truncation** to prevent Redis connection issues from oversized messages\n\n### Checklist 📋\n\n#### For code changes:\n- [x] I have clearly listed my changes in the PR description\n- [x] I have made a test plan\n- [x] I have tested my changes according to the test plan:\n  - [x] Verified backend starts without errors\n  - [x] Confirmed message truncation works for large payloads\n  - [x] Tested spreadsheet block functionality with CSV and Excel files\n  - [x] Validated execution termination improvements\n  - [x] Checked FileReadBlock chunk processing\n\n#### For configuration changes:\n- [x] `.env.example` is updated or already compatible with my changes\n- [x] `docker-compose.yml` is updated or already compatible with my changes\n- [x] I have included a list of my configuration changes in the PR description (under **Changes**)\n\n🤖 Generated with [Claude Code](https://claude.ai/code)",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T12:17:59.904352",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "autogpt_platform/backend/backend/data/event_bus.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "_serialize_message",
+          "class_name": "BaseRedisEventBus",
+          "full_name": "BaseRedisEventBus._serialize_message",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_deserialize_message",
+          "class_name": "BaseRedisEventBus",
+          "full_name": "BaseRedisEventBus._deserialize_message",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "publish_event",
+          "class_name": "RedisEventBus",
+          "full_name": "RedisEventBus.publish_event",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "publish_event",
+          "class_name": "AsyncRedisEventBus",
+          "full_name": "AsyncRedisEventBus.publish_event",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "autogpt_platform/backend/backend/util/retry.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "continuous_retry",
+          "class_name": null,
+          "full_name": "continuous_retry",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "autogpt_platform/backend/backend/blocks/csv.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "run",
+          "class_name": "ReadSpreadsheetBlock",
+          "full_name": "ReadSpreadsheetBlock.run",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Add message-size limiting/truncation to the Redis event bus to prevent oversized publishes, extend the retry decorator to support async functions, and convert the spreadsheet read block to stream rows (with chunked/summary 'rows') to avoid duplicating large in-memory payloads.",
+    "steps": [
+      {
+        "operation": "Implement payload size inspection and truncation in serialization",
+        "file_to_modify": "autogpt_platform/backend/backend/data/event_bus.py",
+        "function_to_modify": "BaseRedisEventBus._serialize_message",
+        "reason": "Centralize message size limiting so every Redis publish is protected. Serialize the event to JSON, measure its byte size, and if it exceeds a configurable threshold (e.g., REDIS_MAX_MESSAGE_SIZE), replace the full payload with a compact summary that preserves correlation identifiers (user_id, graph_id, graph_exec_id, node_exec_id, event_type, status) and adds metadata fields such as `_truncated`: true and `_original_size`. This ensures published messages remain valid JSON and small enough for Redis.",
+        "side_effects": "Consumers will receive truncated messages when payloads are large — tests must assert the `_truncated` marker and preserved identifiers. Logging must be added so operators can detect frequent truncation. Downstream components that previously relied on the full payload may need fallback logic (e.g., fetch full data from DB/api). No API schema break if marker is optional, but event listeners expecting full event content must be updated."
+      },
+      {
+        "operation": "Handle truncated payloads robustly during deserialization",
+        "file_to_modify": "autogpt_platform/backend/backend/data/event_bus.py",
+        "function_to_modify": "BaseRedisEventBus._deserialize_message",
+        "reason": "Ensure the subscriber side can safely parse a truncated message and detect that the payload is incomplete. The deserializer should return a valid payload object containing the `_truncated` flag (and `_original_size` metadata when present), and log receipt of a truncated payload for observability and debugging. This prevents pydantic/model parsing errors and keeps listeners resilient.",
+        "side_effects": "Consumers using strict validation may need to accept truncated payloads or handle a new field. Tests should include parsing of both full and truncated messages. This change reduces runtime errors on subscribers but requires operator awareness when truncated messages are observed frequently."
+      },
+      {
+        "operation": "Ensure synchronous publish uses the new serialization/truncation path",
+        "file_to_modify": "autogpt_platform/backend/backend/data/event_bus.py",
+        "function_to_modify": "RedisEventBus.publish_event",
+        "reason": "Make publish_event call the updated _serialize_message to guarantee that the truncation protection is applied consistently for synchronous publishers. Add defensive logging and an exception-safe path: if publish fails due to message size or Redis error, log details and optionally fall back to publishing a minimal correlation-only event or to enqueueing the full payload into persistent storage and publishing a reference.",
+        "side_effects": "Synchronous publishing behavior will be more robust against OOM/Redis errors. Tests should verify publish_event publishes truncated messages and that existing callers see no exceptions. If a fallback path (e.g., store+reference) is implemented, consumers must be capable of resolving references; otherwise, document expected behavior."
+      },
+      {
+        "operation": "Ensure asynchronous publish uses the new serialization/truncation path",
+        "file_to_modify": "autogpt_platform/backend/backend/data/event_bus.py",
+        "function_to_modify": "AsyncRedisEventBus.publish_event",
+        "reason": "Apply the same truncation logic for async publishers by calling the updated _serialize_message and awaiting publish. Add async-aware error handling and logs, and keep the message JSON valid for async subscribers. This ensures parity between sync and async event paths.",
+        "side_effects": "Async publishers will no longer send oversized payloads; subscribers will receive truncated markers. Async tests must validate behavior under large payload conditions. Any additional async fallback (e.g., storing and publishing a pointer) will introduce an operational dependency (storage) and require consumer support for resolving pointers."
+      },
+      {
+        "operation": "Add coroutine-aware wrappers to the retry decorator",
+        "file_to_modify": "autogpt_platform/backend/backend/util/retry.py",
+        "function_to_modify": "continuous_retry",
+        "reason": "Make continuous_retry usable with both sync and async callables by detecting asyncio.iscoroutinefunction(target). For async callables, return an async wrapper that awaits the target and uses asyncio.sleep between retries; for sync callables, keep the existing behavior using time.sleep. Preserve logging semantics and use functools.wraps to keep metadata.",
+        "side_effects": "Background consumers can now decorate async functions without wrapping them manually. Unit tests must cover both synchronous and asynchronous retry behavior, including backoff and logging. Ensure there are no accidental blocking calls in async wrappers (no time.sleep). Potential impact: callers relying on the decorator's return type must be aware that the wrapper is async for coroutine functions (i.e., must be awaited)."
+      },
+      {
+        "operation": "Stream spreadsheet rows and avoid full duplicated 'rows' payload",
+        "file_to_modify": "autogpt_platform/backend/backend/blocks/csv.py",
+        "function_to_modify": "ReadSpreadsheetBlock.run",
+        "reason": "Improve memory and time performance for large CSV/Excel files by streaming rows rather than building a full in-memory list and then yielding both a 'rows' list and per-row 'row' outputs (which duplicated memory). Implement a streaming strategy: use csv.reader for CSVs and openpyxl (iter_rows) or pandas iterator/row iteration for Excel to yield each 'row' output as rows are read. For the 'rows' (full-list) output, only materialize it when small (e.g., rows_count <= configurable MAX_ROWS_TO_MATERIALIZE or total bytes under threshold); otherwise, emit a chunked 'rows_chunk' output or a summarized 'rows' payload (e.g., count + first N samples) marked with `_truncated` to preserve backward compatibility while preventing OOM.",
+        "side_effects": "Consumers that previously expected a full 'rows' list for large inputs will receive either chunked outputs or a truncated/summary 'rows' payload and must adapt to streaming consumption. Tests should assert that per-row 'row' outputs remain unchanged and that 'rows' is only materialized for small inputs; also test Excel paths (openpyxl/pandas) to ensure streaming behavior and chunking. This change reduces memory usage dramatically for large files but may require upstream graphs to be updated if they relied on immediate availability of the full list."
+      }
+    ]
+  }
+}

@@ -1,0 +1,42 @@
+{
+  "pr_number": 558,
+  "repository": "mvt-project/mvt",
+  "title": "Fix crash when handling empty adb key list",
+  "body": "This commit fixes a crash in the ADB module when no keys were parsed. We should return an empty list by default.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T12:27:03.383410",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "src/mvt/android/artifacts/dumpsys_adb.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "parse",
+          "class_name": "DumpsysADBArtifact",
+          "full_name": "DumpsysADBArtifact.parse",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Prevent a crash in the Android dumpsys ADB artifact parser when `user_keys` is missing or empty by normalizing it to an empty list and ensuring the returned artifact output always contains `user_keys` as a list.",
+    "steps": [
+      {
+        "operation": "Make Dumpsys ADB parsing resilient to missing/empty `user_keys` by defaulting to an empty list and normalizing the parsed structure before iterating/fingerprinting keys",
+        "file_to_modify": "src/mvt/android/artifacts/dumpsys_adb.py",
+        "function_to_modify": "DumpsysADBArtifact.parse",
+        "reason": "`parsed.get(\"user_keys\")` can return `None` when the key is absent (or parse yields null), causing `TypeError: 'NoneType' object is not iterable` during iteration; normalizing to `[]` guarantees consistent output and prevents crashes.",
+        "side_effects": "Changes output shape to consistently include `user_keys: []` even when no keys exist; downstream code/tests expecting missing `user_keys` may need updates, but behavior for non-empty key lists should remain unchanged. Add/adjust tests or fixtures that cover: missing `user_keys`, empty `user_keys`, and non-empty `user_keys` regression."
+      }
+    ]
+  }
+}

@@ -1,0 +1,42 @@
+{
+  "pr_number": 2303,
+  "repository": "lllyasviel/stable-diffusion-webui-forge",
+  "title": "fix for Florence-2 space",
+  "body": "previously Florence2 had flash attention as a requirement due to an error in *transformers* (issue with packages Forge uses rather than in Forge itself) (https://huggingface.co/microsoft/Florence-2-base/discussions/4#6673ffb9436907f83a8aaf2d); the workaround was to patch the imports to remove it (https://huggingface.co/microsoft/phi-1_5/discussions/72#65a0339f64520347aa3d703c).\r\nAt some point, an update has made this patch unnecessary. And turned it into an error.\r\n\r\nThis PR simply removes the patch.\r\n\r\nNow the Space loads again; tested a couple of functions as working correctly too.\r\n\r\n#2299",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T12:21:32.449373",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "extensions-builtin/forge_space_florence_2/forge_app.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "fixed_get_imports",
+          "class_name": null,
+          "full_name": "fixed_get_imports",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Removes the now-broken Florence-2 HuggingFace Space workaround that monkey-patched `transformers` import detection to drop `flash_attn`. The Space will rely on upstream `transformers` behavior again so the app loads and inference functions work under updated dependencies.",
+    "steps": [
+      {
+        "operation": "Remove the Florence-2 `transformers.dynamic_module_utils.get_imports` monkey-patch by deleting the helper function and updating the model-loading code path to call `from_pretrained(..., trust_remote_code=True)` directly (and remove related patch/import statements).",
+        "file_to_modify": "extensions-builtin/forge_space_florence_2/forge_app.py",
+        "function_to_modify": "fixed_get_imports",
+        "reason": "The `fixed_get_imports` workaround (removing `flash_attn` from dynamically detected imports) was previously needed due to an upstream `transformers` packaging/import quirk, but is now unnecessary and has become the source of runtime errors. Removing the helper and the `unittest.mock.patch(...)` usage restores normal `transformers` behavior so the Space can load again.",
+        "side_effects": "If the Space is run with older `transformers` versions that still mis-detect `flash_attn` as required for Florence-2 remote code, model loading may fail again; however this aligns with the PR intent and current dependency set. Also ensure removal of patch-related imports doesn’t break linting (unused imports) and that the GPU capture/context (`spaces.capture_gpu_object()` / `@spaces.GPU`) remains unchanged. Functional smoke tests should include launching the Space and running at least one captioning/OCR/OD call to confirm model initialization and inference still succeed."
+      }
+    ]
+  }
+}

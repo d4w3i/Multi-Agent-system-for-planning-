@@ -1,0 +1,87 @@
+{
+  "pr_number": 39358,
+  "repository": "huggingface/transformers",
+  "title": "fix(siglip2): improve pooled output logic in modular file",
+  "body": "Fixes pooled output handling in the modular Siglip2 implementation so that pooling is always available even when the dedicated head is disabled. Adds robust fallbacks that compute pooled representations from last_hidden_state using attention masks (or mean pooling) and prevents returning None pooled outputs which break downstream methods that expect image/text embeddings.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T13:24:23.403052",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "modular_siglip2.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "forward",
+          "class_name": "Siglip2VisionTransformer",
+          "full_name": "Siglip2VisionTransformer.forward",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "get_image_features",
+          "class_name": "Siglip2Model",
+          "full_name": "Siglip2Model.get_image_features",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "forward",
+          "class_name": "Siglip2Model",
+          "full_name": "Siglip2Model.forward",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "forward",
+          "class_name": "Siglip2ForImageClassification",
+          "full_name": "Siglip2ForImageClassification.forward",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Ensure pooled outputs are always available by adding dtype/device-safe masked-average fallbacks when the dedicated pooling head is disabled, and make higher-level wrappers resilient to missing pooler_output (vision and text). Also prefer encoder pooler_output in the classification head and make its averaging robust.",
+    "steps": [
+      {
+        "operation": "Add fallback masked/mean pooling and dtype/device-safe averaging",
+        "file_to_modify": "modular_siglip2.py",
+        "function_to_modify": "Siglip2VisionTransformer.forward",
+        "reason": "When self.use_head is False the current code sets pooler_output to None. Downstream callers expect a pooled embedding. Compute a deterministic fallback pooled representation from last_hidden_state using the original attention_mask argument (the 1D/pixel mask passed into the vision forward) or mean pooling if the mask is None. Use safe dtype/device handling and a clamped denominator to avoid NaNs and preserve autograd.",
+        "side_effects": "Ensures vision encoder always returns pooler_output, preventing None from propagating. Tests that previously failed due to None pooler_output should pass. Minor numerical differences in pooled embeddings when head is disabled (should match previous manual averaging). No public API changes; state_dict unaffected. Downstream code relying on pooler_output shape will be safe. Need to verify correct attention_mask shape is used (1D pixel mask) and not the 4D encoder_attention_mask used for attention internals."
+      },
+      {
+        "operation": "Add fallback pooling in wrapper that returns image features",
+        "file_to_modify": "modular_siglip2.py",
+        "function_to_modify": "Siglip2Model.get_image_features",
+        "reason": "get_image_features currently returns vision_outputs.pooler_output directly. If the vision head was disabled (or pooler_output is None for other reasons), this method must compute a fallback pooled embedding from vision_outputs.last_hidden_state using the provided pixel_attention_mask (or mean pooling if mask is None). This keeps the high-level API robust for callers expecting image embeddings.",
+        "side_effects": "Prevents returning None from get_image_features. Tests that rely on get_image_features producing a (batch, dim) tensor will no longer break. Must ensure pixel_attention_mask is flattened/collapsed to (batch, seq_len) if passed in as (batch, H, W) before pooling. Slight changes to returned embeddings when using fallback pooling vs head-based pooling; no change to signatures. Downstream consumers of image embeddings should not be affected except for potential small numeric differences."
+      },
+      {
+        "operation": "Add robust fallback pooling for both vision and text embeddings before normalization",
+        "file_to_modify": "modular_siglip2.py",
+        "function_to_modify": "Siglip2Model.forward",
+        "reason": "This method directly reads vision_outputs.pooler_output and text_outputs.pooler_output and then normalizes them. If either pooler_output is None, downstream normalization and cosine-similarity computations will fail. Compute fallback pooled representations from last_hidden_state using pixel_attention_mask (for vision) and attention_mask (for text) when pooler_output is None. Ensure masks are cast to the same dtype and device as last_hidden_state, flatten spatial masks as needed, clamp denominators for stability, and also clamp norms used for normalization to avoid division by zero.",
+        "side_effects": "Prevents runtime errors in contrastive forward when heads are disabled. Alters internal computed embeddings only in none-head cases; when heads are present behavior is unchanged. Ensure normalization uses a clamped norm (e.g., clamp(min=1e-9)), which could slightly change numerical values in edge cases (all-zero embeddings). Tests involving contrastive logits should be run; no public API changes. Downstream code that expects deterministic embedding values when head is disabled may see different but stable averaged embeddings."
+      },
+      {
+        "operation": "Prefer outputs.pooler_output for classification and make averaging-by-mask robust",
+        "file_to_modify": "modular_siglip2.py",
+        "function_to_modify": "Siglip2ForImageClassification.forward",
+        "reason": "The classification forward manually computes an average pool from outputs.last_hidden_state. Prefer returned outputs.pooler_output (so pooling is consistent with encoder behavior) and only perform masked averaging as a fallback. When averaging, cast pixel_attention_mask to sequence_output dtype/device, flatten spatial mask if necessary, and clamp the denominator (min=1e-9) to avoid division by zero and NaNs. Avoid in-place ops to keep autograd safe.",
+        "side_effects": "Behaviour when a dedicated head exists remains unchanged (pooler_output used). When head is disabled, classification uses a stable masked-average fallback identical to other pooling fallbacks. Prevents NaNs or runtime exceptions when pixel_attention_mask is all zeros. Tests for image classification logits shapes and numerics should be run. No public API changes; slightly different numerical results only in fallback cases."
+      }
+    ]
+  }
+}

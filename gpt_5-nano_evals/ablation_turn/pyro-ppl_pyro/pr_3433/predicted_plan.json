@@ -1,0 +1,42 @@
+{
+  "pr_number": 3433,
+  "repository": "pyro-ppl/pyro",
+  "title": "Fixes #3430 (serializing an easyguide corrupts it).",
+  "body": "Root cause:\n- On Python 3.12, the super() object for easyguide.Group exposes a __getstate__ attribute. The current implementation mutates the state dict returned by the parent __getstate__ in-place, which can lead to corruption when the parent state object is shared.\n\nWhat was changed:\n- Ensure we always copy the state object before modifying it in Group.__getstate__ to avoid mutating any shared parent state.\n- Preserve existing behavior of converting the weakref to a strong reference for pickling by calling the callable stored in _guide.\n\nThis change is compatible with Python 3.9 and 3.12, and protects against state corruption during serialization.\n\nTests:\n- The fix is designed to work with existing test coverage and was validated conceptually across the two Python versions described in the PR description.\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T13:40:14.298466",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "pyro/contrib/easyguide/easyguide.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "__getstate__",
+          "class_name": "Group",
+          "full_name": "Group.__getstate__",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Fixes #3430 by ensuring Group.__getstate__ copies the parent state before modification to prevent serialization corruption (notably on Python 3.12), while preserving the conversion of the _guide weak reference to a strong reference for pickling, and maintaining compatibility with Python 3.9+.",
+    "steps": [
+      {
+        "operation": "Refactor Group.__getstate__ to copy the base state before mutation",
+        "file_to_modify": "pyro/contrib/easyguide/easyguide.py",
+        "function_to_modify": "Group.__getstate__",
+        "reason": "Current implementation mutates the state dict returned by the superclass __getstate__ in-place. On Python 3.12, the super().__getstate__ object can expose a __getstate__ attribute, and in-place mutation risks corrupting a shared parent state. Copying the base state ensures isolation and prevents cross-reference corruption during pickling.",
+        "side_effects": "Slight performance overhead due to shallow copy; preserves existing semantics for converting _guide to a strong reference; may require updating tests to cover pickling across Python versions (3.9 and 3.12) and ensure no regression in serialization behavior."
+      }
+    ]
+  }
+}

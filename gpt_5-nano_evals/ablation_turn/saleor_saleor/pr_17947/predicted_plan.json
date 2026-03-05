@@ -1,0 +1,64 @@
+{
+  "pr_number": 17947,
+  "repository": "saleor/saleor",
+  "title": "Fix incorrect multiplier for limit field",
+  "body": "This PR corrects how the query cost multiplier is applied when a limit input is involved. We recently introduced a limit parameter for values on some fields (notably Attribute.values). The multiplier logic was inadvertently affecting the wrong place (SelectedAttribute-related path). The change ensures that the limit-based cost multiplier is only counted where pagination actually happens and does not inflate costs for non-paginated fields like SelectedAttribute.values.\n\nKey points:\n- The SelectedAttribute type should not contribute to query cost via a limit multiplier (it is not paginated).\n- Limit-based multipliers should apply to the Attribute.values path (where pagination exists) and not to SelectedAttribute.values.\n- No behavioral changes to how values are resolved, just the cost-multiplier application path.\n\nProposed behavior after this PR:\n- Cost calculation for queries involving SelectedAttribute.values should not consider any limit-based multiplier.\n- Cost calculation for Attribute.values should continue to respect its limit multiplier as intended (when present in cost map definitions).\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T13:47:18.848904",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "saleor/graphql/core/validators/query_cost.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "compute_cost",
+          "class_name": "CostValidator",
+          "full_name": "CostValidator.compute_cost",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "get_args_from_cost_map",
+          "class_name": "CostValidator",
+          "full_name": "CostValidator.get_args_from_cost_map",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "saleor/graphql/attribute/types.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    }
+  ],
+  "step_plan": {
+    "summary": "This PR fixes misapplied limit-based cost multipliers by ensuring only paginated fields (Attribute.values) incur cost multipliers, and SelectedAttribute.values are excluded.",
+    "steps": [
+      {
+        "operation": "Refactor get_args_from_cost_map to ignore limit-based multipliers for non-paginated fields",
+        "file_to_modify": "saleor/graphql/core/validators/query_cost.py",
+        "function_to_modify": "CostValidator.get_args_from_cost_map",
+        "reason": "Ensure multipliers derived from the cost map are only applied to fields that actually paginate; prevent cost inflation from SelectedAttribute.values.",
+        "side_effects": "Requires tests to validate no cost increase for SelectedAttribute.values; may affect tests around query cost; ensures future limit multipliers are isolated to Attribute.values."
+      },
+      {
+        "operation": "Update compute_cost to utilize the guard in multiplier application and ensure only paginated paths influence cost",
+        "file_to_modify": "saleor/graphql/core/validators/query_cost.py",
+        "function_to_modify": "CostValidator.compute_cost",
+        "reason": "Align compute_cost with the guarded multiplier application; ensure changes propagate to all cost calculations and that non-paginated paths are excluded from limit multiplier impact.",
+        "side_effects": "Potential test adjustments; ensure performance unaffected; ensure no regression for Attribute.values multiplier behavior; need tests for the new behavior."
+      }
+    ]
+  }
+}

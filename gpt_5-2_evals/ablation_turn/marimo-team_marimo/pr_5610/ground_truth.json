@@ -1,0 +1,352 @@
+{
+  "pr_number": 5610,
+  "repository": "marimo-team/marimo",
+  "title": "Feat/add force capability on export",
+  "body": "## 📝 Summary\r\n\r\n<!--\r\nProvide a concise summary of what this pull request is addressing.\r\n\r\nIf this PR fixes any issues, list them here by number (e.g., Fixes #123).\r\n-->\r\nThis pull request introduces a --force / -f flag to the marimo export subcommands. This allows users to overwrite existing output files, which is essential for automation and scripting use cases.\r\n\r\nFixes #5523\r\n\r\n## 🔍 Description of Changes\r\n\r\n<!--\r\nDetail the specific changes made in this pull request. Explain the problem addressed and how it was resolved. If applicable, provide before and after comparisons, screenshots, or any relevant details to help reviewers understand the changes easily.\r\n-->\r\n\r\nCurrently, when marimo export is used with an --output argument that points to an existing file, it interactively prompts the user for confirmation before overwriting. While this is a safe default for manual use, it blocks non-interactive workflows, such as in CI/CD pipelines or automated scripts.\r\n\r\nThis PR resolves the issue by:\r\n\r\nAdding a --force and -f option to all relevant export commands (html, script, md, ipynb, and html_wasm).\r\n\r\nUpdating the watch_and_export function to check for this flag. If force is True, the prompt_to_overwrite confirmation step is skipped, and the file is overwritten directly.\r\n\r\nAdding a new pytest test case (test_cli_export_html_force_overwrite) to ensure the new functionality works as expected. The test verifies that:\r\n\r\nAttempting to export to an existing file without the flag does not overwrite it.\r\n\r\nUsing --force successfully overwrites the existing file.\r\n\r\nUsing the short alias -f also works correctly.\r\n\r\nThese changes make the export feature more versatile and friendly for automated environments without altering the safe default behavior for interactive users.\r\n\r\nI know it is not perfect, please @dmadisetti @mscolnick check this one out!\r\n## 📋 Checklist\r\n\r\n- [x] I have read the [contributor guidelines](https://github.com/marimo-team/marimo/blob/main/CONTRIBUTING.md).\r\n- [x] For large changes, or changes that affect the public API: this change was discussed or approved through an issue, on [Discord](https://marimo.io/discord?ref=pr), or the community [discussions](https://github.com/marimo-team/marimo/discussions) (Please provide a link if applicable).\r\n- [x] I have added tests for the changes made.\r\n- [x] I have run the code and verified that it works as expected.\r\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T01:02:56.493838",
+    "extractor_version": "1.0.0",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "marimo/_cli/export/commands.py",
+      "status": "modified",
+      "additions": 59,
+      "deletions": 15,
+      "functions_modified": [
+        {
+          "function_name": "watch_and_export",
+          "class_name": null,
+          "full_name": "watch_and_export",
+          "start_line": 48,
+          "end_line": 106,
+          "lines_changed": [
+            53,
+            72,
+            73,
+            74
+          ]
+        },
+        {
+          "function_name": "html",
+          "class_name": null,
+          "full_name": "html",
+          "start_line": 166,
+          "end_line": 204,
+          "lines_changed": [
+            172,
+            202,
+            203,
+            204
+          ]
+        },
+        {
+          "function_name": "script",
+          "class_name": null,
+          "full_name": "script",
+          "start_line": 257,
+          "end_line": 282,
+          "lines_changed": [
+            258,
+            280,
+            281,
+            282
+          ]
+        },
+        {
+          "function_name": "md",
+          "class_name": null,
+          "full_name": "md",
+          "start_line": 335,
+          "end_line": 360,
+          "lines_changed": [
+            336,
+            358,
+            359,
+            360
+          ]
+        },
+        {
+          "function_name": "ipynb",
+          "class_name": null,
+          "full_name": "ipynb",
+          "start_line": 429,
+          "end_line": 478,
+          "lines_changed": [
+            436,
+            476,
+            477,
+            478
+          ]
+        },
+        {
+          "function_name": "html_wasm",
+          "class_name": null,
+          "full_name": "html_wasm",
+          "start_line": 560,
+          "end_line": 630,
+          "lines_changed": [
+            568,
+            628,
+            629,
+            630
+          ]
+        }
+      ],
+      "patch": "@@ -50,6 +50,7 @@ def watch_and_export(\n     output: Optional[Path],\n     watch: bool,\n     export_callback: Callable[[MarimoPath], ExportResult],\n+    force: bool,\n ) -> None:\n     if watch and not output:\n         raise click.UsageError(\n@@ -68,8 +69,9 @@ def write_data(data: str) -> None:\n \n     if output:\n         output_path = Path(output)\n-        if not prompt_to_overwrite(output_path):\n-            return\n+        if not force:\n+            if not prompt_to_overwrite(output_path):\n+                return\n \n     # No watch, just run once\n     if not watch:\n@@ -148,6 +150,13 @@ async def start() -> None:\n     type=bool,\n     help=_sandbox_message,\n )\n+@click.option(\n+    \"-f\",\n+    \"--force\",\n+    is_flag=True,\n+    default=False,\n+    help=\"Force overwrite of the output file if it already exists.\",\n+)\n @click.argument(\n     \"name\",\n     required=True,\n@@ -160,6 +169,7 @@ def html(\n     output: Path,\n     watch: bool,\n     sandbox: Optional[bool],\n+    force: bool,\n     args: tuple[str],\n ) -> None:\n     \"\"\"Run a notebook and export it as an HTML file.\"\"\"\n@@ -189,7 +199,9 @@ def export_callback(file_path: MarimoPath) -> ExportResult:\n             )\n         )\n \n-    return watch_and_export(MarimoPath(name), output, watch, export_callback)\n+    return watch_and_export(\n+        MarimoPath(name), output, watch, export_callback, force\n+    )\n \n \n @click.command(\n@@ -230,16 +242,20 @@ def export_callback(file_path: MarimoPath) -> ExportResult:\n     type=bool,\n     help=_sandbox_message,\n )\n+@click.option(\n+    \"-f\",\n+    \"--force\",\n+    is_flag=True,\n+    default=False,\n+    help=\"Force overwrite of the output file if it already exists.\",\n+)\n @click.argument(\n     \"name\",\n     required=True,\n     type=click.Path(exists=True, file_okay=True, dir_okay=False),\n )\n def script(\n-    name: str,\n-    output: Path,\n-    watch: bool,\n-    sandbox: Optional[bool],\n+    name: str, output: Path, watch: bool, sandbox: Optional[bool], force: bool\n ) -> None:\n     \"\"\"\n     Export a marimo notebook as a flat script, in topological order.\n@@ -261,7 +277,9 @@ def script(\n     def export_callback(file_path: MarimoPath) -> ExportResult:\n         return export_as_script(file_path)\n \n-    return watch_and_export(MarimoPath(name), output, watch, export_callback)\n+    return watch_and_export(\n+        MarimoPath(name), output, watch, export_callback, force\n+    )\n \n \n @click.command(\n@@ -302,16 +320,20 @@ def export_callback(file_path: MarimoPath) -> ExportResult:\n     type=bool,\n     help=_sandbox_message,\n )\n+@click.option(\n+    \"-f\",\n+    \"--force\",\n+    is_flag=True,\n+    default=False,\n+    help=\"Force overwrite of the output file if it already exists.\",\n+)\n @click.argument(\n     \"name\",\n     required=True,\n     type=click.Path(exists=True, file_okay=True, dir_okay=False),\n )\n def md(\n-    name: str,\n-    output: Path,\n-    watch: bool,\n-    sandbox: Optional[bool],\n+    name: str, output: Path, watch: bool, sandbox: Optional[bool], force: bool\n ) -> None:\n     \"\"\"\n     Export a marimo notebook as a code fenced markdown document.\n@@ -333,7 +355,9 @@ def md(\n     def export_callback(file_path: MarimoPath) -> ExportResult:\n         return export_as_md(file_path, new_filename=output)\n \n-    return watch_and_export(MarimoPath(name), output, watch, export_callback)\n+    return watch_and_export(\n+        MarimoPath(name), output, watch, export_callback, force\n+    )\n \n \n @click.command(\n@@ -390,6 +414,13 @@ def export_callback(file_path: MarimoPath) -> ExportResult:\n     type=bool,\n     help=_sandbox_message,\n )\n+@click.option(\n+    \"-f\",\n+    \"--force\",\n+    is_flag=True,\n+    default=False,\n+    help=\"Force overwrite of the output file if it already exists.\",\n+)\n @click.argument(\n     \"name\",\n     required=True,\n@@ -402,6 +433,7 @@ def ipynb(\n     sort: Literal[\"top-down\", \"topological\"],\n     include_outputs: bool,\n     sandbox: Optional[bool],\n+    force: bool,\n ) -> None:\n     \"\"\"\n     Export a marimo notebook as a Jupyter notebook in topological order.\n@@ -441,7 +473,9 @@ def export_callback(file_path: MarimoPath) -> ExportResult:\n             )\n         return export_as_ipynb(file_path, sort_mode=sort)\n \n-    return watch_and_export(MarimoPath(name), output, watch, export_callback)\n+    return watch_and_export(\n+        MarimoPath(name), output, watch, export_callback, force\n+    )\n \n \n @click.command(\n@@ -511,6 +545,13 @@ def export_callback(file_path: MarimoPath) -> ExportResult:\n     type=bool,\n     help=_sandbox_message,\n )\n+@click.option(\n+    \"-f\",\n+    \"--force\",\n+    is_flag=True,\n+    default=False,\n+    help=\"Force overwrite of the output file if it already exists.\",\n+)\n @click.argument(\n     \"name\",\n     required=True,\n@@ -524,6 +565,7 @@ def html_wasm(\n     show_code: bool,\n     include_cloudflare: bool,\n     sandbox: Optional[bool],\n+    force: bool,\n ) -> None:\n     \"\"\"Export a notebook as a WASM-powered standalone HTML file.\"\"\"\n     import sys\n@@ -583,7 +625,9 @@ def export_callback(file_path: MarimoPath) -> ExportResult:\n         create_cloudflare_files(parse_title(name), out_dir)\n \n     outfile = out_dir / filename\n-    return watch_and_export(MarimoPath(name), outfile, watch, export_callback)\n+    return watch_and_export(\n+        MarimoPath(name), outfile, watch, export_callback, force\n+    )\n \n \n export.add_command(html)"
+    },
+    {
+      "filename": "tests/_cli/test_cli_export.py",
+      "status": "modified",
+      "additions": 47,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "test_cli_export_html_force_overwrite",
+          "class_name": "TestExportHTML",
+          "full_name": "TestExportHTML.test_cli_export_html_force_overwrite",
+          "start_line": 407,
+          "end_line": 451,
+          "lines_changed": [
+            407,
+            408,
+            409,
+            410,
+            411,
+            412,
+            413,
+            414,
+            415,
+            416,
+            417,
+            418,
+            419,
+            420,
+            421,
+            422,
+            423,
+            424,
+            425,
+            426,
+            427,
+            428,
+            429,
+            430,
+            431,
+            432,
+            433,
+            434,
+            435,
+            436,
+            437,
+            438,
+            439,
+            440,
+            441,
+            442,
+            443,
+            444,
+            445,
+            446,
+            447,
+            448,
+            449,
+            450,
+            451
+          ]
+        }
+      ],
+      "patch": "@@ -403,6 +403,53 @@ def test_cli_export_html_sandbox_no_prompt(temp_marimo_file: str) -> None:\n         )\n         assert p.returncode == 0, p.stderr.decode()\n \n+    @staticmethod\n+    def test_cli_export_html_force_overwrite(temp_marimo_file: str) -> None:\n+        \"\"\"\n+        Test that the --force/-f flag allows overwriting an existing file\n+        using a simple, error-free notebook.\n+        \"\"\"\n+\n+        p1 = subprocess.run(\n+            [\"marimo\", \"export\", \"html\", temp_marimo_file],\n+            capture_output=True,\n+        )\n+        assert p1.returncode == 0, p1.stderr.decode()\n+        html = normalize_index_html(p1.stdout.decode())\n+\n+        dirname = path.dirname(temp_marimo_file)\n+        html = html.replace(dirname, \"path\")\n+        assert '<marimo-code hidden=\"\"></marimo-code>' not in html\n+        output_path = Path(temp_marimo_file).parent / \"output.html\"\n+\n+        p2 = subprocess.run(\n+            [\n+                \"marimo\",\n+                \"export\",\n+                \"html\",\n+                temp_marimo_file,\n+                \"-o\",\n+                str(output_path),\n+            ],\n+            capture_output=True,\n+            input=b\"n\\n\",\n+        )\n+        assert p2.returncode == 0, \"Expected a graceful exit with no errors\"\n+\n+        p3 = subprocess.run(\n+            [\n+                \"marimo\",\n+                \"export\",\n+                \"html\",\n+                temp_marimo_file,\n+                \"-o\",\n+                str(output_path),\n+                \"--force\",\n+            ],\n+            capture_output=True,\n+        )\n+        assert p3.returncode == 0, p3.stderr.decode()\n+\n \n class TestExportHtmlSmokeTests:\n     def assert_not_errored("
+    }
+  ],
+  "functions_modified": [
+    {
+      "function_name": "watch_and_export",
+      "class_name": null,
+      "full_name": "watch_and_export",
+      "start_line": 48,
+      "end_line": 106,
+      "lines_changed": [
+        53,
+        72,
+        73,
+        74
+      ]
+    },
+    {
+      "function_name": "html",
+      "class_name": null,
+      "full_name": "html",
+      "start_line": 166,
+      "end_line": 204,
+      "lines_changed": [
+        172,
+        202,
+        203,
+        204
+      ]
+    },
+    {
+      "function_name": "script",
+      "class_name": null,
+      "full_name": "script",
+      "start_line": 257,
+      "end_line": 282,
+      "lines_changed": [
+        258,
+        280,
+        281,
+        282
+      ]
+    },
+    {
+      "function_name": "md",
+      "class_name": null,
+      "full_name": "md",
+      "start_line": 335,
+      "end_line": 360,
+      "lines_changed": [
+        336,
+        358,
+        359,
+        360
+      ]
+    },
+    {
+      "function_name": "ipynb",
+      "class_name": null,
+      "full_name": "ipynb",
+      "start_line": 429,
+      "end_line": 478,
+      "lines_changed": [
+        436,
+        476,
+        477,
+        478
+      ]
+    },
+    {
+      "function_name": "html_wasm",
+      "class_name": null,
+      "full_name": "html_wasm",
+      "start_line": 560,
+      "end_line": 630,
+      "lines_changed": [
+        568,
+        628,
+        629,
+        630
+      ]
+    },
+    {
+      "function_name": "test_cli_export_html_force_overwrite",
+      "class_name": "TestExportHTML",
+      "full_name": "TestExportHTML.test_cli_export_html_force_overwrite",
+      "start_line": 407,
+      "end_line": 451,
+      "lines_changed": [
+        407,
+        408,
+        409,
+        410,
+        411,
+        412,
+        413,
+        414,
+        415,
+        416,
+        417,
+        418,
+        419,
+        420,
+        421,
+        422,
+        423,
+        424,
+        425,
+        426,
+        427,
+        428,
+        429,
+        430,
+        431,
+        432,
+        433,
+        434,
+        435,
+        436,
+        437,
+        438,
+        439,
+        440,
+        441,
+        442,
+        443,
+        444,
+        445,
+        446,
+        447,
+        448,
+        449,
+        450,
+        451
+      ]
+    }
+  ],
+  "step_plan": {
+    "steps": [
+      {
+        "operation": "Extend the shared export helper to accept a `force` flag and bypass the interactive overwrite prompt when enabled",
+        "file_to_modify": "marimo/_cli/export/commands.py",
+        "function_to_modify": "watch_and_export",
+        "reason": "All export subcommands funnel through `watch_and_export`; adding `force: bool` here centralizes the non-interactive overwrite behavior and prevents CI/scripts from hanging on `prompt_to_overwrite()`.",
+        "side_effects": "Changes behavior for any caller of `watch_and_export`: when `force=True`, existing outputs will be overwritten without confirmation. Any future export subcommand that forgets to pass `force` will still prompt, leading to inconsistent UX."
+      },
+      {
+        "operation": "Add `--force/-f` Click option to the `export html` command and thread it into the `watch_and_export` call",
+        "file_to_modify": "marimo/_cli/export/commands.py",
+        "function_to_modify": "html",
+        "reason": "Expose the new overwrite behavior to users of `marimo export html` and ensure the CLI flag actually affects the write path by passing it down to the shared helper.",
+        "side_effects": "Updates CLI surface area (new flag) and the command signature; any code/tests invoking `html()` directly (not via Click) may need to supply the new parameter or rely on Click defaults."
+      },
+      {
+        "operation": "Add `--force/-f` Click option to the `export script` command and pass it through to `watch_and_export`",
+        "file_to_modify": "marimo/_cli/export/commands.py",
+        "function_to_modify": "script",
+        "reason": "Keep parity across export subcommands so scripting/automation can overwrite existing `.py` outputs without blocking prompts.",
+        "side_effects": "Same CLI signature expansion concerns as other subcommands; automated callers that previously depended on the prompt behavior may now choose to overwrite silently via the flag."
+      },
+      {
+        "operation": "Add `--force/-f` Click option to the `export md` command and forward it into the export pipeline",
+        "file_to_modify": "marimo/_cli/export/commands.py",
+        "function_to_modify": "md",
+        "reason": "Markdown export also writes to user-specified files; adding `force` removes the interactive confirmation barrier in non-interactive workflows.",
+        "side_effects": "Expands command signature and introduces a silent-overwrite path when the flag is used; any wrapper scripts parsing `--help` output will see an extra option."
+      },
+      {
+        "operation": "Add `--force/-f` Click option to the `export ipynb` command and propagate the flag to `watch_and_export`",
+        "file_to_modify": "marimo/_cli/export/commands.py",
+        "function_to_modify": "ipynb",
+        "reason": "Jupyter notebook export is a common CI artifact; this ensures overwriting is controllable without requiring stdin interaction.",
+        "side_effects": "Potential for accidental overwrites in automation if users enable `--force`; also increases parity expectations (all export commands now support the option)."
+      },
+      {
+        "operation": "Add `--force/-f` Click option to the `export html-wasm` command and pass it when exporting the computed output file",
+        "file_to_modify": "marimo/_cli/export/commands.py",
+        "function_to_modify": "html_wasm",
+        "reason": "`html_wasm` computes an `outfile` path and can conflict with existing generated artifacts; `force` must be threaded through so the prompt is skipped and output can be regenerated in build pipelines.",
+        "side_effects": "Build/release scripts may begin overwriting previous WASM HTML artifacts when `--force` is set; if directory contents are reused, other generated files (e.g., cloudflare assets) may be regenerated alongside the overwritten HTML."
+      },
+      {
+        "operation": "Add a CLI integration test validating that exporting to an existing file does not overwrite by default and succeeds with `--force`",
+        "file_to_modify": "tests/_cli/test_cli_export.py",
+        "function_to_modify": "TestExportHtml.test_cli_export_html_force_overwrite",
+        "reason": "Prevents regressions by asserting the default safe behavior (prompt + no overwrite) remains, while the new `--force` flag enables non-interactive overwrite for automation.",
+        "side_effects": "Adds runtime to the test suite and relies on subprocess CLI behavior; if prompt semantics or return codes change, this test may need updating. (Note: despite the docstring mentioning `-f`, the provided patch only asserts `--force`.)"
+      }
+    ],
+    "summary": "Adds a `--force/-f` flag to marimo export subcommands to allow non-interactive overwriting of existing output files, and updates the shared export path to skip the overwrite confirmation when forced. Includes a subprocess-based pytest to verify default non-overwrite behavior and forced overwrite behavior."
+  }
+}

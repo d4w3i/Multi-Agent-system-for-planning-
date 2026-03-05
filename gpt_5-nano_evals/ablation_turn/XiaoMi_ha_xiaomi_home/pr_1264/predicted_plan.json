@@ -1,0 +1,42 @@
+{
+  "pr_number": 1264,
+  "repository": "XiaoMi/ha_xiaomi_home",
+  "title": "feat: do not subscribe BLE device online/offline state message",
+  "body": "Summary:\n- Do not subscribe BLE (Bluetooth) device online/offline state messages. MIoT cloud may not publish online messages for BLE devices, so assume BLE devices are online to prevent devices from showing unavailable.\n- This aligns with issue #1251 and the related notes in #1207, and with existing code that marks BLE devices as online in cloud updates.\n\nWhat changed:\n- If the MIoT cloud connects, BLE devices should no longer have their online/offline state messages subscribed to, preventing stale/unavailable states due to missing online events from cloud.\n- BLE devices (DIDs starting with 'blt.') are treated as online by default in cloud updates.\n\nImpact:\n- BLE devices will not flip to unavailable due to missing online state messages from cloud. They will be shown online unless other state changes indicate otherwise.\n- Tests that relied on BLE online/offline events may need updates or new tests to reflect the new behavior.\n\nFiles touched:\n- Likely targeted at the cloud-state subscription logic to exclude BLE devices from subscription when cloud is connected.\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T12:18:26.124299",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "custom_components/xiaomi_home/miot/miot_client.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "_MIoTClient__on_mips_cloud_state_changed",
+          "class_name": "MIoTClient",
+          "full_name": "MIoTClient._MIoTClient__on_mips_cloud_state_changed",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Do not subscribe BLE device online/offline state messages and treat BLE devices as online by default in cloud updates.",
+    "steps": [
+      {
+        "operation": "Modify cloud state subscription for BLE devices",
+        "file_to_modify": "custom_components/xiaomi_home/miot/miot_client.py",
+        "function_to_modify": "MIoTClient._MIoTClient__on_mips_cloud_state_changed",
+        "reason": "BLE devices (DIDs starting with 'blt.') do not reliably publish online/offline events in MIoT cloud; skipping their subscription avoids stale/unavailable states. Additionally, ensure BLE devices are treated as online by default in cloud updates to reflect the expected behavior.",
+        "side_effects": "BLE online/offline events are no longer received for BLE devices; non-BLE devices remain unaffected; tests relying on BLE state transitions must be updated or new tests added; user interfaces may consistently show BLE devices as online unless overridden by other state changes."
+      }
+    ]
+  }
+}

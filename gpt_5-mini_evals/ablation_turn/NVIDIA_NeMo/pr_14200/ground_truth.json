@@ -1,0 +1,122 @@
+{
+  "pr_number": 14200,
+  "repository": "NVIDIA/NeMo",
+  "title": "Change RerankerSpecter Dataset question key",
+  "body": "> [!IMPORTANT]  \r\n> The `Update branch` button must only be pressed in very rare occassions.\r\n> An outdated branch is never blocking the merge of a PR.\r\n> Please reach out to the automation team before pressing that button.\r\n\r\n# What does this PR do ?\r\n\r\nAdd a one line overview of what this PR aims to accomplish.\r\n\r\n**Collection**: [Note which collection this PR will affect]\r\n\r\n# Changelog\r\n\r\n- Add specific line by line info of high level changes in this PR.\r\n\r\n# Usage\r\n\r\n- You can potentially add a usage example below\r\n\r\n```python\r\n# Add a code snippet demonstrating how to use this \r\n```\r\n\r\n# GitHub Actions CI\r\n\r\nThe Jenkins CI system has been replaced by GitHub Actions self-hosted runners.\r\n\r\nThe GitHub Actions CI will run automatically when the \"Run CICD\" label is added to the PR.\r\nTo re-run CI remove and add the label again.\r\nTo run CI on an untrusted fork, a NeMo user with write access must first click \"Approve and run\".\r\n\r\n# Before your PR is \"Ready for review\"\r\n\r\n**Pre checks**:\r\n\r\n- [ ] Make sure you read and followed [Contributor guidelines](https://github.com/NVIDIA/NeMo/blob/main/CONTRIBUTING.md)\r\n- [ ] Did you write any new necessary tests?\r\n- [ ] Did you add or update any necessary documentation?\r\n- [ ] Does the PR affect components that are optional to install? (Ex: Numba, Pynini, Apex etc)\r\n  - [ ] Reviewer: Does the PR have correct import guards for all optional libraries?\r\n  \r\n**PR Type**:\r\n\r\n- [ ] New Feature\r\n- [ ] Bugfix\r\n- [ ] Documentation\r\n\r\nIf you haven't finished some of the above items you can still open \"Draft\" PR.\r\n\r\n## Who can review?\r\n\r\nAnyone in the community is free to review the PR once the checks have passed.\r\n[Contributor guidelines](https://github.com/NVIDIA/NeMo/blob/main/CONTRIBUTING.md) contains specific people who can review PRs to various areas.\r\n\r\n# Additional Information\r\n\r\n- Related to # (issue)\r\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T09:44:57.904310",
+    "extractor_version": "1.0.0",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "nemo/collections/llm/gpt/data/reranker.py",
+      "status": "modified",
+      "additions": 3,
+      "deletions": 1,
+      "functions_modified": [
+        {
+          "function_name": "_process_example",
+          "class_name": "ReRankerDataset",
+          "full_name": "ReRankerDataset._process_example",
+          "start_line": 297,
+          "end_line": 350,
+          "lines_changed": [
+            304
+          ]
+        },
+        {
+          "function_name": "_preprocess_and_split_data",
+          "class_name": "SpecterReRankerDataModule",
+          "full_name": "SpecterReRankerDataModule._preprocess_and_split_data",
+          "start_line": 648,
+          "end_line": 687,
+          "lines_changed": [
+            676,
+            677
+          ]
+        }
+      ],
+      "patch": "@@ -301,6 +301,7 @@ def _process_example(self, example):\n         BOS, EOS, and SEP, are added if specified.\n         \"\"\"\n         metadata = {k: v for k, v in example.items()}\n+\n         question = example[self.question_key]\n         pos_doc = example[self.pos_key]\n         neg_doc = example[self.neg_key]\n@@ -672,7 +673,8 @@ def _preprocess_and_split_data(self, dset: DatasetDict, train_ratio: float = 0.8\n             with output_file.open(\"w\", encoding=\"utf-8\") as f:\n                 for o in dataset:\n                     f.write(\n-                        json.dumps({\"query\": o[\"anchor\"], \"pos_doc\": o[\"positive\"], \"neg_doc\": [o[\"negative\"]]}) + \"\\n\"\n+                        json.dumps({\"question\": o[\"anchor\"], \"pos_doc\": o[\"positive\"], \"neg_doc\": [o[\"negative\"]]})\n+                        + \"\\n\"\n                     )\n \n             logging.info(f\"{split_name} split saved to {output_file}\")"
+    },
+    {
+      "filename": "tests/collections/llm/gpt/data/test_reranker.py",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "functions_modified": [
+        {
+          "function_name": "test_specter_reranker_datamodule_prepare_data",
+          "class_name": null,
+          "full_name": "test_specter_reranker_datamodule_prepare_data",
+          "start_line": 347,
+          "end_line": 365,
+          "lines_changed": [
+            362
+          ]
+        }
+      ],
+      "patch": "@@ -359,7 +359,7 @@ def test_specter_reranker_datamodule_prepare_data(specter_data_module, temp_data\n         lines = f.readlines()\n         assert len(lines) > 0\n         first_line = json.loads(lines[0])\n-        assert \"query\" in first_line\n+        assert \"question\" in first_line\n         assert \"pos_doc\" in first_line\n         assert \"neg_doc\" in first_line\n         assert isinstance(first_line[\"neg_doc\"], list)"
+    }
+  ],
+  "functions_modified": [
+    {
+      "function_name": "_process_example",
+      "class_name": "ReRankerDataset",
+      "full_name": "ReRankerDataset._process_example",
+      "start_line": 297,
+      "end_line": 350,
+      "lines_changed": [
+        304
+      ]
+    },
+    {
+      "function_name": "_preprocess_and_split_data",
+      "class_name": "SpecterReRankerDataModule",
+      "full_name": "SpecterReRankerDataModule._preprocess_and_split_data",
+      "start_line": 648,
+      "end_line": 687,
+      "lines_changed": [
+        676,
+        677
+      ]
+    },
+    {
+      "function_name": "test_specter_reranker_datamodule_prepare_data",
+      "class_name": null,
+      "full_name": "test_specter_reranker_datamodule_prepare_data",
+      "start_line": 347,
+      "end_line": 365,
+      "lines_changed": [
+        362
+      ]
+    }
+  ],
+  "step_plan": {
+    "steps": [
+      {
+        "operation": "Adjust Specter preprocessing output schema to emit the new question field name",
+        "file_to_modify": "nemo/collections/llm/gpt/data/reranker.py",
+        "function_to_modify": "_preprocess_and_split_data",
+        "reason": "The PR changes the expected dataset key from `query` to `question` for the RerankerSpecter dataset export, so the JSONL writer must serialize `anchor` under the new `question` key to match downstream consumers and configuration (`question_key`).",
+        "side_effects": "Any pipelines, training runs, or external tools that read the generated JSONL files and still expect `query` will break unless updated; previously generated artifacts may no longer be compatible without migration."
+      },
+      {
+        "operation": "Remove leftover debug output / tidy formatting around example processing",
+        "file_to_modify": "nemo/collections/llm/gpt/data/reranker.py",
+        "function_to_modify": "_process_example",
+        "reason": "The commits indicate removal of a print statement and formatting cleanup; keeping `_process_example` free of ad-hoc prints avoids noisy logs during dataloading and ensures consistent style after running isort/black.",
+        "side_effects": "Reduced verbosity during data processing may slightly change observed logs; if anyone relied on the debug print for troubleshooting, they’ll need to use proper logging instead."
+      },
+      {
+        "operation": "Update the unit test to assert the new output key",
+        "file_to_modify": "tests/collections/llm/gpt/data/test_reranker.py",
+        "function_to_modify": "test_specter_reranker_datamodule_prepare_data",
+        "reason": "The test previously validated that the exported JSONL contains `query`; since the dataset schema now uses `question`, the assertion must be updated to reflect the new contract and keep CI passing.",
+        "side_effects": "This locks in `question` as the expected public schema for the Specter reranker export; any future attempts to support both keys would require expanding the test (and likely adding backward-compat behavior)."
+      }
+    ],
+    "summary": "This PR updates the Specter reranker dataset export schema by renaming the JSONL field from `query` to `question`, and aligns the corresponding unit test with the new key while cleaning up minor processing code."
+  }
+}

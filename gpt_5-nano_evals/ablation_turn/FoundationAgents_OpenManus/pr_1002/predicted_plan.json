@@ -1,0 +1,57 @@
+{
+  "pr_number": 1002,
+  "repository": "FoundationAgents/OpenManus",
+  "title": "remove unnecessary actions while ensuring required tool calls",
+  "body": "Features\n- remove unnecessary actions while ensuring required tool calls\n\nFeature Docs\nI am struggling to understand the rationale behind handing over the decision to continue processing to the act method and throwing an exception when `tool_choices` is set to `required` and `tool_calls` is empty. In my opinion, it would be more appropriate to simply return `False` in this scenario, as the current approach seems unnecessary and could potentially be removed.\n\nInfluence\nno influence",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T11:51:13.963075",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "toolcall.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "think",
+          "class_name": "ToolCallAgent",
+          "full_name": "ToolCallAgent.think",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "act",
+          "class_name": "ToolCallAgent",
+          "full_name": "ToolCallAgent.act",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "This PR simplifies the ToolCallAgent flow by: (1) returning False from think() when tool_calls are required but none are produced, avoiding an unnecessary act() step; (2) removing the exception-raising path in act() for the same scenario and returning a benign value instead.",
+    "steps": [
+      {
+        "operation": "Update think method to short-circuit when no tool_calls for REQUIRED",
+        "file_to_modify": "base_project/toolcall.py",
+        "function_to_modify": "ToolCallAgent.think",
+        "reason": "To prevent scheduling an unnecessary act() step and to signal that there is nothing to process without tool invocations when tool_choices is ToolChoice.REQUIRED and there are no tool_calls",
+        "side_effects": "Tests relying on think() returning True in this scenario may need adjustment; outer orchestration should not proceed to act(); potential ripple effects on logging and memory messages for this specific edge case"
+      },
+      {
+        "operation": "Remove exception-raising path in act for no-tool_calls under REQUIRED and return benign result",
+        "file_to_modify": "base_project/toolcall.py",
+        "function_to_modify": "ToolCallAgent.act",
+        "reason": "To align with the simplified control flow by avoiding exceptions when no tool_calls exist under REQUIRED and to gracefully handle the scenario with a benign response",
+        "side_effects": "Tests expecting TOOL_CALL_REQUIRED exception must be updated; downstream components should handle a benign return (e.g., last content or empty string) without triggering error handling; memory/logging behavior for this edge case may change but should remain non-disruptive for other tool_choice modes"
+      }
+    ]
+  }
+}

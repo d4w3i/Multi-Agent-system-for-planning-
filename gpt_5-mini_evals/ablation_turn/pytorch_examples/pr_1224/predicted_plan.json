@@ -1,0 +1,57 @@
+{
+  "pr_number": 1224,
+  "repository": "pytorch/examples",
+  "title": "Fixes in Imagenet training script",
+  "body": "* ngpus_per_node variable count fix\n* dist_backend assertion added for nccl issue",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T14:24:14.926268",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "imagenet/main.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "main",
+          "class_name": null,
+          "full_name": "main",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "main_worker",
+          "class_name": null,
+          "full_name": "main_worker",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Update imagenet/main.py to compute the actual GPU count (ngpus_per_node) without forcing a fallback when CUDA is unavailable, and add defensive checks to disallow selecting the 'nccl' backend when CUDA/GPU is not present, surfacing a clear error message.",
+    "steps": [
+      {
+        "operation": "Fix ngpus_per_node computation and add dist-backend assertion in argument/init section",
+        "file_to_modify": "imagenet/main.py",
+        "function_to_modify": "main",
+        "reason": "Ensure ngpus_per_node reflects the actual number of CUDA devices (0 if none) instead of forcing a default of 1 when CUDA is unavailable. Also detect misconfiguration early by preventing selection of the 'nccl' distributed backend when CUDA/GPU support is not available, giving a clear error message to the user.",
+        "side_effects": "Scripts running on CPU-only machines will now have ngpus_per_node == 0, which will cause early failure or require explicit handling by callers; this prevents silent incorrect behavior. Tests that assumed a CPU fallback (ngpus_per_node==1) will need updating. Any logic that spawns processes (mp.spawn) will now observe the true GPU count; CI jobs or downstream tools that expect spawning on CPU may need change. No API change beyond clearer error messages; users who previously relied on the implicit fallback must adjust flags or enable CUDA. This change reduces obscure NCCL runtime errors by making configuration errors explicit."
+      },
+      {
+        "operation": "Add defensive check before initializing distributed process group to block NCCL without CUDA",
+        "file_to_modify": "imagenet/main.py",
+        "function_to_modify": "main_worker",
+        "reason": "Before calling torch.distributed.init_process_group (or equivalent), verify that if args.dist_backend == 'nccl' then CUDA is available (or ngpus_per_node > 0). This prevents runtime failures from trying to initialize NCCL when no GPU/CUDA is present and provides a clear, actionable error message (or allows falling back to 'gloo').",
+        "side_effects": "Will raise an explicit error earlier if the user attempts to use NCCL on CPU-only systems, improving debuggability. Tests or scripts that previously attempted NCCL on non-GPU environments must be updated to use 'gloo' or enable CUDA. Downstream initializations dependent on the process group will not be attempted if the check fails; no API changes beyond clearer failure semantics."
+      }
+    ]
+  }
+}

@@ -1,0 +1,42 @@
+{
+  "pr_number": 498,
+  "repository": "datalab-to/marker",
+  "title": "OCR Error Detection Hotfix",
+  "body": "Fix input handling of error detection model: \n- Segment length is automatically handled by tokenizer, and is by `#tokens`, not `#chars`, removing the splitting logic inside `marker`\n- Join lines using `\\n`",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T12:54:51.523244",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "marker/providers/pdf.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "check_line_spans",
+          "class_name": "PdfProvider",
+          "full_name": "PdfProvider.check_line_spans",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Modify PdfProvider.check_line_spans to assemble page text by concatenating spans per logical line and joining those lines with '\\n', removing ad-hoc span-level leading-space + per-span-newline concatenation so downstream OCR error-detection receives properly line-joined input.",
+    "steps": [
+      {
+        "operation": "Change page text assembly to join logical lines with '\\n' and stop span-level leading-space + per-span-newline concatenation",
+        "file_to_modify": "marker/providers/pdf.py",
+        "function_to_modify": "PdfProvider.check_line_spans",
+        "reason": "The function currently flattens spans and builds a text blob by prepending a space and appending a newline per span (e.g. text += ' ' + span_text + '\\n'), which produces incorrect spacing/newline semantics and attempts a character/span-level segmentation. Tokenizers (downstream) handle segmentation by tokens. Build each logical line by concatenating its spans (as-is) into a single line string, then join those line strings with '\\n' to produce the page text passed to OCR error-detection models.",
+        "side_effects": "Behavioral: Downstream consumers will now see a text blob where logical lines are separated by single '\\n' characters instead of many span-level newlines/spaces. This may change whitespace and newline counts compared to previous behavior—verify callers that expected per-span newlines or leading spaces. Tests: Run PDF/ocr-related tests (e.g., tests/builders/test_ocr_pipeline.py) and full test suite to catch formatting-dependent assertions. API/Integration: OCR/error-detection models and any validators that assumed the old span-level formatting should continue to work (and will likely be more correct), but verify integrations that parsed newlines or counted characters. Backwards compatibility: If other code relied on the previous leading-space-per-span pattern, that code may need adjustment. Also check for double-newline scenarios if OCR line spans are already stored with trailing newlines elsewhere (e.g., builders/ocr.py may append '\\n' to spans) and adjust accordingly after test runs."
+      }
+    ]
+  }
+}

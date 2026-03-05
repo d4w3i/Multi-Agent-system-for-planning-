@@ -1,0 +1,47 @@
+{
+  "pr_number": 31674,
+  "repository": "scikit-learn/scikit-learn",
+  "title": "fix(docs): Fix glossary FIXME tags",
+  "body": "<!--\nThanks for contributing a pull request! Please ensure you have taken a look at\nthe contribution guidelines: https://github.com/scikit-learn/scikit-learn/blob/main/CONTRIBUTING.md\n-->\n\n#### Reference Issues/PRs\nFixes #31628 \n\n#### What does this implement/fix? Explain your changes.\n\n\n#### Any other comments?\nWhile working on [#31628](https://github.com/scikit-learn/scikit-learn/issues/31628), I encountered a `ModuleNotFoundError` due to a misnamed Sphinx extension (`sphinx-prompt` instead of `sphinx_prompt`). This PR also fixes that to ensure local doc builds (`make`) work correctly.\n\n#### Setup\n```\nPython 3.13.3\n\n   machine: macOS-15.5-arm64-arm-64bit-Mach-O\n\nPython dependencies:\n      sklearn: 1.8.dev0\n          pip: 25.0.1\n   setuptools: None\n        numpy: 2.3.1\n        scipy: 1.16.0\n       Cython: 3.1.2\n       pandas: 2.3.0\n   matplotlib: 3.10.3\n       joblib: 1.5.1\nthreadpoolctl: 3.6.0\n\nBuilt with OpenMP: False\n```",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T14:32:07.170068",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "doc/glossary.rst",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    },
+    {
+      "filename": "doc/conf.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    }
+  ],
+  "step_plan": {
+    "summary": "Fix glossary FIXME tags by rewording offending lines in doc/glossary.rst and correct a misnamed Sphinx extension in doc/conf.py (change \"sphinx-prompt\" to \"sphinx_prompt\") so local doc builds do not raise ModuleNotFoundError.",
+    "steps": [
+      {
+        "operation": "Fix Sphinx extension name in configuration",
+        "file_to_modify": "doc/conf.py",
+        "function_to_modify": "configure_extensions",
+        "reason": "The extensions list currently references the wrong package name \"sphinx-prompt\", which causes a ModuleNotFoundError when building the docs locally. Replace it with the correct import name \"sphinx_prompt\" to match the actual Python package/module name.",
+        "side_effects": "Removes the ModuleNotFoundError during local doc builds; requires that the environment has the sphinx_prompt package installed under that name. No API or runtime code changes. Doc build/test jobs should be re-run; CI that builds the docs will be affected (should pass). If any custom tooling referenced the hyphenated name, update it accordingly."
+      },
+      {
+        "operation": "Replace FIXME tags in glossary wording",
+        "file_to_modify": "doc/glossary.rst",
+        "function_to_modify": null,
+        "reason": "Remove 'FIXME' placeholders and replace them with final, neutral phrasing so the documentation contains no FIXME warnings and reads clearly. Example: change the parenthetical note about cloning in the 'meta-estimator' entry from '(although FIXME: Pipeline and FeatureUnion do not do this currently)' to a neutral note such as '(Note: Pipeline and FeatureUnion currently do not perform this cloning).'.",
+        "side_effects": "Changes user-visible documentation text; verify factual accuracy (ensure Pipeline and FeatureUnion behavior is still as stated). Documentation tests and grep-for-FIXME checks should pass. Rendering of the glossary page will change slightly — reviewers should verify grammar and meaning. No effect on runtime code or public APIs."
+      }
+    ]
+  }
+}

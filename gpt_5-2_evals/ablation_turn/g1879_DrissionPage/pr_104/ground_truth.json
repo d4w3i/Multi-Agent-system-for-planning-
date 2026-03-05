@@ -1,0 +1,61 @@
+{
+  "pr_number": 104,
+  "repository": "g1879/DrissionPage",
+  "title": "fixed json decoding bug in daemon thread",
+  "body": "fixed bug in daemon thread that is triggered when trying to convert an empty message_json to dict. Still raising the JSONDecodeError in case decoding fails for any other reason",
+  "extraction_metadata": {
+    "extracted_at": "2026-02-26T01:08:27.365809",
+    "extractor_version": "1.0.0",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "DrissionPage/chromium_driver.py",
+      "status": "modified",
+      "additions": 4,
+      "deletions": 1,
+      "functions_modified": [
+        {
+          "function_name": "_recv_loop",
+          "class_name": "ChromiumDriver",
+          "full_name": "ChromiumDriver._recv_loop",
+          "start_line": 114,
+          "end_line": 141,
+          "lines_changed": [
+            123,
+            124,
+            125
+          ]
+        }
+      ],
+      "patch": "@@ -4,7 +4,7 @@\n @Contact :   g1879@qq.com\r\n \"\"\"\r\n from functools import partial\r\n-from json import dumps, loads\r\n+from json import dumps, loads, JSONDecodeError\r\n from queue import Queue, Empty\r\n from threading import Thread, Event\r\n \r\n@@ -120,6 +120,9 @@ def _recv_loop(self):\n                 message = loads(message_json)\r\n             except WebSocketTimeoutException:\r\n                 continue\r\n+            except JSONDecodeError as exc:\r\n+                if message_json:\r\n+                    raise exc\r\n             except (WebSocketException, OSError, WebSocketConnectionClosedException):\r\n                 self.stop()\r\n                 return\r"
+    }
+  ],
+  "functions_modified": [
+    {
+      "function_name": "_recv_loop",
+      "class_name": "ChromiumDriver",
+      "full_name": "ChromiumDriver._recv_loop",
+      "start_line": 114,
+      "end_line": 141,
+      "lines_changed": [
+        123,
+        124,
+        125
+      ]
+    }
+  ],
+  "step_plan": {
+    "steps": [
+      {
+        "operation": "Handle empty websocket messages without crashing by catching JSONDecodeError and only re-raising when the raw message is non-empty",
+        "file_to_modify": "DrissionPage/chromium_driver.py",
+        "function_to_modify": "_recv_loop",
+        "reason": "The daemon receive loop previously attempted to json.loads() an empty message_json, which raises JSONDecodeError and could crash the thread; the change preserves strict error handling for genuinely malformed/non-empty JSON while ignoring empty keepalive/blank frames.",
+        "side_effects": "Empty messages will now be silently skipped, which may slightly change logging/debug behavior; non-empty invalid JSON will still terminate the thread via an unhandled JSONDecodeError, potentially surfacing new failures earlier depending on upstream websocket behavior."
+      }
+    ],
+    "summary": "Fixes a daemon thread crash in the websocket receive loop by ignoring JSON decoding errors for empty messages while still raising JSONDecodeError for non-empty invalid JSON."
+  }
+}

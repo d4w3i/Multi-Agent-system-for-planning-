@@ -1,0 +1,65 @@
+{
+    "repository": "FoundationAgents/OpenManus",
+    "pull_request_number": 1002,
+    "title": "remove unnecessary actions while ensuring required tool calls",
+    "body": "**Features**\r\n- remove unnecessary actions while ensuring required tool calls\r\n\r\n**Feature Docs**\r\nI am struggling to understand the rationale behind handing over the decision to continue processing to the act method and throwing an exception when `tool_choices` is set to `required` and `tool_calls` is empty. In my opinion, it would be more appropriate to simply return `False` in this scenario, as the current approach seems unnecessary and could potentially be removed.\r\n\r\n**Influence**\r\nno influence\r\n",
+    "pr_date": "2025-04-01T09:02:11Z",
+    "source_branch": "feature/toolchoice_optimize",
+    "language": "en",
+    "keywords_detected": {
+        "branch": [
+            "feature",
+            "feat"
+        ],
+        "requirement": [
+            "remove"
+        ],
+        "body": [
+            "feature",
+            "remove"
+        ]
+    },
+    "number_of_links_in_pr": 0,
+    "base_sha": "f616c5d43d02d93ccc6e55f11666726d6645fdc2",
+    "last_commit_sha": "2394e753aadf317a6fcf8d132f4bafd8f70bcfd1",
+    "diff_between_base_and_last": [
+        {
+            "sha": "ad8135e7e5a75b3da9ab92c407a0ee6b49b22611",
+            "filename": "app/agent/toolcall.py",
+            "status": "modified",
+            "additions": 2,
+            "deletions": 5,
+            "changes": 7,
+            "blob_url": "https://github.com/FoundationAgents/OpenManus/blob/2394e753aadf317a6fcf8d132f4bafd8f70bcfd1/app%2Fagent%2Ftoolcall.py",
+            "raw_url": "https://github.com/FoundationAgents/OpenManus/raw/2394e753aadf317a6fcf8d132f4bafd8f70bcfd1/app%2Fagent%2Ftoolcall.py",
+            "contents_url": "https://api.github.com/repos/FoundationAgents/OpenManus/contents/app%2Fagent%2Ftoolcall.py?ref=2394e753aadf317a6fcf8d132f4bafd8f70bcfd1",
+            "patch": "@@ -111,8 +111,8 @@ async def think(self) -> bool:\n             )\n             self.memory.add_message(assistant_msg)\n \n-            if self.tool_choices == ToolChoice.REQUIRED and not self.tool_calls:\n-                return True  # Will be handled in act()\n+            if self.tool_choices == ToolChoice.REQUIRED:\n+                return bool(self.tool_calls)\n \n             # For 'auto' mode, continue with content if no commands but content exists\n             if self.tool_choices == ToolChoice.AUTO and not self.tool_calls:\n@@ -131,9 +131,6 @@ async def think(self) -> bool:\n     async def act(self) -> str:\n         \"\"\"Execute tool calls and handle their results\"\"\"\n         if not self.tool_calls:\n-            if self.tool_choices == ToolChoice.REQUIRED:\n-                raise ValueError(TOOL_CALL_REQUIRED)\n-\n             # Return last message content if no tool calls\n             return self.messages[-1].content or \"No content or commands to execute\"\n "
+        }
+    ],
+    "commits": [
+        {
+            "sha": "2394e753aadf317a6fcf8d132f4bafd8f70bcfd1",
+            "commit_date": "2025-04-01T08:49:28Z",
+            "message": "remove unnecessary actions while ensuring required tool calls",
+            "number_of_links_in_commit": 0,
+            "files_changed_count": 1,
+            "files": [
+                {
+                    "sha": "ad8135e7e5a75b3da9ab92c407a0ee6b49b22611",
+                    "filename": "app/agent/toolcall.py",
+                    "status": "modified",
+                    "additions": 2,
+                    "deletions": 5,
+                    "changes": 7,
+                    "blob_url": "https://github.com/FoundationAgents/OpenManus/blob/2394e753aadf317a6fcf8d132f4bafd8f70bcfd1/app%2Fagent%2Ftoolcall.py",
+                    "raw_url": "https://github.com/FoundationAgents/OpenManus/raw/2394e753aadf317a6fcf8d132f4bafd8f70bcfd1/app%2Fagent%2Ftoolcall.py",
+                    "contents_url": "https://api.github.com/repos/FoundationAgents/OpenManus/contents/app%2Fagent%2Ftoolcall.py?ref=2394e753aadf317a6fcf8d132f4bafd8f70bcfd1",
+                    "patch": "@@ -111,8 +111,8 @@ async def think(self) -> bool:\n             )\n             self.memory.add_message(assistant_msg)\n \n-            if self.tool_choices == ToolChoice.REQUIRED and not self.tool_calls:\n-                return True  # Will be handled in act()\n+            if self.tool_choices == ToolChoice.REQUIRED:\n+                return bool(self.tool_calls)\n \n             # For 'auto' mode, continue with content if no commands but content exists\n             if self.tool_choices == ToolChoice.AUTO and not self.tool_calls:\n@@ -131,9 +131,6 @@ async def think(self) -> bool:\n     async def act(self) -> str:\n         \"\"\"Execute tool calls and handle their results\"\"\"\n         if not self.tool_calls:\n-            if self.tool_choices == ToolChoice.REQUIRED:\n-                raise ValueError(TOOL_CALL_REQUIRED)\n-\n             # Return last message content if no tool calls\n             return self.messages[-1].content or \"No content or commands to execute\"\n "
+                }
+            ]
+        }
+    ],
+    "pull_request_url": "https://github.com/FoundationAgents/OpenManus/pull/1002",
+    "commits_url": "https://github.com/FoundationAgents/OpenManus/pull/1002/commits",
+    "files_url": "https://github.com/FoundationAgents/OpenManus/pull/1002/files"
+}

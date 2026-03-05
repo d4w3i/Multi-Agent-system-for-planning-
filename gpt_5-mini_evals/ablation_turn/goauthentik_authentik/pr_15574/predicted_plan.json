@@ -1,0 +1,57 @@
+{
+  "pr_number": 15574,
+  "repository": "goauthentik/authentik",
+  "title": "enterprise/audit: fix diff with update_fields",
+  "body": "<!--\n👋 Hi there! Welcome.\n\nPlease check the Contributing guidelines: https://docs.goauthentik.io/docs/developer-docs/#how-can-i-contribute\n-->\n\n## Details\n\n<!--\nExplain what this PR changes, what the rationale behind the change is, if any new requirements are introduced or any breaking changes caused by this PR.\nIdeally also link an Issue for context that this PR will close using `closes #`\n-->\nREPLACE ME\n\n---\n\n## Checklist\n\n-   [ ] Local tests pass (`ak test authentik/`)\n-   [ ] The code has been formatted (`make lint-fix`)\n\nIf an API change has been made\n\n-   [ ] The API schema has been updated (`make gen-build`)\n\nIf changes to the frontend have been made\n\n-   [ ] The code has been formatted (`make web`)\n\nIf applicable\n\n-   [ ] The documentation has been updated\n-   [ ] The documentation has been formatted (`make docs`)\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T13:08:46.748566",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "middleware.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "serialize_simple",
+          "class_name": "EnterpriseAuditMiddleware",
+          "full_name": "EnterpriseAuditMiddleware.serialize_simple",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "diff",
+          "class_name": "EnterpriseAuditMiddleware",
+          "full_name": "EnterpriseAuditMiddleware.diff",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Fix audit diffing for partial updates by correcting FileField serialization and changing diff logic to only compare keys present in a partial 'after' state, avoiding spurious changes when Django provides update_fields.",
+    "steps": [
+      {
+        "operation": "Fix FileField handling and ensure correct variable is checked",
+        "file_to_modify": "middleware.py",
+        "function_to_modify": "EnterpriseAuditMiddleware.serialize_simple",
+        "reason": "serialize_simple currently checks an unused variable 'value' when trying to detect File instances, causing file fields to be serialized incorrectly. Change to check 'field_value' and map File values to their filename (field_value.name). This preserves existing behavior for full serializations and fixes file serialization for partial (update_fields) serialization.",
+        "side_effects": "Unit tests referencing file fields may be affected; tests should now expect filenames for FileField values. No public API or middleware signature changes. Downstream consumers of audit events that expected previous incorrect representation of file fields will now see corrected values. Should not impact performance or DB queries (the change is local and uses existing model attributes)."
+      },
+      {
+        "operation": "Limit diff comparisons to keys present in partial 'after' serializations",
+        "file_to_modify": "middleware.py",
+        "function_to_modify": "EnterpriseAuditMiddleware.diff",
+        "reason": "When serialize_simple is called with update_fields it returns a partial 'after' dict. The current diff treats missing keys in 'after' as changes (previous_value present, new_value None). Detect when 'after' is a strict subset of 'before' (partial update) and, in that case, only compare keys present in 'after' (and any new keys in 'after'). Otherwise, preserve current behavior (compare union of keys). This avoids spurious diffs for fields omitted from partial updates and keeps full-serialization diffs unchanged.",
+        "side_effects": "Tests asserting diffs for partial updates should now pass (only updated fields reported). Real deletions represented by omitting keys in 'after' will not be reported as changes; if deletion should be reported it must be represented explicitly (e.g., set to None) in the serialized 'after'. No API signature changes. Some consumers expecting the previous (incorrect) large diffs will see smaller diffs now. Ensure existing sanitize_item behavior is still applied to the final diff."
+      }
+    ]
+  }
+}

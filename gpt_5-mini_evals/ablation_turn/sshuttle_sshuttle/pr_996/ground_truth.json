@@ -1,0 +1,57 @@
+{
+  "pr_number": 996,
+  "repository": "sshuttle/sshuttle",
+  "title": "Revert \"Support Windows11 As A sshuttle Server\"",
+  "body": "Reverts sshuttle/sshuttle#993\r\n\r\nThis change was made in error. See discussion in #993.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T08:18:18.126046",
+    "extractor_version": "1.0.0",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "sshuttle/ssh.py",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "functions_modified": [
+        {
+          "function_name": "connect",
+          "class_name": null,
+          "full_name": "connect",
+          "start_line": 87,
+          "end_line": 255,
+          "lines_changed": [
+            145
+          ]
+        }
+      ],
+      "patch": "@@ -142,7 +142,7 @@ def connect(ssh_cmd, rhostport, python, stderr, add_cmd_delimiter, remote_shell,\n             pycmd = '%s -c %s' % (python or 'python', pyscript)\n         else:  # posix shell expected\n             if python:\n-                pycmd = \"%s -c \\\"%s\\\"\" % (python, pyscript)\n+                pycmd = '\"%s\" -c \"%s\"' % (python, pyscript)\n             else:\n                 # By default, we run the following code in a shell.\n                 # However, with restricted shells and other unusual"
+    }
+  ],
+  "functions_modified": [
+    {
+      "function_name": "connect",
+      "class_name": null,
+      "full_name": "connect",
+      "start_line": 87,
+      "end_line": 255,
+      "lines_changed": [
+        145
+      ]
+    }
+  ],
+  "step_plan": {
+    "steps": [
+      {
+        "operation": "Adjust remote python invocation quoting for POSIX shells by wrapping the python executable path in double quotes when constructing the `pycmd` string.",
+        "file_to_modify": "sshuttle/ssh.py",
+        "function_to_modify": "connect",
+        "reason": "Revert an earlier change that removed quotes around the `python` executable, which could break execution when the provided python path contains spaces (and was part of an erroneous Windows11-server support attempt being reverted). Restoring the quoted executable improves command correctness across environments.",
+        "side_effects": "Changes the exact command string sent over SSH; could affect edge cases where callers pass a `python` value that already includes shell quoting or additional flags. May also change behavior in unusual remote shells that treat nested quoting differently, but generally improves compatibility for paths with spaces."
+      }
+    ],
+    "summary": "Reverts an accidental Windows11-server support change by restoring the previous quoting used to build the remote python command in `sshuttle/ssh.py`."
+  }
+}

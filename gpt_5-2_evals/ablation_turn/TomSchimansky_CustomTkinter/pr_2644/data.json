@@ -1,0 +1,85 @@
+{
+    "repository": "TomSchimansky/CustomTkinter",
+    "pull_request_number": 2644,
+    "title": "Fix CTkEntry place_holder",
+    "body": "- Fixed place holder behavior when assigning a textvariable to a CTkEntry\r\n- Added flag to control textvariable_callback event",
+    "pr_date": "2024-11-21T20:21:32Z",
+    "source_branch": "fix_CTkEntry_place_holder",
+    "language": "en",
+    "keywords_detected": {
+        "branch": [
+            "fix"
+        ],
+        "requirement": [
+            "fix"
+        ],
+        "body": [
+            "add",
+            "fix"
+        ]
+    },
+    "number_of_links_in_pr": 0,
+    "base_sha": "10f34d26ee306f0e4a48f4a0096665adb177349c",
+    "last_commit_sha": "e3f60f2f0c65bd10b58340a287ef9aab6f7ec0c1",
+    "diff_between_base_and_last": [
+        {
+            "sha": "67f1c55657220dc1387ba374c65330a7c9fea285",
+            "filename": "customtkinter/windows/widgets/ctk_entry.py",
+            "status": "modified",
+            "additions": 12,
+            "deletions": 4,
+            "changes": 16,
+            "blob_url": "https://github.com/TomSchimansky/CustomTkinter/blob/e3f60f2f0c65bd10b58340a287ef9aab6f7ec0c1/customtkinter%2Fwindows%2Fwidgets%2Fctk_entry.py",
+            "raw_url": "https://github.com/TomSchimansky/CustomTkinter/raw/e3f60f2f0c65bd10b58340a287ef9aab6f7ec0c1/customtkinter%2Fwindows%2Fwidgets%2Fctk_entry.py",
+            "contents_url": "https://api.github.com/repos/TomSchimansky/CustomTkinter/contents/customtkinter%2Fwindows%2Fwidgets%2Fctk_entry.py?ref=e3f60f2f0c65bd10b58340a287ef9aab6f7ec0c1",
+            "patch": "@@ -59,11 +59,12 @@ def __init__(self,\n         self._border_width = ThemeManager.theme[\"CTkEntry\"][\"border_width\"] if border_width is None else border_width\n \n         # text and state\n-        self._is_focused: bool = True\n+        self._is_focused: bool = False\n         self._placeholder_text = placeholder_text\n         self._placeholder_text_active = False\n         self._pre_placeholder_arguments = {}  # some set arguments of the entry will be changed for placeholder and then set back\n         self._textvariable = textvariable\n+        self._textvariable_callback_blocked:bool = False\n         self._state = state\n         self._textvariable_callback_name: str = \"\"\n \n@@ -117,8 +118,11 @@ def _create_grid(self):\n                              pady=(self._apply_widget_scaling(self._border_width), self._apply_widget_scaling(self._border_width + 1)))\n \n     def _textvariable_callback(self, var_name, index, mode):\n+        if self._textvariable_callback_blocked: return\n         if self._textvariable.get() == \"\":\n             self._activate_placeholder()\n+        elif self._placeholder_text_active:\n+            self.insert(0, self._textvariable.get())\n \n     def _set_scaling(self, *args, **kwargs):\n         super()._set_scaling(*args, **kwargs)\n@@ -296,7 +300,8 @@ def unbind(self, sequence=None, funcid=None):\n         self._create_bindings(sequence=sequence)  # restore internal callbacks for sequence\n \n     def _activate_placeholder(self):\n-        if self._entry.get() == \"\" and self._placeholder_text is not None and (self._textvariable is None or self._textvariable == \"\"):\n+        self._textvariable_callback_blocked = True\n+        if self._entry.get() == \"\" and self._placeholder_text is not None and self._is_focused is False:\n             self._placeholder_text_active = True\n \n             self._pre_placeholder_arguments = {\"show\": self._entry.cget(\"show\")}\n@@ -305,8 +310,10 @@ def _activate_placeholder(self):\n                                show=\"\")\n             self._entry.delete(0, tkinter.END)\n             self._entry.insert(0, self._placeholder_text)\n+        self._textvariable_callback_blocked = False\n \n     def _deactivate_placeholder(self):\n+        self._textvariable_callback_blocked = True\n         if self._placeholder_text_active and self._entry.cget(\"state\") != \"readonly\":\n             self._placeholder_text_active = False\n \n@@ -315,14 +322,15 @@ def _deactivate_placeholder(self):\n             self._entry.delete(0, tkinter.END)\n             for argument, value in self._pre_placeholder_arguments.items():\n                 self._entry[argument] = value\n+        self._textvariable_callback_blocked = False\n \n     def _entry_focus_out(self, event=None):\n-        self._activate_placeholder()\n         self._is_focused = False\n+        self._activate_placeholder()\n \n     def _entry_focus_in(self, event=None):\n-        self._deactivate_placeholder()\n         self._is_focused = True\n+        self._deactivate_placeholder()\n \n     def delete(self, first_index, last_index=None):\n         self._entry.delete(first_index, last_index)"
+        }
+    ],
+    "commits": [
+        {
+            "sha": "e3a15cda63c5f3a271d450842cfd83c8a84eca2a",
+            "commit_date": "2024-11-21T20:19:23Z",
+            "message": "Fix CTkEntry place_holder\n\n- Fixed place holder behavior when assigning a textvariable to a CTkEntry\n- Added flag to control textvariable_callback event",
+            "number_of_links_in_commit": 0,
+            "files_changed_count": 1,
+            "files": [
+                {
+                    "sha": "5158dbcc8bed44fb75db32c11c154ebe70a057d7",
+                    "filename": "customtkinter/windows/widgets/ctk_entry.py",
+                    "status": "modified",
+                    "additions": 13,
+                    "deletions": 5,
+                    "changes": 18,
+                    "blob_url": "https://github.com/TomSchimansky/CustomTkinter/blob/e3a15cda63c5f3a271d450842cfd83c8a84eca2a/customtkinter%2Fwindows%2Fwidgets%2Fctk_entry.py",
+                    "raw_url": "https://github.com/TomSchimansky/CustomTkinter/raw/e3a15cda63c5f3a271d450842cfd83c8a84eca2a/customtkinter%2Fwindows%2Fwidgets%2Fctk_entry.py",
+                    "contents_url": "https://api.github.com/repos/TomSchimansky/CustomTkinter/contents/customtkinter%2Fwindows%2Fwidgets%2Fctk_entry.py?ref=e3a15cda63c5f3a271d450842cfd83c8a84eca2a",
+                    "patch": "@@ -59,11 +59,12 @@ def __init__(self,\n         self._border_width = ThemeManager.theme[\"CTkEntry\"][\"border_width\"] if border_width is None else border_width\n \n         # text and state\n-        self._is_focused: bool = True\n+        self._is_focused: bool = False\n         self._placeholder_text = placeholder_text\n         self._placeholder_text_active = False\n         self._pre_placeholder_arguments = {}  # some set arguments of the entry will be changed for placeholder and then set back\n         self._textvariable = textvariable\n+        self._textvariable_callback_blocked:bool = False\n         self._state = state\n         self._textvariable_callback_name: str = \"\"\n \n@@ -117,8 +118,11 @@ def _create_grid(self):\n                              pady=(self._apply_widget_scaling(self._border_width), self._apply_widget_scaling(self._border_width + 1)))\n \n     def _textvariable_callback(self, var_name, index, mode):\n-        if self._textvariable.get() == \"\":\n+        if self._textvariable_callback_blocked is True: return\n+        if self._textvariable.get() == \"\" and self._placeholder_text_active is False:\n             self._activate_placeholder()\n+        elif self._textvariable.get() and self._placeholder_text_active:\n+            self.insert(0, self._textvariable.get())\n \n     def _set_scaling(self, *args, **kwargs):\n         super()._set_scaling(*args, **kwargs)\n@@ -296,7 +300,8 @@ def unbind(self, sequence=None, funcid=None):\n         self._create_bindings(sequence=sequence)  # restore internal callbacks for sequence\n \n     def _activate_placeholder(self):\n-        if self._entry.get() == \"\" and self._placeholder_text is not None and (self._textvariable is None or self._textvariable == \"\"):\n+        self._textvariable_callback_blocked = True\n+        if self._entry.get() == \"\" and self._placeholder_text is not None and self._is_focused is False:\n             self._placeholder_text_active = True\n \n             self._pre_placeholder_arguments = {\"show\": self._entry.cget(\"show\")}\n@@ -305,8 +310,10 @@ def _activate_placeholder(self):\n                                show=\"\")\n             self._entry.delete(0, tkinter.END)\n             self._entry.insert(0, self._placeholder_text)\n+        self._textvariable_callback_blocked = False\n \n     def _deactivate_placeholder(self):\n+        self._textvariable_callback_blocked = True\n         if self._placeholder_text_active and self._entry.cget(\"state\") != \"readonly\":\n             self._placeholder_text_active = False\n \n@@ -315,14 +322,15 @@ def _deactivate_placeholder(self):\n             self._entry.delete(0, tkinter.END)\n             for argument, value in self._pre_placeholder_arguments.items():\n                 self._entry[argument] = value\n+        self._textvariable_callback_blocked = False\n \n     def _entry_focus_out(self, event=None):\n-        self._activate_placeholder()\n         self._is_focused = False\n+        self._activate_placeholder()\n \n     def _entry_focus_in(self, event=None):\n-        self._deactivate_placeholder()\n         self._is_focused = True\n+        self._deactivate_placeholder()\n \n     def delete(self, first_index, last_index=None):\n         self._entry.delete(first_index, last_index)"
+                }
+            ]
+        },
+        {
+            "sha": "e3f60f2f0c65bd10b58340a287ef9aab6f7ec0c1",
+            "commit_date": "2024-11-24T16:06:50Z",
+            "message": "Bug fixes and improvements\n\n- Fixed a bug in the textvariable_callback event, in which the place holder was deleted when setting an empty value twice in a row to the variable assigned to the CTkEntry.\n- Improved the logic that controls the place holder from the textvariable_callback event.",
+            "number_of_links_in_commit": 0,
+            "files_changed_count": 1,
+            "files": [
+                {
+                    "sha": "67f1c55657220dc1387ba374c65330a7c9fea285",
+                    "filename": "customtkinter/windows/widgets/ctk_entry.py",
+                    "status": "modified",
+                    "additions": 3,
+                    "deletions": 3,
+                    "changes": 6,
+                    "blob_url": "https://github.com/TomSchimansky/CustomTkinter/blob/e3f60f2f0c65bd10b58340a287ef9aab6f7ec0c1/customtkinter%2Fwindows%2Fwidgets%2Fctk_entry.py",
+                    "raw_url": "https://github.com/TomSchimansky/CustomTkinter/raw/e3f60f2f0c65bd10b58340a287ef9aab6f7ec0c1/customtkinter%2Fwindows%2Fwidgets%2Fctk_entry.py",
+                    "contents_url": "https://api.github.com/repos/TomSchimansky/CustomTkinter/contents/customtkinter%2Fwindows%2Fwidgets%2Fctk_entry.py?ref=e3f60f2f0c65bd10b58340a287ef9aab6f7ec0c1",
+                    "patch": "@@ -118,10 +118,10 @@ def _create_grid(self):\n                              pady=(self._apply_widget_scaling(self._border_width), self._apply_widget_scaling(self._border_width + 1)))\n \n     def _textvariable_callback(self, var_name, index, mode):\n-        if self._textvariable_callback_blocked is True: return\n-        if self._textvariable.get() == \"\" and self._placeholder_text_active is False:\n+        if self._textvariable_callback_blocked: return\n+        if self._textvariable.get() == \"\":\n             self._activate_placeholder()\n-        elif self._textvariable.get() and self._placeholder_text_active:\n+        elif self._placeholder_text_active:\n             self.insert(0, self._textvariable.get())\n \n     def _set_scaling(self, *args, **kwargs):"
+                }
+            ]
+        }
+    ],
+    "pull_request_url": "https://github.com/TomSchimansky/CustomTkinter/pull/2644",
+    "commits_url": "https://github.com/TomSchimansky/CustomTkinter/pull/2644/commits",
+    "files_url": "https://github.com/TomSchimansky/CustomTkinter/pull/2644/files"
+}

@@ -1,0 +1,57 @@
+{
+  "pr_number": 5006,
+  "repository": "OctoPrint/OctoPrint",
+  "title": "fix netmask",
+  "body": "Description explains a netmask-related change in netifaces2, replacing netmask with mask. The change is a small, wide-impact compatibility fix that does not introduce new features or break existing usage. It is implemented as a minimal, targeted patch without altering public APIs beyond robust handling of address dictionaries from netifaces/netifaces2.\n\nWhat was changed and why:\n- Updated code path that builds LAN ranges from interface addresses to support both netmask and mask keys in address dictionaries returned by netifaces/netifaces2.\n- This ensures compatibility across environments where the address structure uses either 'netmask' or 'mask' to describe the subnet prefix.\n\nHow it was tested:\n- Manual testing on a local deployment by validating LAN address detection with different address dictionaries (with netmask and with mask).\n- No changes to unit tests in this PR description, but this is a small compatibility fix that should not affect existing tests; consider adding a regression test to cover both key variants in get_lan_ranges.\n\nTicket reference: #5005",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T12:04:40.495860",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "src/octoprint/util/net.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "get_lan_ranges",
+          "class_name": null,
+          "full_name": "get_lan_ranges",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "to_ipnetwork",
+          "class_name": "get_lan_ranges",
+          "full_name": "get_lan_ranges.to_ipnetwork",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "This patch adds a targeted compatibility fix to support address dictionaries that may use either 'netmask' or 'mask' when building LAN ranges, ensuring robust LAN detection across environments without altering public APIs.",
+    "steps": [
+      {
+        "operation": "Update get_lan_ranges to fallback to 'mask' key",
+        "file_to_modify": "src/octoprint/util/net.py",
+        "function_to_modify": "get_lan_ranges",
+        "reason": "To support both netmask and mask keys in interface address dictionaries for netifaces/netifaces2 compatibility; prevents KeyError and ensures correct LAN range calculation across environments",
+        "side_effects": "May require adjusting related tests; potential minor differences in LAN range results if 'mask' is present; no public API changes; downstream network discovery paths may gain robustness"
+      },
+      {
+        "operation": "Update inner to_ipnetwork helper within get_lan_ranges to use fallback when reading 'netmask' key",
+        "file_to_modify": "src/octoprint/util/net.py",
+        "function_to_modify": "get_lan_ranges.to_ipnetwork",
+        "reason": "The inner helper currently accesses address['netmask'] directly; should fall back to address['mask'] to handle netifaces2 outputs",
+        "side_effects": "Ensures KeyError is avoided across environments; may require regression tests to cover both key variants; impacts IPNetwork construction logic within LAN range computation"
+      }
+    ]
+  }
+}

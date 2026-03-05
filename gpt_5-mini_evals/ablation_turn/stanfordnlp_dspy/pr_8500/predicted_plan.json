@@ -1,0 +1,42 @@
+{
+  "pr_number": 8500,
+  "repository": "stanfordnlp/dspy",
+  "title": "feat: add test for nested stream and check value has predict_id",
+  "body": "This PR is to add test for nested streaming where we have an agent streaming its response and its tools to run some dspy programs.\n\n- I added the test to validate the use case\n- I add check the predict_id before attempt to response to client\n\nRelated issue: https://github.com/stanfordnlp/dspy/issues/8454\n\ncc @chenmoneygithub, @okhat ",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T14:48:32.921465",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "dspy/streaming/streamify.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "async_streamer",
+          "class_name": "streamify",
+          "full_name": "streamify.async_streamer",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Make async_streamer in dspy/streaming/streamify.py defensive: check that a ModelResponseStream chunk has a predict_id and that the predict_id maps to registered listeners before indexing into predict_id_to_listener; otherwise yield the chunk unchanged to avoid AttributeError/KeyError in nested streaming. Add/ensure tests cover chunks without predict_id, mapped predict_id dispatch, and unmapped predict_id yielding.",
+    "steps": [
+      {
+        "operation": "Add defensive predict_id presence and membership check in async_streamer before dispatching ModelResponseStream chunks to listeners",
+        "file_to_modify": "dspy/streaming/streamify.py",
+        "function_to_modify": "streamify.async_streamer",
+        "reason": "async_streamer currently assumes every ModelResponseStream chunk has a predict_id that indexes into predict_id_to_listener. In nested streaming cases some chunks may lack predict_id or have a predict_id not present in the top-level listener map, leading to AttributeError or KeyError. Adding a check (hasattr(value, 'predict_id') and value.predict_id in predict_id_to_listener) prevents exceptions and preserves backward-compatible behavior by yielding unrelated chunks unchanged.",
+        "side_effects": "Behavioral: StreamListener instances will only receive chunks that both carry a predict_id and map to a registered listener; chunks without predict_id or with an unmapped predict_id will be yielded unchanged (previously these could cause exceptions). Tests: add/update unit tests for nested streaming (verify no crash when chunks lack predict_id, verify mapped predict_id still dispatched to listeners, and verify unmapped predict_id is yielded). Dependents: code that expected every ModelResponseStream to be intercepted by listeners may see fewer callbacks (only matching predict_id); this change is backward-compatible w.r.t. consumers expecting raw chunk yields. API: no public API changes; only internal dispatching logic is made defensive. Recommend running unit/integration tests for streaming, agent/tool nested streaming scenarios, and any modules that register predict_id-based listeners."
+      }
+    ]
+  }
+}

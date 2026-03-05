@@ -1,0 +1,42 @@
+{
+  "pr_number": 2332,
+  "repository": "modelscope/FunASR",
+  "title": "fix #2331: solve problems in sensevoice_bin.py related to argmax and unique operations.",
+  "body": "This PR fixes two issues in sensevoice_bin.py:\n- Replace PyTorch argmax usage with NumPy argmax to avoid potential TypeError when dim parameter is not applicable. The change computes the index of the maximum logits per time step using np.argmax(x, axis=-1).\n- Replace torch.unique_consecutive-based deduplication with a NumPy-based consecutive-duplicate removal approach. This aligns with torch.unique_consecutive behavior (removes only consecutive duplicates) by constructing a boolean mask that preserves the first element and drops consecutive duplicates, then applying the mask to obtain the deduplicated sequence. Finally, remove any blanks (self.blank_id) and decode tokens as usual.\n\nRationale:\n- np.argmax(x, axis=-1) is the correct NumPy-equivalent for determining per-frame max indices and avoids TypeError from missing dim param.\n- torch.unique_consecutive returns only consecutive duplicates, but the previous approach with np.unique removed all duplicates and sorted values, leading to mismatches. The proposed mask-based approach preserves the intended consecutive-duplicate removal behavior and supports proper decoding.\n\nImpact:\n- The sensevoice_bin inference path should now robustly handle argmax and consecutive-duplicate removal across CPU/GPU contexts, producing the same (or expected) token sequences as the torch-based approach intended by the original model behavior.\n\nTests:\n- Validate by running inference on a small batch and ensuring decoded text matches expectations for representative inputs.\n- Ensure behavior remains consistent for both CPU and GPU if applicable.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T13:17:13.245226",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "runtime/python/libtorch/funasr_torch/sensevoice_bin.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "__call__",
+          "class_name": "SenseVoiceSmall",
+          "full_name": "SenseVoiceSmall.__call__",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "This PR fixes argmax handling and consecutive-duplicate removal in sensevoice_bin.py by switching to a NumPy-based approach, ensuring compatibility and correct decoding behavior across environments.",
+    "steps": [
+      {
+        "operation": "Refactor per-frame argmax and consecutive-duplicate removal to a NumPy-based implementation",
+        "file_to_modify": "runtime/python/libtorch/funasr_torch/sensevoice_bin.py",
+        "function_to_modify": "SenseVoiceSmall.__call__",
+        "reason": "Replace PyTorch-based argmax with NumPy argmax to avoid dim-related TypeError and replace torch.unique_consecutive-based deduplication with a mask-based approach that preserves only consecutive duplicates, aligning with intended behavior described in PR #2331.",
+        "side_effects": "Introduces NumPy-based code path; may require ensuring NumPy availability and proper handling of tensor-to-NumPy conversions on CPU; downstream decoding may need to handle any subtle changes in token sequences; add/adjust tests for CPU/GPU inference cases"
+      }
+    ]
+  }
+}

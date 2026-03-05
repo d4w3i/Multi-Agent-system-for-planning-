@@ -1,0 +1,71 @@
+{
+  "pr_number": 2435,
+  "repository": "eternnoir/pyTelegramBotAPI",
+  "title": "Fixed \"subscription_period\" docstring",
+  "body": "## Description\nFixed method docstring for \"subscription_period\"\n\nPython version: 3.10\n\nOS: macOS Sonoma 14.7\n\n## Checklist:\n- Just minor change of param docstring",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T13:01:15.595558",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "telebot/types.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "__init__",
+          "class_name": "ChatBoostSourcePremium",
+          "full_name": "ChatBoostSourcePremium.__init__",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "__init__",
+          "class_name": "ChatBoost",
+          "full_name": "ChatBoost.__init__",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "docs/source/locales/en/LC_MESSAGES/types.po",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    },
+    {
+      "filename": "docs/source/locales/ru/LC_MESSAGES/types.po",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    }
+  ],
+  "step_plan": {
+    "summary": "Minor docstring corrections: update the subscription_period parameter description in the ChatBoostSourcePremium and ChatBoost constructors in telebot/types.py to ensure documentation and generated translations are accurate and consistent.",
+    "steps": [
+      {
+        "operation": "Fix subscription_period docstring for ChatBoostSourcePremium.__init__",
+        "file_to_modify": "telebot/types.py",
+        "function_to_modify": "ChatBoostSourcePremium.__init__",
+        "reason": "The docstring for the subscription_period parameter in ChatBoostSourcePremium contains an incorrect or unclear description. Correcting it in the class/constructor docstring ensures the authoritative source for generated documentation is accurate and consistent with the API semantics and Sphinx-style param annotations used across the project.",
+        "side_effects": "Documentation-only change; no runtime behavior changes. Generated docs (HTML) will reflect the corrected text once docs are regenerated. If the project includes tests that assert on docstrings, those tests may need updating. Translation / localization files (docs/source/locales/*/types.po) may become out-of-sync and should be regenerated or updated to reflect the changed English source string."
+      },
+      {
+        "operation": "Fix subscription_period docstring for ChatBoost.__init__",
+        "file_to_modify": "telebot/types.py",
+        "function_to_modify": "ChatBoost.__init__",
+        "reason": "If ChatBoost also documents subscription_period (or references the same concept), make the corresponding correction there so all related types use a consistent, correct description. This prevents divergence between related type docstrings and avoids confusing generated docs or downstream consumers that read both class docs.",
+        "side_effects": "Documentation-only change; no runtime behavior changes. Keeps docs consistent across related types. As above, documentation generation and translation files may need regeneration or manual update; tests that check docstrings will need review."
+      }
+    ]
+  }
+}

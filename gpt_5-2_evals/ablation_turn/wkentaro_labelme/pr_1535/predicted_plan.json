@@ -1,0 +1,110 @@
+{
+  "pr_number": 1535,
+  "repository": "wkentaro/labelme",
+  "title": "feat: support AI-generated masks in shape_to_mask",
+  "body": "Updated the export functionality to support AI-generated masks. The function now handles mask data from JSON files, including AI-generated mask formats (list/array and base64 encoded images).",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T12:51:56.720844",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "labelme/utils/shape.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "shape_to_mask",
+          "class_name": null,
+          "full_name": "shape_to_mask",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "shapes_to_label",
+          "class_name": null,
+          "full_name": "shapes_to_label",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "labelme/label_file.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "load",
+          "class_name": "LabelFile",
+          "full_name": "LabelFile.load",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "tests/labelme_tests/utils_tests/test_shape.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    },
+    {
+      "filename": "labelme/utils/image.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "img_b64_to_arr",
+          "class_name": null,
+          "full_name": "img_b64_to_arr",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Extend Labelme’s export/rasterization pipeline to support AI-generated masks stored in JSON shapes by decoding/normalizing mask payloads (base64 images and list/array forms) and ensuring `shapes_to_label` uses them when present. Update JSON loading and base64 decoding as needed so mask shapes produce correct 2D boolean masks during dataset export.",
+    "steps": [
+      {
+        "operation": "Extend mask rasterization to accept precomputed/AI-provided mask payloads (base64 string, nested list/array, flattened list) and normalize them into a 2D boolean mask matching img_shape",
+        "file_to_modify": "labelme/utils/shape.py",
+        "function_to_modify": "shape_to_mask",
+        "reason": "`shape_to_mask` is the core rasterizer used by export/conversion paths, but currently only rasterizes vector shapes from `points`. Supporting `shape_type=='mask'` (and/or a provided `mask` field) requires decoding/normalizing multiple mask encodings into a boolean HxW array compatible with downstream label generation.",
+        "side_effects": "Changes behavior for shapes that include `mask` data (especially `shape_type=='mask'`). Invalid/mismatched sizes may now raise clearer errors or be coerced; this can impact exporters that previously ignored `mask` fields."
+      },
+      {
+        "operation": "Update label generation to route `shape_type=='mask'` (or shapes containing a `mask` field) through the mask-normalization path rather than polygon rasterization from points; ensure mask is combined/applied consistently with existing class id and instance logic",
+        "file_to_modify": "labelme/utils/shape.py",
+        "function_to_modify": "shapes_to_label",
+        "reason": "Export pipelines call `shapes_to_label`, which currently calls `shape_to_mask(img_shape, points, shape_type)` and discards any `shape['mask']`. To export AI-generated masks correctly, this function must detect mask-bearing shapes and pass/dispatch the mask data into `shape_to_mask` (or otherwise use the normalized mask directly) while preserving existing semantics for overlaps, label mapping, and instance id handling.",
+        "side_effects": "Dataset conversion outputs may change for projects that stored masks in JSON but previously got empty/incorrect masks. Overlap resolution/order effects may surface if mask shapes are now included where they were previously ignored."
+      },
+      {
+        "operation": "Enhance JSON shape loading to accept `mask` payloads that are not base64 strings (e.g., list/array/flattened vectors) and convert them into the in-memory mask representation expected by downstream utilities",
+        "file_to_modify": "labelme/label_file.py",
+        "function_to_modify": "LabelFile.load",
+        "reason": "`LabelFile.load` currently assumes `shape['mask']` is base64-encoded image data and decodes via `img_b64_to_arr`. AI tools may emit masks as JSON arrays; parsing must detect the mask type and normalize it (including dtype/channel handling and optional reshape) so that exporters relying on loaded shapes can correctly rasterize masks.",
+        "side_effects": "Loading previously “accepted” but semantically invalid mask payloads may now fail fast or be coerced; any downstream code that expects `mask` to be `None` unless base64 may observe non-None masks more often."
+      },
+      {
+        "operation": "Adjust base64 image decoding (or its returned array characteristics) to ensure downstream mask normalization is robust across grayscale/RGB/RGBA inputs and consistent dtype/shape expectations",
+        "file_to_modify": "labelme/utils/image.py",
+        "function_to_modify": "img_b64_to_arr",
+        "reason": "AI-generated mask base64 images can be stored in different modes (L/RGB/RGBA). If `img_b64_to_arr` yields arrays with varying channel dimensions/dtypes, mask consumers must reliably collapse to 2D and interpret non-zero pixels as True. Updating this function (or ensuring it returns predictable arrays) reduces duplicated ad-hoc handling across loader/rasterizer paths.",
+        "side_effects": "Any callers of `img_b64_to_arr` beyond mask decoding might see subtle changes in dtype/shape if normalization is implemented here; tests and any image decoding assumptions may need updates."
+      }
+    ]
+  }
+}

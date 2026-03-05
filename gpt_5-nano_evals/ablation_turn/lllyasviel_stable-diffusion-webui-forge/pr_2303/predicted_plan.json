@@ -1,0 +1,25 @@
+{
+  "pr_number": 2303,
+  "repository": "lllyasviel/stable-diffusion-webui-forge",
+  "title": "fix for Florence-2 space",
+  "body": "This PR removes a patch that previously patched imports to disable Flash Attention for the Florence-2 space due to an issue with a Transformers update. The workaround patched imports to bypass Flash Attention, but a later update made that patch unnecessary (and it could even cause errors). The Space now loads again, and basic functionality has been tested as working. The change aligns with the goal of not patching around known issues when the underlying library updates have resolved them.\n\nReferences:\n- Florence-2 base discussions on Flash Attention workaround: https://huggingface.co/microsoft/Florence-2-base/discussions/4#6673ffb9436907f83a8aaf2d\n- Patch workaround discussion: https://huggingface.co/microsoft/phi-1_5/discussions/72#65a0339f64520347aa3d703c\n\nInvestigation notes:\n- The repository analyzed (Forge-based) uses a HuggingFace-based loading path with custom state-dict handling and patching systems for LoRAs, patching, and extension components.\n- Florence-2 specific patching for Flash Attention is not visibly present in the codebase paths scanned (backend/patcher, backend/loader, or HuggingFace integration modules) based on the current repository snapshot.\n- No Florence-2 specific patch references were found in the code accessible in this PR's repository snapshot, implying the patch may have lived in a separate branch/version or a different repository configuration not included here.\n\nWhat to verify after this PR (in a real repo):\n- Ensure that Florence-2 model loading no longer requires a patch to disable Flash Attention imports.\n- Run a quick smoke test (load Florence-2 space components, perform a small inference) to confirm no regressions.\n- Confirm that loading Florence-2 space no longer triggers Flash Attention-related import errors in the current environment.\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T13:08:36.913927",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [],
+  "step_plan": {
+    "summary": "This PR removes the Florence-2 Flash Attention patch reference as the underlying libraries have updated to no longer require the workaround. In the provided repository snapshot, no Florence-2 patching logic is present, so no direct code modifications are detected here. Verification should be performed in the actual target branch/environment where the patch existed to confirm Florence-2 loads without import-patch issues.",
+    "steps": [
+      {
+        "operation": "(No code changes detected in current snapshot)",
+        "file_to_modify": "",
+        "function_to_modify": null,
+        "reason": "No Florence-2 Flash Attention patch references or related patching code detected in the current repository snapshot. The PR appears to remove a patch that existed outside this snapshot or in a different branch/repo.",
+        "side_effects": "Requires validation in the target branch/environment where the Florence-2 patch previously lived; no in-repo changes to apply here."
+      }
+    ]
+  }
+}

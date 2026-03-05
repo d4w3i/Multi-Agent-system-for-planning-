@@ -1,0 +1,86 @@
+{
+    "repository": "openinterpreter/open-interpreter",
+    "pull_request_number": 1496,
+    "title": "Fix: Change date format string for Windows compatibility",
+    "body": "# Fix date format string for Windows compatibility\r\n\r\n## Problem\r\nWhen running `interpreter --os` on Windows, the program crashes with a ValueError due to an incompatible date format string (`%-d`).\r\n\r\n## Solution\r\nChanged the date format string from `%-d` to `%d` to ensure compatibility with Windows systems.\r\n\r\n## Changes\r\n- Modified `interpreter/computer_use/loop.py` to use Windows-compatible date format\r\n- Replaced `%-d` with `%d` in `strftime()` call\r\n\r\n## Testing\r\nTested on:\r\n- Windows 11\r\n- Python 3.11\r\n- open-interpreter 0.4.1\r\n\r\nThe fix allows the program to start normally with the `--os` flag on Windows.\r\n\r\nFixes #1495",
+    "pr_date": "2024-10-24T12:03:23Z",
+    "source_branch": "fix-windows-date-format",
+    "language": "en",
+    "keywords_detected": {
+        "branch": [
+            "fix"
+        ],
+        "requirement": [
+            "change",
+            "fix"
+        ],
+        "body": [
+            "change",
+            "fix"
+        ]
+    },
+    "number_of_links_in_pr": 0,
+    "base_sha": "eded6a2ab6f46cd19caa1559ae23b528a70d1707",
+    "last_commit_sha": "e99f7927e20f155f5350269f9af3545f1eb01db6",
+    "diff_between_base_and_last": [
+        {
+            "sha": "9ccb9632dcc7b5482c275c0a0d740a05ac6e9bd6",
+            "filename": "interpreter/computer_use/loop.py",
+            "status": "modified",
+            "additions": 1,
+            "deletions": 1,
+            "changes": 2,
+            "blob_url": "https://github.com/openinterpreter/open-interpreter/blob/e99f7927e20f155f5350269f9af3545f1eb01db6/interpreter%2Fcomputer_use%2Floop.py",
+            "raw_url": "https://github.com/openinterpreter/open-interpreter/raw/e99f7927e20f155f5350269f9af3545f1eb01db6/interpreter%2Fcomputer_use%2Floop.py",
+            "contents_url": "https://api.github.com/repos/openinterpreter/open-interpreter/contents/interpreter%2Fcomputer_use%2Floop.py?ref=e99f7927e20f155f5350269f9af3545f1eb01db6",
+            "patch": "@@ -101,7 +101,7 @@ class APIProvider(StrEnum):\n * You have access to a code editor tool for viewing and modifying source code files.\n * You can install and use command-line applications and development tools as needed.\n * When dealing with large outputs, use redirection to temporary files and tools like `grep` or the str_replace_editor to analyze the content efficiently.\n-* The current date is {datetime.today().strftime('%A, %B %-d, %Y')}.\n+* The current date is {datetime.today().strftime('%A, %B %#d, %Y' if platform.system() == 'Windows' else '%A, %B %-d, %Y')}.\n </SYSTEM_CAPABILITY>\"\"\"\n \n SYSTEM_PROMPT = f\"\"\"<SYSTEM_CAPABILITY>"
+        }
+    ],
+    "commits": [
+        {
+            "sha": "49c8d190487bd3bb6466122f6bf4353becc3ff99",
+            "commit_date": "2024-10-24T12:00:45Z",
+            "message": "Fix: Change date format string for Windows compatibility\n\n- Changed %-d to %d in date format string to support Windows\n- Fixes ValueError when running with --os flag on Windows",
+            "number_of_links_in_commit": 0,
+            "files_changed_count": 1,
+            "files": [
+                {
+                    "sha": "00bc118323ef14b62cc589ad4b9b359038fd37a9",
+                    "filename": "interpreter/computer_use/loop.py",
+                    "status": "modified",
+                    "additions": 1,
+                    "deletions": 1,
+                    "changes": 2,
+                    "blob_url": "https://github.com/openinterpreter/open-interpreter/blob/49c8d190487bd3bb6466122f6bf4353becc3ff99/interpreter%2Fcomputer_use%2Floop.py",
+                    "raw_url": "https://github.com/openinterpreter/open-interpreter/raw/49c8d190487bd3bb6466122f6bf4353becc3ff99/interpreter%2Fcomputer_use%2Floop.py",
+                    "contents_url": "https://api.github.com/repos/openinterpreter/open-interpreter/contents/interpreter%2Fcomputer_use%2Floop.py?ref=49c8d190487bd3bb6466122f6bf4353becc3ff99",
+                    "patch": "@@ -101,7 +101,7 @@ class APIProvider(StrEnum):\n * You have access to a code editor tool for viewing and modifying source code files.\n * You can install and use command-line applications and development tools as needed.\n * When dealing with large outputs, use redirection to temporary files and tools like `grep` or the str_replace_editor to analyze the content efficiently.\n-* The current date is {datetime.today().strftime('%A, %B %-d, %Y')}.\n+* The current date is {datetime.today().strftime('%A, %B %d, %Y')}.\n </SYSTEM_CAPABILITY>\"\"\"\n \n SYSTEM_PROMPT = f\"\"\"<SYSTEM_CAPABILITY>"
+                }
+            ]
+        },
+        {
+            "sha": "e99f7927e20f155f5350269f9af3545f1eb01db6",
+            "commit_date": "2024-10-26T00:29:44Z",
+            "message": "Update loop.py\n\nAccording to the advice by CyanideByte, I modified as follows:\r\n\r\n{datetime.today().strftime('%A, %B %#d, %Y' if platform.system() == 'Windows' else '%A, %B %-d, %Y')}",
+            "number_of_links_in_commit": 0,
+            "files_changed_count": 1,
+            "files": [
+                {
+                    "sha": "9ccb9632dcc7b5482c275c0a0d740a05ac6e9bd6",
+                    "filename": "interpreter/computer_use/loop.py",
+                    "status": "modified",
+                    "additions": 1,
+                    "deletions": 1,
+                    "changes": 2,
+                    "blob_url": "https://github.com/openinterpreter/open-interpreter/blob/e99f7927e20f155f5350269f9af3545f1eb01db6/interpreter%2Fcomputer_use%2Floop.py",
+                    "raw_url": "https://github.com/openinterpreter/open-interpreter/raw/e99f7927e20f155f5350269f9af3545f1eb01db6/interpreter%2Fcomputer_use%2Floop.py",
+                    "contents_url": "https://api.github.com/repos/openinterpreter/open-interpreter/contents/interpreter%2Fcomputer_use%2Floop.py?ref=e99f7927e20f155f5350269f9af3545f1eb01db6",
+                    "patch": "@@ -101,7 +101,7 @@ class APIProvider(StrEnum):\n * You have access to a code editor tool for viewing and modifying source code files.\n * You can install and use command-line applications and development tools as needed.\n * When dealing with large outputs, use redirection to temporary files and tools like `grep` or the str_replace_editor to analyze the content efficiently.\n-* The current date is {datetime.today().strftime('%A, %B %d, %Y')}.\n+* The current date is {datetime.today().strftime('%A, %B %#d, %Y' if platform.system() == 'Windows' else '%A, %B %-d, %Y')}.\n </SYSTEM_CAPABILITY>\"\"\"\n \n SYSTEM_PROMPT = f\"\"\"<SYSTEM_CAPABILITY>"
+                }
+            ]
+        }
+    ],
+    "pull_request_url": "https://github.com/openinterpreter/open-interpreter/pull/1496",
+    "commits_url": "https://github.com/openinterpreter/open-interpreter/pull/1496/commits",
+    "files_url": "https://github.com/openinterpreter/open-interpreter/pull/1496/files"
+}

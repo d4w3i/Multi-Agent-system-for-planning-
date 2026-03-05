@@ -1,0 +1,42 @@
+{
+  "pr_number": 3150,
+  "repository": "mlc-ai/mlc-llm",
+  "title": "Fixed log prob result generation",
+  "body": "Fixes the merging logic of logprobs of different tokens  for the same choice.\n\n\nEarlier response \n\n```{\n    \"id\": \"cmpl-0e79013e278c497a8926be59641d0381\",\n    \"choices\": [\n        {\n            \"finish_reason\": \"length\",\n            \"index\": 0,\n            \"logprobs\": {\n                \"text_offset\": null,\n                \"token_logprobs\": [\n                    0.0\n                ],\n                \"tokens\": [\n                    \"\"\n                ],\n                \"top_logprobs\": [\n                    {\n                        \"\": -23.0259,\n                        \"<unk>\": -23.0259,\n                        \"<s>\": -23.0259,\n                        \"</s>\": -23.0259\n                    }\n                ]\n            },\n            \"text\": \"2, and \"\n        }\n    ],\n    \"created\": 1741063066,\n    \"model\": \"/home/annanyac/mlc-llm/dist/Llama-2-7b-chat-hf-q0f16-MLC/\",\n    \"object\": \"text_completion\",\n    \"usage\": {\n        \"prompt_tokens\": 6,\n        \"completion_tokens\": 5,\n        \"total_tokens\": 11,\n        \"extra\": null\n    }\n}\n```\n\n\nNew response \n\n```{\n    \"id\": \"cmpl-d6b2bc3820f8441fbfbe9d5d0be3d9ce\",\n    \"choices\": [\n        {\n            \"finish_reason\": \"length\",\n            \"index\": 0,\n            \"logprobs\": {\n                \"text_offset\": null,\n                \"token_logprobs\": [\n                    0.0,\n                    -0.912338,\n                    -0.47704,\n                    -0.111992\n                ],\n                \"tokens\": [\n                    \"2\",\n                    \".\",\n                    \"\",\n                    \"\"\n                ],\n                \"top_logprobs\": [\n                    {\n                        \"2\": 0.0,\n                        \"<unk>\": -23.0259,\n                        \"<s>\": -23.0259,\n                        \"</s>\": -23.0259,\n                        \"\": -23.0259\n                    },\n                    {\n                        \".\": -0.912338,\n                        \",\": -1.07249,\n                        \"\": -1.36156,\n                        \"<unk>\": -23.0259,\n                        \"<s>\": -23.0259\n                    },\n                    {\n                        \"\": -1.39891,\n                        \"So\": -2.54735,\n                        \"In\": -2.91454,\n                        \"<unk>\": -23.0259\n                    },\n                    {\n                        \"\": -0.111992,\n                        \"So\": -2.2448,\n                        \"<unk>\": -23.0259,\n                        \"<s>\": -23.0259,\n                        \"</s>\": -23.0259\n                    }\n                ]\n            },\n            \"text\": \"2.\\n\\n\"\n        }\n    ],\n    \"created\": 1741064363,\n    \"model\": \"/mnt/data/ehdd1/home/models/mlc/Llama-2-7b-chat-hf-q0f16-MLC/\",\n    \"object\": \"text_completion\",\n    \"usage\": {\n        \"prompt_tokens\": 6,\n        \"completion_tokens\": 5,\n        \"total_tokens\": 11,\n        \"extra\": null\n    }\n}```\n\nExplore the source code to identify the files and functions to modify.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T13:16:24.169402",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "python/mlc_llm/protocol/openai_api_protocol.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "_validate_logprobs_lengths",
+          "class_name": "CompletionLogProbs",
+          "full_name": "CompletionLogProbs._validate_logprobs_lengths",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Add a post-construction validation in the OpenAI API protocol to enforce per-token logprob alignment across token_logprobs, tokens, top_logprobs, and text_offset for CompletionLogProbs, ensuring correct merging behavior when multiple tokens are produced per choice.",
+    "steps": [
+      {
+        "operation": "Attach a post-construction model validator to CompletionLogProbs to enforce per-token alignment",
+        "file_to_modify": "python/mlc_llm/protocol/openai_api_protocol.py",
+        "function_to_modify": "CompletionLogProbs._validate_logprobs_lengths",
+        "reason": "Ensure token_logprobs, tokens, top_logprobs, and optional text_offset have matching lengths so that per-token logprob data remains correctly aligned when multiple tokens are produced for a single choice. This prevents mismerged or misinterpreted logprob data in the API contract.",
+        "side_effects": "API response validation becomes stricter; may require updating or extending unit tests; potential downstream impact on clients consuming per-token logprobs; no changes to model inference logic."
+      }
+    ]
+  }
+}

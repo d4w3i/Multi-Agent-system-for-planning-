@@ -1,0 +1,35 @@
+{
+  "pr_number": 2778,
+  "repository": "eosphoros-ai/DB-GPT",
+  "title": "fix: Change plan manager prompt in order to avoid calling tools directly",
+  "body": "# Description\r\n\r\nRelated to #2777 \r\n在默认plan manager prompt中加入了对tool直接调用的严格限制\r\n\r\n# How Has This Been Tested?\r\n\r\n经过对话测试，plan manager 成功避免直接调用 Tools\r\n\r\n![final](https://github.com/user-attachments/assets/c7a3095f-1b34-4495-a597-15d6dfebda8d)\r\n\r\n# Snapshots:\r\n\r\n![en prompt](https://github.com/user-attachments/assets/3d8cac34-7764-4461-8ca8-964a0099b9ef)\r\n![cnprompt](https://github.com/user-attachments/assets/b6896063-382d-4203-b194-27e1f4ebc357)\r\n\r\n\r\n# Checklist:\r\n\r\n- [x] My code follows the style guidelines of this project\r\n- [x] I have already rebased the commits and make the commit message conform to the project standard.\r\n- [x] I have performed a self-review of my own code\r\n- [x] I have commented my code, particularly in hard-to-understand areas\r\n- [x] I have made corresponding changes to the documentation\r\n- [x] Any dependent changes have been merged and published in downstream modules\r\n\r\n\r\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-02-26T01:07:02.735474",
+    "extractor_version": "1.0.0",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "packages/dbgpt-core/src/dbgpt/agent/core/profile/base.py",
+      "status": "modified",
+      "additions": 8,
+      "deletions": 0,
+      "functions_modified": [],
+      "patch": "@@ -29,6 +29,10 @@\n {% endif %}your goal is {% if is_retry_chat %}{{ retry_goal }}{% else %}{{ goal }}{% endif %}.\\\n Please think step-by-step to achieve your goals based on user input. You can use the resources given below.\n At the same time, please strictly abide by the constraints and specifications in the \"IMPORTANT REMINDER\" below.\n+[Important Constraints]\n+- It is strictly prohibited to directly call any tool from resources in the task plan, even if they are listed in the available resources.\n+- All tool invocations must be performed only via the ToolExpert agent.\n+- The ToolExpert is responsible for managing and proxying all tool invocations. The Planner should only issue high-level intents to the ToolExpert for using tools.\n {% if resource_prompt %}\\\n Given resources information:\n {{ resource_prompt }} \n@@ -69,6 +73,10 @@\n 你是一个 {{ role }}, {% if name %}名字叫 {{ name }}.\n {% endif %}你的目标是 {% if is_retry_chat %}{{ retry_goal }}{% else %}{{ goal }}{% endif %}.\\\n 请一步一步思考完根据下面给出的已知信息和用户问题完成目标，同时请严格遵守下面\"重要提醒\"中的约束和规范。\n+【重要约束】\n+- 严禁在任务计划中直接调用任何 resource 中的 tool，即使它们在资源列表中被列出。\n+- 所有 tool 的调用必须通过 ToolExpert agent 实现。\n+- ToolExpert 的职责是统一管理、代理所有工具的调用，Planner 只应向 ToolExpert 发出工具的使用意图。\n {% if resource_prompt %}\\\n 已知资源信息：\n {{ resource_prompt }} "
+    }
+  ],
+  "functions_modified": [],
+  "step_plan": {
+    "steps": [
+      {
+        "operation": "Update the default Plan Manager (Planner) prompt template to explicitly forbid direct tool calls and require routing all tool usage through the ToolExpert agent (in both English and Chinese prompt blocks).",
+        "file_to_modify": "packages/dbgpt-core/src/dbgpt/agent/core/profile/base.py",
+        "function_to_modify": "dbgpt.agent.core.profile.base.PLAN_MANAGER_DEFAULT_PROFILE_TEMPLATE",
+        "reason": "The Planner was previously able to include direct tool invocations in its task plan when tools were present in resources; adding explicit constraints to the prompt prevents unintended tool execution paths and enforces the architecture where ToolExpert proxies all tool calls.",
+        "side_effects": "May change planning behavior across all agents using this default template: plans will contain higher-level intents rather than explicit tool calls, potentially requiring downstream logic/prompts to expect ToolExpert delegation; could reduce capability if ToolExpert is unavailable/misconfigured; affects both EN/CN localization outputs and any tests/golden snapshots relying on prior prompt text."
+      }
+    ],
+    "summary": "Adjusted the Plan Manager default prompt to strictly prohibit direct tool invocations and enforce that all tool usage is delegated to the ToolExpert agent, in both English and Chinese templates."
+  }
+}

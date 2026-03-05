@@ -1,0 +1,125 @@
+{
+  "pr_number": 2127,
+  "repository": "DLR-RM/stable-baselines3",
+  "title": "Feature/batch norm",
+  "body": "Added a boolean `use_batch_norm` flag to the CNN and MLP feature extractors.  \n- In **NatureCNN**, each convolutional block now conditionally inserts an `nn.BatchNorm2d` layer (before the ReLU) when `use_batch_norm=True`.  \n- In **create_mlp**, an initial `nn.BatchNorm1d` may be applied to the inputs, and batch-norm modules can wrap each linear layer.  \nAll defaults remain unchanged (batch norm off), and existing behavior is fully preserved.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T11:44:41.532609",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "stable_baselines3/common/torch_layers.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "__init__",
+          "class_name": "NatureCNN",
+          "full_name": "NatureCNN.__init__",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "create_mlp",
+          "class_name": null,
+          "full_name": "create_mlp",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "__init__",
+          "class_name": "MlpExtractor",
+          "full_name": "MlpExtractor.__init__",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "__init__",
+          "class_name": "CombinedExtractor",
+          "full_name": "CombinedExtractor.__init__",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "stable_baselines3/common/policies.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "__init__",
+          "class_name": "ActorCriticPolicy",
+          "full_name": "ActorCriticPolicy.__init__",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_build_mlp_extractor",
+          "class_name": "ActorCriticPolicy",
+          "full_name": "ActorCriticPolicy._build_mlp_extractor",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Add an optional use_batch_norm boolean to CNN and MLP feature-extractor builders and to policy construction so users can enable BatchNorm2d for NatureCNN and BatchNorm1d for MLPs (including MlpExtractor and CombinedExtractor) while keeping defaults unchanged.",
+    "steps": [
+      {
+        "operation": "Add use_batch_norm flag and optional BatchNorm2d into CNN blocks",
+        "file_to_modify": "stable_baselines3/common/torch_layers.py",
+        "function_to_modify": "NatureCNN.__init__",
+        "reason": "Expose a use_batch_norm: bool = False constructor argument and, when True, insert an nn.BatchNorm2d immediately after each nn.Conv2d (i.e., Conv2d -> BatchNorm2d -> ReLU) so the CNN feature extractor supports optional batch normalization while keeping default behavior unchanged.",
+        "side_effects": "Adds BatchNorm2d modules to the model when enabled which increases parameter count and affects behavior in train()/eval() modes (statistics tracked during training). Initialization code that inspects layers should still find Conv2d modules; unit tests that validate exact module order or expected number of submodules may need updates. Default is False, so unchanged for existing users."
+      },
+      {
+        "operation": "Add use_batch_norm flag and optional BatchNorm1d layers in MLP builder",
+        "file_to_modify": "stable_baselines3/common/torch_layers.py",
+        "function_to_modify": "create_mlp",
+        "reason": "Add use_batch_norm: bool = False parameter so the helper can, when requested, prepend an initial nn.BatchNorm1d(input_dim) and insert nn.BatchNorm1d before activations for each linear layer (i.e., Linear -> BatchNorm1d -> Activation). This provides an explicit, easy toggle to create batch-norm enabled MLPs while preserving existing API and behavior when False.",
+        "side_effects": "When enabled, BatchNorm1d layers change forward-pass statistics and require sufficient batch size for stable running stats; single-sample inference behavior may differ. Module ordering changes (extra BatchNorm modules) which may affect tests that check exact module lists or initialization ordering. Default False preserves backward compatibility."
+      },
+      {
+        "operation": "Make MlpExtractor accept and use use_batch_norm when constructing internal policy and value nets",
+        "file_to_modify": "stable_baselines3/common/torch_layers.py",
+        "function_to_modify": "MlpExtractor.__init__",
+        "reason": "Add use_batch_norm: bool = False to MlpExtractor.__init__ and use it when building policy_net and value_net so both latent MLPs can include BatchNorm1d layers (before activations) if requested. This centralizes MLP batch-norm behavior for policy/value networks.",
+        "side_effects": "Enables BN in policy/value networks when flag is set and changes the set of submodules and their behavior. Tests for policy/value latent dimensions should remain valid (latent sizes unchanged) but tests assuming specific internal module sequences may need updates. Backward compatibility maintained by defaulting to False. Training/eval behavior is impacted by BatchNorm's statistics, so tests using batch size 1 or relying on deterministic outputs may need adjustment."
+      },
+      {
+        "operation": "Propagate use_batch_norm into CombinedExtractor and forward to per-input NatureCNNs",
+        "file_to_modify": "stable_baselines3/common/torch_layers.py",
+        "function_to_modify": "CombinedExtractor.__init__",
+        "reason": "Accept use_batch_norm: bool = False in CombinedExtractor.__init__ and forward it to constructed NatureCNN feature extractors for image subspaces. This allows composite multi-input extractors to enable batch-norm per-key via features_extractor_kwargs without surprising unknown-kwarg errors.",
+        "side_effects": "API: CombinedExtractor gains an extra optional parameter (default False) so existing callers are unaffected. When enabled, image sub-extractors include BatchNorm2d; tests and code that assume exact feature extractor composition may need updates. Care must be taken if features_extractor_kwargs already contains use_batch_norm to avoid double-specifying."
+      },
+      {
+        "operation": "Add use_batch_norm parameter to ActorCriticPolicy constructor and store the flag",
+        "file_to_modify": "stable_baselines3/common/policies.py",
+        "function_to_modify": "ActorCriticPolicy.__init__",
+        "reason": "Expose a top-level use_batch_norm: bool = False parameter on ActorCriticPolicy so callers can request batch-normalized MLP feature extractors at policy construction time. Store the flag on the instance (e.g., self.use_batch_norm) so builder methods can access it.",
+        "side_effects": "Constructor signature changes by adding an optional argument; defaulting to False keeps backward compatibility. Subclasses of ActorCriticPolicy that call super() without explicit kwargs remain unaffected. Public API docs and any direct instantiations that pass unknown args should be reviewed. Tests that instantiate policies may need to accept the new parameter in expected kwargs lists if strict validation is present."
+      },
+      {
+        "operation": "Forward the stored use_batch_norm flag into MlpExtractor construction",
+        "file_to_modify": "stable_baselines3/common/policies.py",
+        "function_to_modify": "ActorCriticPolicy._build_mlp_extractor",
+        "reason": "When building the MlpExtractor, pass use_batch_norm=self.use_batch_norm (or equivalent) so the policy/value MLPs are actually created with BatchNorm when the user requested it at policy construction time.",
+        "side_effects": "Connects the policy-level flag to the MlpExtractor, causing MLPs to include BatchNorm when enabled. This affects training dynamics and number of parameters. Unit tests that assume specific MlpExtractor internals may need to be updated. Since the flag defaults to False, existing behavior remains unchanged unless explicitly requested."
+      }
+    ]
+  }
+}

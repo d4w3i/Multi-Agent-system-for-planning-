@@ -1,0 +1,65 @@
+{
+  "pr_number": 1224,
+  "repository": "pytorch/examples",
+  "title": "Fixes in Imagenet training script",
+  "body": "* ngpus_per_node variable count fix\r\n* dist_backend assertion added for nccl issue",
+  "extraction_metadata": {
+    "extracted_at": "2026-02-26T01:10:56.915192",
+    "extractor_version": "1.0.0",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "imagenet/main.py",
+      "status": "modified",
+      "additions": 5,
+      "deletions": 1,
+      "functions_modified": [
+        {
+          "function_name": "main",
+          "class_name": null,
+          "full_name": "main",
+          "start_line": 84,
+          "end_line": 124,
+          "lines_changed": [
+            109,
+            110,
+            112,
+            113,
+            114
+          ]
+        }
+      ],
+      "patch": "@@ -106,8 +106,12 @@ def main():\n \n     if torch.cuda.is_available():\n         ngpus_per_node = torch.cuda.device_count()\n+        assert not (ngpus_per_node == 1 and args.dist_backend == \"nccl\"),\\\n+        \"nccl backend requires GPU count>1, see https://github.com/NVIDIA/nccl/issues/103 perhaps use 'gloo'\"\n     else:\n-        ngpus_per_node = 1\n+        ngpus_per_node = 0\n+        assert args.dist_backend != \"nccl\",\\\n+        \"nccl backend does not work without GPU, see https://pytorch.org/docs/stable/distributed.html\"\n     if args.multiprocessing_distributed:\n         # Since we have ngpus_per_node processes per node, the total world_size\n         # needs to be adjusted accordingly"
+    }
+  ],
+  "functions_modified": [
+    {
+      "function_name": "main",
+      "class_name": null,
+      "full_name": "main",
+      "start_line": 84,
+      "end_line": 124,
+      "lines_changed": [
+        109,
+        110,
+        112,
+        113,
+        114
+      ]
+    }
+  ],
+  "step_plan": {
+    "steps": [
+      {
+        "operation": "Fix GPU counting logic and add defensive assertions to prevent invalid NCCL distributed configurations",
+        "file_to_modify": "imagenet/main.py",
+        "function_to_modify": "main",
+        "reason": "When CUDA is unavailable, setting `ngpus_per_node = 1` incorrectly implies a GPU exists and can cause the distributed setup to compute an incorrect `world_size` and attempt GPU/NCCL paths. Additionally, NCCL is not supported without GPUs and can hit known NCCL issues on single-GPU setups; explicit assertions fail fast with actionable guidance.",
+        "side_effects": "Running the script with `--dist-backend nccl` on CPU-only hosts or single-GPU machines will now raise an AssertionError early instead of failing later with harder-to-diagnose distributed/NCCL errors. Any downstream logic that assumes `ngpus_per_node >= 1` when CUDA is unavailable may change behavior (e.g., world_size calculation and process spawning under `--multiprocessing-distributed`)."
+      }
+    ],
+    "summary": "Corrects `ngpus_per_node` when CUDA is unavailable and adds assertions to prevent unsupported/buggy NCCL distributed configurations (CPU-only and single-GPU cases)."
+  }
+}

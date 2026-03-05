@@ -1,0 +1,141 @@
+{
+  "pr_number": 996,
+  "repository": "sshuttle/sshuttle",
+  "title": "Revert \"Support Windows11 As A sshuttle Server\"",
+  "body": "Reverts sshuttle/sshuttle#993\n\nThis change was made in error. See discussion in #993.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T14:46:40.796825",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "sshuttle/methods/windivert.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "is_supported",
+          "class_name": "Method",
+          "full_name": "Method.is_supported",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "sshuttle/methods/__init__.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "get_auto_method",
+          "class_name": null,
+          "full_name": "get_auto_method",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "sshuttle/server.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "list_routes",
+          "class_name": null,
+          "full_name": "list_routes",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "main",
+          "class_name": null,
+          "full_name": "main",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "sshuttle/helpers.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "get_random_nameserver",
+          "class_name": null,
+          "full_name": "get_random_nameserver",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "windows_nameservers",
+          "class_name": null,
+          "full_name": "windows_nameservers",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Revert the Windows-specific server support introduced in the prior PR by disabling the windivert method and undoing Windows-only branches in method selection, server startup/route listing, and nameserver discovery so the server no longer auto-selects or depends on Windows-only code paths.",
+    "steps": [
+      {
+        "operation": "Disable windivert Method support and guard imports",
+        "file_to_modify": "sshuttle/methods/windivert.py",
+        "function_to_modify": "Method.is_supported",
+        "reason": "The windivert module pulls in a Windows-only dependency (pydivert) at import time and currently reports itself as supported on win32. Making is_supported() return False (and moving/guarding any pydivert import so it doesn't raise on module import) prevents automatic selection or import-time failures while keeping the file present for later review.",
+        "side_effects": "Avoids adding pydivert as a hard dependency and prevents windivert from being selected. Tests referencing windivert.Method directly may fail until re-enabled. No public API change, but reduces available methods on Windows; ensure tests that assert available methods are updated if they expected windivert."
+      },
+      {
+        "operation": "Restore automatic method selection to not prefer windivert on win32",
+        "file_to_modify": "sshuttle/methods/__init__.py",
+        "function_to_modify": "get_auto_method",
+        "reason": "The previous change set altered get_auto_method to prefer 'windivert' on sys.platform == 'win32', causing Windows-only behavior and importing the windivert module. Reverting get_auto_method to the prior behavior (do not set methods_to_try = ['windivert'] on win32) ensures Windows-specific methods are not automatically selected.",
+        "side_effects": "Prevents auto-selection of windivert on Windows. Tests that assert windivert becomes the auto-selected method on Win32 will need to be adjusted. Non-Windows behavior should be unchanged. If windivert remains importable elsewhere, it will still be present but not auto-chosen."
+      },
+      {
+        "operation": "Revert Windows-specific route-listing branch",
+        "file_to_modify": "sshuttle/server.py",
+        "function_to_modify": "list_routes",
+        "reason": "The PR added a sys.platform == 'win32' branch using a _route_windows parser and a call to ['route','PRINT','-4']. Revert list_routes to the previous logic that uses 'ip' or 'netstat' parsing so server route listing stays cross-platform and doesn't depend on Windows formatting.",
+        "side_effects": "Restores previous route parsing behavior and avoids Windows-specific assumptions. On Windows the server will no longer attempt to parse routes with the _route_windows path. Tests that validated Windows-formatted route output must be removed or guarded behind platform checks."
+      },
+      {
+        "operation": "Remove Windows-specific stdin/stdout shim and restore standard Mux initialization",
+        "file_to_modify": "sshuttle/server.py",
+        "function_to_modify": "main",
+        "reason": "The PR introduced a special-case for sys.platform == 'win32' that wrapped stdin/stdout in a SocketRWShim and deferred exit handling. Reverting this restores consistent Mux(r, w) initialization across platforms and avoids relying on shimmed file objects and Windows process behaviors that the rest of the server code expects.",
+        "side_effects": "Restores the prior server startup flow and keeps Mux behavior consistent. On Windows the server will no longer attempt the SocketRWShim workaround; this means Windows support stays disabled (as before). Tests that exercised the Windows-specific main path should be removed or conditioned on platform."
+      },
+      {
+        "operation": "Neutralize windows_nameservers (stop using PowerShell)",
+        "file_to_modify": "sshuttle/helpers.py",
+        "function_to_modify": "windows_nameservers",
+        "reason": "windows_nameservers was added to call PowerShell for DNS server discovery on Windows. To revert Windows-specific server support, make windows_nameservers non-operative (e.g., return an empty list or raise a clear NotImplemented/PlatformUnsupported) so it no longer executes PowerShell or is relied upon by get_random_nameserver.",
+        "side_effects": "Removes a Windows-specific dependency (PowerShell parsing) and prevents accidental usage. If other code expects a nameserver list on Windows, it will now receive an empty result or a raised error; ensure callers (particularly get_random_nameserver) handle this gracefully. Tests that expected windows_nameservers to return servers must be updated."
+      },
+      {
+        "operation": "Revert get_random_nameserver to resolv.conf-based behavior and remove PowerShell branch",
+        "file_to_modify": "sshuttle/helpers.py",
+        "function_to_modify": "get_random_nameserver",
+        "reason": "The PR added a branch that used windows_nameservers()/PowerShell for server-side nameserver discovery. Restore the previous behavior: read resolv.conf (resolvconf_nameservers(systemd_resolved=False)) and select from those nameservers for server-mode. This avoids requiring Windows-specific lookups and preserves prior Unix-oriented behavior.",
+        "side_effects": "Restores original nameserver lookup for server mode. On Windows this will not produce nameservers; callers should handle absence as before. Tests must be run to ensure DNS-related behavior is consistent on non-Windows platforms; any tests added for the PowerShell-based retrieval should be removed or guarded behind platform checks."
+      }
+    ]
+  }
+}

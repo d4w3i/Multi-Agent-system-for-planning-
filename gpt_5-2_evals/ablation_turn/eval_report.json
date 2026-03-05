@@ -1,0 +1,5715 @@
+{
+  "timestamp": "2026-03-04T14:44:06.665032",
+  "total_prs": 102,
+  "evaluated_prs": 102,
+  "skipped_prs": 0,
+  "avg_file_precision": 0.7519588235294117,
+  "avg_file_recall": 0.7934754901960784,
+  "avg_file_f1": 0.7375058823529411,
+  "avg_function_precision": 0.42598725490196077,
+  "avg_function_recall": 0.5468186274509804,
+  "avg_function_f1": 0.4395519607843137,
+  "avg_step_diff": -0.1568627450980392,
+  "std_step_diff": 3.711755737416176,
+  "avg_target_coverage": 0.7794980392156862,
+  "avg_semantic_score": 0.6443774509803921,
+  "avg_summary_similarity": 0.7808950980392158,
+  "avg_step_similarity": 0.5858764705882353,
+  "semantic_evaluated": 102,
+  "pr_scores": [
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/gpt_5-2_evals/ablation_turn/2noise_ChatTTS/pr_788",
+      "pr_number": 788,
+      "repository": "2noise/ChatTTS",
+      "files": {
+        "precision": 0.5,
+        "recall": 1.0,
+        "f1": 0.6667,
+        "predicted_count": 2,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "functions": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "predicted_count": 3,
+        "actual_count": 1,
+        "correct_count": 0
+      },
+      "steps": {
+        "predicted_steps": 3,
+        "actual_steps": 1,
+        "step_diff": 2,
+        "target_coverage": 0.3333,
+        "targets_matched": 1,
+        "targets_total": 3
+      },
+      "semantic": {
+        "summary_similarity": 0.8454,
+        "avg_step_similarity": 0.2586,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Implement Ascend NPU-safe CPU fallback for MelSpectrogram computation (run torchaudio Mel...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Add NPU-specific CPU fallback for DVAE (MelSpectrogram) initialization and checkpoint loa...",
+            "similarity": 0.7759
+          }
+        ],
+        "overall_semantic_score": 0.4346,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/gpt_5-2_evals/ablation_turn/Acly_krita-ai-diffusion/pr_1895",
+      "pr_number": 1895,
+      "repository": "Acly/krita-ai-diffusion",
+      "files": {
+        "precision": 1.0,
+        "recall": 0.6667,
+        "f1": 0.8,
+        "predicted_count": 2,
+        "actual_count": 3,
+        "correct_count": 2
+      },
+      "functions": {
+        "precision": 0.8333,
+        "recall": 0.4545,
+        "f1": 0.5882,
+        "predicted_count": 6,
+        "actual_count": 11,
+        "correct_count": 5
+      },
+      "steps": {
+        "predicted_steps": 6,
+        "actual_steps": 11,
+        "step_diff": -5,
+        "target_coverage": 1.0,
+        "targets_matched": 6,
+        "targets_total": 6
+      },
+      "semantic": {
+        "summary_similarity": 0.7752,
+        "avg_step_similarity": 0.7536,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Introduce a QueueMode enum and migrate the queue setting from boolean `queue_front` to en...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Introduce an enum representing queue insertion behavior (back/front/replace) | Reason: Re...",
+            "similarity": 0.7361
+          },
+          {
+            "pred_idx": 1,
+            "pred_text": "Operation: Apply replace-mode semantics at the batch level: clear queues exactly once before enqueui...",
+            "gt_idx": 5,
+            "gt_text": "Operation: Extend enqueue_jobs to support replace semantics by clearing server/client queues and the...",
+            "similarity": 0.8068
+          },
+          {
+            "pred_idx": 2,
+            "pred_text": "Operation: Update the per-job enqueue to interpret QueueMode (front/back/replace) and pass the corre...",
+            "gt_idx": 6,
+            "gt_text": "Operation: Update job enqueue helper to accept a computed 'front' boolean and pass it to the client ...",
+            "similarity": 0.8188
+          },
+          {
+            "pred_idx": 3,
+            "pred_text": "Operation: Refactor cancel/clear-queue logic so replace-mode can reuse the same mechanism for cleari...",
+            "gt_idx": 7,
+            "gt_text": "Operation: Refactor queued-cancel path to reuse a shared local queued-job clearing routine | Functio...",
+            "similarity": 0.8374
+          },
+          {
+            "pred_idx": 4,
+            "pred_text": "Operation: Replace the boolean queue-position UI with an enum-backed selector that includes the new ...",
+            "gt_idx": 10,
+            "gt_text": "Operation: Update the UI to use an enum-backed queue mode combo and add a ctrl-click-capable Generat...",
+            "similarity": 0.5871
+          },
+          {
+            "pred_idx": 5,
+            "pred_text": "Operation: Update the model binding for the queue mode combobox to read/write the new enum property ...",
+            "gt_idx": 1,
+            "gt_text": "Operation: Replace the persisted model property/signal from boolean queue_front to enum queue_mode |...",
+            "similarity": 0.7354
+          }
+        ],
+        "overall_semantic_score": 0.7601,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/gpt_5-2_evals/ablation_turn/DLR-RM_stable-baselines3/pr_2127",
+      "pr_number": 2127,
+      "repository": "DLR-RM/stable-baselines3",
+      "files": {
+        "precision": 0.5,
+        "recall": 0.3333,
+        "f1": 0.4,
+        "predicted_count": 2,
+        "actual_count": 3,
+        "correct_count": 1
+      },
+      "functions": {
+        "precision": 0.4,
+        "recall": 0.4,
+        "f1": 0.4,
+        "predicted_count": 5,
+        "actual_count": 5,
+        "correct_count": 2
+      },
+      "steps": {
+        "predicted_steps": 5,
+        "actual_steps": 6,
+        "step_diff": -1,
+        "target_coverage": 0.8,
+        "targets_matched": 4,
+        "targets_total": 5
+      },
+      "semantic": {
+        "summary_similarity": 0.7286,
+        "avg_step_similarity": 0.6341,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Add `use_batch_norm` parameter and conditionally insert `nn.BatchNorm2d` layers in each c...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Add a new `use_batch_norm` constructor flag and refactor the CNN block assembly to condit...",
+            "similarity": 0.8923
+          },
+          {
+            "pred_idx": 1,
+            "pred_text": "Operation: Extend `create_mlp` API with a `use_batch_norm: bool = False` (and, if required by the PR...",
+            "gt_idx": 1,
+            "gt_text": "Operation: Extend `create_mlp` with a `use_batch_norm` flag to optionally prepend BatchNorm1d on inp...",
+            "similarity": 0.8476
+          },
+          {
+            "pred_idx": 2,
+            "pred_text": "Operation: Ensure `CombinedExtractor` remains compatible with the new `NatureCNN` signature (and opt...",
+            "gt_idx": 2,
+            "gt_text": "Operation: Add a forward-pass regression test that instantiates `ActorCriticCnnPolicy` for both disc...",
+            "similarity": 0.3637
+          },
+          {
+            "pred_idx": 3,
+            "pred_text": "Operation: Validate and document that `features_extractor_kwargs` safely carries the new `use_batch_...",
+            "gt_idx": 4,
+            "gt_text": "Operation: Add a unit test for `create_mlp(..., use_batch_norm=True)` that checks the initial BatchN...",
+            "similarity": 0.5019
+          },
+          {
+            "pred_idx": 4,
+            "pred_text": "Operation: Ensure feature extractor construction passes `features_extractor_kwargs` through unchange...",
+            "gt_idx": 3,
+            "gt_text": "Operation: Add a targeted unit test that constructs `NatureCNN` with `use_batch_norm=True`, asserts ...",
+            "similarity": 0.5652
+          }
+        ],
+        "overall_semantic_score": 0.6624,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/gpt_5-2_evals/ablation_turn/EleutherAI_lm-evaluation-harness/pr_2940",
+      "pr_number": 2940,
+      "repository": "EleutherAI/lm-evaluation-harness",
+      "files": {
+        "precision": 1.0,
+        "recall": 0.5556,
+        "f1": 0.7143,
+        "predicted_count": 5,
+        "actual_count": 9,
+        "correct_count": 5
+      },
+      "functions": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "predicted_count": 10,
+        "actual_count": 0,
+        "correct_count": 0
+      },
+      "steps": {
+        "predicted_steps": 12,
+        "actual_steps": 9,
+        "step_diff": 3,
+        "target_coverage": 1.0,
+        "targets_matched": 12,
+        "targets_total": 12
+      },
+      "semantic": {
+        "summary_similarity": 0.7686,
+        "avg_step_similarity": 0.5331,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Replace deprecated eval_logger import with stdlib logger initialization (and ensure the f...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Replace deprecated eval_logger import with stdlib logging-based module logger | Reason: T...",
+            "similarity": 0.7491
+          },
+          {
+            "pred_idx": 1,
+            "pred_text": "Operation: Replace deprecated eval_logger import with stdlib logger initialization (and keep error h...",
+            "gt_idx": 8,
+            "gt_text": "Operation: Replace deprecated eval_logger import in shared score utilities with stdlib logging-based...",
+            "similarity": 0.7101
+          },
+          {
+            "pred_idx": 2,
+            "pred_text": "Operation: Replace deprecated eval_logger import with stdlib logger initialization (and keep error h...",
+            "gt_idx": 2,
+            "gt_text": "Operation: Replace deprecated eval_logger import with stdlib logging-based module logger | Reason: K...",
+            "similarity": 0.7033
+          },
+          {
+            "pred_idx": 3,
+            "pred_text": "Operation: Replace deprecated eval_logger import with stdlib logger initialization for Perspective A...",
+            "gt_idx": 4,
+            "gt_text": "Operation: Replace deprecated eval_logger import with stdlib logging-based module logger | Reason: `...",
+            "similarity": 0.7632
+          },
+          {
+            "pred_idx": 4,
+            "pred_text": "Operation: Replace deprecated eval_logger import with stdlib logger initialization; keep per-prompt ...",
+            "gt_idx": 5,
+            "gt_text": "Operation: Remove broken eval_logger import and introduce a module-scoped stdlib logger for score AG...",
+            "similarity": 0.7059
+          },
+          {
+            "pred_idx": 5,
+            "pred_text": "Operation: Replace deprecated eval_logger import with stdlib logger initialization; keep per-option ...",
+            "gt_idx": 1,
+            "gt_text": "Operation: Replace deprecated eval_logger import with stdlib logging-based module logger | Reason: E...",
+            "similarity": 0.6753
+          },
+          {
+            "pred_idx": 9,
+            "pred_text": "Operation: Replace deprecated eval_logger import with stdlib logger initialization; keep non-greedy ...",
+            "gt_idx": 7,
+            "gt_text": "Operation: Remove broken eval_logger import and introduce a module-scoped stdlib logger for MMLU-Pro...",
+            "similarity": 0.7408
+          },
+          {
+            "pred_idx": 10,
+            "pred_text": "Operation: Replace deprecated eval_logger import with stdlib logger initialization; keep per-prompt ...",
+            "gt_idx": 3,
+            "gt_text": "Operation: Fix incorrect logger import path and define module logger via stdlib logging | Reason: Th...",
+            "similarity": 0.6368
+          },
+          {
+            "pred_idx": 11,
+            "pred_text": "Operation: Replace deprecated eval_logger import with stdlib logger initialization; keep non-greedy ...",
+            "gt_idx": 6,
+            "gt_text": "Operation: Remove broken eval_logger import and introduce a module-scoped stdlib logger for score Ma...",
+            "similarity": 0.7128
+          }
+        ],
+        "overall_semantic_score": 0.6038,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/gpt_5-2_evals/ablation_turn/FoundationAgents_OpenManus/pr_1002",
+      "pr_number": 1002,
+      "repository": "FoundationAgents/OpenManus",
+      "files": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "predicted_count": 1,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "functions": {
+        "precision": 0.5,
+        "recall": 1.0,
+        "f1": 0.6667,
+        "predicted_count": 2,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "steps": {
+        "predicted_steps": 2,
+        "actual_steps": 1,
+        "step_diff": 1,
+        "target_coverage": 1.0,
+        "targets_matched": 2,
+        "targets_total": 2
+      },
+      "semantic": {
+        "summary_similarity": 0.8781,
+        "avg_step_similarity": 0.4237,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Change REQUIRED + no-tool-calls behavior to stop cleanly in the decision phase (no hand-o...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Adjust the tool-call gating logic so REQUIRED mode only proceeds when tool calls are pres...",
+            "similarity": 0.8474
+          }
+        ],
+        "overall_semantic_score": 0.56,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/gpt_5-2_evals/ablation_turn/JoeanAmier_XHS-Downloader/pr_237",
+      "pr_number": 237,
+      "repository": "JoeanAmier/XHS-Downloader",
+      "files": {
+        "precision": 0.3333,
+        "recall": 1.0,
+        "f1": 0.5,
+        "predicted_count": 3,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "functions": {
+        "precision": 0.3333,
+        "recall": 1.0,
+        "f1": 0.5,
+        "predicted_count": 3,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "steps": {
+        "predicted_steps": 3,
+        "actual_steps": 1,
+        "step_diff": 2,
+        "target_coverage": 0.6667,
+        "targets_matched": 2,
+        "targets_total": 3
+      },
+      "semantic": {
+        "summary_similarity": 0.7229,
+        "avg_step_similarity": 0.2329,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Refactor app startup to stop querying RichLog during App mount; only install/push screens...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Mount a `RichLog` widget during app startup before any code path calls `query_one(RichLog...",
+            "similarity": 0.6986
+          }
+        ],
+        "overall_semantic_score": 0.3799,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/gpt_5-2_evals/ablation_turn/KwaiVGI_LivePortrait/pr_31",
+      "pr_number": 31,
+      "repository": "KwaiVGI/LivePortrait",
+      "files": {
+        "precision": 1.0,
+        "recall": 0.6667,
+        "f1": 0.8,
+        "predicted_count": 2,
+        "actual_count": 3,
+        "correct_count": 2
+      },
+      "functions": {
+        "precision": 0.5,
+        "recall": 0.5,
+        "f1": 0.5,
+        "predicted_count": 2,
+        "actual_count": 2,
+        "correct_count": 1
+      },
+      "steps": {
+        "predicted_steps": 2,
+        "actual_steps": 3,
+        "step_diff": -1,
+        "target_coverage": 1.0,
+        "targets_matched": 2,
+        "targets_total": 2
+      },
+      "semantic": {
+        "summary_similarity": 0.7457,
+        "avg_step_similarity": 0.741,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Harden FFmpeg audio muxing to support using a driving video as the audio source, handle m...",
+            "gt_idx": 1,
+            "gt_text": "Operation: Implement an ffmpeg-based helper to mux audio from the driving input into a silent render...",
+            "similarity": 0.7633
+          },
+          {
+            "pred_idx": 1,
+            "pred_text": "Operation: After writing generated MP4(s) from frames, detect when `args.driving_info` is a real vid...",
+            "gt_idx": 2,
+            "gt_text": "Operation: Wire audio muxing into the main pipeline outputs (both the concatenated preview and the f...",
+            "similarity": 0.7188
+          }
+        ],
+        "overall_semantic_score": 0.7424,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/gpt_5-2_evals/ablation_turn/ManimCommunity_manim/pr_4251",
+      "pr_number": 4251,
+      "repository": "ManimCommunity/manim",
+      "files": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "predicted_count": 2,
+        "actual_count": 2,
+        "correct_count": 2
+      },
+      "functions": {
+        "precision": 0.4286,
+        "recall": 0.75,
+        "f1": 0.5455,
+        "predicted_count": 7,
+        "actual_count": 4,
+        "correct_count": 3
+      },
+      "steps": {
+        "predicted_steps": 7,
+        "actual_steps": 4,
+        "step_diff": 3,
+        "target_coverage": 1.0,
+        "targets_matched": 7,
+        "targets_total": 7
+      },
+      "semantic": {
+        "summary_similarity": 0.8663,
+        "avg_step_similarity": 0.4794,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Refactor edge instantiation in _add_edge to use keyword start/end and safely merge edge_c...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Refactor edge construction to pass endpoints as keyword arguments for broad Line-subclass...",
+            "similarity": 0.8667
+          },
+          {
+            "pred_idx": 1,
+            "pred_text": "Operation: Align initial edge population with new construction semantics (use start=/end= keywords w...",
+            "gt_idx": 1,
+            "gt_text": "Operation: Update undirected graph edge population logic to instantiate edge_type with `start=`/`end...",
+            "similarity": 0.8253
+          },
+          {
+            "pred_idx": 2,
+            "pred_text": "Operation: Make directed edge population use the same keyword-based start/end construction and prese...",
+            "gt_idx": 2,
+            "gt_text": "Operation: Update directed graph edge population logic to instantiate edge_type with `start=`/`end=`...",
+            "similarity": 0.8398
+          },
+          {
+            "pred_idx": 5,
+            "pred_text": "Operation: Extend add_edges test coverage to include a Line subclass with non-(start,end) positional...",
+            "gt_idx": 3,
+            "gt_text": "Operation: Add regression test ensuring Graph and DiGraph accept `LabeledLine` as `edge_type` and pr...",
+            "similarity": 0.8241
+          }
+        ],
+        "overall_semantic_score": 0.5955,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/gpt_5-2_evals/ablation_turn/Mikubill_sd-webui-controlnet/pr_2952",
+      "pr_number": 2952,
+      "repository": "Mikubill/sd-webui-controlnet",
+      "files": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "predicted_count": 1,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "functions": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "predicted_count": 1,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "steps": {
+        "predicted_steps": 1,
+        "actual_steps": 1,
+        "step_diff": 0,
+        "target_coverage": 1.0,
+        "targets_matched": 1,
+        "targets_total": 1
+      },
+      "semantic": {
+        "summary_similarity": 0.7048,
+        "avg_step_similarity": 0.877,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Quote/escape requirement spec tokens before passing them to pip via launch.run_pip to pre...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Quote pip install specifiers passed to launch.run_pip to prevent shell redirection when r...",
+            "similarity": 0.877
+          }
+        ],
+        "overall_semantic_score": 0.8253,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/gpt_5-2_evals/ablation_turn/NVIDIA_Megatron-LM/pr_1270",
+      "pr_number": 1270,
+      "repository": "NVIDIA/Megatron-LM",
+      "files": {
+        "precision": 0.6,
+        "recall": 0.6,
+        "f1": 0.6,
+        "predicted_count": 5,
+        "actual_count": 5,
+        "correct_count": 3
+      },
+      "functions": {
+        "precision": 0.4286,
+        "recall": 0.4286,
+        "f1": 0.4286,
+        "predicted_count": 7,
+        "actual_count": 7,
+        "correct_count": 3
+      },
+      "steps": {
+        "predicted_steps": 9,
+        "actual_steps": 8,
+        "step_diff": 1,
+        "target_coverage": 0.8889,
+        "targets_matched": 8,
+        "targets_total": 9
+      },
+      "semantic": {
+        "summary_similarity": 0.8353,
+        "avg_step_similarity": 0.636,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Add CLI flag plumbing for z-loss (coefficient, default disabled) | Function: _add_regular...",
+            "gt_idx": 6,
+            "gt_text": "Operation: Add CLI regularization argument to control z-loss strength from the command line | Functi...",
+            "similarity": 0.8122
+          },
+          {
+            "pred_idx": 2,
+            "pred_text": "Operation: Validate z-loss configuration and guard against invalid values/interactions | Function: v...",
+            "gt_idx": 4,
+            "gt_text": "Operation: Add transformer configuration field for z-loss weighting (as implemented in this PR, dupl...",
+            "similarity": 0.524
+          },
+          {
+            "pred_idx": 3,
+            "pred_text": "Operation: Compute a tensor-parallel-correct z-loss term alongside cross entropy in the unfused voca...",
+            "gt_idx": 3,
+            "gt_text": "Operation: Expose a public API parameter for z-loss weight in the vocab-parallel cross entropy wrapp...",
+            "similarity": 0.6574
+          },
+          {
+            "pred_idx": 4,
+            "pred_text": "Operation: Extend unfused autograd forward to return or stash z-loss-related values needed for loggi...",
+            "gt_idx": 1,
+            "gt_text": "Operation: Extend the tensor-parallel cross entropy autograd forward pass to compute z-loss, clone d...",
+            "similarity": 0.8097
+          },
+          {
+            "pred_idx": 5,
+            "pred_text": "Operation: Add z-loss support to the fused cross-entropy calculation path (feature parity with unfus...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Wire z-loss support into the language model loss computation and change return signature ...",
+            "similarity": 0.7469
+          },
+          {
+            "pred_idx": 6,
+            "pred_text": "Operation: Extend fused autograd forward to surface z-loss metrics while preserving backward compati...",
+            "gt_idx": 2,
+            "gt_text": "Operation: Update the tensor-parallel cross entropy backward pass to incorporate the z-loss gradient...",
+            "similarity": 0.7439
+          },
+          {
+            "pred_idx": 7,
+            "pred_text": "Operation: Augment GPT pretraining loss_func to form total_loss = CE + z-loss and log CE vs z-loss s...",
+            "gt_idx": 7,
+            "gt_text": "Operation: Update GPT pretraining loss function to consume `(total_loss, extra_logs)` output and opt...",
+            "similarity": 0.7594
+          },
+          {
+            "pred_idx": 8,
+            "pred_text": "Operation: Add optional z-loss regularization + separate CE/z-loss logging to inference/KD GPT loss ...",
+            "gt_idx": 5,
+            "gt_text": "Operation: Add CLI logging flag to optionally emit CE and z-loss metrics alongside total loss | Func...",
+            "similarity": 0.6702
+          }
+        ],
+        "overall_semantic_score": 0.6958,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/gpt_5-2_evals/ablation_turn/NVIDIA_NeMo/pr_14200",
+      "pr_number": 14200,
+      "repository": "NVIDIA/NeMo",
+      "files": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "predicted_count": 2,
+        "actual_count": 2,
+        "correct_count": 2
+      },
+      "functions": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "predicted_count": 2,
+        "actual_count": 3,
+        "correct_count": 0
+      },
+      "steps": {
+        "predicted_steps": 2,
+        "actual_steps": 3,
+        "step_diff": -1,
+        "target_coverage": 1.0,
+        "targets_matched": 2,
+        "targets_total": 2
+      },
+      "semantic": {
+        "summary_similarity": 0.7373,
+        "avg_step_similarity": 0.8117,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Align Specter reranker dataset creation with preprocessing output by switching the datase...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Adjust Specter preprocessing output schema to emit the new question field name | Function...",
+            "similarity": 0.7934
+          },
+          {
+            "pred_idx": 1,
+            "pred_text": "Operation: Update Specter reranker datamodule unit test expectations to the new question/query key a...",
+            "gt_idx": 2,
+            "gt_text": "Operation: Update the unit test to assert the new output key | Function: test_specter_reranker_datam...",
+            "similarity": 0.8299
+          }
+        ],
+        "overall_semantic_score": 0.7894,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/gpt_5-2_evals/ablation_turn/Netflix_metaflow/pr_2468",
+      "pr_number": 2468,
+      "repository": "Netflix/metaflow",
+      "files": {
+        "precision": 0.5,
+        "recall": 1.0,
+        "f1": 0.6667,
+        "predicted_count": 2,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "functions": {
+        "precision": 0.3333,
+        "recall": 0.5,
+        "f1": 0.4,
+        "predicted_count": 3,
+        "actual_count": 2,
+        "correct_count": 1
+      },
+      "steps": {
+        "predicted_steps": 3,
+        "actual_steps": 2,
+        "step_diff": 1,
+        "target_coverage": 0.3333,
+        "targets_matched": 1,
+        "targets_total": 3
+      },
+      "semantic": {
+        "summary_similarity": 0.7965,
+        "avg_step_similarity": 0.4478,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Preserve and expose accurate CLI command metadata/signatures for dynamically injected Run...",
+            "gt_idx": 1,
+            "gt_text": "Operation: Fix injected command method metadata by using the subcommand class' constructor docstring...",
+            "similarity": 0.7403
+          },
+          {
+            "pred_idx": 2,
+            "pred_text": "Operation: Allow function stub generation to accept an override signature/callable for injected Runn...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Import Python's introspection helper to enable signature rewriting for injected runner su...",
+            "similarity": 0.6033
+          }
+        ],
+        "overall_semantic_score": 0.5524,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/gpt_5-2_evals/ablation_turn/OctoPrint_OctoPrint/pr_5006",
+      "pr_number": 5006,
+      "repository": "OctoPrint/OctoPrint",
+      "files": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "predicted_count": 1,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "functions": {
+        "precision": 1.0,
+        "recall": 0.5,
+        "f1": 0.6667,
+        "predicted_count": 1,
+        "actual_count": 2,
+        "correct_count": 1
+      },
+      "steps": {
+        "predicted_steps": 1,
+        "actual_steps": 2,
+        "step_diff": -1,
+        "target_coverage": 1.0,
+        "targets_matched": 1,
+        "targets_total": 1
+      },
+      "semantic": {
+        "summary_similarity": 0.8259,
+        "avg_step_similarity": 0.8501,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Update LAN range subnet extraction to accept netifaces2 address dictionaries (use `netmas...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Update the netifaces address dictionary key used to derive the interface prefix/netmask |...",
+            "similarity": 0.8501
+          }
+        ],
+        "overall_semantic_score": 0.8428,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/gpt_5-2_evals/ablation_turn/PrefectHQ_prefect/pr_18463",
+      "pr_number": 18463,
+      "repository": "PrefectHQ/prefect",
+      "files": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "predicted_count": 1,
+        "actual_count": 2,
+        "correct_count": 0
+      },
+      "functions": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "predicted_count": 4,
+        "actual_count": 9,
+        "correct_count": 0
+      },
+      "steps": {
+        "predicted_steps": 4,
+        "actual_steps": 9,
+        "step_diff": -5,
+        "target_coverage": 0.0,
+        "targets_matched": 0,
+        "targets_total": 4
+      },
+      "semantic": {
+        "summary_similarity": 0.6187,
+        "avg_step_similarity": 0.3897,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Harden git commit message extraction to handle empty/no-commit repositories and git failu...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Add an in-test flow definition to serve/execute instead of relying on the external sample...",
+            "similarity": 0.3857
+          },
+          {
+            "pred_idx": 1,
+            "pred_text": "Operation: Normalize `version_type` inputs and fix enum comparisons to ensure correct inference for ...",
+            "gt_idx": 2,
+            "gt_text": "Operation: Adjust the deployment entrypoint assertion in `test_flow_serve_cli_creates_deployment` to...",
+            "similarity": 0.463
+          },
+          {
+            "pred_idx": 2,
+            "pred_text": "Operation: Make git-based version inference resilient when git metadata is missing (no remote, not a...",
+            "gt_idx": 7,
+            "gt_text": "Operation: Update `test_flow_serve_cli_accepts_metadata_fields` to pass the absolute entrypoint to t...",
+            "similarity": 0.351
+          },
+          {
+            "pred_idx": 3,
+            "pred_text": "Operation: Validate GitHub environment inputs before constructing repo/commit URLs to avoid malforme...",
+            "gt_idx": 1,
+            "gt_text": "Operation: Update the `prefect flow serve` invocation in `test_flow_serve_cli_creates_deployment` to...",
+            "similarity": 0.3591
+          }
+        ],
+        "overall_semantic_score": 0.4584,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/gpt_5-2_evals/ablation_turn/SWE-agent_SWE-agent/pr_1155",
+      "pr_number": 1155,
+      "repository": "SWE-agent/SWE-agent",
+      "files": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "predicted_count": 1,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "functions": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "predicted_count": 1,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "steps": {
+        "predicted_steps": 1,
+        "actual_steps": 1,
+        "step_diff": 0,
+        "target_coverage": 1.0,
+        "targets_matched": 1,
+        "targets_total": 1
+      },
+      "semantic": {
+        "summary_similarity": 0.8146,
+        "avg_step_similarity": 0.9286,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Fix commit message interpolation by switching to f-strings before applying shlex.quote (a...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Fix commit message construction by switching the commit message templates to f-strings be...",
+            "similarity": 0.9286
+          }
+        ],
+        "overall_semantic_score": 0.8944,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/gpt_5-2_evals/ablation_turn/SYSTRAN_faster-whisper/pr_1134",
+      "pr_number": 1134,
+      "repository": "SYSTRAN/faster-whisper",
+      "files": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "predicted_count": 1,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "functions": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "predicted_count": 1,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "steps": {
+        "predicted_steps": 1,
+        "actual_steps": 1,
+        "step_diff": 0,
+        "target_coverage": 1.0,
+        "targets_matched": 1,
+        "targets_total": 1
+      },
+      "semantic": {
+        "summary_similarity": 0.7387,
+        "avg_step_similarity": 0.8726,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Change the default value of `language_detection_threshold` in the `transcribe` signature ...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Change the default `language_detection_threshold` parameter to `0.5` and simplify the ear...",
+            "similarity": 0.8726
+          }
+        ],
+        "overall_semantic_score": 0.8324,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/gpt_5-2_evals/ablation_turn/Significant-Gravitas_AutoGPT/pr_10395",
+      "pr_number": 10395,
+      "repository": "Significant-Gravitas/AutoGPT",
+      "files": {
+        "precision": 0.6,
+        "recall": 0.3,
+        "f1": 0.4,
+        "predicted_count": 5,
+        "actual_count": 10,
+        "correct_count": 3
+      },
+      "functions": {
+        "precision": 0.2222,
+        "recall": 0.0909,
+        "f1": 0.129,
+        "predicted_count": 9,
+        "actual_count": 22,
+        "correct_count": 2
+      },
+      "steps": {
+        "predicted_steps": 9,
+        "actual_steps": 23,
+        "step_diff": -14,
+        "target_coverage": 0.5556,
+        "targets_matched": 5,
+        "targets_total": 9
+      },
+      "semantic": {
+        "summary_similarity": 0.7677,
+        "avg_step_similarity": 0.7398,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Add Redis publish payload sizing + truncation before sending messages (sync path) | Funct...",
+            "gt_idx": 9,
+            "gt_text": "Operation: Implement synchronous truncation-aware publish helper that trims execution event fields b...",
+            "similarity": 0.8217
+          },
+          {
+            "pred_idx": 1,
+            "pred_text": "Operation: Mirror the same payload sizing + truncation behavior for async Redis publishing | Functio...",
+            "gt_idx": 12,
+            "gt_text": "Operation: Implement async truncation-aware publish helper that trims execution event fields before ...",
+            "similarity": 0.8542
+          },
+          {
+            "pred_idx": 2,
+            "pred_text": "Operation: Route execution-update publishing through truncation-aware event bus and keep update sche...",
+            "gt_idx": 8,
+            "gt_text": "Operation: Route synchronous graph execution update publishing through a truncation-aware publish he...",
+            "similarity": 0.7843
+          },
+          {
+            "pred_idx": 3,
+            "pred_text": "Operation: Apply the same truncation-aware update publishing and schema discipline for async manager...",
+            "gt_idx": 10,
+            "gt_text": "Operation: Route async node execution update publishing through the truncation-aware async publish h...",
+            "similarity": 0.7682
+          },
+          {
+            "pred_idx": 4,
+            "pred_text": "Operation: Harden manager cleanup to avoid hangs and ensure Redis/pool shutdown is bounded and consi...",
+            "gt_idx": 16,
+            "gt_text": "Operation: Batch update node execution statuses to TERMINATED and publish per-node termination event...",
+            "similarity": 0.5375
+          },
+          {
+            "pred_idx": 5,
+            "pred_text": "Operation: Improve graph execution termination/cancellation handling and ensure final status + event...",
+            "gt_idx": 15,
+            "gt_text": "Operation: Refactor stop logic to break out on queued/incomplete and poll briefly on running, then f...",
+            "similarity": 0.782
+          },
+          {
+            "pred_idx": 6,
+            "pred_text": "Operation: Add bounded cancellation waiting with clearer timeout semantics for inflight node tasks |...",
+            "gt_idx": 13,
+            "gt_text": "Operation: Reduce the default wait timeout for stopping graph executions to improve responsiveness |...",
+            "similarity": 0.5599
+          },
+          {
+            "pred_idx": 7,
+            "pred_text": "Operation: Extend continuous_retry to support async callables while keeping sync behavior unchanged ...",
+            "gt_idx": 20,
+            "gt_text": "Operation: Enhance the continuous_retry decorator to support both sync and async callables | Functio...",
+            "similarity": 0.8203
+          },
+          {
+            "pred_idx": 8,
+            "pred_text": "Operation: Optimize spreadsheet reading to avoid full materialization and fix skip_columns/header lo...",
+            "gt_idx": 2,
+            "gt_text": "Operation: Change the Spreadsheet block generator logic to conditionally yield either per-row output...",
+            "similarity": 0.7298
+          }
+        ],
+        "overall_semantic_score": 0.7482,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/gpt_5-2_evals/ablation_turn/THUDM_CogVideo/pr_383",
+      "pr_number": 383,
+      "repository": "THUDM/CogVideo",
+      "files": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "predicted_count": 1,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "functions": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "predicted_count": 1,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "steps": {
+        "predicted_steps": 1,
+        "actual_steps": 1,
+        "step_diff": 0,
+        "target_coverage": 1.0,
+        "targets_matched": 1,
+        "targets_total": 1
+      },
+      "semantic": {
+        "summary_similarity": 0.9097,
+        "avg_step_similarity": 0.859,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Introduce a diffusers-version-compatible import shim so the script uses `free_memory` whe...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Replace deprecated diffusers memory-cleanup API usage by importing `free_memory` and call...",
+            "similarity": 0.859
+          }
+        ],
+        "overall_semantic_score": 0.8742,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/gpt_5-2_evals/ablation_turn/TheAlgorithms_Python/pr_12679",
+      "pr_number": 12679,
+      "repository": "TheAlgorithms/Python",
+      "files": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "predicted_count": 1,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "functions": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "predicted_count": 1,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "steps": {
+        "predicted_steps": 1,
+        "actual_steps": 1,
+        "step_diff": 0,
+        "target_coverage": 1.0,
+        "targets_matched": 1,
+        "targets_total": 1
+      },
+      "semantic": {
+        "summary_similarity": 0.8755,
+        "avg_step_similarity": 0.8128,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Refactor overtime calculation to explicitly compute regular pay for up to the threshold h...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Fix overtime calculation by separating regular vs overtime hours and applying the correct...",
+            "similarity": 0.8128
+          }
+        ],
+        "overall_semantic_score": 0.8316,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/gpt_5-2_evals/ablation_turn/TomSchimansky_CustomTkinter/pr_2644",
+      "pr_number": 2644,
+      "repository": "TomSchimansky/CustomTkinter",
+      "files": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "predicted_count": 1,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "functions": {
+        "precision": 0.5,
+        "recall": 0.6667,
+        "f1": 0.5714,
+        "predicted_count": 8,
+        "actual_count": 6,
+        "correct_count": 4
+      },
+      "steps": {
+        "predicted_steps": 8,
+        "actual_steps": 6,
+        "step_diff": 2,
+        "target_coverage": 1.0,
+        "targets_matched": 8,
+        "targets_total": 8
+      },
+      "semantic": {
+        "summary_similarity": 0.8986,
+        "avg_step_similarity": 0.5382,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Initialize and wire up textvariable trace bookkeeping + new callback-control flag, and en...",
+            "gt_idx": 1,
+            "gt_text": "Operation: Add a re-entrancy/guard flag to suppress textvariable trace callbacks during internal pla...",
+            "similarity": 0.7752
+          },
+          {
+            "pred_idx": 2,
+            "pred_text": "Operation: Update the textvariable trace handler to honor the callback-control flag/guard and to dri...",
+            "gt_idx": 2,
+            "gt_text": "Operation: Gate the textvariable trace handler and restore real text when placeholder is active and ...",
+            "similarity": 0.8392
+          },
+          {
+            "pred_idx": 3,
+            "pred_text": "Operation: Fix placeholder activation condition to allow placeholder when textvariable is set but em...",
+            "gt_idx": 3,
+            "gt_text": "Operation: Refine placeholder activation conditions and wrap placeholder insertion with callback blo...",
+            "similarity": 0.7789
+          },
+          {
+            "pred_idx": 4,
+            "pred_text": "Operation: Wrap placeholder deactivation edits with callback suppression so removing placeholder tex...",
+            "gt_idx": 4,
+            "gt_text": "Operation: Wrap placeholder removal with callback blocking to avoid trace recursion while clearing p...",
+            "similarity": 0.8145
+          },
+          {
+            "pred_idx": 6,
+            "pred_text": "Operation: Ensure insert() deactivates placeholder using suppression guard and then performs inserti...",
+            "gt_idx": 5,
+            "gt_text": "Operation: Update focus event handlers to set `_is_focused` before invoking placeholder transitions ...",
+            "similarity": 0.4909
+          },
+          {
+            "pred_idx": 7,
+            "pred_text": "Operation: Ensure delete() interactions with placeholder are consistent with textvariable usage: del...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Initialize focus state to not-focused so placeholder activation can be driven correctly b...",
+            "similarity": 0.6071
+          }
+        ],
+        "overall_semantic_score": 0.6463,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/gpt_5-2_evals/ablation_turn/TransformerOptimus_SuperAGI/pr_1304",
+      "pr_number": 1304,
+      "repository": "TransformerOptimus/SuperAGI",
+      "files": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "predicted_count": 1,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "functions": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "predicted_count": 1,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "steps": {
+        "predicted_steps": 1,
+        "actual_steps": 1,
+        "step_diff": 0,
+        "target_coverage": 1.0,
+        "targets_matched": 1,
+        "targets_total": 1
+      },
+      "semantic": {
+        "summary_similarity": 0.7254,
+        "avg_step_similarity": 0.7174,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Fix step4 creation to use keyword args (remove extra positional arg) and make step4 a pro...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Update the recruitment workflow definition by adjusting step tool usage, instructions, an...",
+            "similarity": 0.7174
+          }
+        ],
+        "overall_semantic_score": 0.7198,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/gpt_5-2_evals/ablation_turn/XiaoMi_ha_xiaomi_home/pr_1264",
+      "pr_number": 1264,
+      "repository": "XiaoMi/ha_xiaomi_home",
+      "files": {
+        "precision": 0.3333,
+        "recall": 1.0,
+        "f1": 0.5,
+        "predicted_count": 3,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "functions": {
+        "precision": 0.25,
+        "recall": 1.0,
+        "f1": 0.4,
+        "predicted_count": 4,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "steps": {
+        "predicted_steps": 4,
+        "actual_steps": 1,
+        "step_diff": 3,
+        "target_coverage": 0.25,
+        "targets_matched": 1,
+        "targets_total": 4
+      },
+      "semantic": {
+        "summary_similarity": 0.7624,
+        "avg_step_similarity": 0.21,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Gate per-device cloud state subscriptions to skip BLE DIDs and force BLE cached availabil...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Add early-return guard to skip subscribing to MIoT cloud online/offline state broadcasts ...",
+            "similarity": 0.8398
+          }
+        ],
+        "overall_semantic_score": 0.3757,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/gpt_5-2_evals/ablation_turn/Zulko_moviepy/pr_2195",
+      "pr_number": 2195,
+      "repository": "Zulko/moviepy",
+      "files": {
+        "precision": 1.0,
+        "recall": 0.6667,
+        "f1": 0.8,
+        "predicted_count": 2,
+        "actual_count": 3,
+        "correct_count": 2
+      },
+      "functions": {
+        "precision": 0.2,
+        "recall": 1.0,
+        "f1": 0.3333,
+        "predicted_count": 5,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "steps": {
+        "predicted_steps": 5,
+        "actual_steps": 3,
+        "step_diff": 2,
+        "target_coverage": 1.0,
+        "targets_matched": 5,
+        "targets_total": 5
+      },
+      "semantic": {
+        "summary_similarity": 0.7858,
+        "avg_step_similarity": 0.416,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Extend ffmpeg stderr parsing to detect video rotation from Display Matrix side-data (in a...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Extend ffmpeg output parsing to extract rotation from the `displaymatrix` metadata line a...",
+            "similarity": 0.9209
+          },
+          {
+            "pred_idx": 2,
+            "pred_text": "Operation: Ensure ffmpeg invocation/collection in info parsing preserves the lines needed for displa...",
+            "gt_idx": 1,
+            "gt_text": "Operation: Pin the required Pillow dependency version to 9.5.0 in the test/install requirements | Re...",
+            "similarity": 0.2917
+          },
+          {
+            "pred_idx": 3,
+            "pred_text": "Operation: Update the duration expectation in the ffmpeg reader test to match the real duration repo...",
+            "gt_idx": 2,
+            "gt_text": "Operation: Update the expected decoded duration value in the ffmpeg reader test to match the actual ...",
+            "similarity": 0.8675
+          }
+        ],
+        "overall_semantic_score": 0.5269,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/gpt_5-2_evals/ablation_turn/allenai_olmocr/pr_165",
+      "pr_number": 165,
+      "repository": "allenai/olmocr",
+      "files": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "predicted_count": 1,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "functions": {
+        "precision": 0.5,
+        "recall": 1.0,
+        "f1": 0.6667,
+        "predicted_count": 2,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "steps": {
+        "predicted_steps": 2,
+        "actual_steps": 1,
+        "step_diff": 1,
+        "target_coverage": 1.0,
+        "targets_matched": 2,
+        "targets_total": 2
+      },
+      "semantic": {
+        "summary_similarity": 0.6872,
+        "avg_step_similarity": 0.3848,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Refactor the core converter into a callable `jsonl_to_markdown(...)` function that stream...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Fix and enhance the JSONL-to-Markdown conversion by switching to pathlib, using 1-based l...",
+            "similarity": 0.7696
+          }
+        ],
+        "overall_semantic_score": 0.4755,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/gpt_5-2_evals/ablation_turn/angr_angr/pr_5479",
+      "pr_number": 5479,
+      "repository": "angr/angr",
+      "files": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "predicted_count": 1,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "functions": {
+        "precision": 0.5,
+        "recall": 0.6667,
+        "f1": 0.5714,
+        "predicted_count": 4,
+        "actual_count": 3,
+        "correct_count": 2
+      },
+      "steps": {
+        "predicted_steps": 4,
+        "actual_steps": 3,
+        "step_diff": 1,
+        "target_coverage": 1.0,
+        "targets_matched": 4,
+        "targets_total": 4
+      },
+      "semantic": {
+        "summary_similarity": 0.6829,
+        "avg_step_similarity": 0.6013,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Attach the calling convention arch to the synthesized implicit sret/outparam pointer type...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Fix `arg_session` to attach the current architecture to the implicit out-param `void*` ty...",
+            "similarity": 0.8677
+          },
+          {
+            "pred_idx": 1,
+            "pred_text": "Operation: Audit and fix any similar implicit-outparam construction in return value handling by ensu...",
+            "gt_idx": 1,
+            "gt_text": "Operation: Fix `return_val` to attach the current architecture to the synthesized `void*` return poi...",
+            "similarity": 0.8481
+          },
+          {
+            "pred_idx": 2,
+            "pred_text": "Operation: Optionally add a defensive normalization in SysV AMD64 next_arg() for any arch-less arg t...",
+            "gt_idx": 2,
+            "gt_text": "Operation: Fix the fallback return type selection to ensure the chosen `void*` type has the current ...",
+            "similarity": 0.6894
+          }
+        ],
+        "overall_semantic_score": 0.6258,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/gpt_5-2_evals/ablation_turn/apache_tvm/pr_18102",
+      "pr_number": 18102,
+      "repository": "apache/tvm",
+      "files": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "predicted_count": 1,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "functions": {
+        "precision": 0.5,
+        "recall": 0.5,
+        "f1": 0.5,
+        "predicted_count": 2,
+        "actual_count": 2,
+        "correct_count": 1
+      },
+      "steps": {
+        "predicted_steps": 2,
+        "actual_steps": 2,
+        "step_diff": 0,
+        "target_coverage": 1.0,
+        "targets_matched": 2,
+        "targets_total": 2
+      },
+      "semantic": {
+        "summary_similarity": 0.8331,
+        "avg_step_similarity": 0.8021,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Fix LongRoPE ext_factors buffer shape to use rotary_dim instead of head_dim in the LongRo...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Fix LongRope scaling buffer shape to use the actual rotary dimension | Function: fused_ro...",
+            "similarity": 0.8959
+          },
+          {
+            "pred_idx": 1,
+            "pred_text": "Operation: Audit and document/align ext_factors indexing assumptions in LongRoPE frequency computati...",
+            "gt_idx": 1,
+            "gt_text": "Operation: Update the `ext_factors` T.Buffer annotation from `(head_dim // 2,)` to `(rotary_dim // 2...",
+            "similarity": 0.7083
+          }
+        ],
+        "overall_semantic_score": 0.8114,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/gpt_5-2_evals/ablation_turn/assafelovic_gpt-researcher/pr_1407",
+      "pr_number": 1407,
+      "repository": "assafelovic/gpt-researcher",
+      "files": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "predicted_count": 1,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "functions": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "predicted_count": 1,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "steps": {
+        "predicted_steps": 1,
+        "actual_steps": 1,
+        "step_diff": 0,
+        "target_coverage": 1.0,
+        "targets_matched": 1,
+        "targets_total": 1
+      },
+      "semantic": {
+        "summary_similarity": 0.8521,
+        "avg_step_similarity": 0.9068,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Fix `scrape` to always return a 3-tuple and correct its return type annotation/docstring ...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Fix `scrape` to always return a 3-tuple and correct its return type annotation | Function...",
+            "similarity": 0.9068
+          }
+        ],
+        "overall_semantic_score": 0.8904,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/gpt_5-2_evals/ablation_turn/babysor_MockingBird/pr_988",
+      "pr_number": 988,
+      "repository": "babysor/MockingBird",
+      "files": {
+        "precision": 0.5,
+        "recall": 1.0,
+        "f1": 0.6667,
+        "predicted_count": 2,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "functions": {
+        "precision": 0.3333,
+        "recall": 1.0,
+        "f1": 0.5,
+        "predicted_count": 3,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "steps": {
+        "predicted_steps": 3,
+        "actual_steps": 1,
+        "step_diff": 2,
+        "target_coverage": 0.6667,
+        "targets_matched": 2,
+        "targets_total": 3
+      },
+      "semantic": {
+        "summary_similarity": 0.7321,
+        "avg_step_similarity": 0.2803,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Fix argument mismatch and path shadowing in the per-utterance processing loop (ensure cor...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Fix output path handling in `preprocess_general` by separating input `wav_fpath` from out...",
+            "similarity": 0.8409
+          }
+        ],
+        "overall_semantic_score": 0.4158,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/gpt_5-2_evals/ablation_turn/borgbackup_borg/pr_8861",
+      "pr_number": 8861,
+      "repository": "borgbackup/borg",
+      "files": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "predicted_count": 1,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "functions": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "predicted_count": 1,
+        "actual_count": 1,
+        "correct_count": 0
+      },
+      "steps": {
+        "predicted_steps": 1,
+        "actual_steps": 1,
+        "step_diff": 0,
+        "target_coverage": 1.0,
+        "targets_matched": 1,
+        "targets_total": 1
+      },
+      "semantic": {
+        "summary_similarity": 0.7719,
+        "avg_step_similarity": 0.7647,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Stabilize timestamp-dependent operations by enforcing a measurable mtime/ctime delta befo...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Add a delay before touching a file to ensure its mtime changes on filesystems with coarse...",
+            "similarity": 0.7647
+          }
+        ],
+        "overall_semantic_score": 0.7669,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/gpt_5-2_evals/ablation_turn/chengazhen_cursor-auto-free/pr_184",
+      "pr_number": 184,
+      "repository": "chengazhen/cursor-auto-free",
+      "files": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "predicted_count": 1,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "functions": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "predicted_count": 1,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "steps": {
+        "predicted_steps": 1,
+        "actual_steps": 1,
+        "step_diff": 0,
+        "target_coverage": 1.0,
+        "targets_matched": 1,
+        "targets_total": 1
+      },
+      "semantic": {
+        "summary_similarity": 0.7991,
+        "avg_step_similarity": 0.7702,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Implement env-file selection and copy logic that prefers local .env over .env.example (wi...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Update the build process to prefer copying a local `.env` file into the build output, fal...",
+            "similarity": 0.7702
+          }
+        ],
+        "overall_semantic_score": 0.7789,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/gpt_5-2_evals/ablation_turn/confident-ai_deepeval/pr_1706",
+      "pr_number": 1706,
+      "repository": "confident-ai/deepeval",
+      "files": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "predicted_count": 1,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "functions": {
+        "precision": 0.25,
+        "recall": 0.5,
+        "f1": 0.3333,
+        "predicted_count": 4,
+        "actual_count": 2,
+        "correct_count": 1
+      },
+      "steps": {
+        "predicted_steps": 4,
+        "actual_steps": 2,
+        "step_diff": 2,
+        "target_coverage": 1.0,
+        "targets_matched": 4,
+        "targets_total": 4
+      },
+      "semantic": {
+        "summary_similarity": 0.6626,
+        "avg_step_similarity": 0.2388,
+        "step_matches": [
+          {
+            "pred_idx": 1,
+            "pred_text": "Operation: Mirror the sync normalization logic in the async docs pipeline: after awaiting context ge...",
+            "gt_idx": 1,
+            "gt_text": "Operation: Reformat the updated conditional expression to match Black formatting | Reason: After add...",
+            "similarity": 0.3145
+          },
+          {
+            "pred_idx": 3,
+            "pred_text": "Operation: Fix async index shadowing and unsafe indexing: preserve a dedicated `context_index` for s...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Add bounds-checking when selecting a source_file entry to avoid IndexError | Function: pr...",
+            "similarity": 0.6406
+          }
+        ],
+        "overall_semantic_score": 0.3659,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/gpt_5-2_evals/ablation_turn/cython_cython/pr_6987",
+      "pr_number": 6987,
+      "repository": "cython/cython",
+      "files": {
+        "precision": 0.5,
+        "recall": 1.0,
+        "f1": 0.6667,
+        "predicted_count": 2,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "functions": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "predicted_count": 3,
+        "actual_count": 0,
+        "correct_count": 0
+      },
+      "steps": {
+        "predicted_steps": 3,
+        "actual_steps": 1,
+        "step_diff": 2,
+        "target_coverage": 0.6667,
+        "targets_matched": 2,
+        "targets_total": 3
+      },
+      "semantic": {
+        "summary_similarity": 0.856,
+        "avg_step_similarity": 0.2899,
+        "step_matches": [
+          {
+            "pred_idx": 1,
+            "pred_text": "Operation: Fix the builtin-method declaration for `bytes.join` so its `CFuncType.return_type` is `by...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Correct the Cython builtin signature metadata for `bytes.join()` so its inferred return t...",
+            "similarity": 0.8697
+          }
+        ],
+        "overall_semantic_score": 0.4597,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/gpt_5-2_evals/ablation_turn/darrenburns_posting/pr_243",
+      "pr_number": 243,
+      "repository": "darrenburns/posting",
+      "files": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "predicted_count": 1,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "functions": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "predicted_count": 1,
+        "actual_count": 1,
+        "correct_count": 0
+      },
+      "steps": {
+        "predicted_steps": 1,
+        "actual_steps": 1,
+        "step_diff": 0,
+        "target_coverage": 1.0,
+        "targets_matched": 1,
+        "targets_total": 1
+      },
+      "semantic": {
+        "summary_similarity": 0.8131,
+        "avg_step_similarity": 0.7152,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Render request descriptions as plain text (no Rich/Textual markup parsing) by updating th...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Disable markup parsing for the request description widget by setting `markup=False` on th...",
+            "similarity": 0.7152
+          }
+        ],
+        "overall_semantic_score": 0.7446,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/gpt_5-2_evals/ablation_turn/datalab-to_marker/pr_498",
+      "pr_number": 498,
+      "repository": "datalab-to/marker",
+      "files": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "predicted_count": 1,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "functions": {
+        "precision": 0.5,
+        "recall": 1.0,
+        "f1": 0.6667,
+        "predicted_count": 2,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "steps": {
+        "predicted_steps": 2,
+        "actual_steps": 1,
+        "step_diff": 1,
+        "target_coverage": 1.0,
+        "targets_matched": 2,
+        "targets_total": 2
+      },
+      "semantic": {
+        "summary_similarity": 0.699,
+        "avg_step_similarity": 0.442,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Update OCR error detection text construction to preserve line boundaries and remove chara...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Refactor OCR error detection input construction to join provider lines with newline separ...",
+            "similarity": 0.884
+          }
+        ],
+        "overall_semantic_score": 0.5191,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/gpt_5-2_evals/ablation_turn/encode_django-rest-framework/pr_9710",
+      "pr_number": 9710,
+      "repository": "encode/django-rest-framework",
+      "files": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "predicted_count": 2,
+        "actual_count": 2,
+        "correct_count": 2
+      },
+      "functions": {
+        "precision": 0.5,
+        "recall": 0.25,
+        "f1": 0.3333,
+        "predicted_count": 2,
+        "actual_count": 4,
+        "correct_count": 1
+      },
+      "steps": {
+        "predicted_steps": 2,
+        "actual_steps": 4,
+        "step_diff": -2,
+        "target_coverage": 1.0,
+        "targets_matched": 2,
+        "targets_total": 2
+      },
+      "semantic": {
+        "summary_similarity": 0.8278,
+        "avg_step_similarity": 0.8252,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Prevent uniqueness processing from generating a HiddenField that overwrites an explicitly...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Update uniqueness metadata generation to detect declared SerializerMethodFields and exclu...",
+            "similarity": 0.8767
+          },
+          {
+            "pred_idx": 1,
+            "pred_text": "Operation: Add regression coverage ensuring a SerializerMethodField named like a unique_together/Uni...",
+            "gt_idx": 3,
+            "gt_text": "Operation: Add a regression test asserting the field remains a SerializerMethodField and uniqueness ...",
+            "similarity": 0.7737
+          }
+        ],
+        "overall_semantic_score": 0.826,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/gpt_5-2_evals/ablation_turn/eosphoros-ai_DB-GPT/pr_2778",
+      "pr_number": 2778,
+      "repository": "eosphoros-ai/DB-GPT",
+      "files": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "predicted_count": 2,
+        "actual_count": 1,
+        "correct_count": 0
+      },
+      "functions": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "predicted_count": 3,
+        "actual_count": 0,
+        "correct_count": 0
+      },
+      "steps": {
+        "predicted_steps": 3,
+        "actual_steps": 1,
+        "step_diff": 2,
+        "target_coverage": 0.0,
+        "targets_matched": 0,
+        "targets_total": 3
+      },
+      "semantic": {
+        "summary_similarity": 0.7444,
+        "avg_step_similarity": 0.2676,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Tighten PlanManager ProfileConfig prompt to explicitly forbid direct tool calls (EN/ZH), ...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Update the default Plan Manager (Planner) prompt template to explicitly forbid direct too...",
+            "similarity": 0.8027
+          }
+        ],
+        "overall_semantic_score": 0.4106,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/gpt_5-2_evals/ablation_turn/eternnoir_pyTelegramBotAPI/pr_2435",
+      "pr_number": 2435,
+      "repository": "eternnoir/pyTelegramBotAPI",
+      "files": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "predicted_count": 2,
+        "actual_count": 2,
+        "correct_count": 2
+      },
+      "functions": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "predicted_count": 2,
+        "actual_count": 2,
+        "correct_count": 0
+      },
+      "steps": {
+        "predicted_steps": 2,
+        "actual_steps": 2,
+        "step_diff": 0,
+        "target_coverage": 1.0,
+        "targets_matched": 2,
+        "targets_total": 2
+      },
+      "semantic": {
+        "summary_similarity": 0.7037,
+        "avg_step_similarity": 0.7,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Locate and correct the `subscription_period` parameter description in the synchronous wra...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Fix the Sphinx/RST parameter tag in the docstring for the invoice link creation method | ...",
+            "similarity": 0.7437
+          },
+          {
+            "pred_idx": 1,
+            "pred_text": "Operation: Mirror the same `subscription_period` docstring correction in the async wrapper method so...",
+            "gt_idx": 1,
+            "gt_text": "Operation: Mirror the same docstring parameter tag correction in the async implementation | Function...",
+            "similarity": 0.6563
+          }
+        ],
+        "overall_semantic_score": 0.7011,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/gpt_5-2_evals/ablation_turn/facebookresearch_AnimatedDrawings/pr_235",
+      "pr_number": 235,
+      "repository": "facebookresearch/AnimatedDrawings",
+      "files": {
+        "precision": 0.5,
+        "recall": 1.0,
+        "f1": 0.6667,
+        "predicted_count": 2,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "functions": {
+        "precision": 0.75,
+        "recall": 0.3333,
+        "f1": 0.4615,
+        "predicted_count": 4,
+        "actual_count": 9,
+        "correct_count": 3
+      },
+      "steps": {
+        "predicted_steps": 4,
+        "actual_steps": 9,
+        "step_diff": -5,
+        "target_coverage": 1.0,
+        "targets_matched": 4,
+        "targets_total": 4
+      },
+      "semantic": {
+        "summary_similarity": 0.7823,
+        "avg_step_similarity": 0.6182,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Clarify/extend the view sizing API to distinguish logical window size from framebuffer pi...",
+            "gt_idx": 3,
+            "gt_text": "Operation: Reformat OpenGL texture upload and framebuffer attachment calls to multi-line statements ...",
+            "similarity": 0.4222
+          },
+          {
+            "pred_idx": 1,
+            "pred_text": "Operation: Switch the window-size accessor used by WindowView from GLFW framebuffer pixel size to GL...",
+            "gt_idx": 8,
+            "gt_text": "Operation: Fix macOS external-monitor sizing by switching from physical framebuffer size to logical ...",
+            "similarity": 0.8559
+          },
+          {
+            "pred_idx": 2,
+            "pred_text": "Operation: Update initial projection-matrix setup to use the corrected logical window size dimension...",
+            "gt_idx": 1,
+            "gt_text": "Operation: Reformat the initial projection setup invocation to conform to the updated multi-line cal...",
+            "similarity": 0.6062
+          },
+          {
+            "pred_idx": 3,
+            "pred_text": "Operation: Update render-time viewport and background blit sizing to use logical window dimensions (...",
+            "gt_idx": 7,
+            "gt_text": "Operation: Reformat the framebuffer blit call to multi-line for clarity around source/destination re...",
+            "similarity": 0.5885
+          }
+        ],
+        "overall_semantic_score": 0.6674,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/gpt_5-2_evals/ablation_turn/facebookresearch_fairseq/pr_5485",
+      "pr_number": 5485,
+      "repository": "facebookresearch/fairseq",
+      "files": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "predicted_count": 1,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "functions": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "predicted_count": 1,
+        "actual_count": 0,
+        "correct_count": 0
+      },
+      "steps": {
+        "predicted_steps": 1,
+        "actual_steps": 1,
+        "step_diff": 0,
+        "target_coverage": 1.0,
+        "targets_matched": 1,
+        "targets_total": 1
+      },
+      "semantic": {
+        "summary_similarity": 0.8703,
+        "avg_step_similarity": 0.858,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Fix the invalid metadata dict key in EMAConfig.store_ema to use the string literal \"help\"...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Fix dataclass field metadata key from an unquoted identifier to the expected string liter...",
+            "similarity": 0.858
+          }
+        ],
+        "overall_semantic_score": 0.8617,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/gpt_5-2_evals/ablation_turn/facebookresearch_vggt/pr_228",
+      "pr_number": 228,
+      "repository": "facebookresearch/vggt",
+      "files": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "predicted_count": 1,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "functions": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "predicted_count": 1,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "steps": {
+        "predicted_steps": 1,
+        "actual_steps": 1,
+        "step_diff": 0,
+        "target_coverage": 1.0,
+        "targets_matched": 1,
+        "targets_total": 1
+      },
+      "semantic": {
+        "summary_similarity": 0.9558,
+        "avg_step_similarity": 0.9254,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Initialize reproj_mask to None before the max_reproj_error conditional and keep existing ...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Initialize `reproj_mask` to `None` at the start of `batch_np_matrix_to_pycolmap` so it is...",
+            "similarity": 0.9254
+          }
+        ],
+        "overall_semantic_score": 0.9345,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/gpt_5-2_evals/ablation_turn/fishaudio_fish-speech/pr_745",
+      "pr_number": 745,
+      "repository": "fishaudio/fish-speech",
+      "files": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "predicted_count": 1,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "functions": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "predicted_count": 1,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "steps": {
+        "predicted_steps": 1,
+        "actual_steps": 1,
+        "step_diff": 0,
+        "target_coverage": 1.0,
+        "targets_matched": 1,
+        "targets_total": 1
+      },
+      "semantic": {
+        "summary_similarity": 0.8729,
+        "avg_step_similarity": 0.9174,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Switch --play CLI flag to argparse.BooleanOptionalAction to enable --no-play and correct ...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Switch the `--play` CLI flag to use `argparse.BooleanOptionalAction` so argparse automati...",
+            "similarity": 0.9174
+          }
+        ],
+        "overall_semantic_score": 0.9041,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/gpt_5-2_evals/ablation_turn/g1879_DrissionPage/pr_104",
+      "pr_number": 104,
+      "repository": "g1879/DrissionPage",
+      "files": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "predicted_count": 1,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "functions": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "predicted_count": 1,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "steps": {
+        "predicted_steps": 1,
+        "actual_steps": 1,
+        "step_diff": 0,
+        "target_coverage": 1.0,
+        "targets_matched": 1,
+        "targets_total": 1
+      },
+      "semantic": {
+        "summary_similarity": 0.8815,
+        "avg_step_similarity": 0.8078,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Harden the websocket daemon receive loop to skip empty/whitespace payloads before JSON de...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Handle empty websocket messages without crashing by catching JSONDecodeError and only re-...",
+            "similarity": 0.8078
+          }
+        ],
+        "overall_semantic_score": 0.8299,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/gpt_5-2_evals/ablation_turn/getredash_redash/pr_7339",
+      "pr_number": 7339,
+      "repository": "getredash/redash",
+      "files": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "predicted_count": 3,
+        "actual_count": 2,
+        "correct_count": 0
+      },
+      "functions": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "predicted_count": 3,
+        "actual_count": 3,
+        "correct_count": 0
+      },
+      "steps": {
+        "predicted_steps": 3,
+        "actual_steps": 3,
+        "step_diff": 0,
+        "target_coverage": 0.0,
+        "targets_matched": 0,
+        "targets_total": 3
+      },
+      "semantic": {
+        "summary_similarity": 0.8232,
+        "avg_step_similarity": 0.6756,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Add recursive sanitization of non-finite floats (NaN/Infinity/-Infinity) to None before J...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Add recursive sanitization helper to replace NaN/Inf/-Inf floats with None prior to JSON ...",
+            "similarity": 0.7652
+          },
+          {
+            "pred_idx": 1,
+            "pred_text": "Operation: Ensure DB-bound JSON serialization path cannot write non-finite floats by relying on upda...",
+            "gt_idx": 2,
+            "gt_text": "Operation: Add unit test covering NaN/Inf/-Inf sanitization during query execution and result persis...",
+            "similarity": 0.5697
+          },
+          {
+            "pred_idx": 2,
+            "pred_text": "Operation: Sanitize runner output before storing it into QueryResult.data (if maintainers prefer a n...",
+            "gt_idx": 1,
+            "gt_text": "Operation: Apply sanitization when persisting query results so DB inserts never include NaN/Inf/-Inf...",
+            "similarity": 0.692
+          }
+        ],
+        "overall_semantic_score": 0.7199,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/gpt_5-2_evals/ablation_turn/goauthentik_authentik/pr_15574",
+      "pr_number": 15574,
+      "repository": "goauthentik/authentik",
+      "files": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "predicted_count": 2,
+        "actual_count": 2,
+        "correct_count": 2
+      },
+      "functions": {
+        "precision": 0.6,
+        "recall": 0.75,
+        "f1": 0.6667,
+        "predicted_count": 5,
+        "actual_count": 4,
+        "correct_count": 3
+      },
+      "steps": {
+        "predicted_steps": 5,
+        "actual_steps": 4,
+        "step_diff": 1,
+        "target_coverage": 1.0,
+        "targets_matched": 5,
+        "targets_total": 5
+      },
+      "semantic": {
+        "summary_similarity": 0.8636,
+        "avg_step_similarity": 0.5879,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Fix file-field serialization guard so File values are correctly reduced to their name (an...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Refactor model serialization to always include all non-deferred fields (remove update_fie...",
+            "similarity": 0.7196
+          },
+          {
+            "pred_idx": 1,
+            "pred_text": "Operation: Make diff generation robust to partial `after` dicts produced by `update_fields` (only em...",
+            "gt_idx": 1,
+            "gt_text": "Operation: Add update_fields-aware filtering to diff generation | Function: EnterpriseAuditMiddlewar...",
+            "similarity": 0.7965
+          },
+          {
+            "pred_idx": 2,
+            "pred_text": "Operation: Align before/after snapshots in post-save handling when `update_fields` is provided (comp...",
+            "gt_idx": 2,
+            "gt_text": "Operation: Update post-save audit pipeline to use full serialization and pass update_fields only to ...",
+            "similarity": 0.7523
+          },
+          {
+            "pred_idx": 3,
+            "pred_text": "Operation: Extend serialization test to cover file-field normalization and/or ensure update_fields f...",
+            "gt_idx": 3,
+            "gt_text": "Operation: Rewrite the unit test to validate diff behavior when update_fields is provided | Reason: ...",
+            "similarity": 0.671
+          }
+        ],
+        "overall_semantic_score": 0.6706,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/gpt_5-2_evals/ablation_turn/google-deepmind_alphafold/pr_954",
+      "pr_number": 954,
+      "repository": "google-deepmind/alphafold",
+      "files": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "predicted_count": 1,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "functions": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "predicted_count": 1,
+        "actual_count": 0,
+        "correct_count": 0
+      },
+      "steps": {
+        "predicted_steps": 1,
+        "actual_steps": 1,
+        "step_diff": 0,
+        "target_coverage": 1.0,
+        "targets_matched": 1,
+        "targets_total": 1
+      },
+      "semantic": {
+        "summary_similarity": 0.8287,
+        "avg_step_similarity": 0.6994,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Replace deprecated BioPython SCOPData import with PDBData (with optional backward-compati...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Replace deprecated BioPython SCOPData import with PDBData in the mmCIF parsing module | R...",
+            "similarity": 0.6994
+          }
+        ],
+        "overall_semantic_score": 0.7382,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/gpt_5-2_evals/ablation_turn/gunthercox_ChatterBot/pr_2410",
+      "pr_number": 2410,
+      "repository": "gunthercox/ChatterBot",
+      "files": {
+        "precision": 0.5,
+        "recall": 1.0,
+        "f1": 0.6667,
+        "predicted_count": 2,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "functions": {
+        "precision": 0.3333,
+        "recall": 0.5,
+        "f1": 0.4,
+        "predicted_count": 3,
+        "actual_count": 2,
+        "correct_count": 1
+      },
+      "steps": {
+        "predicted_steps": 3,
+        "actual_steps": 2,
+        "step_diff": 1,
+        "target_coverage": 0.3333,
+        "targets_matched": 1,
+        "targets_total": 3
+      },
+      "semantic": {
+        "summary_similarity": 0.6185,
+        "avg_step_similarity": 0.4218,
+        "step_matches": [
+          {
+            "pred_idx": 1,
+            "pred_text": "Operation: Fix single-file corpus listing to produce a consistent iterable (use `yield` rather than ...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Fix generator behavior for single-file training inputs by yielding the provided path inst...",
+            "similarity": 0.6293
+          },
+          {
+            "pred_idx": 2,
+            "pred_text": "Operation: Adjust trainer training loop to consume corpus file iterables robustly and propagate enri...",
+            "gt_idx": 1,
+            "gt_text": "Operation: Resolve training file paths to absolute paths before opening and improve field_map KeyErr...",
+            "similarity": 0.636
+          }
+        ],
+        "overall_semantic_score": 0.4808,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/gpt_5-2_evals/ablation_turn/huggingface_datasets/pr_7451",
+      "pr_number": 7451,
+      "repository": "huggingface/datasets",
+      "files": {
+        "precision": 1.0,
+        "recall": 0.2,
+        "f1": 0.3333,
+        "predicted_count": 1,
+        "actual_count": 5,
+        "correct_count": 1
+      },
+      "functions": {
+        "precision": 0.25,
+        "recall": 0.037,
+        "f1": 0.0645,
+        "predicted_count": 4,
+        "actual_count": 27,
+        "correct_count": 1
+      },
+      "steps": {
+        "predicted_steps": 4,
+        "actual_steps": 27,
+        "step_diff": -23,
+        "target_coverage": 1.0,
+        "targets_matched": 4,
+        "targets_total": 4
+      },
+      "semantic": {
+        "summary_similarity": 0.8161,
+        "avg_step_similarity": 0.7066,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Update epoch propagation and invalidate/realign resume state when epoch changes | Functio...",
+            "gt_idx": 26,
+            "gt_text": "Operation: Add regression test ensuring resuming works correctly across epoch changes (resume exhaus...",
+            "similarity": 0.7277
+          },
+          {
+            "pred_idx": 1,
+            "pred_text": "Operation: Persist epoch identity (or derived per-epoch RNG identity) in the iterable checkpoint sta...",
+            "gt_idx": 25,
+            "gt_text": "Operation: Update iterable preparation to set epoch-aware state dict and conditionally load starting...",
+            "similarity": 0.6929
+          },
+          {
+            "pred_idx": 2,
+            "pred_text": "Operation: Initialize epoch-aware state fields when creating a fresh state dict | Function: _BaseExa...",
+            "gt_idx": 9,
+            "gt_text": "Operation: Extend base examples-iterable state with a 'type' discriminator field | Function: Example...",
+            "similarity": 0.7303
+          },
+          {
+            "pred_idx": 3,
+            "pred_text": "Operation: Validate epoch compatibility on restore and define behavior for mismatched epoch (reset/r...",
+            "gt_idx": 23,
+            "gt_text": "Operation: Change load_state_dict to store the provided state as starting state instead of immediate...",
+            "similarity": 0.6756
+          }
+        ],
+        "overall_semantic_score": 0.7394,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/gpt_5-2_evals/ablation_turn/huggingface_smolagents/pr_1500",
+      "pr_number": 1500,
+      "repository": "huggingface/smolagents",
+      "files": {
+        "precision": 1.0,
+        "recall": 0.5,
+        "f1": 0.6667,
+        "predicted_count": 1,
+        "actual_count": 2,
+        "correct_count": 1
+      },
+      "functions": {
+        "precision": 1.0,
+        "recall": 0.5,
+        "f1": 0.6667,
+        "predicted_count": 2,
+        "actual_count": 4,
+        "correct_count": 2
+      },
+      "steps": {
+        "predicted_steps": 2,
+        "actual_steps": 4,
+        "step_diff": -2,
+        "target_coverage": 1.0,
+        "targets_matched": 2,
+        "targets_total": 2
+      },
+      "semantic": {
+        "summary_similarity": 0.7291,
+        "avg_step_similarity": 0.803,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Generalize step finalization to support planning steps as well as action steps (invoke ca...",
+            "gt_idx": 1,
+            "gt_text": "Operation: Widen the accepted step type for finalization to include planning steps | Function: _fina...",
+            "similarity": 0.7671
+          },
+          {
+            "pred_idx": 1,
+            "pred_text": "Operation: Invoke _finalize_step for planning steps in the streaming run loop, preserving the same o...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Invoke step-finalization for planning steps in the streaming run loop | Function: _run_st...",
+            "similarity": 0.8389
+          }
+        ],
+        "overall_semantic_score": 0.7808,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/gpt_5-2_evals/ablation_turn/huggingface_text-generation-inference/pr_3237",
+      "pr_number": 3237,
+      "repository": "huggingface/text-generation-inference",
+      "files": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "predicted_count": 3,
+        "actual_count": 4,
+        "correct_count": 0
+      },
+      "functions": {
+        "precision": 0.2,
+        "recall": 0.1111,
+        "f1": 0.1429,
+        "predicted_count": 5,
+        "actual_count": 9,
+        "correct_count": 1
+      },
+      "steps": {
+        "predicted_steps": 5,
+        "actual_steps": 9,
+        "step_diff": -4,
+        "target_coverage": 0.2,
+        "targets_matched": 1,
+        "targets_total": 5
+      },
+      "semantic": {
+        "summary_similarity": 0.7649,
+        "avg_step_similarity": 0.602,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Move input_ids/attention_mask to HPU before building derived per-request buffers and ensu...",
+            "gt_idx": 3,
+            "gt_text": "Operation: Ensure prefill padding creates `input_ids` on the same device as existing batch tensors a...",
+            "similarity": 0.7421
+          },
+          {
+            "pred_idx": 1,
+            "pred_text": "Operation: Align decode/append logic with new device placement for per-request token buffers (all_in...",
+            "gt_idx": 6,
+            "gt_text": "Operation: Refactor token generation state updates to avoid unnecessary CPU transfers and make adapt...",
+            "similarity": 0.7264
+          },
+          {
+            "pred_idx": 2,
+            "pred_text": "Operation: Remove explicit disposal/freeing of adapter_meta and keep adapter metadata alive for as l...",
+            "gt_idx": 1,
+            "gt_text": "Operation: Make adapter metadata handling optional when filtering a batch (avoid unconditional acces...",
+            "similarity": 0.584
+          },
+          {
+            "pred_idx": 3,
+            "pred_text": "Operation: Stop disposing adapter_meta during adapter load/merge and ensure returned objects preserv...",
+            "gt_idx": 2,
+            "gt_text": "Operation: Gate concatenation-time adapter index aggregation behind adapter availability and adjust ...",
+            "similarity": 0.4502
+          },
+          {
+            "pred_idx": 4,
+            "pred_text": "Operation: Remove any adapter_meta disposal in the cached merge path and ensure the cache does not s...",
+            "gt_idx": 7,
+            "gt_text": "Operation: Only build adapter batch data when adapter metadata exists (and handle speculative expans...",
+            "similarity": 0.5071
+          }
+        ],
+        "overall_semantic_score": 0.6509,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/gpt_5-2_evals/ablation_turn/huggingface_transformers/pr_39358",
+      "pr_number": 39358,
+      "repository": "huggingface/transformers",
+      "files": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "predicted_count": 1,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "functions": {
+        "precision": 0.2,
+        "recall": 1.0,
+        "f1": 0.3333,
+        "predicted_count": 5,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "steps": {
+        "predicted_steps": 5,
+        "actual_steps": 1,
+        "step_diff": 4,
+        "target_coverage": 1.0,
+        "targets_matched": 5,
+        "targets_total": 5
+      },
+      "semantic": {
+        "summary_similarity": 0.6837,
+        "avg_step_similarity": 0.1389,
+        "step_matches": [
+          {
+            "pred_idx": 1,
+            "pred_text": "Operation: Ensure vision pooled output is always well-defined and uses the corrected pooling-mask se...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Override `Siglip2TextModel.forward` to ensure pooled output behavior matches SigLIP2 trai...",
+            "similarity": 0.6944
+          }
+        ],
+        "overall_semantic_score": 0.3023,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/gpt_5-2_evals/ablation_turn/intel_ipex-llm/pr_13205",
+      "pr_number": 13205,
+      "repository": "intel/ipex-llm",
+      "files": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "predicted_count": 1,
+        "actual_count": 1,
+        "correct_count": 0
+      },
+      "functions": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "predicted_count": 4,
+        "actual_count": 2,
+        "correct_count": 0
+      },
+      "steps": {
+        "predicted_steps": 4,
+        "actual_steps": 2,
+        "step_diff": 2,
+        "target_coverage": 0.0,
+        "targets_matched": 0,
+        "targets_total": 4
+      },
+      "semantic": {
+        "summary_similarity": 0.6861,
+        "avg_step_similarity": 0.2574,
+        "step_matches": [
+          {
+            "pred_idx": 1,
+            "pred_text": "Operation: Harden single-chat input tensor preparation: keep text tensors on device, and gate/correc...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Fix FP16 module selection logic by preserving any previously-determined module list and a...",
+            "similarity": 0.5144
+          },
+          {
+            "pred_idx": 3,
+            "pred_text": "Operation: Add FP16-on-XPU attention safety: upcast softmax/attention math or force a supported fall...",
+            "gt_idx": 1,
+            "gt_text": "Operation: Adjust the arguments passed into `optimize_model(...)` by ensuring the `modules` list is ...",
+            "similarity": 0.5151
+          }
+        ],
+        "overall_semantic_score": 0.386,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/gpt_5-2_evals/ablation_turn/karpathy_nanoGPT/pr_464",
+      "pr_number": 464,
+      "repository": "karpathy/nanoGPT",
+      "files": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "predicted_count": 1,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "functions": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "predicted_count": 1,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "steps": {
+        "predicted_steps": 1,
+        "actual_steps": 1,
+        "step_diff": 0,
+        "target_coverage": 1.0,
+        "targets_matched": 1,
+        "targets_total": 1
+      },
+      "semantic": {
+        "summary_similarity": 0.8695,
+        "avg_step_similarity": 0.8467,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Make MFU normalization device-aware and/or configurable by replacing the hard-coded A100 ...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Adjust MFU normalization to use H100 BF16 peak FLOPs when running on an NVIDIA H100 80GB ...",
+            "similarity": 0.8467
+          }
+        ],
+        "overall_semantic_score": 0.8535,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/gpt_5-2_evals/ablation_turn/keras-team_keras/pr_21457",
+      "pr_number": 21457,
+      "repository": "keras-team/keras",
+      "files": {
+        "precision": 0.3333,
+        "recall": 1.0,
+        "f1": 0.5,
+        "predicted_count": 3,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "functions": {
+        "precision": 0.25,
+        "recall": 1.0,
+        "f1": 0.4,
+        "predicted_count": 4,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "steps": {
+        "predicted_steps": 4,
+        "actual_steps": 1,
+        "step_diff": 3,
+        "target_coverage": 0.25,
+        "targets_matched": 1,
+        "targets_total": 4
+      },
+      "semantic": {
+        "summary_similarity": 0.7869,
+        "avg_step_similarity": 0.1909,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Fix OpenVINO backend `array()` to be identity-on-tensor and avoid NumPy materialization |...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Extend the OpenVINO backend `array()` implementation to correctly handle `OpenVINOKerasTe...",
+            "similarity": 0.7637
+          }
+        ],
+        "overall_semantic_score": 0.3697,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/gpt_5-2_evals/ablation_turn/labmlai_annotated_deep_learning_paper_implementations/pr_249",
+      "pr_number": 249,
+      "repository": "labmlai/annotated_deep_learning_paper_implementations",
+      "files": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "predicted_count": 1,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "functions": {
+        "precision": 0.2,
+        "recall": 1.0,
+        "f1": 0.3333,
+        "predicted_count": 5,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "steps": {
+        "predicted_steps": 5,
+        "actual_steps": 1,
+        "step_diff": 4,
+        "target_coverage": 1.0,
+        "targets_matched": 5,
+        "targets_total": 5
+      },
+      "semantic": {
+        "summary_similarity": 0.8109,
+        "avg_step_similarity": 0.1538,
+        "step_matches": [
+          {
+            "pred_idx": 2,
+            "pred_text": "Operation: Make `forward()` apply RoPE to exactly the same even rotary sub-dimension used to build t...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Fix rotary embedding cache broadcasting by slicing cached cos/sin tensors to match the in...",
+            "similarity": 0.769
+          }
+        ],
+        "overall_semantic_score": 0.3509,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/gpt_5-2_evals/ablation_turn/langchain-ai_local-deep-researcher/pr_40",
+      "pr_number": 40,
+      "repository": "langchain-ai/local-deep-researcher",
+      "files": {
+        "precision": 0.5,
+        "recall": 1.0,
+        "f1": 0.6667,
+        "predicted_count": 2,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "functions": {
+        "precision": 0.5,
+        "recall": 1.0,
+        "f1": 0.6667,
+        "predicted_count": 2,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "steps": {
+        "predicted_steps": 2,
+        "actual_steps": 1,
+        "step_diff": 1,
+        "target_coverage": 0.5,
+        "targets_matched": 1,
+        "targets_total": 2
+      },
+      "semantic": {
+        "summary_similarity": 0.7834,
+        "avg_step_similarity": 0.428,
+        "step_matches": [
+          {
+            "pred_idx": 1,
+            "pred_text": "Operation: Defensively cast `configurable.max_web_research_loops` to `int` at the comparison site in...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Fix type mismatch in research loop guard by coercing `max_web_research_loops` to an integ...",
+            "similarity": 0.8559
+          }
+        ],
+        "overall_semantic_score": 0.5346,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/gpt_5-2_evals/ablation_turn/lllyasviel_stable-diffusion-webui-forge/pr_2303",
+      "pr_number": 2303,
+      "repository": "lllyasviel/stable-diffusion-webui-forge",
+      "files": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "predicted_count": 1,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "functions": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "predicted_count": 1,
+        "actual_count": 0,
+        "correct_count": 0
+      },
+      "steps": {
+        "predicted_steps": 1,
+        "actual_steps": 1,
+        "step_diff": 0,
+        "target_coverage": 1.0,
+        "targets_matched": 1,
+        "targets_total": 1
+      },
+      "semantic": {
+        "summary_similarity": 0.8218,
+        "avg_step_similarity": 0.8733,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Remove the Florence-2 `transformers.dynamic_module_utils.get_imports` monkey-patch by del...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Remove the custom `get_imports` monkey-patch and `unittest.mock.patch` wrapper so Florenc...",
+            "similarity": 0.8733
+          }
+        ],
+        "overall_semantic_score": 0.8578,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/gpt_5-2_evals/ablation_turn/marimo-team_marimo/pr_5610",
+      "pr_number": 5610,
+      "repository": "marimo-team/marimo",
+      "files": {
+        "precision": 0.5,
+        "recall": 0.5,
+        "f1": 0.5,
+        "predicted_count": 2,
+        "actual_count": 2,
+        "correct_count": 1
+      },
+      "functions": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "predicted_count": 7,
+        "actual_count": 7,
+        "correct_count": 7
+      },
+      "steps": {
+        "predicted_steps": 7,
+        "actual_steps": 7,
+        "step_diff": 0,
+        "target_coverage": 1.0,
+        "targets_matched": 7,
+        "targets_total": 7
+      },
+      "semantic": {
+        "summary_similarity": 0.8337,
+        "avg_step_similarity": 0.923,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Add `force: bool` plumbing to overwrite-check path and skip `prompt_to_overwrite` when fo...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Extend the shared export helper to accept a `force` flag and bypass the interactive overw...",
+            "similarity": 0.8905
+          },
+          {
+            "pred_idx": 1,
+            "pred_text": "Operation: Add `--force/-f` click option to `export html` and pass it through to `watch_and_export` ...",
+            "gt_idx": 1,
+            "gt_text": "Operation: Add `--force/-f` Click option to the `export html` command and thread it into the `watch_...",
+            "similarity": 0.9471
+          },
+          {
+            "pred_idx": 2,
+            "pred_text": "Operation: Add `--force/-f` click option to `export script` and pass it through to `watch_and_export...",
+            "gt_idx": 2,
+            "gt_text": "Operation: Add `--force/-f` Click option to the `export script` command and pass it through to `watc...",
+            "similarity": 0.961
+          },
+          {
+            "pred_idx": 3,
+            "pred_text": "Operation: Add `--force/-f` click option to `export md` and pass it through to `watch_and_export` | ...",
+            "gt_idx": 3,
+            "gt_text": "Operation: Add `--force/-f` Click option to the `export md` command and forward it into the export p...",
+            "similarity": 0.9197
+          },
+          {
+            "pred_idx": 4,
+            "pred_text": "Operation: Add `--force/-f` click option to `export ipynb` and pass it through to `watch_and_export`...",
+            "gt_idx": 4,
+            "gt_text": "Operation: Add `--force/-f` Click option to the `export ipynb` command and propagate the flag to `wa...",
+            "similarity": 0.9443
+          },
+          {
+            "pred_idx": 5,
+            "pred_text": "Operation: Add `--force/-f` click option to `export html-wasm` and pass it through to `watch_and_exp...",
+            "gt_idx": 5,
+            "gt_text": "Operation: Add `--force/-f` Click option to the `export html-wasm` command and pass it when exportin...",
+            "similarity": 0.9006
+          },
+          {
+            "pred_idx": 6,
+            "pred_text": "Operation: Add a regression test ensuring default behavior does not overwrite, while `--force` and `...",
+            "gt_idx": 6,
+            "gt_text": "Operation: Add a CLI integration test validating that exporting to an existing file does not overwri...",
+            "similarity": 0.8978
+          }
+        ],
+        "overall_semantic_score": 0.8962,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/gpt_5-2_evals/ablation_turn/matplotlib_matplotlib/pr_30295",
+      "pr_number": 30295,
+      "repository": "matplotlib/matplotlib",
+      "files": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "predicted_count": 1,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "functions": {
+        "precision": 0.5,
+        "recall": 1.0,
+        "f1": 0.6667,
+        "predicted_count": 2,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "steps": {
+        "predicted_steps": 2,
+        "actual_steps": 1,
+        "step_diff": 1,
+        "target_coverage": 1.0,
+        "targets_matched": 2,
+        "targets_total": 2
+      },
+      "semantic": {
+        "summary_similarity": 0.8558,
+        "avg_step_similarity": 0.4466,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Expand the `Annotation.__init__` docstring with a numpydoc-compliant `Notes` section desc...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Add a new `Notes` section to the `Annotation.__init__` docstring explaining that clip pat...",
+            "similarity": 0.8932
+          }
+        ],
+        "overall_semantic_score": 0.5694,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/gpt_5-2_evals/ablation_turn/maurosoria_dirsearch/pr_1362",
+      "pr_number": 1362,
+      "repository": "maurosoria/dirsearch",
+      "files": {
+        "precision": 1.0,
+        "recall": 0.6667,
+        "f1": 0.8,
+        "predicted_count": 2,
+        "actual_count": 3,
+        "correct_count": 2
+      },
+      "functions": {
+        "precision": 1.0,
+        "recall": 0.6667,
+        "f1": 0.8,
+        "predicted_count": 2,
+        "actual_count": 3,
+        "correct_count": 2
+      },
+      "steps": {
+        "predicted_steps": 2,
+        "actual_steps": 4,
+        "step_diff": -2,
+        "target_coverage": 1.0,
+        "targets_matched": 2,
+        "targets_total": 2
+      },
+      "semantic": {
+        "summary_similarity": 0.7762,
+        "avg_step_similarity": 0.7369,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Fix typo (if present) and remove redundant tuple-return parentheses in pickling state exp...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Refactor object serialization return to a bare tuple (remove redundant parentheses) in th...",
+            "similarity": 0.7508
+          },
+          {
+            "pred_idx": 1,
+            "pred_text": "Operation: Simplify HTTP status range checks using chained comparisons | Function: HTMLReport.genera...",
+            "gt_idx": 3,
+            "gt_text": "Operation: Simplify numeric range comparisons using chained comparisons | Function: generate | Reaso...",
+            "similarity": 0.723
+          }
+        ],
+        "overall_semantic_score": 0.7487,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/gpt_5-2_evals/ablation_turn/microsoft_BitNet/pr_242",
+      "pr_number": 242,
+      "repository": "microsoft/BitNet",
+      "files": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "predicted_count": 2,
+        "actual_count": 1,
+        "correct_count": 0
+      },
+      "functions": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "predicted_count": 0,
+        "actual_count": 1,
+        "correct_count": 0
+      },
+      "steps": {
+        "predicted_steps": 2,
+        "actual_steps": 1,
+        "step_diff": 1,
+        "target_coverage": 0.0,
+        "targets_matched": 0,
+        "targets_total": 2
+      },
+      "semantic": {
+        "summary_similarity": 0.7792,
+        "avg_step_similarity": 0.3909,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Add early Android/aarch64 compiler enforcement (require Clang or fail with actionable ins...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Force CMake to use Clang by passing explicit C and C++ compiler definitions during the CM...",
+            "similarity": 0.7818
+          }
+        ],
+        "overall_semantic_score": 0.5074,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/gpt_5-2_evals/ablation_turn/microsoft_autogen/pr_6752",
+      "pr_number": 6752,
+      "repository": "microsoft/autogen",
+      "files": {
+        "precision": 1.0,
+        "recall": 0.5,
+        "f1": 0.6667,
+        "predicted_count": 1,
+        "actual_count": 2,
+        "correct_count": 1
+      },
+      "functions": {
+        "precision": 0.25,
+        "recall": 0.0625,
+        "f1": 0.1,
+        "predicted_count": 4,
+        "actual_count": 16,
+        "correct_count": 1
+      },
+      "steps": {
+        "predicted_steps": 4,
+        "actual_steps": 16,
+        "step_diff": -12,
+        "target_coverage": 1.0,
+        "targets_matched": 4,
+        "targets_total": 4
+      },
+      "semantic": {
+        "summary_similarity": 0.7891,
+        "avg_step_similarity": 0.8021,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Update manager-driven termination to stop without selecting a synthetic stop speaker when...",
+            "gt_idx": 1,
+            "gt_text": "Operation: Refactor speaker selection to stop selecting a synthetic stop agent when no ready speaker...",
+            "similarity": 0.8703
+          },
+          {
+            "pred_idx": 1,
+            "pred_text": "Operation: Remove stop-agent wiring from GraphFlow construction: stop prepending `_StopAgent` to par...",
+            "gt_idx": 4,
+            "gt_text": "Operation: Simplify GraphFlow construction by removing stop-agent participant injection and stop-mes...",
+            "similarity": 0.8773
+          },
+          {
+            "pred_idx": 2,
+            "pred_text": "Operation: Adjust manager factory creation to reflect removal of the stop agent: ensure any particip...",
+            "gt_idx": 7,
+            "gt_text": "Operation: Update parallel join-all test expectations by removing stop-agent assertions and adjustin...",
+            "similarity": 0.6691
+          },
+          {
+            "pred_idx": 3,
+            "pred_text": "Operation: Delete `_StopAgent` message emission behavior (and remove the class if no longer referenc...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Clean up imports and constants to remove stop-agent dependencies and introduce a manager-...",
+            "similarity": 0.7916
+          }
+        ],
+        "overall_semantic_score": 0.7982,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/gpt_5-2_evals/ablation_turn/mlc-ai_mlc-llm/pr_3150",
+      "pr_number": 3150,
+      "repository": "mlc-ai/mlc-llm",
+      "files": {
+        "precision": 0.3333,
+        "recall": 1.0,
+        "f1": 0.5,
+        "predicted_count": 3,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "functions": {
+        "precision": 0.25,
+        "recall": 1.0,
+        "f1": 0.4,
+        "predicted_count": 4,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "steps": {
+        "predicted_steps": 4,
+        "actual_steps": 1,
+        "step_diff": 3,
+        "target_coverage": 0.25,
+        "targets_matched": 1,
+        "targets_total": 4
+      },
+      "semantic": {
+        "summary_similarity": 0.7824,
+        "avg_step_similarity": 0.2065,
+        "step_matches": [
+          {
+            "pred_idx": 1,
+            "pred_text": "Operation: Use the shared merge helper in the async non-streaming completion aggregation loop | Func...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Fix logprob merging during streaming by accumulating per-choice token-level arrays instea...",
+            "similarity": 0.8259
+          }
+        ],
+        "overall_semantic_score": 0.3793,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/gpt_5-2_evals/ablation_turn/modelscope_FunASR/pr_2332",
+      "pr_number": 2332,
+      "repository": "modelscope/FunASR",
+      "files": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "predicted_count": 1,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "functions": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "predicted_count": 1,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "steps": {
+        "predicted_steps": 1,
+        "actual_steps": 1,
+        "step_diff": 0,
+        "target_coverage": 1.0,
+        "targets_matched": 1,
+        "targets_total": 1
+      },
+      "semantic": {
+        "summary_similarity": 0.7855,
+        "avg_step_similarity": 0.7692,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Fix NumPy argmax API usage in greedy CTC decoding by switching from PyTorch-style `dim` t...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Fix CTC argmax and unique-consecutive decoding by switching to NumPy argmax and replacing...",
+            "similarity": 0.7692
+          }
+        ],
+        "overall_semantic_score": 0.7741,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/gpt_5-2_evals/ablation_turn/mopidy_mopidy/pr_2200",
+      "pr_number": 2200,
+      "repository": "mopidy/mopidy",
+      "files": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "predicted_count": 3,
+        "actual_count": 1,
+        "correct_count": 0
+      },
+      "functions": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "predicted_count": 6,
+        "actual_count": 1,
+        "correct_count": 0
+      },
+      "steps": {
+        "predicted_steps": 6,
+        "actual_steps": 1,
+        "step_diff": 5,
+        "target_coverage": 0.0,
+        "targets_matched": 0,
+        "targets_total": 6
+      },
+      "semantic": {
+        "summary_similarity": 0.6341,
+        "avg_step_similarity": 0.0801,
+        "step_matches": [
+          {
+            "pred_idx": 5,
+            "pred_text": "Operation: Extend dependency diagnostics to surface when Mopidy is running on an affected GStreamer ...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Add a defensive workaround when extracting the MIME type from GStreamer caps by falling b...",
+            "similarity": 0.4804
+          }
+        ],
+        "overall_semantic_score": 0.2463,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/gpt_5-2_evals/ablation_turn/mvt-project_mvt/pr_558",
+      "pr_number": 558,
+      "repository": "mvt-project/mvt",
+      "files": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "predicted_count": 1,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "functions": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "predicted_count": 1,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "steps": {
+        "predicted_steps": 1,
+        "actual_steps": 1,
+        "step_diff": 0,
+        "target_coverage": 1.0,
+        "targets_matched": 1,
+        "targets_total": 1
+      },
+      "semantic": {
+        "summary_similarity": 0.7959,
+        "avg_step_similarity": 0.8179,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Make Dumpsys ADB parsing resilient to missing/empty `user_keys` by defaulting to an empty...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Harden parsing logic by defaulting missing/empty ADB key lists to an empty iterable when ...",
+            "similarity": 0.8179
+          }
+        ],
+        "overall_semantic_score": 0.8113,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/gpt_5-2_evals/ablation_turn/netease-youdao_QAnything/pr_563",
+      "pr_number": 563,
+      "repository": "netease-youdao/QAnything",
+      "files": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "predicted_count": 2,
+        "actual_count": 2,
+        "correct_count": 2
+      },
+      "functions": {
+        "precision": 0.5,
+        "recall": 1.0,
+        "f1": 0.6667,
+        "predicted_count": 2,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "steps": {
+        "predicted_steps": 2,
+        "actual_steps": 2,
+        "step_diff": 0,
+        "target_coverage": 1.0,
+        "targets_matched": 2,
+        "targets_total": 2
+      },
+      "semantic": {
+        "summary_similarity": 0.629,
+        "avg_step_similarity": 0.8721,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Fix UPDATE statement to write to the correct column (chunks_number) instead of chunk_size...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Fix the SQL update statement to write to the correct column (`chunks_number`) instead of ...",
+            "similarity": 0.8453
+          },
+          {
+            "pred_idx": 1,
+            "pred_text": "Operation: Remove redundant chunks_number update call after vector DB insertion; rely on the existin...",
+            "gt_idx": 1,
+            "gt_text": "Operation: Remove the redundant post-insert update call that re-updated `chunks_number` after vector...",
+            "similarity": 0.8989
+          }
+        ],
+        "overall_semantic_score": 0.7992,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/gpt_5-2_evals/ablation_turn/nginx-proxy_nginx-proxy/pr_2432",
+      "pr_number": 2432,
+      "repository": "nginx-proxy/nginx-proxy",
+      "files": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "predicted_count": 1,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "functions": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "predicted_count": 1,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "steps": {
+        "predicted_steps": 1,
+        "actual_steps": 1,
+        "step_diff": 0,
+        "target_coverage": 1.0,
+        "targets_matched": 1,
+        "targets_total": 1
+      },
+      "semantic": {
+        "summary_similarity": 0.8391,
+        "avg_step_similarity": 0.8857,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Convert the /status/<code> regex strings to raw string literals (and reuse the match obje...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Fix invalid escape sequence warnings by converting the regex pattern string to a raw stri...",
+            "similarity": 0.8857
+          }
+        ],
+        "overall_semantic_score": 0.8717,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/gpt_5-2_evals/ablation_turn/openinterpreter_open-interpreter/pr_1496",
+      "pr_number": 1496,
+      "repository": "openinterpreter/open-interpreter",
+      "files": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "predicted_count": 1,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "functions": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "predicted_count": 1,
+        "actual_count": 0,
+        "correct_count": 0
+      },
+      "steps": {
+        "predicted_steps": 1,
+        "actual_steps": 1,
+        "step_diff": 0,
+        "target_coverage": 1.0,
+        "targets_matched": 1,
+        "targets_total": 1
+      },
+      "semantic": {
+        "summary_similarity": 0.8554,
+        "avg_step_similarity": 0.8537,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Replace the Unix-only day-of-month strftime modifier in the SYSTEM_PROMPT date string wit...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Make the date formatting in the SYSTEM_PROMPT Windows-compatible by selecting the correct...",
+            "similarity": 0.8537
+          }
+        ],
+        "overall_semantic_score": 0.8542,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/gpt_5-2_evals/ablation_turn/optuna_optuna/pr_6208",
+      "pr_number": 6208,
+      "repository": "optuna/optuna",
+      "files": {
+        "precision": 0.3333,
+        "recall": 1.0,
+        "f1": 0.5,
+        "predicted_count": 3,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "functions": {
+        "precision": 0.25,
+        "recall": 1.0,
+        "f1": 0.4,
+        "predicted_count": 4,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "steps": {
+        "predicted_steps": 4,
+        "actual_steps": 1,
+        "step_diff": 3,
+        "target_coverage": 0.25,
+        "targets_matched": 1,
+        "targets_total": 4
+      },
+      "semantic": {
+        "summary_similarity": 0.778,
+        "avg_step_similarity": 0.2026,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Make the test deterministic by resetting Optuna’s library-root logger and explicitly sett...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Stabilize `test_log_completed_trial_skip_storage_access` by resetting the library root lo...",
+            "similarity": 0.8105
+          }
+        ],
+        "overall_semantic_score": 0.3752,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/gpt_5-2_evals/ablation_turn/piskvorky_gensim/pr_3597",
+      "pr_number": 3597,
+      "repository": "piskvorky/gensim",
+      "files": {
+        "precision": 0.5,
+        "recall": 1.0,
+        "f1": 0.6667,
+        "predicted_count": 2,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "functions": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "predicted_count": 0,
+        "actual_count": 0,
+        "correct_count": 0
+      },
+      "steps": {
+        "predicted_steps": 2,
+        "actual_steps": 1,
+        "step_diff": 1,
+        "target_coverage": 1.0,
+        "targets_matched": 2,
+        "targets_total": 2
+      },
+      "semantic": {
+        "summary_similarity": 0.7964,
+        "avg_step_similarity": 0.4001,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Correct the BM25 bullet/paragraph in the “Available transformations” narrative to describ...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Update the BM25 tutorial narrative to accurately describe BM25 as a relevance scoring fun...",
+            "similarity": 0.8003
+          }
+        ],
+        "overall_semantic_score": 0.519,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/gpt_5-2_evals/ablation_turn/plasma-umass_scalene/pr_925",
+      "pr_number": 925,
+      "repository": "plasma-umass/scalene",
+      "files": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "predicted_count": 1,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "functions": {
+        "precision": 0.5,
+        "recall": 1.0,
+        "f1": 0.6667,
+        "predicted_count": 2,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "steps": {
+        "predicted_steps": 2,
+        "actual_steps": 1,
+        "step_diff": 1,
+        "target_coverage": 1.0,
+        "targets_matched": 2,
+        "targets_total": 2
+      },
+      "semantic": {
+        "summary_similarity": 0.8223,
+        "avg_step_similarity": 0.4232,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Make LD_PRELOAD construction idempotent by parsing the existing value, detecting whether ...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Refactor LD_PRELOAD update logic to be idempotent by splitting the existing value on ':' ...",
+            "similarity": 0.8464
+          }
+        ],
+        "overall_semantic_score": 0.5429,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/gpt_5-2_evals/ablation_turn/prompt-toolkit_python-prompt-toolkit/pr_1944",
+      "pr_number": 1944,
+      "repository": "prompt-toolkit/python-prompt-toolkit",
+      "files": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "predicted_count": 1,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "functions": {
+        "precision": 0.1429,
+        "recall": 1.0,
+        "f1": 0.25,
+        "predicted_count": 7,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "steps": {
+        "predicted_steps": 7,
+        "actual_steps": 1,
+        "step_diff": 6,
+        "target_coverage": 1.0,
+        "targets_matched": 7,
+        "targets_total": 7
+      },
+      "semantic": {
+        "summary_similarity": 0.6846,
+        "avg_step_similarity": 0.1181,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Harden read-only evaluation in emacs_insert_mode by safely handling both callable Filter ...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Fix incorrect invocation of the `read_only` boolean attribute by removing the call parent...",
+            "similarity": 0.8266
+          }
+        ],
+        "overall_semantic_score": 0.288,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/gpt_5-2_evals/ablation_turn/psf_requests/pr_6837",
+      "pr_number": 6837,
+      "repository": "psf/requests",
+      "files": {
+        "precision": 1.0,
+        "recall": 0.5,
+        "f1": 0.6667,
+        "predicted_count": 1,
+        "actual_count": 2,
+        "correct_count": 1
+      },
+      "functions": {
+        "precision": 0.25,
+        "recall": 0.3333,
+        "f1": 0.2857,
+        "predicted_count": 4,
+        "actual_count": 3,
+        "correct_count": 1
+      },
+      "steps": {
+        "predicted_steps": 4,
+        "actual_steps": 3,
+        "step_diff": 1,
+        "target_coverage": 1.0,
+        "targets_matched": 4,
+        "targets_total": 4
+      },
+      "semantic": {
+        "summary_similarity": 0.8361,
+        "avg_step_similarity": 0.5453,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Switch Basic auth credential encoding from latin-1 to UTF-8 when username/password are te...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Change Basic auth credential encoding from latin-1 to UTF-8 before base64 encoding | Func...",
+            "similarity": 0.9485
+          },
+          {
+            "pred_idx": 1,
+            "pred_text": "Operation: Harden Digest `Authorization` header rendering to safely include non-latin values (and pr...",
+            "gt_idx": 2,
+            "gt_text": "Operation: Add companion regression test for HTTPDigestAuth when credentials are provided as UTF-8 e...",
+            "similarity": 0.5612
+          },
+          {
+            "pred_idx": 3,
+            "pred_text": "Operation: Ensure preemptive / cached-nonce digest behavior continues to work when credentials conta...",
+            "gt_idx": 1,
+            "gt_text": "Operation: Add regression tests to ensure HTTPDigestAuth works with non-Latin credentials (both `str...",
+            "similarity": 0.6714
+          }
+        ],
+        "overall_semantic_score": 0.6325,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/gpt_5-2_evals/ablation_turn/pwndbg_pwndbg/pr_3108",
+      "pr_number": 3108,
+      "repository": "pwndbg/pwndbg",
+      "files": {
+        "precision": 1.0,
+        "recall": 0.5,
+        "f1": 0.6667,
+        "predicted_count": 1,
+        "actual_count": 2,
+        "correct_count": 1
+      },
+      "functions": {
+        "precision": 1.0,
+        "recall": 0.5,
+        "f1": 0.6667,
+        "predicted_count": 1,
+        "actual_count": 2,
+        "correct_count": 1
+      },
+      "steps": {
+        "predicted_steps": 1,
+        "actual_steps": 2,
+        "step_diff": -1,
+        "target_coverage": 1.0,
+        "targets_matched": 1,
+        "targets_total": 1
+      },
+      "semantic": {
+        "summary_similarity": 0.851,
+        "avg_step_similarity": 0.8204,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Short-circuit LLDB vmmap when LLDB reports no known pages by returning an empty LLDBMemor...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Add an early-return guard in the LLDB process vmmap implementation so it returns an empty...",
+            "similarity": 0.8204
+          }
+        ],
+        "overall_semantic_score": 0.8296,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/gpt_5-2_evals/ablation_turn/py-pdf_pypdf/pr_3286",
+      "pr_number": 3286,
+      "repository": "py-pdf/pypdf",
+      "files": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "predicted_count": 2,
+        "actual_count": 2,
+        "correct_count": 2
+      },
+      "functions": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "predicted_count": 3,
+        "actual_count": 1,
+        "correct_count": 0
+      },
+      "steps": {
+        "predicted_steps": 3,
+        "actual_steps": 2,
+        "step_diff": 1,
+        "target_coverage": 1.0,
+        "targets_matched": 3,
+        "targets_total": 3
+      },
+      "semantic": {
+        "summary_similarity": 0.8716,
+        "avg_step_similarity": 0.572,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Extend NameObject escaping to include missing PDF delimiter characters by adding `<`, `>`...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Refactor NameObject delimiter escaping table to include all PDF delimiter characters (ang...",
+            "similarity": 0.8842
+          },
+          {
+            "pred_idx": 1,
+            "pred_text": "Operation: Add/adjust a regression test that exercises the writer path: create a NameObject containi...",
+            "gt_idx": 1,
+            "gt_text": "Operation: Add a regression unit test asserting correct escaping of all delimiter characters in Name...",
+            "similarity": 0.8318
+          }
+        ],
+        "overall_semantic_score": 0.6619,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/gpt_5-2_evals/ablation_turn/pydantic_pydantic/pr_11766",
+      "pr_number": 11766,
+      "repository": "pydantic/pydantic",
+      "files": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "predicted_count": 1,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "functions": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "predicted_count": 0,
+        "actual_count": 0,
+        "correct_count": 0
+      },
+      "steps": {
+        "predicted_steps": 1,
+        "actual_steps": 1,
+        "step_diff": 0,
+        "target_coverage": 1.0,
+        "targets_matched": 1,
+        "targets_total": 1
+      },
+      "semantic": {
+        "summary_similarity": 0.7068,
+        "avg_step_similarity": 0.8202,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Fix the documentation example for `populate_by_name` to correctly demonstrate populating ...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Correct the `populate_by_name` docstring example to demonstrate populating the field by i...",
+            "similarity": 0.8202
+          }
+        ],
+        "overall_semantic_score": 0.7862,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/gpt_5-2_evals/ablation_turn/pydantic_pydantic-ai/pr_2210",
+      "pr_number": 2210,
+      "repository": "pydantic/pydantic-ai",
+      "files": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "predicted_count": 1,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "functions": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "predicted_count": 1,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "steps": {
+        "predicted_steps": 1,
+        "actual_steps": 1,
+        "step_diff": 0,
+        "target_coverage": 1.0,
+        "targets_matched": 1,
+        "targets_total": 1
+      },
+      "semantic": {
+        "summary_similarity": 0.8807,
+        "avg_step_similarity": 0.9088,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Stop propagating ResponseFunctionCallArgumentsDeltaEvent.item_id as tool_call_id when acc...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Stop propagating the Responses API `item_id` into `ToolCallPart.tool_call_id` when buildi...",
+            "similarity": 0.9088
+          }
+        ],
+        "overall_semantic_score": 0.9004,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/gpt_5-2_evals/ablation_turn/pyecharts_pyecharts/pr_2380",
+      "pr_number": 2380,
+      "repository": "pyecharts/pyecharts",
+      "files": {
+        "precision": 1.0,
+        "recall": 0.4,
+        "f1": 0.5714,
+        "predicted_count": 2,
+        "actual_count": 5,
+        "correct_count": 2
+      },
+      "functions": {
+        "precision": 0.8,
+        "recall": 0.6667,
+        "f1": 0.7273,
+        "predicted_count": 5,
+        "actual_count": 6,
+        "correct_count": 4
+      },
+      "steps": {
+        "predicted_steps": 5,
+        "actual_steps": 9,
+        "step_diff": -4,
+        "target_coverage": 1.0,
+        "targets_matched": 5,
+        "targets_total": 5
+      },
+      "semantic": {
+        "summary_similarity": 0.7424,
+        "avg_step_similarity": 0.7685,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Fix Timeline.add option merging to avoid incorrect baseOption/options contamination (issu...",
+            "gt_idx": 1,
+            "gt_text": "Operation: Fix Timeline.add to persist each chart’s legend into per-frame options | Function: Timeli...",
+            "similarity": 0.7949
+          },
+          {
+            "pred_idx": 1,
+            "pred_text": "Operation: Harden Timeline component hoisting/merge rules and expand coverage for sequence-vs-dict c...",
+            "gt_idx": 2,
+            "gt_text": "Operation: Simplify component merging logic to always update baseOption with the chart’s component c...",
+            "similarity": 0.8147
+          },
+          {
+            "pred_idx": 2,
+            "pred_text": "Operation: Update Timeline.add_schema to use the correct option references/structure for timeline sc...",
+            "gt_idx": 8,
+            "gt_text": "Operation: Update tests to import AnimationOpts from the new module path | Reason: Keep the test sui...",
+            "similarity": 0.4989
+          },
+          {
+            "pred_idx": 3,
+            "pred_text": "Operation: Add animation-related fields to MarkLineOpts and serialize them into the generated markLi...",
+            "gt_idx": 6,
+            "gt_text": "Operation: Extend MarkLineOpts to accept animation_opts and merge its fields into the emitted option...",
+            "similarity": 0.8606
+          },
+          {
+            "pred_idx": 4,
+            "pred_text": "Operation: Add animation-related fields to MarkAreaOpts and serialize them into the generated markAr...",
+            "gt_idx": 7,
+            "gt_text": "Operation: Extend MarkAreaOpts to accept animation_opts and merge its fields into the emitted option...",
+            "similarity": 0.8734
+          }
+        ],
+        "overall_semantic_score": 0.7607,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/gpt_5-2_evals/ablation_turn/pyg-team_pytorch_geometric/pr_10335",
+      "pr_number": 10335,
+      "repository": "pyg-team/pytorch_geometric",
+      "files": {
+        "precision": 0.5,
+        "recall": 1.0,
+        "f1": 0.6667,
+        "predicted_count": 4,
+        "actual_count": 2,
+        "correct_count": 2
+      },
+      "functions": {
+        "precision": 0.4286,
+        "recall": 0.75,
+        "f1": 0.5455,
+        "predicted_count": 7,
+        "actual_count": 4,
+        "correct_count": 3
+      },
+      "steps": {
+        "predicted_steps": 7,
+        "actual_steps": 4,
+        "step_diff": 3,
+        "target_coverage": 0.7143,
+        "targets_matched": 5,
+        "targets_total": 7
+      },
+      "semantic": {
+        "summary_similarity": 0.6924,
+        "avg_step_similarity": 0.3465,
+        "step_matches": [
+          {
+            "pred_idx": 1,
+            "pred_text": "Operation: Guard graph indexer building/saving: if on-disk indexer already exists and we are not for...",
+            "gt_idx": 2,
+            "gt_text": "Operation: Change graph indexer save location to a dedicated `indexer_path` instead of relying on `p...",
+            "similarity": 0.6474
+          },
+          {
+            "pred_idx": 2,
+            "pred_text": "Operation: Skip per-split save() when processed split artifacts already exist and not force_reload; ...",
+            "gt_idx": 1,
+            "gt_text": "Operation: Remove the internal split-file-name helper property and stop including the indexer artifa...",
+            "similarity": 0.5489
+          },
+          {
+            "pred_idx": 3,
+            "pred_text": "Operation: Tighten overall process() caching logic: load existing processed artifacts (indexer + spl...",
+            "gt_idx": 3,
+            "gt_text": "Operation: Introduce and use an explicit `self.indexer_path` for existence checks and loading the in...",
+            "similarity": 0.6767
+          },
+          {
+            "pred_idx": 4,
+            "pred_text": "Operation: Make saving of model/eval artifacts opt-in (CLI flag / argument), and avoid writing to CW...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Update GRetriever instantiation to match the new/default interface by removing the explic...",
+            "similarity": 0.5528
+          }
+        ],
+        "overall_semantic_score": 0.4503,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/gpt_5-2_evals/ablation_turn/pyinstaller_pyinstaller/pr_9068",
+      "pr_number": 9068,
+      "repository": "pyinstaller/pyinstaller",
+      "files": {
+        "precision": 0.3333,
+        "recall": 0.5,
+        "f1": 0.4,
+        "predicted_count": 3,
+        "actual_count": 2,
+        "correct_count": 1
+      },
+      "functions": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "predicted_count": 1,
+        "actual_count": 0,
+        "correct_count": 0
+      },
+      "steps": {
+        "predicted_steps": 3,
+        "actual_steps": 2,
+        "step_diff": 1,
+        "target_coverage": 0.3333,
+        "targets_matched": 1,
+        "targets_total": 3
+      },
+      "semantic": {
+        "summary_similarity": 0.7456,
+        "avg_step_similarity": 0.5021,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Add a dedicated hook for stdlib module `_osx_support` that excludes `distutils` from modu...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Add a new PyInstaller hook for the stdlib `_osx_support` module that blocks its condition...",
+            "similarity": 0.8968
+          },
+          {
+            "pred_idx": 2,
+            "pred_text": "Operation: Validate (and if necessary, modify) `_pyi_rthook._install_setuptools_distutils_hack` to a...",
+            "gt_idx": 1,
+            "gt_text": "Operation: Fix the test script logic and clarify its intent by updating comments around the `site` i...",
+            "similarity": 0.6093
+          }
+        ],
+        "overall_semantic_score": 0.5751,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/gpt_5-2_evals/ablation_turn/pyodide_pyodide/pr_5625",
+      "pr_number": 5625,
+      "repository": "pyodide/pyodide",
+      "files": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "predicted_count": 2,
+        "actual_count": 1,
+        "correct_count": 0
+      },
+      "functions": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "predicted_count": 2,
+        "actual_count": 1,
+        "correct_count": 0
+      },
+      "steps": {
+        "predicted_steps": 2,
+        "actual_steps": 1,
+        "step_diff": 1,
+        "target_coverage": 0.0,
+        "targets_matched": 0,
+        "targets_total": 2
+      },
+      "semantic": {
+        "summary_similarity": 0.6953,
+        "avg_step_similarity": 0.408,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Relax `test_get_dist_source` assertions to ignore benign extra terminal output by matchin...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Relax the assertion in the package index CLI test to tolerate extra terminal output by ch...",
+            "similarity": 0.8159
+          }
+        ],
+        "overall_semantic_score": 0.4942,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/gpt_5-2_evals/ablation_turn/pyro-ppl_pyro/pr_3433",
+      "pr_number": 3433,
+      "repository": "pyro-ppl/pyro",
+      "files": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "predicted_count": 2,
+        "actual_count": 2,
+        "correct_count": 2
+      },
+      "functions": {
+        "precision": 0.3333,
+        "recall": 1.0,
+        "f1": 0.5,
+        "predicted_count": 3,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "steps": {
+        "predicted_steps": 3,
+        "actual_steps": 2,
+        "step_diff": 1,
+        "target_coverage": 1.0,
+        "targets_matched": 3,
+        "targets_total": 3
+      },
+      "semantic": {
+        "summary_similarity": 0.8689,
+        "avg_step_similarity": 0.5592,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Fix `__getstate__` to always work on a copied state mapping before mutating `_guide` | Fu...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Fix `Group.__getstate__` to always copy the returned state dict before mutating it | Func...",
+            "similarity": 0.9138
+          },
+          {
+            "pred_idx": 2,
+            "pred_text": "Operation: Enable serialization regression coverage by removing the xfail and asserting round-trip c...",
+            "gt_idx": 1,
+            "gt_text": "Operation: Remove the expected-failure marker from the serialization regression test now that the bu...",
+            "similarity": 0.7638
+          }
+        ],
+        "overall_semantic_score": 0.6521,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/gpt_5-2_evals/ablation_turn/pytorch_examples/pr_1224",
+      "pr_number": 1224,
+      "repository": "pytorch/examples",
+      "files": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "predicted_count": 1,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "functions": {
+        "precision": 0.5,
+        "recall": 1.0,
+        "f1": 0.6667,
+        "predicted_count": 2,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "steps": {
+        "predicted_steps": 2,
+        "actual_steps": 1,
+        "step_diff": 1,
+        "target_coverage": 1.0,
+        "targets_matched": 2,
+        "targets_total": 2
+      },
+      "semantic": {
+        "summary_similarity": 0.7013,
+        "avg_step_similarity": 0.3864,
+        "step_matches": [
+          {
+            "pred_idx": 1,
+            "pred_text": "Operation: Add a fail-fast assertion/validation for `dist_backend` vs device availability (NCCL guar...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Fix GPU counting logic and add defensive assertions to prevent invalid NCCL distributed c...",
+            "similarity": 0.7729
+          }
+        ],
+        "overall_semantic_score": 0.4809,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/gpt_5-2_evals/ablation_turn/recommenders-team_recommenders/pr_2071",
+      "pr_number": 2071,
+      "repository": "recommenders-team/recommenders",
+      "files": {
+        "precision": 1.0,
+        "recall": 0.3333,
+        "f1": 0.5,
+        "predicted_count": 1,
+        "actual_count": 3,
+        "correct_count": 1
+      },
+      "functions": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "predicted_count": 0,
+        "actual_count": 2,
+        "correct_count": 0
+      },
+      "steps": {
+        "predicted_steps": 1,
+        "actual_steps": 3,
+        "step_diff": -2,
+        "target_coverage": 1.0,
+        "targets_matched": 1,
+        "targets_total": 1
+      },
+      "semantic": {
+        "summary_similarity": 0.6952,
+        "avg_step_similarity": 0.8228,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Update the TensorFlow upper-bound pin in the GPU extra to explicitly exclude TF 2.16+ whi...",
+            "gt_idx": 1,
+            "gt_text": "Operation: Pin TensorFlow GPU extra to a version range below 2.16 to avoid known breakages/security-...",
+            "similarity": 0.8228
+          }
+        ],
+        "overall_semantic_score": 0.7845,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/gpt_5-2_evals/ablation_turn/redis_redis-py/pr_3534",
+      "pr_number": 3534,
+      "repository": "redis/redis-py",
+      "files": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "predicted_count": 2,
+        "actual_count": 2,
+        "correct_count": 2
+      },
+      "functions": {
+        "precision": 0.5,
+        "recall": 0.5,
+        "f1": 0.5,
+        "predicted_count": 2,
+        "actual_count": 2,
+        "correct_count": 1
+      },
+      "steps": {
+        "predicted_steps": 4,
+        "actual_steps": 2,
+        "step_diff": 2,
+        "target_coverage": 1.0,
+        "targets_matched": 4,
+        "targets_total": 4
+      },
+      "semantic": {
+        "summary_similarity": 0.7496,
+        "avg_step_similarity": 0.3799,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Align synchronous release() behavior to surface the correct LockNotOwnedError message whe...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Update the synchronous lock release path to raise a more informative LockError when no to...",
+            "similarity": 0.7606
+          },
+          {
+            "pred_idx": 3,
+            "pred_text": "Operation: Fix/standardize the asyncio not-owned release error to raise LockNotOwnedError with the e...",
+            "gt_idx": 1,
+            "gt_text": "Operation: Mirror the synchronous behavior in the asyncio lock implementation by updating the error ...",
+            "similarity": 0.7589
+          }
+        ],
+        "overall_semantic_score": 0.4908,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/gpt_5-2_evals/ablation_turn/saleor_saleor/pr_17947",
+      "pr_number": 17947,
+      "repository": "saleor/saleor",
+      "files": {
+        "precision": 0.5,
+        "recall": 1.0,
+        "f1": 0.6667,
+        "predicted_count": 2,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "functions": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "predicted_count": 3,
+        "actual_count": 0,
+        "correct_count": 0
+      },
+      "steps": {
+        "predicted_steps": 3,
+        "actual_steps": 1,
+        "step_diff": 2,
+        "target_coverage": 0.6667,
+        "targets_matched": 2,
+        "targets_total": 3
+      },
+      "semantic": {
+        "summary_similarity": 0.785,
+        "avg_step_similarity": 0.2806,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Move the query-cost multiplier to the correct GraphQL field by adding `multipliers: [\"lim...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Fix query cost multipliers for Attribute.values and SelectedAttribute.values by moving th...",
+            "similarity": 0.8419
+          }
+        ],
+        "overall_semantic_score": 0.4319,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/gpt_5-2_evals/ablation_turn/scikit-learn_scikit-learn/pr_31674",
+      "pr_number": 31674,
+      "repository": "scikit-learn/scikit-learn",
+      "files": {
+        "precision": 0.5,
+        "recall": 1.0,
+        "f1": 0.6667,
+        "predicted_count": 2,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "functions": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "predicted_count": 1,
+        "actual_count": 0,
+        "correct_count": 0
+      },
+      "steps": {
+        "predicted_steps": 2,
+        "actual_steps": 1,
+        "step_diff": 1,
+        "target_coverage": 0.5,
+        "targets_matched": 1,
+        "targets_total": 2
+      },
+      "semantic": {
+        "summary_similarity": 0.7245,
+        "avg_step_similarity": 0.4517,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Fix Sphinx extension module name in the extensions list (and/or any explicit extension lo...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Fix Sphinx extension module name in the documentation build configuration by replacing th...",
+            "similarity": 0.9034
+          }
+        ],
+        "overall_semantic_score": 0.5335,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/gpt_5-2_evals/ablation_turn/scrapy_scrapy/pr_6899",
+      "pr_number": 6899,
+      "repository": "scrapy/scrapy",
+      "files": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "predicted_count": 1,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "functions": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "predicted_count": 1,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "steps": {
+        "predicted_steps": 1,
+        "actual_steps": 1,
+        "step_diff": 0,
+        "target_coverage": 1.0,
+        "targets_matched": 1,
+        "targets_total": 1
+      },
+      "semantic": {
+        "summary_similarity": 0.8076,
+        "avg_step_similarity": 0.8819,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Introduce a typing-only Failure subclass and replace the `type: ignore[attr-defined]` wit...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Introduce a typed `FailureWithRequest` subclass and use `typing.cast()` in `call_spider_a...",
+            "similarity": 0.8819
+          }
+        ],
+        "overall_semantic_score": 0.8596,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/gpt_5-2_evals/ablation_turn/simonw_datasette/pr_2463",
+      "pr_number": 2463,
+      "repository": "simonw/datasette",
+      "files": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "predicted_count": 1,
+        "actual_count": 2,
+        "correct_count": 0
+      },
+      "functions": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "predicted_count": 3,
+        "actual_count": 2,
+        "correct_count": 0
+      },
+      "steps": {
+        "predicted_steps": 3,
+        "actual_steps": 2,
+        "step_diff": 1,
+        "target_coverage": 0.0,
+        "targets_matched": 0,
+        "targets_total": 3
+      },
+      "semantic": {
+        "summary_similarity": 0.6732,
+        "avg_step_similarity": 0.4012,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Update the async ds_client fixture to explicitly depend on pytest-asyncio’s event loop an...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Update the CLI token creation test to request pytest-asyncio's event loop fixture | Funct...",
+            "similarity": 0.6616
+          },
+          {
+            "pred_idx": 1,
+            "pred_text": "Operation: Re-evaluate and adjust test collection ordering hook to ensure it remains correct under s...",
+            "gt_idx": 1,
+            "gt_text": "Operation: Remove serial-only execution marker and require the event_loop fixture for the CLI token ...",
+            "similarity": 0.542
+          }
+        ],
+        "overall_semantic_score": 0.4828,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/gpt_5-2_evals/ablation_turn/skypilot-org_skypilot/pr_6295",
+      "pr_number": 6295,
+      "repository": "skypilot-org/skypilot",
+      "files": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "predicted_count": 1,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "functions": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "predicted_count": 1,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "steps": {
+        "predicted_steps": 1,
+        "actual_steps": 1,
+        "step_diff": 0,
+        "target_coverage": 1.0,
+        "targets_matched": 1,
+        "targets_total": 1
+      },
+      "semantic": {
+        "summary_similarity": 0.8738,
+        "avg_step_similarity": 0.8819,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Update the Hyperbolic feasibility unit test to use a currently valid instance type (prefe...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Update the Hyperbolic resource feasibility unit test to use an instance type and accelera...",
+            "similarity": 0.8819
+          }
+        ],
+        "overall_semantic_score": 0.8795,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/gpt_5-2_evals/ablation_turn/soimort_you-get/pr_3024",
+      "pr_number": 3024,
+      "repository": "soimort/you-get",
+      "files": {
+        "precision": 0.5,
+        "recall": 0.3333,
+        "f1": 0.4,
+        "predicted_count": 2,
+        "actual_count": 3,
+        "correct_count": 1
+      },
+      "functions": {
+        "precision": 0.5,
+        "recall": 0.4,
+        "f1": 0.4444,
+        "predicted_count": 4,
+        "actual_count": 5,
+        "correct_count": 2
+      },
+      "steps": {
+        "predicted_steps": 4,
+        "actual_steps": 6,
+        "step_diff": -2,
+        "target_coverage": 0.75,
+        "targets_matched": 3,
+        "targets_total": 4
+      },
+      "semantic": {
+        "summary_similarity": 0.8086,
+        "avg_step_similarity": 0.7765,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Refactor YouTube stream parsing to retain cipher-related fields and player JS URL for lat...",
+            "gt_idx": 3,
+            "gt_text": "Operation: Rewrite `prepare()` to extract `ytInitialPlayerResponse` from the watch page, validate `p...",
+            "similarity": 0.8494
+          },
+          {
+            "pred_idx": 1,
+            "pred_text": "Operation: Centralize final URL construction to decipher `signatureCipher` (apply correct `sp`) and ...",
+            "gt_idx": 4,
+            "gt_text": "Operation: Simplify `extract()` to use URLs precomputed in `prepare()` (remove redundant sig/s handl...",
+            "similarity": 0.7824
+          },
+          {
+            "pred_idx": 2,
+            "pred_text": "Operation: Replace brittle JS→Python translation with dukpy-backed signature decipher execution (wit...",
+            "gt_idx": 2,
+            "gt_text": "Operation: Refactor signature deciphering to evaluate extracted player functions directly in JavaScr...",
+            "similarity": 0.8669
+          },
+          {
+            "pred_idx": 3,
+            "pred_text": "Operation: Add a reusable dukpy-based JavaScript interpreter utility that can load player JS and cal...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Add a new runtime dependency on dukpy for JavaScript evaluation | Reason: The extractor n...",
+            "similarity": 0.6072
+          }
+        ],
+        "overall_semantic_score": 0.7861,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/gpt_5-2_evals/ablation_turn/speechbrain_speechbrain/pr_2739",
+      "pr_number": 2739,
+      "repository": "speechbrain/speechbrain",
+      "files": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "predicted_count": 1,
+        "actual_count": 1,
+        "correct_count": 0
+      },
+      "functions": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "predicted_count": 1,
+        "actual_count": 0,
+        "correct_count": 0
+      },
+      "steps": {
+        "predicted_steps": 1,
+        "actual_steps": 1,
+        "step_diff": 0,
+        "target_coverage": 0.0,
+        "targets_matched": 0,
+        "targets_total": 1
+      },
+      "semantic": {
+        "summary_similarity": 0.6823,
+        "avg_step_similarity": 0.7127,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Implement backward-compatible state_dict key remapping for legacy `convs_intermedite` pre...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Add a legacy checkpoint key rename mapping for the PostNet typo so older model parameter ...",
+            "similarity": 0.7127
+          }
+        ],
+        "overall_semantic_score": 0.7036,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/gpt_5-2_evals/ablation_turn/sqlfluff_sqlfluff/pr_6890",
+      "pr_number": 6890,
+      "repository": "sqlfluff/sqlfluff",
+      "files": {
+        "precision": 0.5,
+        "recall": 1.0,
+        "f1": 0.6667,
+        "predicted_count": 2,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "functions": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "predicted_count": 2,
+        "actual_count": 0,
+        "correct_count": 0
+      },
+      "steps": {
+        "predicted_steps": 2,
+        "actual_steps": 1,
+        "step_diff": 1,
+        "target_coverage": 0.5,
+        "targets_matched": 1,
+        "targets_total": 2
+      },
+      "semantic": {
+        "summary_similarity": 0.812,
+        "avg_step_similarity": 0.4247,
+        "step_matches": [
+          {
+            "pred_idx": 1,
+            "pred_text": "Operation: Update lexer slicing test fixtures to construct `RawFileSlice` with correct `block_idx`/`...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Update lexer test expectations to match the corrected `RawFileSlice` constructor argument...",
+            "similarity": 0.8494
+          }
+        ],
+        "overall_semantic_score": 0.5409,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/gpt_5-2_evals/ablation_turn/sshuttle_sshuttle/pr_996",
+      "pr_number": 996,
+      "repository": "sshuttle/sshuttle",
+      "files": {
+        "precision": 0.5,
+        "recall": 1.0,
+        "f1": 0.6667,
+        "predicted_count": 2,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "functions": {
+        "precision": 0.5,
+        "recall": 1.0,
+        "f1": 0.6667,
+        "predicted_count": 2,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "steps": {
+        "predicted_steps": 2,
+        "actual_steps": 1,
+        "step_diff": 1,
+        "target_coverage": 0.5,
+        "targets_matched": 1,
+        "targets_total": 2
+      },
+      "semantic": {
+        "summary_similarity": 0.6989,
+        "avg_step_similarity": 0.3108,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Revert Windows-specific remote server bootstrap and transport shims in SSH connection set...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Adjust remote python invocation quoting for POSIX shells by wrapping the python executabl...",
+            "similarity": 0.6215
+          }
+        ],
+        "overall_semantic_score": 0.4272,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/gpt_5-2_evals/ablation_turn/stanfordnlp_dspy/pr_8500",
+      "pr_number": 8500,
+      "repository": "stanfordnlp/dspy",
+      "files": {
+        "precision": 1.0,
+        "recall": 0.5,
+        "f1": 0.6667,
+        "predicted_count": 1,
+        "actual_count": 2,
+        "correct_count": 1
+      },
+      "functions": {
+        "precision": 0.5,
+        "recall": 0.1111,
+        "f1": 0.1818,
+        "predicted_count": 2,
+        "actual_count": 9,
+        "correct_count": 1
+      },
+      "steps": {
+        "predicted_steps": 2,
+        "actual_steps": 9,
+        "step_diff": -7,
+        "target_coverage": 1.0,
+        "targets_matched": 2,
+        "targets_total": 2
+      },
+      "semantic": {
+        "summary_similarity": 0.6801,
+        "avg_step_similarity": 0.6816,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Harden listener-routing logic to tolerate ModelResponseStream chunks without a routable p...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Tighten async streaming dispatch to only delegate to listeners when the streamed chunk ca...",
+            "similarity": 0.7854
+          },
+          {
+            "pred_idx": 1,
+            "pred_text": "Operation: Add a defensive predict_id check when converting streamed chunks into client-facing strea...",
+            "gt_idx": 8,
+            "gt_text": "Operation: Streamify the async program with a listener, iterate the async output, and assert the con...",
+            "similarity": 0.5779
+          }
+        ],
+        "overall_semantic_score": 0.6811,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/gpt_5-2_evals/ablation_turn/statsmodels_statsmodels/pr_9396",
+      "pr_number": 9396,
+      "repository": "statsmodels/statsmodels",
+      "files": {
+        "precision": 0.5,
+        "recall": 0.5,
+        "f1": 0.5,
+        "predicted_count": 2,
+        "actual_count": 2,
+        "correct_count": 1
+      },
+      "functions": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "predicted_count": 2,
+        "actual_count": 0,
+        "correct_count": 0
+      },
+      "steps": {
+        "predicted_steps": 2,
+        "actual_steps": 2,
+        "step_diff": 0,
+        "target_coverage": 0.5,
+        "targets_matched": 1,
+        "targets_total": 2
+      },
+      "semantic": {
+        "summary_similarity": 0.6198,
+        "avg_step_similarity": 0.7626,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Remove any mutation/assignment of the fitted result's `method` attribute during `summary2...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Remove the side-effect assignment that sets the fitting method during summary generation ...",
+            "similarity": 0.8621
+          },
+          {
+            "pred_idx": 1,
+            "pred_text": "Operation: Remove any mutation/assignment of the fitted result's `method` attribute during `summary2...",
+            "gt_idx": 1,
+            "gt_text": "Operation: Update and expand GLM test coverage to ensure calling `summary2()` does not mutate `res.m...",
+            "similarity": 0.6632
+          }
+        ],
+        "overall_semantic_score": 0.7198,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/gpt_5-2_evals/ablation_turn/trycua_cua/pr_152",
+      "pr_number": 152,
+      "repository": "trycua/cua",
+      "files": {
+        "precision": 1.0,
+        "recall": 0.5455,
+        "f1": 0.7059,
+        "predicted_count": 6,
+        "actual_count": 11,
+        "correct_count": 6
+      },
+      "functions": {
+        "precision": 0.5,
+        "recall": 0.2353,
+        "f1": 0.32,
+        "predicted_count": 8,
+        "actual_count": 17,
+        "correct_count": 4
+      },
+      "steps": {
+        "predicted_steps": 8,
+        "actual_steps": 17,
+        "step_diff": -9,
+        "target_coverage": 1.0,
+        "targets_matched": 8,
+        "targets_total": 8
+      },
+      "semantic": {
+        "summary_similarity": 0.8338,
+        "avg_step_similarity": 0.6619,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Refactor UITARS streaming loop to yield standardized AgentResponse objects (instead of ad...",
+            "gt_idx": 5,
+            "gt_text": "Operation: Replace ad-hoc thought/action yielding with a single standardized AgentResponse yield for...",
+            "similarity": 0.7447
+          },
+          {
+            "pred_idx": 1,
+            "pred_text": "Operation: Adjust response handling to return structured data needed by run() (e.g., parsed tool cal...",
+            "gt_idx": 7,
+            "gt_text": "Operation: Introduce conversion utility to transform raw UITARS responses into the shared AgentRespo...",
+            "similarity": 0.6142
+          },
+          {
+            "pred_idx": 2,
+            "pred_text": "Operation: Update Gradio chat item formatting to detect AgentResponse (including UITARS) and prefer ...",
+            "gt_idx": 11,
+            "gt_text": "Operation: Refactor streaming response rendering to emit Gradio ChatMessages directly from AgentResp...",
+            "similarity": 0.734
+          },
+          {
+            "pred_idx": 3,
+            "pred_text": "Operation: Enhance synthesized text extraction to render AgentResponse.output blocks clearly (e.g., ...",
+            "gt_idx": 9,
+            "gt_text": "Operation: Remove legacy synthesized-text extraction helper from the Gradio UI codepath | Reason: Th...",
+            "similarity": 0.6581
+          },
+          {
+            "pred_idx": 4,
+            "pred_text": "Operation: Extend action parameter parsing to support multi-point drag paths (>2 points) while remai...",
+            "gt_idx": 1,
+            "gt_text": "Operation: Register a new supported tool action type ('drag') in the OpenAI computer tool | Reason: ...",
+            "similarity": 0.5894
+          },
+          {
+            "pred_idx": 5,
+            "pred_text": "Operation: Fix drag execution and implement polyline dragging by iterating through consecutive path ...",
+            "gt_idx": 2,
+            "gt_text": "Operation: Add dispatch logic to validate a drag path and route drag requests to a dedicated handler...",
+            "similarity": 0.6458
+          },
+          {
+            "pred_idx": 6,
+            "pred_text": "Operation: Keep the interface contract stable by ensuring drag_to remains sufficient for polyline dr...",
+            "gt_idx": 15,
+            "gt_text": "Operation: Add a new abstract drag(path) API to the computer client interface contract | Reason: The...",
+            "similarity": 0.6034
+          },
+          {
+            "pred_idx": 7,
+            "pred_text": "Operation: Validate macOS drag behavior under the clarified/expected drag_to semantics to ensure seq...",
+            "gt_idx": 3,
+            "gt_text": "Operation: Implement path-based drag execution (2-point drag_to vs multi-point drag) including scree...",
+            "similarity": 0.7056
+          }
+        ],
+        "overall_semantic_score": 0.7135,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/gpt_5-2_evals/ablation_turn/ultrafunkamsterdam_undetected-chromedriver/pr_1632",
+      "pr_number": 1632,
+      "repository": "ultrafunkamsterdam/undetected-chromedriver",
+      "files": {
+        "precision": 0.5,
+        "recall": 1.0,
+        "f1": 0.6667,
+        "predicted_count": 2,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "functions": {
+        "precision": 0.5,
+        "recall": 1.0,
+        "f1": 0.6667,
+        "predicted_count": 2,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "steps": {
+        "predicted_steps": 2,
+        "actual_steps": 1,
+        "step_diff": 1,
+        "target_coverage": 0.5,
+        "targets_matched": 1,
+        "targets_total": 2
+      },
+      "semantic": {
+        "summary_similarity": 0.8188,
+        "avg_step_similarity": 0.4051,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Make headless checks robust by using a safe accessor and persisting a default headless fl...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Guard access to the ChromeOptions.headless attribute and initialize it when absent to pre...",
+            "similarity": 0.8102
+          }
+        ],
+        "overall_semantic_score": 0.5292,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/gpt_5-2_evals/ablation_turn/vikhyat_moondream/pr_277",
+      "pr_number": 277,
+      "repository": "vikhyat/moondream",
+      "files": {
+        "precision": 0.6667,
+        "recall": 0.6667,
+        "f1": 0.6667,
+        "predicted_count": 3,
+        "actual_count": 3,
+        "correct_count": 2
+      },
+      "functions": {
+        "precision": 0.2,
+        "recall": 0.1111,
+        "f1": 0.1429,
+        "predicted_count": 5,
+        "actual_count": 9,
+        "correct_count": 1
+      },
+      "steps": {
+        "predicted_steps": 5,
+        "actual_steps": 10,
+        "step_diff": -5,
+        "target_coverage": 0.6,
+        "targets_matched": 3,
+        "targets_total": 5
+      },
+      "semantic": {
+        "summary_similarity": 0.888,
+        "avg_step_similarity": 0.5932,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Fix label construction so each box contributes exactly 4 labels (x,y use linear bins; w,h...",
+            "gt_idx": 9,
+            "gt_text": "Operation: Remove duplicated/incorrect extra bounding-box label appending and update the script’s tr...",
+            "similarity": 0.7367
+          },
+          {
+            "pred_idx": 1,
+            "pred_text": "Operation: Verify/update the region loss indexing logic to match the corrected label layout (x,y tre...",
+            "gt_idx": 8,
+            "gt_text": "Operation: Fix coordinate bin label generation to use Python ints (avoid tensor objects) when buildi...",
+            "similarity": 0.5858
+          },
+          {
+            "pred_idx": 2,
+            "pred_text": "Operation: Implement waste detection evaluation: load `moondream/waste_detection`, run region predic...",
+            "gt_idx": 4,
+            "gt_text": "Operation: Add evaluation loop to run detection per label and aggregate TP/FP/FN into precision/reca...",
+            "similarity": 0.7613
+          },
+          {
+            "pred_idx": 3,
+            "pred_text": "Operation: Register the new waste detection evaluator in the unified eval entrypoint so it can be in...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Update gitignore rules to exclude experiment artifacts (Weights & Biases runs and produce...",
+            "similarity": 0.3774
+          },
+          {
+            "pred_idx": 4,
+            "pred_text": "Operation: Ensure the shared eval model constructor supports the waste detection eval’s inference ne...",
+            "gt_idx": 6,
+            "gt_text": "Operation: Add CLI entrypoint to select model path, IoU threshold, GPU index, and debug mode and pri...",
+            "similarity": 0.505
+          }
+        ],
+        "overall_semantic_score": 0.6816,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/gpt_5-2_evals/ablation_turn/vllm-project_vllm/pr_20938",
+      "pr_number": 20938,
+      "repository": "vllm-project/vllm",
+      "files": {
+        "precision": 0.5,
+        "recall": 1.0,
+        "f1": 0.6667,
+        "predicted_count": 2,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "functions": {
+        "precision": 0.25,
+        "recall": 1.0,
+        "f1": 0.4,
+        "predicted_count": 4,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "steps": {
+        "predicted_steps": 4,
+        "actual_steps": 1,
+        "step_diff": 3,
+        "target_coverage": 0.5,
+        "targets_matched": 2,
+        "targets_total": 4
+      },
+      "semantic": {
+        "summary_similarity": 0.7763,
+        "avg_step_similarity": 0.2251,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Promote conv_state_batch_coord to tl.int64 before any pointer arithmetic and make bounds/...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Cast `conv_state_batch_coord` loaded from `conv_state_indices_ptr` to `tl.int64` inside t...",
+            "similarity": 0.9006
+          }
+        ],
+        "overall_semantic_score": 0.3905,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/gpt_5-2_evals/ablation_turn/wkentaro_labelme/pr_1535",
+      "pr_number": 1535,
+      "repository": "wkentaro/labelme",
+      "files": {
+        "precision": 0.3333,
+        "recall": 1.0,
+        "f1": 0.5,
+        "predicted_count": 3,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "functions": {
+        "precision": 0.5,
+        "recall": 1.0,
+        "f1": 0.6667,
+        "predicted_count": 4,
+        "actual_count": 2,
+        "correct_count": 2
+      },
+      "steps": {
+        "predicted_steps": 4,
+        "actual_steps": 2,
+        "step_diff": 2,
+        "target_coverage": 0.5,
+        "targets_matched": 2,
+        "targets_total": 4
+      },
+      "semantic": {
+        "summary_similarity": 0.7869,
+        "avg_step_similarity": 0.4216,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Extend mask rasterization to accept precomputed/AI-provided mask payloads (base64 string,...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Extend `shape_to_mask` to accept and render AI-generated mask payloads (array/list or bas...",
+            "similarity": 0.8605
+          },
+          {
+            "pred_idx": 1,
+            "pred_text": "Operation: Update label generation to route `shape_type=='mask'` (or shapes containing a `mask` fiel...",
+            "gt_idx": 1,
+            "gt_text": "Operation: Plumb per-shape `mask` data from JSON shape dictionaries into mask generation during labe...",
+            "similarity": 0.826
+          }
+        ],
+        "overall_semantic_score": 0.5312,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    },
+    {
+      "pr_dir": "/Users/davidecroatto/code/planningtest0/gpt_5-2_evals/ablation_turn/yihong0618_bilingual_book_maker/pr_429",
+      "pr_number": 429,
+      "repository": "yihong0618/bilingual_book_maker",
+      "files": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "predicted_count": 1,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "functions": {
+        "precision": 0.5,
+        "recall": 1.0,
+        "f1": 0.6667,
+        "predicted_count": 2,
+        "actual_count": 1,
+        "correct_count": 1
+      },
+      "steps": {
+        "predicted_steps": 2,
+        "actual_steps": 1,
+        "step_diff": 1,
+        "target_coverage": 1.0,
+        "targets_matched": 2,
+        "targets_total": 2
+      },
+      "semantic": {
+        "summary_similarity": 0.8662,
+        "avg_step_similarity": 0.4534,
+        "step_matches": [
+          {
+            "pred_idx": 0,
+            "pred_text": "Operation: Fix backoff-wrapped translate wrapper signature and decorator options; add structured err...",
+            "gt_idx": 0,
+            "gt_text": "Operation: Fix the backoff-decorated wrapper to accept the positional arguments actually passed thro...",
+            "similarity": 0.9067
+          }
+        ],
+        "overall_semantic_score": 0.5772,
+        "computed": true,
+        "error": null
+      },
+      "has_prediction": true,
+      "has_ground_truth": true,
+      "error": null
+    }
+  ]
+}

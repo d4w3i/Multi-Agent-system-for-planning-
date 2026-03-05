@@ -1,0 +1,79 @@
+{
+  "pr_number": 2463,
+  "repository": "simonw/datasette",
+  "title": "Use the event_loop fixture",
+  "body": "Refs:\n- https://github.com/simonw/datasette/issues/2461#issuecomment-2634920351\n\n<!-- readthedocs-preview datasette start -->\n----\n📚 Documentation preview 📚: https://datasette--2463.org.readthedocs.build/en/2463/\n\n<!-- readthedocs-preview datasette end -->",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T12:43:29.242923",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "tests/conftest.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "ds_client",
+          "class_name": null,
+          "full_name": "ds_client",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "pytest_collection_modifyitems",
+          "class_name": null,
+          "full_name": "pytest_collection_modifyitems",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "wait_until_responds",
+          "class_name": null,
+          "full_name": "wait_until_responds",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "pytest.ini",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    }
+  ],
+  "step_plan": {
+    "summary": "Update Datasette’s test infrastructure to explicitly use pytest-asyncio’s `event_loop` fixture in key async test fixtures/helpers, improving compatibility with `asyncio_mode = strict` and avoiding reuse of loop-bound resources across tests.",
+    "steps": [
+      {
+        "operation": "Update the async ds_client fixture to explicitly depend on pytest-asyncio’s event loop and ensure the created client is not reused across closed loops",
+        "file_to_modify": "tests/conftest.py",
+        "function_to_modify": "ds_client",
+        "reason": "With `asyncio_mode = strict`, pytest-asyncio is stricter about loop ownership and lifecycle; async resources (http clients, background tasks, app startup) must be created and used on the same loop provided by pytest-asyncio. A module-level cached `_ds_client` can accidentally bind to a loop that later gets closed, causing flakiness and warnings/failures. Adding an `event_loop` fixture dependency (and adjusting caching/scope accordingly) makes loop usage explicit and compatible with newer pytest-asyncio behavior.",
+        "side_effects": "May increase per-test setup cost if caching is removed or reduced; could require updating tests that assumed a shared client instance; may expose previously-hidden teardown ordering issues (client close/startup/shutdown) that need to be addressed."
+      },
+      {
+        "operation": "Re-evaluate and adjust test collection ordering hook to ensure it remains correct under strict asyncio mode and any fixture/loop changes",
+        "file_to_modify": "tests/conftest.py",
+        "function_to_modify": "pytest_collection_modifyitems",
+        "reason": "This hook likely enforces ordering to avoid certain tests triggering async behavior too early or to sequence integration tests. Changing how the event loop is obtained/used (and possibly changing fixture scopes) can alter when async fixtures are instantiated; collection/execution ordering constraints may need to be updated to avoid depending on implicit loop initialization.",
+        "side_effects": "Could change test run order, which may reveal hidden inter-test coupling; may affect xdist/parallel runs if ordering assumptions were relied upon; should be validated by running the full test suite."
+      },
+      {
+        "operation": "Ensure wait_until_responds remains robust when used alongside loop-scoped async server startup and strict-mode event loop management",
+        "file_to_modify": "tests/conftest.py",
+        "function_to_modify": "wait_until_responds",
+        "reason": "If server startup/readiness checks are executed while async fixtures now explicitly use `event_loop`, readiness polling must not inadvertently rely on a different loop/thread timing or on resources tied to a loop that is not running. Tightening this helper (timeouts/backoff/exception handling) helps prevent flakes when loop creation/teardown becomes more deterministic under strict mode.",
+        "side_effects": "May slightly change timing characteristics of integration tests (e.g., longer waits before failing); could require adjusting timeouts in CI; should reduce intermittent failures in slow environments."
+      }
+    ]
+  }
+}

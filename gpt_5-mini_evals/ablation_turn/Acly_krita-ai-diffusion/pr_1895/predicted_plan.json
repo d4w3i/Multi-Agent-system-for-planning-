@@ -1,0 +1,95 @@
+{
+  "pr_number": 1895,
+  "repository": "Acly/krita-ai-diffusion",
+  "title": "feat: Switch to enum queue mode, add 'replace' mode.",
+  "body": "Follow up to https://github.com/Acly/krita-ai-diffusion/pull/1879\n\nKind of janky because of the fact that job queue tasks are split up before the client- I make clear-queue a property of the first job.\n\nNot sure if the enum is in the right place.\n\nTentatively planning to implement ctrl-click as \"Alternate queue mode\".",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T11:42:59.354496",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "ai_diffusion/model.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "enqueue_jobs",
+          "class_name": "Model",
+          "full_name": "Model.enqueue_jobs",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_enqueue_job",
+          "class_name": "Model",
+          "full_name": "Model._enqueue_job",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "ai_diffusion/ui/widget.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "__init__",
+          "class_name": "QueuePopup",
+          "full_name": "QueuePopup.__init__",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "model (setter)",
+          "class_name": "QueuePopup",
+          "full_name": "QueuePopup.model (setter)",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Replace the boolean queue_front with a three-value QueueMode enum (Back/Front/Replace) and implement 'replace' semantics by clearing the remote queue before sending the first job of a batch. Update the model enqueue code to convert the enum to the client's front boolean and update the UI combo to present and bind the new enum.",
+    "steps": [
+      {
+        "operation": "Add QueueMode enum and replace queue_front property; implement enum-aware enqueue logic in the batch enqueue function",
+        "file_to_modify": "ai_diffusion/model.py",
+        "function_to_modify": "Model.enqueue_jobs",
+        "reason": "Centralize queue-mode state on Model and implement the new 'replace' semantics before any jobs are sent. The enum is colocated with other workflow enums to minimize churn. enqueue_jobs is the right place to: (1) convert the enum to the client's expected front boolean per-job and (2) perform the asynchronous clear_queue() call when the mode is 'replace' for the first job in a batch.",
+        "side_effects": "Changes model surface area: queue_front (bool) becomes queue_mode (QueueMode) and queue_mode_changed signal is added — any code/tests referencing queue_front must be updated. Property serialization may change (enum vs bool) and persisted settings may need migration. The change uses the client's async clear_queue() (await self._connection.client.clear_queue()), so enqueue_jobs must be async and callers should remain compatible. This also depends on updating UI bindings to use the enum."
+      },
+      {
+        "operation": "Modify _enqueue_job to accept and forward a 'front' boolean to the client.enqueue call",
+        "file_to_modify": "ai_diffusion/model.py",
+        "function_to_modify": "Model._enqueue_job",
+        "reason": "Client.enqueue keeps the existing front boolean API; converting the enum to a front boolean once in enqueue_jobs and passing it down keeps responsibilities clear. Changing _enqueue_job signature to accept front (or reading a passed front param) makes the enqueue call explicit and prevents duplicated conversion logic.",
+        "side_effects": "All internal callers of _enqueue_job (enqueue_jobs and any tests/helpers) must be updated to pass the front boolean. This is an internal API change and may require updates to unit tests/mock calls. Behavior of job progress initialization and client.enqueue remains otherwise unchanged."
+      },
+      {
+        "operation": "Populate queue-mode combo with QueueMode enum entries and import the enum",
+        "file_to_modify": "ai_diffusion/ui/widget.py",
+        "function_to_modify": "QueuePopup.__init__",
+        "reason": "The UI must present three options (Back, Front, Replace) backed by the new QueueMode enum. Updating the combo initialization ensures the UI shows the new mode choices and uses enum values rather than booleans.",
+        "side_effects": "UI tests and any code that reads combo values must expect enum values instead of booleans/ints. The widget module must import QueueMode from ai_diffusion.model. If persisted UI settings stored a boolean previously, migration or a compatibility mapping may be necessary to map old boolean values to the new enum."
+      },
+      {
+        "operation": "Rebind the UI to the new model property 'queue_mode' in the model setter",
+        "file_to_modify": "ai_diffusion/ui/widget.py",
+        "function_to_modify": "QueuePopup.model",
+        "reason": "The model previously exposed queue_front; with the model change this setter must bind the combo to queue_mode so the UI and model stay in sync and changes in the UI update the enum property.",
+        "side_effects": "Any code that expected the model to have queue_front will break until updated. The binding needs to correctly handle enum values (the bind helper must support enum properties or a small adapter lambda must be added). Tests asserting old model/UI behavior must be updated. Behavior of enqueue operations will change when a user selects 'Replace' in the UI (it will clear remote queue before the first enqueued job)."
+      }
+    ]
+  }
+}

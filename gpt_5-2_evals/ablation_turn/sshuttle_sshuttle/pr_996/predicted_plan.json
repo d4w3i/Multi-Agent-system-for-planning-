@@ -1,0 +1,79 @@
+{
+  "pr_number": 996,
+  "repository": "sshuttle/sshuttle",
+  "title": "Revert \"Support Windows11 As A sshuttle Server\"",
+  "body": "Reverts sshuttle/sshuttle#993\n\nThis change was made in error. See discussion in #993.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T12:46:29.835016",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "sshuttle/ssh.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "connect",
+          "class_name": "sshuttle",
+          "full_name": "sshuttle.ssh.connect",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "sshuttle/server.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "main",
+          "class_name": "sshuttle",
+          "full_name": "sshuttle.server.main",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "sshuttle/options.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    },
+    {
+      "filename": "docs/windows.rst",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    }
+  ],
+  "step_plan": {
+    "summary": "Revert the erroneous Windows11-remote-server support by removing Windows-specific remote bootstrap/stdio shims in the SSH connector and eliminating the Windows-only runtime path in the server entrypoint, restoring the prior POSIX-only remote server behavior.",
+    "steps": [
+      {
+        "operation": "Revert Windows-specific remote server bootstrap and transport shims in SSH connection setup (remove/restore win32 branches and cmd/powershell remote-shell launching so remote server is treated as POSIX-only again)",
+        "file_to_modify": "sshuttle/ssh.py",
+        "function_to_modify": "sshuttle.ssh.connect",
+        "reason": "PR #993 introduced Windows-server enablement primarily via Windows-specific stdio/mux shims (e.g., SocketRWShim + pipe/socket bridging) and remote-shell modes intended to start the remote server under cmd/powershell. Reverting that support means restoring the pre-#993 behavior: build a POSIX-oriented remote python launcher and use the standard SSH stdio wiring expected by the mux protocol.",
+        "side_effects": "May break workflows that relied on Windows being the *remote* server (intended). Must ensure Windows-as-client still works (local platform may still be win32). Any callers that pass remote_shell=cmd/powershell may now error or fall back; update help/validation accordingly. Re-run integration paths that establish a remote server over SSH to confirm no regression on Linux/macOS servers."
+      },
+      {
+        "operation": "Remove Windows-server runtime path in server entrypoint (eliminate win32 mux initialization/deferred-exit workaround and restore single, POSIX-oriented stdin/stdout mux handling)",
+        "file_to_modify": "sshuttle/server.py",
+        "function_to_modify": "sshuttle.server.main",
+        "reason": "Windows-specific server.main() logic (SocketRWShim wrapping of stdin/stdout and deferred exit handling) exists specifically to let sshuttle.server run on Windows. Reverting #993 requires removing that runtime support so the server component assumes a POSIX-like environment and uses the original mux IO behavior.",
+        "side_effects": "Running sshuttle.server on Windows will no longer be supported (intended). Ensure the mux protocol behavior remains unchanged for POSIX servers; verify shutdown/exit semantics remain correct without the deferred-exit workaround. Any tests/fixtures that executed server.main() on win32 must be removed/adjusted."
+      }
+    ]
+  }
+}

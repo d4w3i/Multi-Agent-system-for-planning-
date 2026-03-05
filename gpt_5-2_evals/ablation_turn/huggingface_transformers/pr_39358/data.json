@@ -1,0 +1,69 @@
+{
+    "repository": "huggingface/transformers",
+    "pull_request_number": 39358,
+    "title": "fix(siglip2): improve pooled output logic in modular file",
+    "body": "# What does this PR do?\r\n\r\n<!--\r\nCongratulations! You've made it this far! You're not quite done yet though.\r\n\r\nOnce merged, your PR is going to appear in the release notes with the title you set, so make sure it's a great title that fully reflects the extent of your awesome contribution.\r\n\r\nThen, please replace this with a description of the change and which issue is fixed (if applicable). Please also include relevant motivation and context. List any dependencies (if any) that are required for this change.\r\n\r\nOnce you're done, someone will review your PR shortly (see the section \"Who can review?\" below to tag some potential reviewers). They may suggest changes to make the code even better. If no one reviewed your PR after a week has passed, don't hesitate to post a new comment @-mentioning the same persons---sometimes notifications get lost.\r\n-->\r\n\r\n<!-- Remove if not applicable -->\r\n\r\nFixes # (issue)\r\n\r\n\r\n## Before submitting\r\n- [x] This PR fixes a typo or improves the docs (you can dismiss the other checks if that's the case).\r\n- [x] Did you read the [contributor guideline](https://github.com/huggingface/transformers/blob/main/CONTRIBUTING.md#create-a-pull-request),\r\n      Pull Request section?\r\n- [x] Was this discussed/approved via a Github issue or the [forum](https://discuss.huggingface.co/)? Please add a link\r\n      to it if that's the case.\r\n- [x] Did you make sure to update the documentation with your changes? Here are the\r\n      [documentation guidelines](https://github.com/huggingface/transformers/tree/main/docs), and\r\n      [here are tips on formatting docstrings](https://github.com/huggingface/transformers/tree/main/docs#writing-source-documentation).\r\n- [x] Did you write any new necessary tests?\r\n\r\n\r\n## Who can review?\r\n\r\nAnyone in the community is free to review the PR once the tests have passed. Feel free to tag\r\nmembers/contributors who may be interested in your PR.\r\n\r\n<!-- Your PR will be replied to more quickly if you can figure out the right person to tag with @\r\n\r\n If you know how to use git blame, that is the easiest way, otherwise, here is a rough guide of **who to tag**.\r\n Please tag fewer than 3 people.\r\n\r\nModels:\r\n\r\n- text models: @ArthurZucker\r\n- vision models: @amyeroberts, @qubvel\r\n- speech models: @eustlb\r\n- graph models: @clefourrier\r\n\r\nLibrary:\r\n\r\n- flax: @gante and @Rocketknight1\r\n- generate: @zucchini-nlp (visual-language models) or @gante (all others)\r\n- pipelines: @Rocketknight1\r\n- tensorflow: @gante and @Rocketknight1\r\n- tokenizers: @ArthurZucker\r\n- trainer: @zach-huggingface, @SunMarc and @qgallouedec\r\n- chat templates: @Rocketknight1\r\n\r\nIntegrations:\r\n\r\n- deepspeed: HF Trainer/Accelerate: @SunMarc @zach-huggingface\r\n- ray/raytune: @richardliaw, @amogkam\r\n- Big Model Inference: @SunMarc\r\n- quantization (bitsandbytes, autogpt): @SunMarc @MekkCyber\r\n\r\nDocumentation: @stevhliu\r\n\r\nHF projects:\r\n\r\n- accelerate: [different repo](https://github.com/huggingface/accelerate)\r\n- datasets: [different repo](https://github.com/huggingface/datasets)\r\n- diffusers: [different repo](https://github.com/huggingface/diffusers)\r\n- rust tokenizers: [different repo](https://github.com/huggingface/tokenizers)\r\n\r\nMaintained examples (not research project or legacy):\r\n\r\n- Flax: @Rocketknight1\r\n- PyTorch: See Models above and tag the person corresponding to the modality of the example.\r\n- TensorFlow: @Rocketknight1\r\n\r\n -->\r\n",
+    "pr_date": "2025-07-11T10:57:35Z",
+    "source_branch": "fix/siglip2-pooled-output",
+    "language": "en",
+    "keywords_detected": {
+        "branch": [
+            "fix"
+        ],
+        "requirement": [
+            "fix"
+        ],
+        "body": [
+            "add",
+            "remove",
+            "change",
+            "create",
+            "fix",
+            "update",
+            "merge"
+        ]
+    },
+    "number_of_links_in_pr": 16,
+    "base_sha": "bf607f6d3bd7bf95aaa1094c3a51c3476e4ddc29",
+    "last_commit_sha": "c2b2e80ae4e0fa79df9483182fcdb51c667b1c0b",
+    "diff_between_base_and_last": [
+        {
+            "sha": "b4431f5889c095f2db06d7fc55f80f6fcd138ff3",
+            "filename": "src/transformers/models/siglip2/modular_siglip2.py",
+            "status": "modified",
+            "additions": 18,
+            "deletions": 1,
+            "changes": 19,
+            "blob_url": "https://github.com/huggingface/transformers/blob/c2b2e80ae4e0fa79df9483182fcdb51c667b1c0b/src%2Ftransformers%2Fmodels%2Fsiglip2%2Fmodular_siglip2.py",
+            "raw_url": "https://github.com/huggingface/transformers/raw/c2b2e80ae4e0fa79df9483182fcdb51c667b1c0b/src%2Ftransformers%2Fmodels%2Fsiglip2%2Fmodular_siglip2.py",
+            "contents_url": "https://api.github.com/repos/huggingface/transformers/contents/src%2Ftransformers%2Fmodels%2Fsiglip2%2Fmodular_siglip2.py?ref=c2b2e80ae4e0fa79df9483182fcdb51c667b1c0b",
+            "patch": "@@ -286,7 +286,24 @@ class Siglip2PreTrainedModel(SiglipPreTrainedModel):\n \n \n class Siglip2TextModel(SiglipTextModel):\n-    pass\n+    def forward(\n+        self,\n+        input_ids=None,\n+        attention_mask=None,\n+        position_ids=None,\n+        output_attentions=None,\n+        output_hidden_states=None,\n+    ):\n+        # Use the last token's hidden state as pooled output,\n+        # regardless of whether it's an EOS or PAD token.\n+        # The original model was trained this way, without attention masks.\n+        return super().forward(\n+            input_ids=input_ids,\n+            attention_mask=attention_mask,\n+            position_ids=position_ids,\n+            output_attentions=output_attentions,\n+            output_hidden_states=output_hidden_states,\n+        )\n \n \n class Siglip2MultiheadAttentionPoolingHead(SiglipMultiheadAttentionPoolingHead):"
+        }
+    ],
+    "commits": [
+        {
+            "sha": "c2b2e80ae4e0fa79df9483182fcdb51c667b1c0b",
+            "commit_date": "2025-07-11T10:36:03Z",
+            "message": "fix(siglip2): improve pooled output logic in modular file",
+            "number_of_links_in_commit": 0,
+            "files_changed_count": 1,
+            "files": [
+                {
+                    "sha": "b4431f5889c095f2db06d7fc55f80f6fcd138ff3",
+                    "filename": "src/transformers/models/siglip2/modular_siglip2.py",
+                    "status": "modified",
+                    "additions": 18,
+                    "deletions": 1,
+                    "changes": 19,
+                    "blob_url": "https://github.com/huggingface/transformers/blob/c2b2e80ae4e0fa79df9483182fcdb51c667b1c0b/src%2Ftransformers%2Fmodels%2Fsiglip2%2Fmodular_siglip2.py",
+                    "raw_url": "https://github.com/huggingface/transformers/raw/c2b2e80ae4e0fa79df9483182fcdb51c667b1c0b/src%2Ftransformers%2Fmodels%2Fsiglip2%2Fmodular_siglip2.py",
+                    "contents_url": "https://api.github.com/repos/huggingface/transformers/contents/src%2Ftransformers%2Fmodels%2Fsiglip2%2Fmodular_siglip2.py?ref=c2b2e80ae4e0fa79df9483182fcdb51c667b1c0b",
+                    "patch": "@@ -286,7 +286,24 @@ class Siglip2PreTrainedModel(SiglipPreTrainedModel):\n \n \n class Siglip2TextModel(SiglipTextModel):\n-    pass\n+    def forward(\n+        self,\n+        input_ids=None,\n+        attention_mask=None,\n+        position_ids=None,\n+        output_attentions=None,\n+        output_hidden_states=None,\n+    ):\n+        # Use the last token's hidden state as pooled output,\n+        # regardless of whether it's an EOS or PAD token.\n+        # The original model was trained this way, without attention masks.\n+        return super().forward(\n+            input_ids=input_ids,\n+            attention_mask=attention_mask,\n+            position_ids=position_ids,\n+            output_attentions=output_attentions,\n+            output_hidden_states=output_hidden_states,\n+        )\n \n \n class Siglip2MultiheadAttentionPoolingHead(SiglipMultiheadAttentionPoolingHead):"
+                }
+            ]
+        }
+    ],
+    "pull_request_url": "https://github.com/huggingface/transformers/pull/39358",
+    "commits_url": "https://github.com/huggingface/transformers/pull/39358/commits",
+    "files_url": "https://github.com/huggingface/transformers/pull/39358/files"
+}

@@ -1,0 +1,103 @@
+{
+  "pr_number": 1264,
+  "repository": "XiaoMi/ha_xiaomi_home",
+  "title": "feat: do not subscribe BLE device online/offline state message",
+  "body": "# Why\r\nIn the issue #1251, MIoT cloud published an offline state message when the device became offline, but did not publish an online state message when the device became online. So, even xiaomi_home got properties_changed and event_occured message, the device entities was still shown unavailable.\r\nMIoT cloud can not accurately determine the BLE device's online/offline state. Also see #1207. \r\n\r\n# Changed\r\n- Do not subscribe BLE device online/offline state message. Assume that all BLE devices are online.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T12:00:53.058847",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "custom_components/xiaomi_home/miot/miot_client.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "__on_mips_cloud_state_changed",
+          "class_name": "MIoTClient",
+          "full_name": "MIoTClient.__on_mips_cloud_state_changed",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "__on_cloud_device_state_changed",
+          "class_name": "MIoTClient",
+          "full_name": "MIoTClient.__on_cloud_device_state_changed",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "custom_components/xiaomi_home/miot/miot_mips.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "sub_device_state",
+          "class_name": "MipsCloudClient",
+          "full_name": "MipsCloudClient.sub_device_state",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "custom_components/xiaomi_home/miot/miot_device.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "__on_device_state_changed",
+          "class_name": "MIoTDevice",
+          "full_name": "MIoTDevice.__on_device_state_changed",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Disable MIoT cloud online/offline pub/sub tracking for BLE devices by skipping state-topic subscriptions for `blt.` DIDs and treating BLE devices as always online. Add defense-in-depth so any stray BLE state messages can’t mark entities unavailable, while preserving existing behavior for non-BLE devices.",
+    "steps": [
+      {
+        "operation": "Gate per-device cloud state subscriptions to skip BLE DIDs and force BLE cached availability online on connect",
+        "file_to_modify": "custom_components/xiaomi_home/miot/miot_client.py",
+        "function_to_modify": "MIoTClient.__on_mips_cloud_state_changed",
+        "reason": "MIoT cloud device state pub/sub is unreliable for BLE devices (publishes offline but may not publish online). The safest fix is to never subscribe to `device/{did}/state/#` for `did.startswith('blt.')`, so stale offline pushes can’t mark BLE entities unavailable. For robustness, also ensure any cached BLE device records are treated as online when MIPS connects.",
+        "side_effects": "BLE devices will no longer reflect cloud-reported offline/online transitions via the state topic (intended). Non-BLE devices keep existing behavior. If any logic relied on BLE state subscriptions to trigger refreshes, it will no longer run and should be covered by property/event updates instead."
+      },
+      {
+        "operation": "Ignore/override incoming cloud state changes for BLE devices (defense against legacy/stale subscriptions)",
+        "file_to_modify": "custom_components/xiaomi_home/miot/miot_client.py",
+        "function_to_modify": "MIoTClient.__on_cloud_device_state_changed",
+        "reason": "Even after gating subscriptions, BLE state messages could still arrive from pre-existing subscriptions, retained messages, or other call paths. This handler should treat BLE devices as always online and avoid propagating OFFLINE updates into the device/entity availability pipeline.",
+        "side_effects": "If any BLE device legitimately becomes unreachable, it will not be marked offline by this specific cloud state channel; availability will instead depend on other signals (properties/events/refresh). Non-BLE state handling should remain unchanged."
+      },
+      {
+        "operation": "Add a no-op safeguard in the MIPS client to prevent subscribing to BLE device state topics",
+        "file_to_modify": "custom_components/xiaomi_home/miot/miot_mips.py",
+        "function_to_modify": "MipsCloudClient.sub_device_state",
+        "reason": "Centralizing the BLE subscription prohibition in the transport layer prevents future callers from accidentally re-enabling the unreliable `device/{did}/state/#` subscription for BLE DIDs. This ensures consistent behavior even if other orchestration code changes later.",
+        "side_effects": "Any existing or future code attempting to subscribe to BLE state topics via this method will silently not subscribe (intended). Might require ensuring callers don’t assume subscription success for BLE DIDs (e.g., logging/metrics)."
+      },
+      {
+        "operation": "Harden device-level availability updates so BLE devices never transition to offline due to cloud state events",
+        "file_to_modify": "custom_components/xiaomi_home/miot/miot_device.py",
+        "function_to_modify": "MIoTDevice.__on_device_state_changed",
+        "reason": "As defense-in-depth, ensure that if a BLE device state change event slips through (e.g., due to retained/off-path messages), it cannot set internal `_online` to `False`, which would drive Home Assistant entities to unavailable. This complements subscription gating and client handler filtering.",
+        "side_effects": "BLE entities will remain available even if an OFFLINE event is delivered to this callback. Non-BLE device availability behavior remains intact. May affect any diagnostics that expected BLE offline transitions from cloud state messages."
+      }
+    ]
+  }
+}

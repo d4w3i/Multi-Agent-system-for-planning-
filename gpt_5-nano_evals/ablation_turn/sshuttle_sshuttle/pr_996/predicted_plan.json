@@ -1,0 +1,94 @@
+{
+  "pr_number": 996,
+  "repository": "sshuttle/sshuttle",
+  "title": "Revert \"Support Windows11 As A sshuttle Server\"",
+  "body": "Reverts sshuttle/sshuttle#993\n\nThis change was made in error. See discussion in #993.\n\nExplore the source code to identify the files and functions to modify.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T13:58:03.492160",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "sshuttle/methods/windivert.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "is_supported",
+          "class_name": "sshuttle",
+          "full_name": "sshuttle.meth ods.windivert.Method.is_supported",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "get_supported_features",
+          "class_name": "sshuttle",
+          "full_name": "sshuttle.meth ods.windivert.Method.get_supported_features",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_egress_divert",
+          "class_name": "sshuttle",
+          "full_name": "sshuttle.meth ods.windivert.Method._egress_divert",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_ingress_divert",
+          "class_name": "sshuttle",
+          "full_name": "sshuttle.meth ods.windivert.Method._ingress_divert",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "sshuttle/server.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    }
+  ],
+  "step_plan": {
+    "summary": "Revert Windows11-specific sshuttle Windows server support by restoring pre-Windows11 Windivert-based behavior in the windivert method and aligning server startup paths accordingly. The plan focuses on removing Windows11-specific gating and filter logic while preserving the legacy Windows behavior.",
+    "steps": [
+      {
+        "operation": "Revert Windows11-specific is_supported gating to reflect legacy Windows behavior",
+        "file_to_modify": "sshuttle/methods/windivert.py",
+        "function_to_modify": "Method.is_supported",
+        "reason": "Restore pre-Windows11 platform gating by removing Windows11-specific constraints or flags that altered support checks.",
+        "side_effects": "May broaden or revert supported Windows versions; downstream code paths relying on Windows11-specific gating should be reviewed; tests referencing Windows11 gating may need updates."
+      },
+      {
+        "operation": "Restore prior feature set in get_supported_features",
+        "file_to_modify": "sshuttle/methods/windivert.py",
+        "function_to_modify": "Method.get_supported_features",
+        "reason": "Undo Windows11-specific feature toggles (e.g., DNS, IPv6, loopback proxy) to align with older Windows behavior.",
+        "side_effects": "Tests or docs that assumed new Windows11 features may fail; ensure clients are compatible with the legacy feature set."
+      },
+      {
+        "operation": "Revert _egress_divert to pre-Windows11 filter construction",
+        "file_to_modify": "sshuttle/methods/windivert.py",
+        "function_to_modify": "Method._egress_divert",
+        "reason": "Return to the pre-Windows11 outbound traffic filtering logic used by Windivert, removing Windows11-specific filter construction steps.",
+        "side_effects": "Outbound traffic capture behavior may change; potential ripple effects on DNS/UDP handling; update relevant tests."
+      },
+      {
+        "operation": "Revert _ingress_divert to pre-Windows11 packet handling semantics",
+        "file_to_modify": "sshuttle/methods/windivert.py",
+        "function_to_modify": "Method._ingress_divert",
+        "reason": "Restore older ingress packet handling and filter semantics that were used before Windows11-specific changes.",
+        "side_effects": "Inbound path behavior may shift; ensure tests cover pre-Windows11 ingress paths and adjust any Windows11-specific expectations."
+      }
+    ]
+  }
+}

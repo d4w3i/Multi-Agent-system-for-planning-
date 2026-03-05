@@ -1,0 +1,57 @@
+{
+  "pr_number": 1500,
+  "repository": "huggingface/smolagents",
+  "title": "Fix: step callbacks not being triggered for planning steps",
+  "body": "Fixes issue where step callbacks were only triggered for ActionStep objects and not PlanningStep objects, causing inconsistent callback behavior during planning phases.\n\nChanges:\n- Broadened _finalize_step() to accept both ActionStep | PlanningStep\n- Invoked _finalize_step(planning_step) within the planning step flow to ensure callbacks run for planning steps\n\nBackward Compatibility:\n- No breaking changes: existing callbacks continue to work unchanged\n- Keeps the same execution order of finalizing a step and adding to memory as in the ActionStep flow\n\nTesting:\n- Lightweight validation using an existing FakeCodeModelPlanning() verifies both planning and action step callbacks\n- All existing tests should continue to pass\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T12:55:48.971183",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "src/smolagents/agents.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "_finalize_step",
+          "class_name": "MultiStepAgent",
+          "full_name": "MultiStepAgent._finalize_step",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_run_stream",
+          "class_name": "MultiStepAgent",
+          "full_name": "MultiStepAgent._run_stream",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Fixes step callbacks not being triggered for planning steps by broadening the _finalize_step signature to accept both ActionStep and PlanningStep and by invoking finalization for planning steps within the planning flow prior to memory storage, preserving the existing execution order and compatibility.",
+    "steps": [
+      {
+        "operation": "Broadly type-hint and allow PlanningStep in _finalize_step",
+        "file_to_modify": "src/smolagents/agents.py",
+        "function_to_modify": "MultiStepAgent._finalize_step",
+        "reason": "To ensure step callbacks are invoked for both ActionStep and PlanningStep, aligning behavior across planning and action phases while preserving existing callback invocation logic.",
+        "side_effects": "Might require minor edits to type hints; no public API changes. Existing tests covering ActionStep behavior should continue to pass; adds support for PlanningStep callbacks; potential impact on static analysis."
+      },
+      {
+        "operation": "Call _finalize_step(planning_step) in planning flow",
+        "file_to_modify": "src/smolagents/agents.py",
+        "function_to_modify": "MultiStepAgent._run_stream",
+        "reason": "To trigger callbacks for PlanningStep and keep token/timing metrics consistent with ActionStep flow, ensuring planning steps are finalized before appending to memory.",
+        "side_effects": "Potential minor change in execution order; tests for planning step callbacks should now exercise both planning and action flows; ensure memory append remains in correct sequence; no breaking API changes."
+      }
+    ]
+  }
+}

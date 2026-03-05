@@ -1,0 +1,42 @@
+{
+  "pr_number": 2435,
+  "repository": "eternnoir/pyTelegramBotAPI",
+  "title": "Fixed \"subscription_period\" docstring",
+  "body": "Fixed method docstring for \"subscription_period\". This is a minor documentation tweak to clarify the parameter's meaning in the subscription/payments flow. No code changes were required. The change targets the docstring to ensure alignment with the Telegram Bot API semantics for subscriptions.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T12:40:47.723012",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "telebot/types.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "__init__",
+          "class_name": "Invoice",
+          "full_name": "Invoice.__init__",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "This PR performs a docstring-only clarification for the subscription_period parameter within Invoice.__init__ to align with Telegram Bot API semantics.",
+    "steps": [
+      {
+        "operation": "Update docstring for subscription_period in Invoice.__init__",
+        "file_to_modify": "telebot/types.py",
+        "function_to_modify": "Invoice.__init__",
+        "reason": "Clarify the subscription_period parameter semantics to match Telegram Bot API documentation; ensures developers understand its value and usage; no code changes.",
+        "side_effects": "Documentation-only change; no runtime behavior changes. May trigger lint/docs checks and require minor updates to external docs that reference this parameter; existing tests remain unaffected."
+      }
+    ]
+  }
+}

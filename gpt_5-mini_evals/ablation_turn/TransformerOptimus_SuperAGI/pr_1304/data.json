@@ -1,0 +1,109 @@
+{
+    "repository": "TransformerOptimus/SuperAGI",
+    "pull_request_number": 1304,
+    "title": "Fix Recruitment Workflow",
+    "body": "<!-- Thank you for submitting this PR! :) -->\r\n<!-- Provide a general summary of your changes in the Title above ^, end with (close #<issue-no>) or (fix #<issue-no>) -->\r\n\r\n### Description\r\n<!-- The title might not be enough to convey how this change affects the user. -->\r\n<!-- Describe the changes from a user's perspective -->\r\nFixing the existing recruitment workflow.\r\n\r\n<!-- Changelog Section End -->\r\n\r\n### Related Issues\r\n<!-- Please make sure you have an issue associated with this Pull Request -->\r\n<!-- And then add `(close #<issue-no>)` to the pull request title -->\r\n<!-- Add the issue number below (e.g. #234) -->\r\n\r\n### Solution and Design\r\n<!-- How is this issue solved/fixed? What is the design? -->\r\n<!-- It's better if we elaborate -->\r\nFixing the existing recruitment workflow.\r\n\r\n### Test Plan\r\n<!-- Describe how you tested this functionality. Include steps to reproduce, relevant test cases, and any other pertinent information. -->\r\n\r\n### Type of change\r\n- [x] Bug fix (non-breaking change which fixes an issue)\r\n- [x] New feature (non-breaking change which adds functionality)\r\n- [x] Breaking change (fix or feature that would cause existing functionality to change)\r\n- [x] Docs update\r\n\r\n\r\n### Checklist\r\n- [x] My pull request is atomic and focuses on a single change.\r\n- [x] I have read the contributing guide and my code conforms to the guidelines.\r\n- [x] I have documented my changes clearly and comprehensively.\r\n- [x] I have added the required tests.\r\n",
+    "pr_date": "2023-10-03T09:16:32Z",
+    "source_branch": "fix-recruitment-workflow",
+    "language": "en",
+    "keywords_detected": {
+        "branch": [
+            "fix"
+        ],
+        "requirement": [
+            "fix"
+        ],
+        "body": [
+            "feature",
+            "add",
+            "change",
+            "fix",
+            "update"
+        ]
+    },
+    "number_of_links_in_pr": 0,
+    "base_sha": "0a2448134407838a3500789d6be77b7b37e851c8",
+    "last_commit_sha": "a6ea436fdf0bb1438c6ec5ddca5c881e39749cc9",
+    "diff_between_base_and_last": [
+        {
+            "sha": "137776cbaec7d40116d99a0fd6c09dc77e737836",
+            "filename": "superagi/agent/workflow_seed.py",
+            "status": "modified",
+            "additions": 9,
+            "deletions": 10,
+            "changes": 19,
+            "blob_url": "https://github.com/TransformerOptimus/SuperAGI/blob/a6ea436fdf0bb1438c6ec5ddca5c881e39749cc9/superagi%2Fagent%2Fworkflow_seed.py",
+            "raw_url": "https://github.com/TransformerOptimus/SuperAGI/raw/a6ea436fdf0bb1438c6ec5ddca5c881e39749cc9/superagi%2Fagent%2Fworkflow_seed.py",
+            "contents_url": "https://api.github.com/repos/TransformerOptimus/SuperAGI/contents/superagi%2Fagent%2Fworkflow_seed.py?ref=a6ea436fdf0bb1438c6ec5ddca5c881e39749cc9",
+            "patch": "@@ -112,7 +112,7 @@ def build_recruitment_workflow(cls, session):\n         step1 = AgentWorkflowStep.find_or_create_tool_workflow_step(session, agent_workflow.id,\n                                                                     str(agent_workflow.id) + \"_step1\",\n                                                                     ListFileTool().name,\n-                                                                    \"Read files from the resource manager\",\n+                                                                    \"List the files from the resource manager\",\n                                                                     step_type=\"TRIGGER\")\n \n         # task queue ends when the elements gets over\n@@ -125,29 +125,28 @@ def build_recruitment_workflow(cls, session):\n         step3 = AgentWorkflowStep.find_or_create_tool_workflow_step(session, agent_workflow.id,\n                                                                     str(agent_workflow.id) + \"_step3\",\n                                                                     ReadFileTool().name,\n-                                                                    \"Read the resume from above input\")\n+                                                                    \"Read the resume from above input\",\n+                                                                    \"Check if the resume matches High-Level GOAL\")\n \n         step4 = AgentWorkflowStep.find_or_create_tool_workflow_step(session, agent_workflow.id,\n                                                                     str(agent_workflow.id) + \"_step4\",\n-                                                                    ReadFileTool().name,\n-                                                                    \"Read the job description from file mentioned in High-Level GOAL\",\n-                                                                    \"Check if the resume matches the job description in goal\")\n+                                                                    SendEmailTool().name,\n+                                                                    \"Write a custom acceptance Email to the candidates\")\n \n         step5 = AgentWorkflowStep.find_or_create_tool_workflow_step(session, agent_workflow.id,\n                                                                     str(agent_workflow.id) + \"_step5\",\n                                                                     SendEmailTool().name,\n-                                                                    \"Write a custom Email the candidates for job profile based on their experience\")\n+                                                                    \"Write a custom Reject Email to the candidates\")\n \n         AgentWorkflowStep.add_next_workflow_step(session, step1.id, step2.id)\n         AgentWorkflowStep.add_next_workflow_step(session, step2.id, step3.id)\n         AgentWorkflowStep.add_next_workflow_step(session, step2.id, -1, \"COMPLETE\")\n-        AgentWorkflowStep.add_next_workflow_step(session, step3.id, step4.id)\n-        AgentWorkflowStep.add_next_workflow_step(session, step4.id, step5.id, \"YES\")\n-        AgentWorkflowStep.add_next_workflow_step(session, step4.id, step2.id, \"NO\")\n+        AgentWorkflowStep.add_next_workflow_step(session, step3.id, step4.id, \"YES\")\n+        AgentWorkflowStep.add_next_workflow_step(session, step3.id, step5.id, \"NO\")\n+        AgentWorkflowStep.add_next_workflow_step(session, step4.id, step2.id)\n         AgentWorkflowStep.add_next_workflow_step(session, step5.id, step2.id)\n         session.commit()\n \n-\n     @classmethod\n     def build_coding_workflow(cls, session):\n         agent_workflow = AgentWorkflow.find_or_create_by_name(session, \"SuperCoder\", \"SuperCoder\")"
+        }
+    ],
+    "commits": [
+        {
+            "sha": "d57f107783d000f209246550ff60a8846f33272b",
+            "commit_date": "2023-10-03T08:39:13Z",
+            "message": "Fix Recruitment Workflow",
+            "number_of_links_in_commit": 0,
+            "files_changed_count": 1,
+            "files": [
+                {
+                    "sha": "18a1359067fa3e8f7143c44e8481833040e39851",
+                    "filename": "superagi/agent/workflow_seed.py",
+                    "status": "modified",
+                    "additions": 12,
+                    "deletions": 13,
+                    "changes": 25,
+                    "blob_url": "https://github.com/TransformerOptimus/SuperAGI/blob/d57f107783d000f209246550ff60a8846f33272b/superagi%2Fagent%2Fworkflow_seed.py",
+                    "raw_url": "https://github.com/TransformerOptimus/SuperAGI/raw/d57f107783d000f209246550ff60a8846f33272b/superagi%2Fagent%2Fworkflow_seed.py",
+                    "contents_url": "https://api.github.com/repos/TransformerOptimus/SuperAGI/contents/superagi%2Fagent%2Fworkflow_seed.py?ref=d57f107783d000f209246550ff60a8846f33272b",
+                    "patch": "@@ -112,7 +112,7 @@ def build_recruitment_workflow(cls, session):\n         step1 = AgentWorkflowStep.find_or_create_tool_workflow_step(session, agent_workflow.id,\n                                                                     str(agent_workflow.id) + \"_step1\",\n                                                                     ListFileTool().name,\n-                                                                    \"Read files from the resource manager\",\n+                                                                    \"List the files from the resource manager\",\n                                                                     step_type=\"TRIGGER\")\n \n         # task queue ends when the elements gets over\n@@ -125,29 +125,28 @@ def build_recruitment_workflow(cls, session):\n         step3 = AgentWorkflowStep.find_or_create_tool_workflow_step(session, agent_workflow.id,\n                                                                     str(agent_workflow.id) + \"_step3\",\n                                                                     ReadFileTool().name,\n-                                                                    \"Read the resume from above input\")\n-\n-        step4 = AgentWorkflowStep.find_or_create_tool_workflow_step(session, agent_workflow.id,\n-                                                                    str(agent_workflow.id) + \"_step4\",\n-                                                                    ReadFileTool().name,\n-                                                                    \"Read the job description from file mentioned in High-Level GOAL\",\n-                                                                    \"Check if the resume matches the job description in goal\")\n+                                                                    \"Read the resume from above input\",\n+                                                                    \"Check if the resume matches High-Level GOAL\")\n \n         step5 = AgentWorkflowStep.find_or_create_tool_workflow_step(session, agent_workflow.id,\n                                                                     str(agent_workflow.id) + \"_step5\",\n                                                                     SendEmailTool().name,\n-                                                                    \"Write a custom Email the candidates for job profile based on their experience\")\n+                                                                    \"Write a custom acceptance Email to the candidates\")\n+\n+        step6 = AgentWorkflowStep.find_or_create_tool_workflow_step(session, agent_workflow.id,\n+                                                                    str(agent_workflow.id) + \"_step6\",\n+                                                                    SendEmailTool().name,\n+                                                                    \"Write a custom Reject Email to the candidates\")\n \n         AgentWorkflowStep.add_next_workflow_step(session, step1.id, step2.id)\n         AgentWorkflowStep.add_next_workflow_step(session, step2.id, step3.id)\n         AgentWorkflowStep.add_next_workflow_step(session, step2.id, -1, \"COMPLETE\")\n-        AgentWorkflowStep.add_next_workflow_step(session, step3.id, step4.id)\n-        AgentWorkflowStep.add_next_workflow_step(session, step4.id, step5.id, \"YES\")\n-        AgentWorkflowStep.add_next_workflow_step(session, step4.id, step2.id, \"NO\")\n+        AgentWorkflowStep.add_next_workflow_step(session, step3.id, step5.id, \"YES\")\n+        AgentWorkflowStep.add_next_workflow_step(session, step3.id, step6.id, \"NO\")\n         AgentWorkflowStep.add_next_workflow_step(session, step5.id, step2.id)\n+        AgentWorkflowStep.add_next_workflow_step(session, step6.id, step2.id)\n         session.commit()\n \n-\n     @classmethod\n     def build_coding_workflow(cls, session):\n         agent_workflow = AgentWorkflow.find_or_create_by_name(session, \"SuperCoder\", \"SuperCoder\")"
+                }
+            ]
+        },
+        {
+            "sha": "c2241d99c3236d891a157800a857a48f5a100364",
+            "commit_date": "2023-10-03T11:45:28Z",
+            "message": "rename step5 to step4 and step6 to step5",
+            "number_of_links_in_commit": 0,
+            "files_changed_count": 1,
+            "files": [
+                {
+                    "sha": "21f1f42e6bc1b4a636c605f7efc402c0b703f15f",
+                    "filename": "superagi/agent/workflow_seed.py",
+                    "status": "modified",
+                    "additions": 5,
+                    "deletions": 5,
+                    "changes": 10,
+                    "blob_url": "https://github.com/TransformerOptimus/SuperAGI/blob/c2241d99c3236d891a157800a857a48f5a100364/superagi%2Fagent%2Fworkflow_seed.py",
+                    "raw_url": "https://github.com/TransformerOptimus/SuperAGI/raw/c2241d99c3236d891a157800a857a48f5a100364/superagi%2Fagent%2Fworkflow_seed.py",
+                    "contents_url": "https://api.github.com/repos/TransformerOptimus/SuperAGI/contents/superagi%2Fagent%2Fworkflow_seed.py?ref=c2241d99c3236d891a157800a857a48f5a100364",
+                    "patch": "@@ -128,23 +128,23 @@ def build_recruitment_workflow(cls, session):\n                                                                     \"Read the resume from above input\",\n                                                                     \"Check if the resume matches High-Level GOAL\")\n \n-        step5 = AgentWorkflowStep.find_or_create_tool_workflow_step(session, agent_workflow.id,\n+        step4 = AgentWorkflowStep.find_or_create_tool_workflow_step(session, agent_workflow.id,\n                                                                     str(agent_workflow.id) + \"_step5\",\n                                                                     SendEmailTool().name,\n                                                                     \"Write a custom acceptance Email to the candidates\")\n \n-        step6 = AgentWorkflowStep.find_or_create_tool_workflow_step(session, agent_workflow.id,\n+        step5 = AgentWorkflowStep.find_or_create_tool_workflow_step(session, agent_workflow.id,\n                                                                     str(agent_workflow.id) + \"_step6\",\n                                                                     SendEmailTool().name,\n                                                                     \"Write a custom Reject Email to the candidates\")\n \n         AgentWorkflowStep.add_next_workflow_step(session, step1.id, step2.id)\n         AgentWorkflowStep.add_next_workflow_step(session, step2.id, step3.id)\n         AgentWorkflowStep.add_next_workflow_step(session, step2.id, -1, \"COMPLETE\")\n-        AgentWorkflowStep.add_next_workflow_step(session, step3.id, step5.id, \"YES\")\n-        AgentWorkflowStep.add_next_workflow_step(session, step3.id, step6.id, \"NO\")\n+        AgentWorkflowStep.add_next_workflow_step(session, step3.id, step4.id, \"YES\")\n+        AgentWorkflowStep.add_next_workflow_step(session, step3.id, step5.id, \"NO\")\n+        AgentWorkflowStep.add_next_workflow_step(session, step4.id, step2.id)\n         AgentWorkflowStep.add_next_workflow_step(session, step5.id, step2.id)\n-        AgentWorkflowStep.add_next_workflow_step(session, step6.id, step2.id)\n         session.commit()\n \n     @classmethod"
+                }
+            ]
+        },
+        {
+            "sha": "a6ea436fdf0bb1438c6ec5ddca5c881e39749cc9",
+            "commit_date": "2023-10-03T11:47:35Z",
+            "message": "rename step5 to step4 and step6 to step5",
+            "number_of_links_in_commit": 0,
+            "files_changed_count": 1,
+            "files": [
+                {
+                    "sha": "137776cbaec7d40116d99a0fd6c09dc77e737836",
+                    "filename": "superagi/agent/workflow_seed.py",
+                    "status": "modified",
+                    "additions": 2,
+                    "deletions": 2,
+                    "changes": 4,
+                    "blob_url": "https://github.com/TransformerOptimus/SuperAGI/blob/a6ea436fdf0bb1438c6ec5ddca5c881e39749cc9/superagi%2Fagent%2Fworkflow_seed.py",
+                    "raw_url": "https://github.com/TransformerOptimus/SuperAGI/raw/a6ea436fdf0bb1438c6ec5ddca5c881e39749cc9/superagi%2Fagent%2Fworkflow_seed.py",
+                    "contents_url": "https://api.github.com/repos/TransformerOptimus/SuperAGI/contents/superagi%2Fagent%2Fworkflow_seed.py?ref=a6ea436fdf0bb1438c6ec5ddca5c881e39749cc9",
+                    "patch": "@@ -129,12 +129,12 @@ def build_recruitment_workflow(cls, session):\n                                                                     \"Check if the resume matches High-Level GOAL\")\n \n         step4 = AgentWorkflowStep.find_or_create_tool_workflow_step(session, agent_workflow.id,\n-                                                                    str(agent_workflow.id) + \"_step5\",\n+                                                                    str(agent_workflow.id) + \"_step4\",\n                                                                     SendEmailTool().name,\n                                                                     \"Write a custom acceptance Email to the candidates\")\n \n         step5 = AgentWorkflowStep.find_or_create_tool_workflow_step(session, agent_workflow.id,\n-                                                                    str(agent_workflow.id) + \"_step6\",\n+                                                                    str(agent_workflow.id) + \"_step5\",\n                                                                     SendEmailTool().name,\n                                                                     \"Write a custom Reject Email to the candidates\")\n "
+                }
+            ]
+        }
+    ],
+    "pull_request_url": "https://github.com/TransformerOptimus/SuperAGI/pull/1304",
+    "commits_url": "https://github.com/TransformerOptimus/SuperAGI/pull/1304/commits",
+    "files_url": "https://github.com/TransformerOptimus/SuperAGI/pull/1304/files"
+}

@@ -1,0 +1,42 @@
+{
+  "pr_number": 745,
+  "repository": "fishaudio/fish-speech",
+  "title": "fix: no-play argument for API client",
+  "body": "Description:\n- This PR fixes a bug where the --play flag has no effect because its default is True and the parser does not recognize a --play False value. By using argparse.BooleanOptionalAction, the CLI now automatically exposes --no-play, allowing explicit disabling of playback via the API client.\n\nCompatibility:\n- This change preserves the default behavior (playback remains enabled by default) but adds a new --no-play option.\n- Note: argparse.BooleanOptionalAction is available in Python 3.9+. If the project must support older Python versions, a compatibility shim would be needed.\n\nWhat to modify:\n- Update the argument definition in tools/api_client.py to use BooleanOptionalAction for --play.\n- No other behavioral changes are expected besides enabling the explicit --no-play flag.\n\nIf you encounter issues on older Python runtimes, consider a fallback implementation or a Python version constraint.\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T12:46:06.557614",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "tools/api_client.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "parse_args",
+          "class_name": null,
+          "full_name": "parse_args",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Enable explicit disabling of playback in the API client by replacing the --play flag with argparse.BooleanOptionalAction, preserving default playback while exposing --no-play.",
+    "steps": [
+      {
+        "operation": "Replace --play argument with BooleanOptionalAction in parse_args",
+        "file_to_modify": "tools/api_client.py",
+        "function_to_modify": "parse_args",
+        "reason": "BooleanOptionalAction provides automatic --no-play support, allowing explicit disabling of playback while preserving default True behavior",
+        "side_effects": "Requires Python 3.9+. Downstream code consuming args.play should continue to work as booleans; potential need to adjust tests to cover --no-play; may require updating runtime configuration for older Python versions"
+      }
+    ]
+  }
+}

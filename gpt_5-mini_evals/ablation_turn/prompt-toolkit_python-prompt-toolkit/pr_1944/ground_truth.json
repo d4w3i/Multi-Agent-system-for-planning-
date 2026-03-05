@@ -1,0 +1,57 @@
+{
+  "pr_number": 1944,
+  "repository": "prompt-toolkit/python-prompt-toolkit",
+  "title": "Fixes bug whereby read_only bool is called as a function",
+  "body": "This is a simple bug fix to remedy the following issue:\r\n\r\n```python\r\n  File \".../site-packages/prompt_toolkit/filters/app.py\", line 374, in emacs_insert_mode\r\n    or app.current_buffer.read_only()\r\n       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\r\n\r\nException 'bool' object is not callable\r\n```\r\n\r\nIt would appear to be a simple typo, calling the boolean `read_only` property as if it were a function.",
+  "extraction_metadata": {
+    "extracted_at": "2026-02-26T01:09:53.645181",
+    "extractor_version": "1.0.0",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "src/prompt_toolkit/filters/app.py",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "functions_modified": [
+        {
+          "function_name": "emacs_insert_mode",
+          "class_name": null,
+          "full_name": "emacs_insert_mode",
+          "start_line": 369,
+          "end_line": 377,
+          "lines_changed": [
+            374
+          ]
+        }
+      ],
+      "patch": "@@ -371,7 +371,7 @@ def emacs_insert_mode() -> bool:\n     if (\n         app.editing_mode != EditingMode.EMACS\n         or app.current_buffer.selection_state\n-        or app.current_buffer.read_only()\n+        or app.current_buffer.read_only\n     ):\n         return False\n     return True"
+    }
+  ],
+  "functions_modified": [
+    {
+      "function_name": "emacs_insert_mode",
+      "class_name": null,
+      "full_name": "emacs_insert_mode",
+      "start_line": 369,
+      "end_line": 377,
+      "lines_changed": [
+        374
+      ]
+    }
+  ],
+  "step_plan": {
+    "steps": [
+      {
+        "operation": "Fix incorrect invocation of the `read_only` boolean attribute by removing the call parentheses in the `emacs_insert_mode` filter logic.",
+        "file_to_modify": "src/prompt_toolkit/filters/app.py",
+        "function_to_modify": "emacs_insert_mode",
+        "reason": "`app.current_buffer.read_only` is a boolean property/attribute, but it was mistakenly called like a function (`read_only()`), causing a runtime `TypeError: 'bool' object is not callable` when evaluating the filter.",
+        "side_effects": "Changes the truthiness check in `emacs_insert_mode` from attempting a call (which previously raised) to a direct boolean evaluation; any code paths depending on this filter (e.g., Emacs insert-mode keybindings/behavior gating) will now function correctly and may alter behavior only insofar as the crash no longer occurs."
+      }
+    ],
+    "summary": "Fixes a runtime TypeError in the `emacs_insert_mode` filter by treating `current_buffer.read_only` as a boolean attribute rather than calling it as a function."
+  }
+}

@@ -1,0 +1,89 @@
+{
+  "pr_number": 2940,
+  "repository": "EleutherAI/lm-evaluation-harness",
+  "title": "Fix import error for eval_logger in score utils",
+  "body": "Root cause: eval_logger is no longer defined in lm_eval.utils, causing ImportError when score-related utilities import it. In the PR, a lightweight fix was applied by switching to Python's standard logging via:\n\nimport logging\neval_logger = logging.getLogger(\"lm_eval.score\")\n\nThis approach avoids relying on deprecated or missing imports and ensures consistent logging across score-related tasks. The change is intended to be minimal and backwards-compatible, only affecting how the logger is obtained (no changes to scoring logic).\n\nThis analysis focuses on applying the same robust logger setup across all score-related utilities to prevent runtime import errors in tasks under lm_eval/tasks/score.\n\nRecommended follow-ups (optional):\n- Audit other import sites for eval_logger usage and standardize to the new pattern where lm_eval.utils.eval_logger is unavailable.\n- Add a lightweight test or sanity check to verify that importing score utilities provides a valid eval_logger instance.\n- If a broader migration is desired, consider centralizing logger setup in a small helper module and exposing a documented interface for score tasks.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T11:48:20.667623",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "base_project/metric.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    },
+    {
+      "filename": "base_project/utils.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    },
+    {
+      "filename": "base_project/utils_agieval.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    },
+    {
+      "filename": "base_project/utils_math.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    },
+    {
+      "filename": "base_project/utils_mmlu_pro.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    }
+  ],
+  "step_plan": {
+    "summary": "This PR mitigates ImportError risks by removing the dependency on lm_eval.utils.eval_logger across score-related utilities and replacing it with a consistent Python logging setup. The changes are localized to module-level logger initialization in the targeted Python files and do not alter scoring logic.",
+    "steps": [
+      {
+        "operation": "Initialize module-level Python logger (replace lm_eval.utils.eval_logger import) and set up a shared logger for score tasks",
+        "file_to_modify": "base_project/metric.py",
+        "function_to_modify": "toxicity_perspective_api",
+        "reason": "The logger used inside toxicity_perspective_api relies on eval_logger imported from lm_eval.utils, which may no longer be defined. Switching to a standard Python logger ensures logging works regardless of lm_eval.utils availability and avoids ImportError.",
+        "side_effects": "Introduces a common logger instance for score-related metrics; downstream code that logs within toxicity_perspective_api will now use the standard logging system. Tests may need to verify that a logger instance exists and logs are captured correctly."
+      },
+      {
+        "operation": "Initialize module-level Python logger (replace lm_eval.utils.eval_logger import) and set up a shared logger for score tasks",
+        "file_to_modify": "base_project/utils.py",
+        "function_to_modify": "__postprocess_pred",
+        "reason": "__postprocess_pred (and related utilities) currently rely on eval_logger from lm_eval.utils. Replacing with a standard logger prevents ImportError if lm_eval.utils.eval_logger is unavailable and ensures consistent logging.",
+        "side_effects": "Ensures __postprocess_pred uses the standard logger; may affect any tests or integrations that rely on specific logger naming or behavior. Requires validation that log outputs remain coherent."
+      },
+      {
+        "operation": "Initialize module-level Python logger (replace lm_eval.utils.eval_logger import) and set up a shared logger for score tasks",
+        "file_to_modify": "base_project/utils_agieval.py",
+        "function_to_modify": "__process",
+        "reason": "AGIEval-related helper __process likely uses eval_logger. Replacing with a standard logger avoids ImportError and provides a robust, uniform logging interface across score-related helpers.",
+        "side_effects": "Downstream AGIEval processing paths will log via the standard logger; ensure tests for AGIEval flows still capture and verify logs as expected."
+      },
+      {
+        "operation": "Initialize module-level Python logger (replace lm_eval.utils.eval_logger import) and set up a shared logger for score tasks",
+        "file_to_modify": "base_project/utils_math.py",
+        "function_to_modify": "_process_doc",
+        "reason": "Utility involved in math-based evaluation may depend on eval_logger. Using Python's logging avoids import-time errors and maintains consistent logging across utilities.",
+        "side_effects": "Logging for math-related processing will be unified under the standard logger; potential impact on tests that inspect specific log messages or logger configurations."
+      },
+      {
+        "operation": "Initialize module-level Python logger (replace lm_eval.utils.eval_logger import) and set up a shared logger for score tasks",
+        "file_to_modify": "base_project/utils_mmlu_pro.py",
+        "function_to_modify": "non_greedy_robustness_process_results",
+        "reason": "MMLU-Pro related helpers likely import eval_logger. Replacing with standard logging prevents ImportError and aligns logging across score-related helpers.",
+        "side_effects": "MMLU-Pro robustness/result processing paths will log through the standard logger; ensure monitoring/tests cover log outputs and logger availability."
+      }
+    ]
+  }
+}

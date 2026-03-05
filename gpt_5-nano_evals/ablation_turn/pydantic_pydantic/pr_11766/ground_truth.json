@@ -1,0 +1,35 @@
+{
+  "pr_number": 11766,
+  "repository": "pydantic/pydantic",
+  "title": "Fix example in `populate_by_name` documentation",
+  "body": "<!-- Thank you for your contribution! -->\r\n<!-- Unless your change is trivial, please create an issue to discuss the change before creating a PR -->\r\n\r\n## Change Summary\r\n\r\nfix the docstring of ConfigDict's populate_by_name.\r\n\r\n## Related issue number\r\n\r\nfix #11765 \r\n\r\n- #11765 \r\n\r\n<!-- WARNING: please use \"fix #123\" style references so the issue is closed when this PR is merged. -->\r\n\r\n## Checklist\r\n\r\n* [ ] The pull request title is a good summary of the changes - it will be used in the changelog\r\n* [x] Unit tests for the changes exist\r\n* [x] Tests pass on CI\r\n* [x] Documentation reflects the changes where applicable\r\n* [ ] My PR is ready to review, **please add a comment including the phrase \"please review\" to assign reviewers**\r\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T01:04:19.894126",
+    "extractor_version": "1.0.0",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "pydantic/config.py",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "functions_modified": [],
+      "patch": "@@ -194,7 +194,7 @@ class Model(BaseModel):\n         print(m)\n         #> my_field='foo'\n \n-        m = Model(my_alias='foo')  # (3)!\n+        m = Model(my_field='foo')  # (3)!\n         print(m)\n         #> my_field='foo'\n         ```"
+    }
+  ],
+  "functions_modified": [],
+  "step_plan": {
+    "steps": [
+      {
+        "operation": "Correct the `populate_by_name` docstring example to demonstrate populating the field by its Python attribute name (not the alias) when `populate_by_name=True`.",
+        "file_to_modify": "pydantic/config.py",
+        "function_to_modify": null,
+        "reason": "The documentation example incorrectly used the alias (`my_alias`) in the scenario meant to show population by field name, which could mislead users about how `populate_by_name` affects model initialization.",
+        "side_effects": "No runtime behavior changes; only documentation output and developer understanding are affected. Any doc rendering, doctest-style checks, or downstream docs referencing this snippet may change expected text."
+      }
+    ],
+    "summary": "Fixes the `populate_by_name` documentation example in `pydantic/config.py` by using the correct field name (`my_field`) instead of the alias (`my_alias`) in the relevant snippet."
+  }
+}

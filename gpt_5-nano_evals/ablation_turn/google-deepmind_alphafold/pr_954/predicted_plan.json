@@ -1,0 +1,42 @@
+{
+  "pr_number": 954,
+  "repository": "google-deepmind/alphafold",
+  "title": "Fix deprecation warning / error from BioPython",
+  "body": "Hi,\n\nHere is a small PR to fix a deprecation issue related to BioPython. It would be great if y'all could run this through CI to make sure it doesn't have any side effects, but BioPython seems to promise it's a safe change.\n\nDescription:\nThis PR swaps the BioPython.SCOPData module import in the mmcif_parsing module for BioPython.PDBData.\n\nRelated issue:\nSee https://github.com/biopython/biopython/blob/master/DEPRECATED.rst#biodatascopdata for information about the SCOPData deprecation.\n\nMotivation:\nSCOPData was removed in version 1.82 of BioPython, so its usage throws an error when imported. This change allows upgrading BioPython beyond version 1.79, which brings improvements in security and stability. I had been trying to use AlphaFold2 with an updated BioPython but kept receiving deprecation warnings / errors depending on which version I was using.\n\nVerification\n  [X] Package still installs after change\n  [ ] run_alphafold_test.py returns ok after this change.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T12:51:04.980820",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "alphafold/data/mmcif_parsing.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "parse",
+          "class_name": "mmcif_parsing",
+          "full_name": "mmcif_parsing.parse",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Replace BioPython SCOPData usage with PDBData in alphafold/data/mmcif_parsing.py to fix deprecation issues and maintain 3to1 amino acid mapping.",
+    "steps": [
+      {
+        "operation": "Update dependency mapping source from SCOPData to PDBData in mmcif_parsing.parse",
+        "file_to_modify": "alphafold/data/mmcif_parsing.py",
+        "function_to_modify": "parse",
+        "reason": "BioPython removed SCOPData in v1.82; PDBData.protein_letters_3to1 provides equivalent 3-letter to 1-letter mapping required by the parser.",
+        "side_effects": "Potential minor differences in mapping dictionary contents; ensure downstream code continues to function; CI/tests may need updates if tests assert exact SCOPData mappings"
+      }
+    ]
+  }
+}

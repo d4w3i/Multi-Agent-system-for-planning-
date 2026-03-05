@@ -1,0 +1,56 @@
+{
+  "evaluated_at": "2026-03-04T14:48:20.572171",
+  "pr_dir": "/Users/davidecroatto/code/planningtest0/gpt_5-2_evals/ablation_turn/redis_redis-py/pr_3534",
+  "pr_number": 3534,
+  "repository": "redis/redis-py",
+  "files": {
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0,
+    "predicted_count": 2,
+    "actual_count": 2,
+    "correct_count": 2
+  },
+  "functions": {
+    "precision": 0.5,
+    "recall": 0.5,
+    "f1": 0.5,
+    "predicted_count": 2,
+    "actual_count": 2,
+    "correct_count": 1
+  },
+  "steps": {
+    "predicted_steps": 4,
+    "actual_steps": 2,
+    "step_diff": 2,
+    "target_coverage": 1.0,
+    "targets_matched": 4,
+    "targets_total": 4
+  },
+  "semantic": {
+    "summary_similarity": 0.7496,
+    "avg_step_similarity": 0.3799,
+    "step_matches": [
+      {
+        "pred_idx": 0,
+        "pred_text": "Operation: Align synchronous release() behavior to surface the correct LockNotOwnedError message whe...",
+        "gt_idx": 0,
+        "gt_text": "Operation: Update the synchronous lock release path to raise a more informative LockError when no to...",
+        "similarity": 0.7606
+      },
+      {
+        "pred_idx": 3,
+        "pred_text": "Operation: Fix/standardize the asyncio not-owned release error to raise LockNotOwnedError with the e...",
+        "gt_idx": 1,
+        "gt_text": "Operation: Mirror the synchronous behavior in the asyncio lock implementation by updating the error ...",
+        "similarity": 0.7589
+      }
+    ],
+    "overall_semantic_score": 0.4908,
+    "computed": true,
+    "error": null
+  },
+  "has_prediction": true,
+  "has_ground_truth": true,
+  "error": null
+}

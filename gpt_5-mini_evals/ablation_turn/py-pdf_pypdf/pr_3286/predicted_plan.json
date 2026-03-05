@@ -1,0 +1,42 @@
+{
+  "pr_number": 3286,
+  "repository": "py-pdf/pypdf",
+  "title": "BUG: Add delimiters to NameObject.renumber_table",
+  "body": "Per the spec, name objects cannot contain unescaped delimiters, which include angle, curly and square brackets (currently missing).\n\nI've attached a sample input PDF with a valid, correctly escaped name object. When appending this to a new PdfWriter the output is invalid (incorrectly escaped):\n\n```\n>>> w = PdfWriter()\n>>> w.append('nameobj.pdf')\n>>> w.write('out.pdf')\n```\n[out.pdf](https://github.com/user-attachments/files/20173760/out.pdf)\n[nameobj.pdf](https://github.com/user-attachments/files/20173761/nameobj.pdf)",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T14:08:20.421804",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "pypdf/generic/_base.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "renumber_table",
+          "class_name": "NameObject",
+          "full_name": "NameObject.renumber_table",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Add missing hex-escape mappings for angle, square and curly bracket delimiters to NameObject.renumber_table so NameObject.renumber() correctly escapes them when writing PDFs; include a regression test to verify the expected #XX escapes.",
+    "steps": [
+      {
+        "operation": "Add missing delimiter mappings to NameObject.renumber_table (and include a regression test to assert correct escaping)",
+        "file_to_modify": "pypdf/generic/_base.py",
+        "function_to_modify": "NameObject.renumber_table",
+        "reason": "NameObject.renumber() relies on renumber_table to escape characters when producing bytes for writing PDFs. The PDF spec requires delimiters (<, >, [, ], {, }) to be escaped in name objects. These delimiters are recognized when reading (present in delimiter_pattern) but are missing from renumber_table, causing unescaped delimiters in output. Adding explicit mappings ('<': b'#3C', '>': b'#3E', '[': b'#5B', ']': b'#5D', '{': b'#7B', '}': b'#7D') will ensure renumber() emits the correct #XX escapes using the same two-digit uppercase hex style as existing entries.",
+        "side_effects": "Primary effect: written PDFs will escape the six delimiter characters in name objects, preventing invalid output; this is a backward-compatible encoding change for name serialization. Tests: add or update a regression test (e.g., read the provided sample nameobj.pdf or construct a NameObject containing these delimiters, then write and assert the name bytes contain the expected #3C/#3E/#5B/#5D/#7B/#7D escapes). Dependents: any code that relied on prior (incorrect) behavior should not break because this enforces spec-compliant escaping; downstream consumers of PdfWriter output will see properly escaped names. API: no public API change. Potentially, golden-file or snapshot tests that assert exact serialized output may need updating if they previously included unescaped delimiters (they were invalid per spec and should be corrected)."
+      }
+    ]
+  }
+}

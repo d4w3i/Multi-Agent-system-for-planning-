@@ -1,0 +1,42 @@
+{
+  "pr_number": 242,
+  "repository": "microsoft/BitNet",
+  "title": "Fix build error with GCC by forcing Clang in CMake on android/aarch64",
+  "body": "GCC does not recognize Clang-specific warning flags like -Wunreachable-code-break and -Wunreachable-code-return, which are passed by upstream submodules (e.g., ggml). This patch forces CMake to use Clang via command-line arguments, avoiding the need to patch nested submodules.\n\nThis resolves compiler errors without modifying submodule source code.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T13:41:00.794209",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "CMakeLists.txt",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "CMakeLists::force_clang_on_android_aarch64 (prologue before project())",
+          "class_name": null,
+          "full_name": "CMakeLists::force_clang_on_android_aarch64 (prologue before project())",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Add a small CMake prologue in the top-level CMakeLists.txt (placed before project()) that detects Android/aarch64 and sets CMAKE_C_COMPILER and CMAKE_CXX_COMPILER to clang/clang++ (cached, FORCE) so Clang is used and Clang-only warning flags from upstream submodules don't cause GCC build errors.",
+    "steps": [
+      {
+        "operation": "Add CMake prologue to force clang/clang++ for Android aarch64",
+        "file_to_modify": "CMakeLists.txt",
+        "function_to_modify": null,
+        "reason": "CMake chooses compilers before project() and upstream submodules (e.g., ggml) add Clang-only warning flags that GCC does not recognize. By detecting Android/aarch64 in a prologue placed before the project() call and setting CMAKE_C_COMPILER and CMAKE_CXX_COMPILER (cached, FORCE) to clang/clang++, we ensure the toolchain uses Clang so those flags are accepted without modifying submodules.",
+        "side_effects": "Changes CMake cache and can override chosen toolchains for Android aarch64 builds. To reduce impact, only set the cached compiler when the build target is Android/aarch64 and when the user has not already provided CMAKE_C_COMPILER/CMAKE_CXX_COMPILER (or if explicitly intended, the code can still FORCE to ensure clang). Requires re-running CMake to pick up the new compiler; CI/builds for Android aarch64 should be re-run. May break custom or non-standard toolchains if they rely on GCC for Android/aarch64; however the change is scoped to Android/aarch64 so other platforms and hosts are unaffected. No public API changes, but downstream build scripts/tooling that assume GCC on Android/aarch64 may need adjustment."
+      }
+    ]
+  }
+}

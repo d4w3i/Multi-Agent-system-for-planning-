@@ -1,0 +1,105 @@
+{
+  "evaluated_at": "2026-03-04T14:44:34.606446",
+  "pr_dir": "/Users/davidecroatto/code/planningtest0/gpt_5-2_evals/ablation_turn/Significant-Gravitas_AutoGPT/pr_10395",
+  "pr_number": 10395,
+  "repository": "Significant-Gravitas/AutoGPT",
+  "files": {
+    "precision": 0.6,
+    "recall": 0.3,
+    "f1": 0.4,
+    "predicted_count": 5,
+    "actual_count": 10,
+    "correct_count": 3
+  },
+  "functions": {
+    "precision": 0.2222,
+    "recall": 0.0909,
+    "f1": 0.129,
+    "predicted_count": 9,
+    "actual_count": 22,
+    "correct_count": 2
+  },
+  "steps": {
+    "predicted_steps": 9,
+    "actual_steps": 23,
+    "step_diff": -14,
+    "target_coverage": 0.5556,
+    "targets_matched": 5,
+    "targets_total": 9
+  },
+  "semantic": {
+    "summary_similarity": 0.7677,
+    "avg_step_similarity": 0.7398,
+    "step_matches": [
+      {
+        "pred_idx": 0,
+        "pred_text": "Operation: Add Redis publish payload sizing + truncation before sending messages (sync path) | Funct...",
+        "gt_idx": 9,
+        "gt_text": "Operation: Implement synchronous truncation-aware publish helper that trims execution event fields b...",
+        "similarity": 0.8217
+      },
+      {
+        "pred_idx": 1,
+        "pred_text": "Operation: Mirror the same payload sizing + truncation behavior for async Redis publishing | Functio...",
+        "gt_idx": 12,
+        "gt_text": "Operation: Implement async truncation-aware publish helper that trims execution event fields before ...",
+        "similarity": 0.8542
+      },
+      {
+        "pred_idx": 2,
+        "pred_text": "Operation: Route execution-update publishing through truncation-aware event bus and keep update sche...",
+        "gt_idx": 8,
+        "gt_text": "Operation: Route synchronous graph execution update publishing through a truncation-aware publish he...",
+        "similarity": 0.7843
+      },
+      {
+        "pred_idx": 3,
+        "pred_text": "Operation: Apply the same truncation-aware update publishing and schema discipline for async manager...",
+        "gt_idx": 10,
+        "gt_text": "Operation: Route async node execution update publishing through the truncation-aware async publish h...",
+        "similarity": 0.7682
+      },
+      {
+        "pred_idx": 4,
+        "pred_text": "Operation: Harden manager cleanup to avoid hangs and ensure Redis/pool shutdown is bounded and consi...",
+        "gt_idx": 16,
+        "gt_text": "Operation: Batch update node execution statuses to TERMINATED and publish per-node termination event...",
+        "similarity": 0.5375
+      },
+      {
+        "pred_idx": 5,
+        "pred_text": "Operation: Improve graph execution termination/cancellation handling and ensure final status + event...",
+        "gt_idx": 15,
+        "gt_text": "Operation: Refactor stop logic to break out on queued/incomplete and poll briefly on running, then f...",
+        "similarity": 0.782
+      },
+      {
+        "pred_idx": 6,
+        "pred_text": "Operation: Add bounded cancellation waiting with clearer timeout semantics for inflight node tasks |...",
+        "gt_idx": 13,
+        "gt_text": "Operation: Reduce the default wait timeout for stopping graph executions to improve responsiveness |...",
+        "similarity": 0.5599
+      },
+      {
+        "pred_idx": 7,
+        "pred_text": "Operation: Extend continuous_retry to support async callables while keeping sync behavior unchanged ...",
+        "gt_idx": 20,
+        "gt_text": "Operation: Enhance the continuous_retry decorator to support both sync and async callables | Functio...",
+        "similarity": 0.8203
+      },
+      {
+        "pred_idx": 8,
+        "pred_text": "Operation: Optimize spreadsheet reading to avoid full materialization and fix skip_columns/header lo...",
+        "gt_idx": 2,
+        "gt_text": "Operation: Change the Spreadsheet block generator logic to conditionally yield either per-row output...",
+        "similarity": 0.7298
+      }
+    ],
+    "overall_semantic_score": 0.7482,
+    "computed": true,
+    "error": null
+  },
+  "has_prediction": true,
+  "has_ground_truth": true,
+  "error": null
+}

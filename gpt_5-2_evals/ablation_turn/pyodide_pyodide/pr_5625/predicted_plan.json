@@ -1,0 +1,65 @@
+{
+  "pr_number": 5625,
+  "repository": "pyodide/pyodide",
+  "title": "Fix test_package_index test",
+  "body": "It started to fail a few days ago, because of some extra terminal output.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T12:39:08.981161",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "src/tests/test_package_loading.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "test_get_dist_source",
+          "class_name": null,
+          "full_name": "test_get_dist_source",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "conftest.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "strip_assertions_stderr",
+          "class_name": null,
+          "full_name": "strip_assertions_stderr",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Adjust package source/index-related testing to be resilient to newly introduced benign terminal output by relaxing the affected assertion and, where appropriate, extending the centralized stderr normalization hook.",
+    "steps": [
+      {
+        "operation": "Relax `test_get_dist_source` assertions to ignore benign extra terminal output by matching only the relevant package-source/index substring (e.g., via `in` checks or a targeted regex) after normalizing the captured output (strip whitespace, split into lines, select the expected line).",
+        "file_to_modify": "src/tests/test_package_loading.py",
+        "function_to_modify": "test_get_dist_source",
+        "reason": "The test is failing due to additional terminal output emitted upstream; the test should validate the semantic content (correct source/index) without depending on an exact, noise-free output stream.",
+        "side_effects": "Slightly reduces strictness of the test; if output format changes substantially, the test may need follow-up adjustments. May require updating any fixtures/helpers used by this test if they assume exact output equality."
+      },
+      {
+        "operation": "Extend `strip_assertions_stderr` to filter the newly observed noisy stderr/terminal lines (add narrowly-scoped pattern(s) or exact-line matches; keep filtering minimal and well-commented).",
+        "file_to_modify": "conftest.py",
+        "function_to_modify": "strip_assertions_stderr",
+        "reason": "Centralizing noise removal keeps tests stable across environments and prevents repeated ad-hoc filtering in individual tests; this function already exists for precisely this purpose.",
+        "side_effects": "If patterns are too broad, real errors could be hidden; ensure filtering targets only known benign messages. Could affect other tests relying on raw stderr content, so run the full test suite (or at least tests that assert stderr) after changes."
+      }
+    ]
+  }
+}

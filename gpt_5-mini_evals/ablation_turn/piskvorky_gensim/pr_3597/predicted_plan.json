@@ -1,0 +1,42 @@
+{
+  "pr_number": 3597,
+  "repository": "piskvorky/gensim",
+  "title": "Clarify BM25 Documentation in Gensim Core Tutorials (Document Fix)",
+  "body": "**What changes were proposed in this pull request?**\n\nThis pull request corrects the documentation for the BM25 algorithm within the core tutorials of the Gensim library. The previous documentation misleadingly implied that BM25 transforms vectors into other vectors while altering their values based on feature rarity. This update provides an accurate description of BM25, highlighting its actual function as a scoring algorithm that does not manipulate the dimensionality of its input data.\n\n**Why are these changes needed?**\n\nThe correction ensures the Gensim documentation accurately reflects the true nature of BM25 as a relevance scoring mechanism, not a vector transformation tool. It rectifies misconceptions and provides clarity, which is vital for users and developers relying on the Gensim documentation for implementing and understanding BM25.\n\n**File Modified**\n\n- gensim/docs/src/gallery/core/run_topics_and_transformations.py\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T14:00:05.176448",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "docs/src/gallery/core/run_topics_and_transformations.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "module-level docstring / documentation block",
+          "class_name": null,
+          "full_name": "module-level docstring / documentation block",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Update the BM25 description in the core tutorial to correctly state that BM25 is a scoring/ranking mechanism that computes per-term weights and does not change input vector dimensionality; keep the example code and formatting intact.",
+    "steps": [
+      {
+        "operation": "Replace the BM25 descriptive paragraph in the module-level documentation",
+        "file_to_modify": "docs/src/gallery/core/run_topics_and_transformations.py",
+        "function_to_modify": "run_topics_and_transformations",
+        "reason": "The existing BM25 paragraph mirrors the Tf-Idf wording and incorrectly suggests BM25 is a vector transformation that alters dimensionality or acts like a representation learner. Replace that paragraph with concise, accurate wording explaining that BM25 is a relevance-scoring/ranking function which computes per-term weights used for scoring and does not change input vector dimensionality. Keep the existing example code (model = models.OkapiBM25Model(corpus)) and Sphinx/sourcecode formatting.",
+        "side_effects": "Documentation-only change: no runtime code, API, or algorithmic behavior is modified. Unit tests and code coverage should be unaffected; however, a local Sphinx docs build or preview is recommended to verify formatting and that the new paragraph renders correctly. Downstream tools that parse or extract docs (search, translations, automated doc validators) may notice the changed text. Low risk overall."
+      }
+    ]
+  }
+}

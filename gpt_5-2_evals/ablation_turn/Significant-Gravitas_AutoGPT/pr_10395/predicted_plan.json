@@ -1,0 +1,185 @@
+{
+  "pr_number": 10395,
+  "repository": "Significant-Gravitas/AutoGPT",
+  "title": "feat(block;backend):  Truncate execution update payload on large data & Improve ReadSpreadsheetBlock performance",
+  "body": "### Changes 🏗️\n\nThis PR introduces several key improvements to message handling, block functionality, and execution reliability:\n\n- **Renamed CSV block to Spreadsheet block** with enhanced CSV/Excel processing capabilities\n- **Added message size limiting and truncation** for Redis communication to prevent connection issues\n- **Optimized FileReadBlock** to yield content chunks instead of duplicated outputs for better performance\n- **Improved execution termination handling** with better timeout management and event publishing\n- **Enhanced continuous retry decorator** with async function support\n- **Implemented payload truncation** to prevent Redis connection issues from oversized messages\n\n### Checklist 📋\n\n#### For code changes:\n- [x] I have clearly listed my changes in the PR description\n- [x] I have made a test plan\n- [x] I have tested my changes according to the test plan:\n  - [x] Verified backend starts without errors\n  - [x] Confirmed message truncation works for large payloads\n  - [x] Tested spreadsheet block functionality with CSV and Excel files\n  - [x] Validated execution termination improvements\n  - [x] Checked FileReadBlock chunk processing\n\n#### For configuration changes:\n- [x] `.env.example` is updated or already compatible with my changes\n- [x] `docker-compose.yml` is updated or already compatible with my changes\n- [x] I have included a list of my configuration changes in the PR description (under **Changes**)\n\n🤖 Generated with [Claude Code](https://claude.ai/code)",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T11:57:12.944289",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "autogpt_platform/backend/backend/data/execution.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "publish",
+          "class_name": "RedisExecutionEventBus",
+          "full_name": "RedisExecutionEventBus.publish",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "publish",
+          "class_name": "AsyncRedisExecutionEventBus",
+          "full_name": "AsyncRedisExecutionEventBus.publish",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "autogpt_platform/backend/backend/executor/manager.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "send_execution_update",
+          "class_name": null,
+          "full_name": "send_execution_update",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "send_async_execution_update",
+          "class_name": null,
+          "full_name": "send_async_execution_update",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_on_cleanup",
+          "class_name": "ExecutionManager",
+          "full_name": "ExecutionManager._on_cleanup",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_on_graph_execution",
+          "class_name": "Executor",
+          "full_name": "Executor._on_graph_execution",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "autogpt_platform/backend/backend/util/retry.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "continuous_retry",
+          "class_name": null,
+          "full_name": "continuous_retry",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "autogpt_platform/backend/backend/blocks/csv.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "run",
+          "class_name": "ReadSpreadsheetBlock",
+          "full_name": "ReadSpreadsheetBlock.run",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "autogpt_platform/backend/backend/util/settings.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    }
+  ],
+  "step_plan": {
+    "summary": "Implement Redis-safe execution update publishing by truncating oversized event payloads and improving termination robustness, while optimizing the Spreadsheet (CSV/Excel) reader and retry utilities. These changes reduce Redis connection failures on large outputs and improve performance and reliability for long-running or cancelled executions.",
+    "steps": [
+      {
+        "operation": "Add Redis publish payload sizing + truncation before sending messages (sync path)",
+        "file_to_modify": "autogpt_platform/backend/backend/data/execution.py",
+        "function_to_modify": "RedisExecutionEventBus.publish",
+        "reason": "Redis pub/sub can disconnect or error on oversized payloads; centralizing truncation in the event bus ensures all sync execution updates are capped and remain valid JSON while preserving required identifiers/status fields.",
+        "side_effects": "Execution update payloads may omit or truncate large fields (e.g., output_data/logs/errors/metadata); downstream consumers (websocket/UI) must tolerate truncated fields; add logging may increase log volume; any unit tests asserting full payload equality will need updates."
+      },
+      {
+        "operation": "Mirror the same payload sizing + truncation behavior for async Redis publishing",
+        "file_to_modify": "autogpt_platform/backend/backend/data/execution.py",
+        "function_to_modify": "AsyncRedisExecutionEventBus.publish",
+        "reason": "Async execution pipelines must be protected equivalently; without truncation here, large async updates could still break Redis even if sync paths are fixed.",
+        "side_effects": "Same truncation behavior as sync; ensure implementation is non-blocking and does not perform heavy synchronous serialization on the event loop; async tests/fixtures for event bus publishing may require adjustments."
+      },
+      {
+        "operation": "Route execution-update publishing through truncation-aware event bus and keep update schema stable (sync manager path)",
+        "file_to_modify": "autogpt_platform/backend/backend/executor/manager.py",
+        "function_to_modify": "send_execution_update",
+        "reason": "Manager is the primary call site for emitting Node/Graph execution updates; this is the best place to ensure only the intended fields are included, avoid accidentally publishing massive nested structures, and attach any truncation metadata/logging consistently.",
+        "side_effects": "Could change event timing/frequency or which fields are emitted; may reduce payload completeness in UI for large outputs; may require updating any integration tests that expect exact event payloads."
+      },
+      {
+        "operation": "Apply the same truncation-aware update publishing and schema discipline for async manager path",
+        "file_to_modify": "autogpt_platform/backend/backend/executor/manager.py",
+        "function_to_modify": "send_async_execution_update",
+        "reason": "Async update emission must be consistent with sync emission; ensures large NodeExecutionResult updates cannot bypass truncation and protects Redis connections under high-throughput async execution.",
+        "side_effects": "Potential behavior changes in async execution update ordering/timing; additional await points could slightly affect throughput; test suites covering async execution updates may need to be adapted."
+      },
+      {
+        "operation": "Harden manager cleanup to avoid hangs and ensure Redis/pool shutdown is bounded and consistent",
+        "file_to_modify": "autogpt_platform/backend/backend/executor/manager.py",
+        "function_to_modify": "ExecutionManager._on_cleanup",
+        "reason": "Execution termination reliability depends on cleanup not blocking indefinitely; cleanup should enforce timeouts, close event bus connections promptly, and guarantee final state/event publication paths aren’t skipped due to shutdown ordering.",
+        "side_effects": "Tighter timeouts can surface latent shutdown bugs as explicit errors; may alter shutdown logs; may require adjusting graceful shutdown behavior in deployment scripts or tests that expect longer teardown."
+      },
+      {
+        "operation": "Improve graph execution termination/cancellation handling and ensure final status + events are published deterministically",
+        "file_to_modify": "autogpt_platform/backend/backend/executor/manager.py",
+        "function_to_modify": "Executor._on_graph_execution",
+        "reason": "This loop orchestrates node execution and stop/terminate behavior; adding bounded waits, clearer cancellation paths, and consistent “finalize then publish” ordering prevents stuck RUNNING statuses and ensures clients receive termination updates promptly.",
+        "side_effects": "May change exact status transition timing; could increase number of update events near termination; if timeouts are reduced, some long-running nodes may be force-failed sooner than before; update any end-to-end tests that rely on previous timing."
+      },
+      {
+        "operation": "Add bounded cancellation waiting with clearer timeout semantics for inflight node tasks",
+        "file_to_modify": "autogpt_platform/backend/backend/executor/utils.py",
+        "function_to_modify": "NodeExecutionProgress.wait_for_cancellation",
+        "reason": "Termination improvements require a single place to control how long the system waits for tasks to cancel, what exception/state is recorded on timeout, and how that propagates back to the manager for correct final status/event publication.",
+        "side_effects": "Nodes may be marked cancelled/failed more consistently on timeout; could expose race conditions in node runners; tests that simulate cancellation may need updated expectations around timeout duration and resulting status."
+      },
+      {
+        "operation": "Extend continuous_retry to support async callables while keeping sync behavior unchanged",
+        "file_to_modify": "autogpt_platform/backend/backend/util/retry.py",
+        "function_to_modify": "continuous_retry",
+        "reason": "The retry decorator must not block the event loop for async functions; it should detect coroutine functions and use asyncio.sleep for backoff while preserving current time.sleep-based behavior for sync functions.",
+        "side_effects": "Behavioral differences in scheduling for async retries; any callers relying on blocking retry timing may observe slightly different interleavings; requires adding/adjusting async unit tests to validate retry/backoff and exception handling."
+      },
+      {
+        "operation": "Optimize spreadsheet reading to avoid full materialization and fix skip_columns/header logic correctness",
+        "file_to_modify": "autogpt_platform/backend/backend/blocks/csv.py",
+        "function_to_modify": "ReadSpreadsheetBlock.run",
+        "reason": "Large CSV/Excel files can produce huge in-memory structures and oversized execution updates; streaming/yielding rows (or limiting returned data) improves performance and reduces payload size, and fixing skip_columns typing/logic prevents incorrect column exclusion.",
+        "side_effects": "Output shape/volume may change (e.g., fewer duplicated fields, different representation for streamed rows); may require UI/graph consumers to handle incremental rows; tests and any existing graphs depending on the old CSV block semantics may need compatibility handling/aliases elsewhere."
+      }
+    ]
+  }
+}

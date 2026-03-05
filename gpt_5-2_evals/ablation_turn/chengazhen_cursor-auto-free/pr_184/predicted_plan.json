@@ -1,0 +1,42 @@
+{
+  "pr_number": 184,
+  "repository": "chengazhen/cursor-auto-free",
+  "title": "update build.py as to use env prioritized",
+  "body": "Developers would prefer to build the src locally thus taking their own `.env` (if not exists then use env.example) to build the final `CursorPro` executable. Do you like it @chengazhen ?",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T12:06:03.268551",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "build.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "build",
+          "class_name": null,
+          "full_name": "build",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Update `build.py` so local builds copy a developer’s `.env` into the dist output when present, falling back to `.env.example` only when `.env` is missing, with clearer messaging for missing files.",
+    "steps": [
+      {
+        "operation": "Implement env-file selection and copy logic that prefers local .env over .env.example (with clear logging and a helpful error if neither exists), while preserving existing platform-specific copy mechanics and output layout.",
+        "file_to_modify": "build.py",
+        "function_to_modify": "build",
+        "reason": "Current build always copies `.env.example` into the dist output as `.env`, overriding/ignoring a developer’s local `.env`. Updating `build()` to select `.env` first (fallback to `.env.example`) meets the requested build-time behavior and aligns with runtime expectations that a `.env` exists next to the executable.",
+        "side_effects": "Build output will change for developers who have a local `.env` (their values will be embedded into `dist/<platform>/.env`). If neither `.env` nor `.env.example` exists, the build may now fail fast (or emit a stronger warning) depending on the chosen behavior; this can surface missing config earlier. Any CI/release pipeline that relied on `.env.example` always being copied should be checked; logs will now indicate which file was used."
+      }
+    ]
+  }
+}

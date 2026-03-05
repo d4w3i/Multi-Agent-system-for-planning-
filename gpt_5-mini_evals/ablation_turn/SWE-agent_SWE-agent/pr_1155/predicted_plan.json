@@ -1,0 +1,42 @@
+{
+  "pr_number": 1155,
+  "repository": "SWE-agent/SWE-agent",
+  "title": "Fix: Correctly format commit message for PR creation",
+  "body": "The commit message by the agent does not formatted properly\n![image](https://github.com/user-attachments/assets/4d40e248-2761-47e1-a091-26d53bde1179)\n\nThis pull request includes a small change to the `open_pr` function in `sweagent/run/hooks/open_pr.py`. The change updates the string formatting for commit messages to use f-strings for formating the message properly",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T12:07:48.488674",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "open_pr.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "open_pr",
+          "class_name": null,
+          "full_name": "open_pr",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Replace literal-brace commit message strings in open_pr.open_pr with f-strings so issue.title and issue.number are interpolated correctly while preserving shlex.quote escaping.",
+    "steps": [
+      {
+        "operation": "Fix commit message string interpolation to include issue data",
+        "file_to_modify": "open_pr.py",
+        "function_to_modify": "open_pr",
+        "reason": "The code currently constructs the commit message using literal braces (\"Fix: {issue.title}\", \"Closes #{issue.number}\"), so the actual commit contains the brace placeholders instead of the issue title/number. Replacing these with f-strings (while keeping shlex.quote) will interpolate issue.title and issue.number into the commit message and preserve shell-escaping.",
+        "side_effects": "Behavioral change is limited to the content of created commits (commit subject/body will now contain the real issue title/number). Downstream code that parses or asserts on exact commit message text in tests may need updates. No API or git command semantics change; shlex.quote remains in use so shell escaping behavior is unchanged. Recommended to run the hook with _dry_run=True and existing unit/integration tests to verify commit messages are formatted as expected."
+      }
+    ]
+  }
+}

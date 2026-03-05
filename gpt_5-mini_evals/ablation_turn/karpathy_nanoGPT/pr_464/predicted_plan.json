@@ -1,0 +1,42 @@
+{
+  "pr_number": 464,
+  "repository": "karpathy/nanoGPT",
+  "title": "fix: h100-mfu-calculation",
+  "body": "I was getting 104% MFU on h100 then i realized that MFU calculation might of been based on a100 312 tflops \n\nh100 is 989 tflops at bfloat16. nvidia claims 1,979tflops but that is for 2:4 sparsity.\n\n<img width=\"515\" alt=\"image\" src=\"https://github.com/karpathy/nanoGPT/assets/47992694/7ed83ae5-3769-4c48-91a6-7cc4d8f6e140\">",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T13:29:22.513787",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "model.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "estimate_mfu",
+          "class_name": "GPT",
+          "full_name": "GPT.estimate_mfu",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Replace the hardcoded A100 peak TFLOPS in GPT.estimate_mfu with runtime detection (A100 vs H100), add an environment-variable override (NANOGPT_PEAK_TFLOPS), and fall back to the original 312e12 to preserve prior behavior.",
+    "steps": [
+      {
+        "operation": "Detect runtime GPU and use device-specific bfloat16 peak TFLOPS (with env override) in MFU calculation",
+        "file_to_modify": "model.py",
+        "function_to_modify": "GPT.estimate_mfu",
+        "reason": "Currently estimate_mfu divides achieved FLOPS by a hardcoded A100 bfloat16 peak (312e12), which yields >100% MFU on H100. Replace the hardcoded value with logic that: (1) checks for an explicit environment override (NANOGPT_PEAK_TFLOPS), (2) if not set and CUDA is available, queries torch.cuda.get_device_properties(...) to detect the GPU and selects an appropriate bfloat16 peak (map at least H100 -> 989e12 and A100 -> 312e12), and (3) falls back to 312e12 when detection fails. Update the function docstring/comment to describe the new behavior. This keeps the function signature unchanged and is backward-compatible for A100 users while fixing MFU reporting on H100.",
+        "side_effects": "Changes only reporting of MFU (no runtime performance change). Downstream callers (train.py, bench.py) do not need updates but test outputs and dashboards that assert numeric MFU values will change on H100. If torch.cuda is unavailable or the device name is unexpected, the code will fall back to the old 312e12 value (preserving previous behavior). Developers may need to extend the GPU-name mapping for future devices; CI or unit tests that check MFU thresholds should be updated to accept new expected values or to use the env override for deterministic behavior. Ensure torch is imported and that any string matching for device names is robust (case-insensitive / substring checks)."
+      }
+    ]
+  }
+}

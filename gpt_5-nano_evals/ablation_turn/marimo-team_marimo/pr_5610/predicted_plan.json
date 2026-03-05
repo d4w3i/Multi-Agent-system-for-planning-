@@ -1,0 +1,117 @@
+{
+  "pr_number": 5610,
+  "repository": "marimo-team/marimo",
+  "title": "Feat/add force capability on export",
+  "body": "This PR introduces a --force / -f flag to the marimo export subcommands (html, script, md, ipynb, and html_wasm) to allow overwriting existing output files in non-interactive environments (CI/CD, automation). If --force is provided, the existing file is overwritten without prompting the user. The watch_and_export flow is updated to skip the interactive overwrite prompt when force is True. A new test (test_cli_export_html_force_overwrite) is planned to validate:\n- Without the flag, exporting to an existing file does not overwrite.\n- With --force, the existing file is overwritten.\n- The short alias -f also works.\n\nThese changes preserve the safe interactive prompt for manual users while enabling automation-friendly behavior.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T13:09:37.231737",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "marimo/_cli/export/commands.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "watch_and_export",
+          "class_name": null,
+          "full_name": "watch_and_export",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "html",
+          "class_name": null,
+          "full_name": "html",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "script",
+          "class_name": null,
+          "full_name": "script",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "md",
+          "class_name": null,
+          "full_name": "md",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "ipynb",
+          "class_name": null,
+          "full_name": "ipynb",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "html_wasm",
+          "class_name": null,
+          "full_name": "html_wasm",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Introduce a --force / -f flag across all marimo export subcommands (html, script, md, ipynb, html_wasm) to enable overwriting existing outputs without interactive prompts. Centralizes the behavior in watch_and_export while preserving the safe prompt for interactive users.",
+    "steps": [
+      {
+        "operation": "Update internal export orchestration to support force flag by updating watch_and_export",
+        "file_to_modify": "marimo/_cli/export/commands.py",
+        "function_to_modify": "watch_and_export",
+        "reason": "Centralizes overwrite behavior; if force is True, bypass user prompt and overwrite existing files; ensures all export subcommands share the same behavior",
+        "side_effects": "Adds a new boolean parameter to the function signature; may require updating all call sites and related tests; keeps default behavior interactive when force is False; introduces CI/CD friendly non-interactive path"
+      },
+      {
+        "operation": "Add --force flag to the HTML export command",
+        "file_to_modify": "marimo/_cli/export/commands.py",
+        "function_to_modify": "html",
+        "reason": "Expose the force flag at the CLI level for HTML export; pass through to watch_and_export to allow overwriting in non-interactive environments",
+        "side_effects": "Updates CLI help text; requires tests to cover force vs non-force HTML export; ensures -f alias works for HTML export"
+      },
+      {
+        "operation": "Add --force flag to the Script export command",
+        "file_to_modify": "marimo/_cli/export/commands.py",
+        "function_to_modify": "script",
+        "reason": "Expose the force flag at the CLI level for script export; pass through to watch_and_export",
+        "side_effects": "Updates CLI help text; requires tests to cover force vs non-force script export; ensures -f alias works for script export"
+      },
+      {
+        "operation": "Add --force flag to the Markdown (md) export command",
+        "file_to_modify": "marimo/_cli/export/commands.py",
+        "function_to_modify": "md",
+        "reason": "Expose the force flag at the CLI level for md export; pass through to watch_and_export",
+        "side_effects": "Updates CLI help text; requires tests to cover force vs non-force md export; ensures -f alias works for md export"
+      },
+      {
+        "operation": "Add --force flag to the IPYNB export command",
+        "file_to_modify": "marimo/_cli/export/commands.py",
+        "function_to_modify": "ipynb",
+        "reason": "Expose the force flag at the CLI level for ipynb export; pass through to watch_and_export",
+        "side_effects": "Updates CLI help text; requires tests to cover force vs non-force ipynb export; ensures -f alias works for ipynb export"
+      },
+      {
+        "operation": "Add --force flag to the HTML_WASM export command",
+        "file_to_modify": "marimo/_cli/export/commands.py",
+        "function_to_modify": "html_wasm",
+        "reason": "Expose the force flag at the CLI level for html_wasm export; pass through to watch_and_export",
+        "side_effects": "Updates CLI help text; requires tests to cover force vs non-force html_wasm export; ensures -f alias works for html_wasm export"
+      }
+    ]
+  }
+}

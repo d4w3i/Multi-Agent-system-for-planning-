@@ -1,0 +1,42 @@
+{
+  "pr_number": 2952,
+  "repository": "Mikubill/sd-webui-controlnet",
+  "title": "Fix issue with > in pip cmd causing file creation",
+  "body": "Problem:\n- The install.py script reads requirements.txt during Web UI startup.\n- If a requirement line contains a version spec with a '>' (e.g., opencv-python>=4.8.0), the shell can treat the '>' as a redirection operator, creating unintended files (as described: a file named '=4.8.0').\n\nRoot cause:\n- install_requirements in install.py builds pip install commands using string formatting such as install -U {package} or install {package_name}=={package_version} without quoting the entire package spec. When the spec includes characters like '>', the shell may interpret it as redirection.\n\nFix:\n- Enclose the package specification in double quotes wherever it is passed to pip, so the shell does not interpret redirection characters.\n\nWhat I changed:\n- In install_requirements, quote all package specifications passed to pip.\n  - Replace occurrences of:\n    - launch.run_pip(f\"install -U {package}\", ...) with launch.run_pip(f'install -U \"{package}\"', ...)\n    - launch.run_pip(f\"install {package_name}=={package_version}\", ...) with launch.run_pip(f'install \"{package_name}=={package_version}\"', ...)\n    - launch.run_pip(f\"install {package}\", ...) with launch.run_pip(f'install \"{package}\"', ...)\n- This ensures lines like opencv-python>=4.8.0 are treated as a single pip argument and not as a shell redirection.\n\nImpact:\n- Minimal behavioral change: pip will receive the full package spec as a single argument, preventing accidental file creation during startup.\n- Should be safe across environments where install.py is executed (Windows batch, Unix shells).\n\nNo other files are touched.\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T11:57:38.903633",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "install.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "install_requirements",
+          "class_name": null,
+          "full_name": "install_requirements",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Fix install_requirements in base_project/install.py to quote package specifications when invoking pip, preventing shell redirection issues caused by '>' in requirements.",
+    "steps": [
+      {
+        "operation": "Quote package specification in pip install commands",
+        "file_to_modify": "base_project/install.py",
+        "function_to_modify": "install_requirements",
+        "reason": "Prevent shell redirection by ensuring the entire package spec is passed as a single argument to pip, even when it contains operators like '>' (e.g., opencv-python>=4.8.0)",
+        "side_effects": "Pip will receive quoted args; startup behavior should be unchanged except for avoiding unintended file creation; may require re-running startup in environments with different shells; tests should verify that requirements containing '>' do not produce stray files and that pip receives the correctly quoted argument"
+      }
+    ]
+  }
+}

@@ -1,0 +1,87 @@
+{
+  "pr_number": 2644,
+  "repository": "TomSchimansky/CustomTkinter",
+  "title": "Fix CTkEntry place_holder",
+  "body": "This PR aims to fix placeholder behavior when a textvariable is assigned to a CTkEntry and introduce a controlled toggle for the textvariable callback event.\n\nKey changes expected:\n- Ensure the placeholder logic works correctly even if a textvariable is bound to the CTkEntry.\n- Add a flag to enable/disable the textvariable callback to prevent unintended placeholder activations while the placeholder is shown or while programmatic updates occur.\n- Guard the textvariable callback so that placeholder logic is not triggered during placeholder display, and re-enable it when the placeholder is deactivated.\n- Preserve existing UI behavior when no textvariable is bound or when textvariable contains non-empty values.\n\nPotential tests to consider:\n- Placeholder appears when textvariable is \"\" or None and placeholder_text is provided.\n- Placeholder does not appear when textvariable has a non-empty value.\n- Setting textvariable programmatically to \"\" triggers placeholder activation only if allowed by the new flag.\n- Placeholder deactivation re-enables textvariable callback and behaves as expected when user types or clears text.\n- Ensure no regression for normal CTkEntry usage without textvariable.\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T12:15:30.615132",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "customtkinter/windows/widgets/ctk_entry.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "__init__",
+          "class_name": "CTkEntry",
+          "full_name": "CTkEntry.__init__",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_textvariable_callback",
+          "class_name": "CTkEntry",
+          "full_name": "CTkEntry._textvariable_callback",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_activate_placeholder",
+          "class_name": "CTkEntry",
+          "full_name": "CTkEntry._activate_placeholder",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_deactivate_placeholder",
+          "class_name": "CTkEntry",
+          "full_name": "CTkEntry._deactivate_placeholder",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Fix CTkEntry placeholder behavior when a textvariable is bound by introducing a guarded textvariable callback and a toggle to enable/disable the callback during placeholder activation/deactivation.",
+    "steps": [
+      {
+        "operation": "Add _textvariable_callback_enabled flag in CTkEntry.__init__ and ensure existing textvariable binding remains intact",
+        "file_to_modify": "customtkinter/windows/widgets/ctk_entry.py",
+        "function_to_modify": "CTkEntry.__init__",
+        "reason": "Introduce a global flag that controls whether the textvariable callback should run, enabling safe gating of updates during placeholder activation without changing existing default behavior.",
+        "side_effects": "Adds an initialization path for the flag; minimal risk to startup; ensures backward compatibility when no textvariable is bound; may require updating any initialization tests if they rely on default callback state."
+      },
+      {
+        "operation": "Guard CTkEntry._textvariable_callback execution with the new enable flag",
+        "file_to_modify": "customtkinter/windows/widgets/ctk_entry.py",
+        "function_to_modify": "CTkEntry._textvariable_callback",
+        "reason": "Prevent placeholder logic from triggering while the callback is disabled or during placeholder display; preserve normal behavior when enabled.",
+        "side_effects": "Callback will return early when disabled, avoiding placeholder interference during certain states; downstream behavior remains unchanged when enabled; may require tests for bound-variable changes during placeholder visibility."
+      },
+      {
+        "operation": "Disable the textvariable callback during placeholder activation in CTkEntry._activate_placeholder",
+        "file_to_modify": "customtkinter/windows/widgets/ctk_entry.py",
+        "function_to_modify": "CTkEntry._activate_placeholder",
+        "reason": "Guard against unintended updates from a bound textvariable while the placeholder is being shown, ensuring placeholder determinism.",
+        "side_effects": "Bound variable changes won’t trigger placeholder logic during activation; ensures consistent placeholder display; may require tests to cover activation paths with bound variables."
+      },
+      {
+        "operation": "Re-enable the textvariable callback after placeholder deactivation in CTkEntry._deactivate_placeholder",
+        "file_to_modify": "customtkinter/windows/widgets/ctk_entry.py",
+        "function_to_modify": "CTkEntry._deactivate_placeholder",
+        "reason": "Restore normal behavior so subsequent user input or programmatic updates are processed via the textvariable callback after the placeholder is hidden.",
+        "side_effects": "Normal callback flow resumes post-deactivation; tests should verify programmatic updates and user input re-trigger as expected; minimizes regression for standard CTkEntry usage."
+      }
+    ]
+  }
+}

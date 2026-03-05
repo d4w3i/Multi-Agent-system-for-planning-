@@ -1,0 +1,70 @@
+{
+  "evaluated_at": "2026-03-04T16:51:05.063146",
+  "pr_dir": "/Users/davidecroatto/code/planningtest0/gpt_5-mini_evals/ablation_turn/pyg-team_pytorch_geometric/pr_10335",
+  "pr_number": 10335,
+  "repository": "pyg-team/pytorch_geometric",
+  "files": {
+    "precision": 0.25,
+    "recall": 0.5,
+    "f1": 0.3333,
+    "predicted_count": 4,
+    "actual_count": 2,
+    "correct_count": 1
+  },
+  "functions": {
+    "precision": 0.1667,
+    "recall": 0.25,
+    "f1": 0.2,
+    "predicted_count": 6,
+    "actual_count": 4,
+    "correct_count": 1
+  },
+  "steps": {
+    "predicted_steps": 6,
+    "actual_steps": 4,
+    "step_diff": 2,
+    "target_coverage": 0.1667,
+    "targets_matched": 1,
+    "targets_total": 6
+  },
+  "semantic": {
+    "summary_similarity": 0.6058,
+    "avg_step_similarity": 0.3615,
+    "step_matches": [
+      {
+        "pred_idx": 0,
+        "pred_text": "Operation: Make LargeGraphIndexer.save selective (no unconditional rmtree; write only missing/change...",
+        "gt_idx": 2,
+        "gt_text": "Operation: Change graph indexer save location to a dedicated `indexer_path` instead of relying on `p...",
+        "similarity": 0.5937
+      },
+      {
+        "pred_idx": 1,
+        "pred_text": "Operation: Harden LargeGraphIndexer.from_disk to tolerate missing/skipped files and remain compatibl...",
+        "gt_idx": 1,
+        "gt_text": "Operation: Remove the internal split-file-name helper property and stop including the indexer artifa...",
+        "similarity": 0.4684
+      },
+      {
+        "pred_idx": 4,
+        "pred_text": "Operation: Avoid unconditional indexer.save call in KGQABaseDataset._build_graph (skip save when pro...",
+        "gt_idx": 3,
+        "gt_text": "Operation: Introduce and use an explicit `self.indexer_path` for existence checks and loading the in...",
+        "similarity": 0.681
+      },
+      {
+        "pred_idx": 5,
+        "pred_text": "Operation: Update example to patch the correct retrieval function and make module-level patching rob...",
+        "gt_idx": 0,
+        "gt_text": "Operation: Update GRetriever instantiation to match the new/default interface by removing the explic...",
+        "similarity": 0.4258
+      }
+    ],
+    "overall_semantic_score": 0.4348,
+    "computed": true,
+    "error": null
+  },
+  "has_prediction": true,
+  "has_ground_truth": true,
+  "error": null
+}

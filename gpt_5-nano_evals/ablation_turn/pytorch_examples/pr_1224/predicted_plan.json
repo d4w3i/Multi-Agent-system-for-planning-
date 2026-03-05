@@ -1,0 +1,58 @@
+{
+  "pr_number": 1224,
+  "repository": "pytorch/examples",
+  "title": "Fixes in Imagenet training script",
+  "body": "* ngpus_per_node variable count fix\n* dist_backend assertion added for nccl issue",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T13:41:46.769117",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "imagenet/main.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "main",
+          "class_name": null,
+          "full_name": "main",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "imagenet/main.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "main",
+          "class_name": null,
+          "full_name": "main",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "This PR fixes two issues in the ImageNet training script: (1) robust calculation of ngpus_per_node to avoid zero or inconsistent values across CUDA and CPU-only environments, and (2) an assertion enforcing NCCL as the distributed backend for multi-GPU training to catch misconfigurations.",
+    "steps": [
+      {
+        "operation": "Refactor ngpus_per_node calculation and add NCCL backend assertion in main()",
+        "file_to_modify": "imagenet/main.py",
+        "function_to_modify": "main",
+        "reason": "Implement fixes described in the PR: ensure a sane non-zero ngpus_per_node value for all environments (CUDA available or not) and enforce NCCL as the backend for multi-GPU distributed training to address NCCL-related issues.",
+        "side_effects": "World-size and process-spawn logic will use the updated ngpus_per_node; may cause assertion failures if a non-NCCL backend is required by some configurations; tests/CI should run with NCCL-enabled environments; single-GPU or non-distributed runs should remain unaffected."
+      }
+    ]
+  }
+}

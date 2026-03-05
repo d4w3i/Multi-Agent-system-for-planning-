@@ -1,0 +1,65 @@
+{
+    "repository": "eosphoros-ai/DB-GPT",
+    "pull_request_number": 2778,
+    "title": "fix: Change plan manager prompt in order to avoid calling tools directly",
+    "body": "# Description\r\n\r\nRelated to #2777 \r\n\u5728\u9ed8\u8ba4plan manager prompt\u4e2d\u52a0\u5165\u4e86\u5bf9tool\u76f4\u63a5\u8c03\u7528\u7684\u4e25\u683c\u9650\u5236\r\n\r\n# How Has This Been Tested?\r\n\r\n\u7ecf\u8fc7\u5bf9\u8bdd\u6d4b\u8bd5\uff0cplan manager \u6210\u529f\u907f\u514d\u76f4\u63a5\u8c03\u7528 Tools\r\n\r\n![final](https://github.com/user-attachments/assets/c7a3095f-1b34-4495-a597-15d6dfebda8d)\r\n\r\n# Snapshots:\r\n\r\n![en prompt](https://github.com/user-attachments/assets/3d8cac34-7764-4461-8ca8-964a0099b9ef)\r\n![cnprompt](https://github.com/user-attachments/assets/b6896063-382d-4203-b194-27e1f4ebc357)\r\n\r\n\r\n# Checklist:\r\n\r\n- [x] My code follows the style guidelines of this project\r\n- [x] I have already rebased the commits and make the commit message conform to the project standard.\r\n- [x] I have performed a self-review of my own code\r\n- [x] I have commented my code, particularly in hard-to-understand areas\r\n- [x] I have made corresponding changes to the documentation\r\n- [x] Any dependent changes have been merged and published in downstream modules\r\n\r\n\r\n",
+    "pr_date": "2025-06-18T05:02:24Z",
+    "source_branch": "bugfix/plan_manager-prompt",
+    "language": "en",
+    "keywords_detected": {
+        "branch": [
+            "fix"
+        ],
+        "requirement": [
+            "change",
+            "fix"
+        ],
+        "body": [
+            "change",
+            "merge"
+        ]
+    },
+    "number_of_links_in_pr": 6,
+    "base_sha": "bb947b6af7b485f078a96a690d269288237e60d6",
+    "last_commit_sha": "097dec045bbebf45fa6c6aa5a03d83ddf70c097e",
+    "diff_between_base_and_last": [
+        {
+            "sha": "6ac139a5e573698c05c7cfb8a979374e086dc7c9",
+            "filename": "packages/dbgpt-core/src/dbgpt/agent/core/profile/base.py",
+            "status": "modified",
+            "additions": 8,
+            "deletions": 0,
+            "changes": 8,
+            "blob_url": "https://github.com/eosphoros-ai/DB-GPT/blob/097dec045bbebf45fa6c6aa5a03d83ddf70c097e/packages%2Fdbgpt-core%2Fsrc%2Fdbgpt%2Fagent%2Fcore%2Fprofile%2Fbase.py",
+            "raw_url": "https://github.com/eosphoros-ai/DB-GPT/raw/097dec045bbebf45fa6c6aa5a03d83ddf70c097e/packages%2Fdbgpt-core%2Fsrc%2Fdbgpt%2Fagent%2Fcore%2Fprofile%2Fbase.py",
+            "contents_url": "https://api.github.com/repos/eosphoros-ai/DB-GPT/contents/packages%2Fdbgpt-core%2Fsrc%2Fdbgpt%2Fagent%2Fcore%2Fprofile%2Fbase.py?ref=097dec045bbebf45fa6c6aa5a03d83ddf70c097e",
+            "patch": "@@ -29,6 +29,10 @@\n {% endif %}your goal is {% if is_retry_chat %}{{ retry_goal }}{% else %}{{ goal }}{% endif %}.\\\n Please think step-by-step to achieve your goals based on user input. You can use the resources given below.\n At the same time, please strictly abide by the constraints and specifications in the \"IMPORTANT REMINDER\" below.\n+[Important Constraints]\n+- It is strictly prohibited to directly call any tool from resources in the task plan, even if they are listed in the available resources.\n+- All tool invocations must be performed only via the ToolExpert agent.\n+- The ToolExpert is responsible for managing and proxying all tool invocations. The Planner should only issue high-level intents to the ToolExpert for using tools.\n {% if resource_prompt %}\\\n Given resources information:\n {{ resource_prompt }} \n@@ -69,6 +73,10 @@\n \u4f60\u662f\u4e00\u4e2a {{ role }}, {% if name %}\u540d\u5b57\u53eb {{ name }}.\n {% endif %}\u4f60\u7684\u76ee\u6807\u662f {% if is_retry_chat %}{{ retry_goal }}{% else %}{{ goal }}{% endif %}.\\\n \u8bf7\u4e00\u6b65\u4e00\u6b65\u601d\u8003\u5b8c\u6839\u636e\u4e0b\u9762\u7ed9\u51fa\u7684\u5df2\u77e5\u4fe1\u606f\u548c\u7528\u6237\u95ee\u9898\u5b8c\u6210\u76ee\u6807\uff0c\u540c\u65f6\u8bf7\u4e25\u683c\u9075\u5b88\u4e0b\u9762\"\u91cd\u8981\u63d0\u9192\"\u4e2d\u7684\u7ea6\u675f\u548c\u89c4\u8303\u3002\n+\u3010\u91cd\u8981\u7ea6\u675f\u3011\n+- \u4e25\u7981\u5728\u4efb\u52a1\u8ba1\u5212\u4e2d\u76f4\u63a5\u8c03\u7528\u4efb\u4f55 resource \u4e2d\u7684 tool\uff0c\u5373\u4f7f\u5b83\u4eec\u5728\u8d44\u6e90\u5217\u8868\u4e2d\u88ab\u5217\u51fa\u3002\n+- \u6240\u6709 tool \u7684\u8c03\u7528\u5fc5\u987b\u901a\u8fc7 ToolExpert agent \u5b9e\u73b0\u3002\n+- ToolExpert \u7684\u804c\u8d23\u662f\u7edf\u4e00\u7ba1\u7406\u3001\u4ee3\u7406\u6240\u6709\u5de5\u5177\u7684\u8c03\u7528\uff0cPlanner \u53ea\u5e94\u5411 ToolExpert \u53d1\u51fa\u5de5\u5177\u7684\u4f7f\u7528\u610f\u56fe\u3002\n {% if resource_prompt %}\\\n \u5df2\u77e5\u8d44\u6e90\u4fe1\u606f\uff1a\n {{ resource_prompt }} "
+        }
+    ],
+    "commits": [
+        {
+            "sha": "097dec045bbebf45fa6c6aa5a03d83ddf70c097e",
+            "commit_date": "2025-06-18T02:54:58Z",
+            "message": "Changed plan manager default prompt in order to avoid calling tools directly from resources",
+            "number_of_links_in_commit": 0,
+            "files_changed_count": 1,
+            "files": [
+                {
+                    "sha": "6ac139a5e573698c05c7cfb8a979374e086dc7c9",
+                    "filename": "packages/dbgpt-core/src/dbgpt/agent/core/profile/base.py",
+                    "status": "modified",
+                    "additions": 8,
+                    "deletions": 0,
+                    "changes": 8,
+                    "blob_url": "https://github.com/eosphoros-ai/DB-GPT/blob/097dec045bbebf45fa6c6aa5a03d83ddf70c097e/packages%2Fdbgpt-core%2Fsrc%2Fdbgpt%2Fagent%2Fcore%2Fprofile%2Fbase.py",
+                    "raw_url": "https://github.com/eosphoros-ai/DB-GPT/raw/097dec045bbebf45fa6c6aa5a03d83ddf70c097e/packages%2Fdbgpt-core%2Fsrc%2Fdbgpt%2Fagent%2Fcore%2Fprofile%2Fbase.py",
+                    "contents_url": "https://api.github.com/repos/eosphoros-ai/DB-GPT/contents/packages%2Fdbgpt-core%2Fsrc%2Fdbgpt%2Fagent%2Fcore%2Fprofile%2Fbase.py?ref=097dec045bbebf45fa6c6aa5a03d83ddf70c097e",
+                    "patch": "@@ -29,6 +29,10 @@\n {% endif %}your goal is {% if is_retry_chat %}{{ retry_goal }}{% else %}{{ goal }}{% endif %}.\\\n Please think step-by-step to achieve your goals based on user input. You can use the resources given below.\n At the same time, please strictly abide by the constraints and specifications in the \"IMPORTANT REMINDER\" below.\n+[Important Constraints]\n+- It is strictly prohibited to directly call any tool from resources in the task plan, even if they are listed in the available resources.\n+- All tool invocations must be performed only via the ToolExpert agent.\n+- The ToolExpert is responsible for managing and proxying all tool invocations. The Planner should only issue high-level intents to the ToolExpert for using tools.\n {% if resource_prompt %}\\\n Given resources information:\n {{ resource_prompt }} \n@@ -69,6 +73,10 @@\n \u4f60\u662f\u4e00\u4e2a {{ role }}, {% if name %}\u540d\u5b57\u53eb {{ name }}.\n {% endif %}\u4f60\u7684\u76ee\u6807\u662f {% if is_retry_chat %}{{ retry_goal }}{% else %}{{ goal }}{% endif %}.\\\n \u8bf7\u4e00\u6b65\u4e00\u6b65\u601d\u8003\u5b8c\u6839\u636e\u4e0b\u9762\u7ed9\u51fa\u7684\u5df2\u77e5\u4fe1\u606f\u548c\u7528\u6237\u95ee\u9898\u5b8c\u6210\u76ee\u6807\uff0c\u540c\u65f6\u8bf7\u4e25\u683c\u9075\u5b88\u4e0b\u9762\"\u91cd\u8981\u63d0\u9192\"\u4e2d\u7684\u7ea6\u675f\u548c\u89c4\u8303\u3002\n+\u3010\u91cd\u8981\u7ea6\u675f\u3011\n+- \u4e25\u7981\u5728\u4efb\u52a1\u8ba1\u5212\u4e2d\u76f4\u63a5\u8c03\u7528\u4efb\u4f55 resource \u4e2d\u7684 tool\uff0c\u5373\u4f7f\u5b83\u4eec\u5728\u8d44\u6e90\u5217\u8868\u4e2d\u88ab\u5217\u51fa\u3002\n+- \u6240\u6709 tool \u7684\u8c03\u7528\u5fc5\u987b\u901a\u8fc7 ToolExpert agent \u5b9e\u73b0\u3002\n+- ToolExpert \u7684\u804c\u8d23\u662f\u7edf\u4e00\u7ba1\u7406\u3001\u4ee3\u7406\u6240\u6709\u5de5\u5177\u7684\u8c03\u7528\uff0cPlanner \u53ea\u5e94\u5411 ToolExpert \u53d1\u51fa\u5de5\u5177\u7684\u4f7f\u7528\u610f\u56fe\u3002\n {% if resource_prompt %}\\\n \u5df2\u77e5\u8d44\u6e90\u4fe1\u606f\uff1a\n {{ resource_prompt }} "
+                }
+            ]
+        }
+    ],
+    "pull_request_url": "https://github.com/eosphoros-ai/DB-GPT/pull/2778",
+    "commits_url": "https://github.com/eosphoros-ai/DB-GPT/pull/2778/commits",
+    "files_url": "https://github.com/eosphoros-ai/DB-GPT/pull/2778/files"
+}

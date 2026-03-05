@@ -1,0 +1,42 @@
+{
+  "pr_number": 6208,
+  "repository": "optuna/optuna",
+  "title": "Fix `test_log_completed_trial_skip_storage_access`",
+  "body": "Fix the first problem on #6206. `test_log_completed_trial_skip_storage_access` is incorrectly dependent on previously executed tests.\n\nReset the logger and set the logging level.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T13:58:56.605660",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "optuna/logging.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "_reset_library_root_logger",
+          "class_name": null,
+          "full_name": "_reset_library_root_logger",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Update optuna/logging.py::_reset_library_root_logger to restore the library root logger's level to logging.INFO (instead of logging.NOTSET) when removing the default handler, ensuring tests and consumers start from a deterministic logging baseline and preventing order-dependent failures.",
+    "steps": [
+      {
+        "operation": "Restore library root logger level to INFO when resetting",
+        "file_to_modify": "optuna/logging.py",
+        "function_to_modify": "_reset_library_root_logger",
+        "reason": "The current reset helper removes the default handler but leaves the library root logger level at logging.NOTSET. Optuna's configured default level is INFO (set by _configure_library_root_logger); resetting should restore that default so tests and consumers see a deterministic initial logging state and do not become order-dependent.",
+        "side_effects": "Running this change will make _reset_library_root_logger set the logger level back to logging.INFO instead of logging.NOTSET. This should fix order-dependent tests (such as test_log_completed_trial_skip_storage_access) that rely on the library default being INFO. Potential impacts: any tests or third-party code that intentionally relied on the reset leaving the level as NOTSET will observe a different level (INFO) after reset and might need adjustment. No public API surface is added or changed, but consider adding a small public wrapper (e.g., reset_library_root_logger()) later to avoid tests referencing a private helper. After the change, run the full test suite to verify no other tests assume the previous NOTSET behavior; logging-related tests may need updates. There are no direct changes to storage or other runtime behavior, but downstream modules that check logger effective levels may see different values immediately after a reset."
+      }
+    ]
+  }
+}

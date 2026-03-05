@@ -1,0 +1,42 @@
+{
+  "pr_number": 788,
+  "repository": "2noise/ChatTTS",
+  "title": "Fix for Ascend NPU when using ChatTTS to sample the voice of a real speaker",
+  "body": "This PR is a bugfix for Ascend NPU when using ChatTTS to sample the voice of a real speaker.\n\nProblem: Complex dtype used in the process of computing MelSpectrogram is not supported in `torch_npu` now, and we could get an error when sampling the voice of a real speaker.\n\nEnvironment: Ascend NPU (Atlas 300T A2), CANN 8.0.RC2, torch-npu 2.1.0.post6, torch 2.1.0 on ubuntu 20.04.\n\nThe failure stack shows the error occurs in DVAE.sample_audio -> DVAE.forward -> MelSpectrogramFeatures when creating mel spectrograms on the NPU device. The torchaudio stft/transform path can produce complex dtypes which torch_npu cannot handle. The fix is to run torchaudio transforms on CPU and move back the resulting real mel tensor to the target device before further processing.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T11:39:24.551441",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "ChatTTS/model/dvae.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "forward",
+          "class_name": "MelSpectrogramFeatures",
+          "full_name": "MelSpectrogramFeatures.forward",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Compute torchaudio MelSpectrogram on CPU inside MelSpectrogramFeatures.forward, then transfer the resulting real mel tensor to the target device to avoid complex/unsupported ops on Ascend NPU (torch_npu).",
+    "steps": [
+      {
+        "operation": "Run torchaudio MelSpectrogram on CPU and move result to target device",
+        "file_to_modify": "ChatTTS/model/dvae.py",
+        "function_to_modify": "MelSpectrogramFeatures.forward",
+        "reason": "Torchaudio's STFT/transform path may produce complex dtypes or call kernels not supported by torch_npu when run on Ascend NPU. Computing the MelSpectrogram on CPU avoids producing complex/unsupported tensors on the NPU; after obtaining the real-valued mel tensor, move it to the DVAE/device for subsequent processing.",
+        "side_effects": "Introduces a CPU<->NPU tensor copy (audio -> CPU prior to mel computation, mel -> device afterwards) which may slightly increase latency. Unit/integration tests that exercise DVAE.sample_audio and MelSpectrogramFeatures should be run and may need to account for the device transfer; behavior and API remain unchanged. Downstream modules that assume the mel computation ran in-place on the device will see identical tensor dtype and shape but may observe timing differences. Ensure no other code relies on torchaudio transforms running on the NPU; this change is safe for CPU-only and GPU environments but moves torchaudio work to CPU even if self.device is GPU/NPU."
+      }
+    ]
+  }
+}

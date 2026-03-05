@@ -1,0 +1,72 @@
+{
+  "pr_number": 10395,
+  "repository": "Significant-Gravitas/AutoGPT",
+  "title": "feat(block;backend):  Truncate execution update payload on large data & Improve ReadSpreadsheetBlock performance",
+  "body": "Summary of changes for backend blocks and retries:\n\n- Rename and enhance Spreadsheet block: CSV block upgraded to SpreadsheetBlock with improved CSV/Excel handling (Excel via pandas). \n- Streaming chunked outputs: ReadSpreadsheetBlock will now stream results in chunks to avoid large in-memory payloads and duplication of outputs.\n- Compatibility alias: Maintain backward compatibility by exposing SpreadsheetBlock as an alias to ReadSpreadsheetBlock (so existing references remain valid).\n- Payload truncation utility: Add a helper to truncate large messages to prevent Redis connection issues due to oversized messages.\n- Async-friendly retry: Extend continuous_retry to support both sync and async functions, enabling seamless retries for async operations.\n- Tests and config: Ensure changes are aligned with existing tests and configuration patterns; keep behavior predictable when handling CSV/Excel inputs, headers, and chunked outputs.\n\nNotes:\n- The ReadSpreadsheetBlock originally streamed all rows into memory and then emitted a final rows payload along with per-row outputs. The new streaming approach yields per-row outputs as rows are processed and periodically emits batches of rows, reducing peak memory usage and avoiding duplication.\n- The payload truncation helper is provided to help prevent oversized messages from being sent to Redis or similar transports. Integration points will need to call this helper where large payloads are generated.\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T12:11:13.618896",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "autogpt_platform/backend/backend/blocks/csv.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "run",
+          "class_name": "ReadSpreadsheetBlock",
+          "full_name": "ReadSpreadsheetBlock.run",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "autogpt_platform/backend/backend/util/retry.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "continuous_retry",
+          "class_name": null,
+          "full_name": "continuous_retry",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "autogpt_platform/backend/backend/util/file.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    }
+  ],
+  "step_plan": {
+    "summary": "This PR introduces a streaming ReadSpreadsheetBlock (renamed as SpreadsheetBlock alias) to reduce memory usage when processing large spreadsheets and extends retry utilities to handle async functions, enabling more robust async workflows. The plan focuses on implementing the streaming emission in ReadSpreadsheetBlock.run and adding async-capable behavior to continuous_retry.",
+    "steps": [
+      {
+        "operation": "Refactor ReadSpreadsheetBlock.run to stream per-row outputs and emit batched rows to reduce memory usage",
+        "file_to_modify": "autogpt_platform/backend/backend/blocks/csv.py",
+        "function_to_modify": "ReadSpreadsheetBlock.run",
+        "reason": "Switch from building a full in-memory rows payload to a streaming model that yields per-row outputs and periodic batched row payloads, addressing large spreadsheet scenarios while preserving CSV/Excel handling and backward compatibility via a SpreadsheetBlock alias",
+        "side_effects": "Downstream code expecting a single final payload may need to adapt to consume streamed outputs; tests will need updates to validate streaming behavior; may require pandas availability for Excel handling; alias should preserve existing imports"
+      },
+      {
+        "operation": "Extend continuous_retry to support both sync and async functions by returning an async wrapper for coroutines and a sync wrapper for regular callables",
+        "file_to_modify": "autogpt_platform/backend/backend/util/retry.py",
+        "function_to_modify": "continuous_retry",
+        "reason": "Enable robust retry behavior for async I/O-heavy operations without duplicating code paths; ensures compatibility with async workflows and consistent retry semantics across sync/async code",
+        "side_effects": "Code that relies on the previous sync-only behavior may require adjustments; tests and typing hints may need updates; may impact how retries are invoked in async contexts"
+      }
+    ]
+  }
+}

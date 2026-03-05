@@ -1,0 +1,59 @@
+{
+  "pr_number": 6295,
+  "repository": "skypilot-org/skypilot",
+  "title": "Fix hyperbolic unit test",
+  "body": "The `1x-T4-4-17` instance type were missing in the latest catalog ([commit](https://github.com/skypilot-org/skypilot-catalog/commit/06cb4087855609446f3ce9739d863ffd92cdbcd6)), causing this unit test to fail, as it's explicitly looking for that type.\r\n\r\nThis PR fixes it by switching to a valid instance type which exist on the latest catalog.\r\n\r\nWe probably should still investigate though why `1x-T4-4-17` went missing.\r\n\r\nTested (run the relevant ones):\r\n\r\n- [x] Code formatting: install pre-commit (auto-check on commit) or `bash format.sh`\r\n- [x] Any manual or new tests for this PR (please specify below)\r\n- [ ] All smoke tests: `/smoke-test` (CI) or `pytest tests/test_smoke.py` (local)\r\n- [x] Relevant individual tests: `/smoke-test -k test_name` (CI) or `pytest tests/test_smoke.py::test_name` (local)\r\n- [ ] Backward compatibility: `/quicktest-core` (CI) or `pytest tests/smoke_tests/test_backward_compat.py` (local)\r\n\r\n<!-- CI commands (/-prefixed) can only be triggered by repo members -->\r\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-02-26T01:11:02.673120",
+    "extractor_version": "1.0.0",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "tests/unit_tests/test_hyperbolic.py",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 2,
+      "functions_modified": [
+        {
+          "function_name": "test_hyperbolic_resource_feasibility",
+          "class_name": null,
+          "full_name": "test_hyperbolic_resource_feasibility",
+          "start_line": 52,
+          "end_line": 60,
+          "lines_changed": [
+            56,
+            57
+          ]
+        }
+      ],
+      "patch": "@@ -53,8 +53,8 @@ def test_hyperbolic_resource_feasibility():\n     \"\"\"Test resource feasibility for Hyperbolic.\"\"\"\n     cloud = hyperbolic.Hyperbolic()\n     resources = Resources(cloud=cloud,\n-                          instance_type='1x-T4-4-17',\n-                          accelerators={'T4': 1})\n+                          instance_type='1x-H100-28-271',\n+                          accelerators={'H100': 1})\n     feasible = cloud._get_feasible_launchable_resources(resources)\n     assert hasattr(feasible, 'resources_list')\n     assert hasattr(feasible, 'fuzzy_candidate_list')"
+    }
+  ],
+  "functions_modified": [
+    {
+      "function_name": "test_hyperbolic_resource_feasibility",
+      "class_name": null,
+      "full_name": "test_hyperbolic_resource_feasibility",
+      "start_line": 52,
+      "end_line": 60,
+      "lines_changed": [
+        56,
+        57
+      ]
+    }
+  ],
+  "step_plan": {
+    "steps": [
+      {
+        "operation": "Update the Hyperbolic resource feasibility unit test to use an instance type and accelerator that exist in the latest catalog by replacing the hardcoded `1x-T4-4-17` / `T4` pair with `1x-H100-28-271` / `H100`.",
+        "file_to_modify": "tests/unit_tests/test_hyperbolic.py",
+        "function_to_modify": "test_hyperbolic_resource_feasibility",
+        "reason": "The previous test data referenced an instance type (`1x-T4-4-17`) that was removed/missing from the latest skypilot-catalog, causing the test to fail despite correct feasibility logic. Switching to a known-valid instance type keeps the unit test aligned with the current catalog contents.",
+        "side_effects": "This changes the specific accelerator family covered by the test (T4 -> H100), which may reduce coverage for T4-related catalog parsing/feasibility paths; if other tests or fixtures assume T4 availability for Hyperbolic, they may now diverge from this test’s expectations."
+      }
+    ],
+    "summary": "Fixes a failing Hyperbolic unit test by updating the hardcoded instance type/accelerator pair to one that exists in the latest catalog, restoring test stability."
+  }
+}

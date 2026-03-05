@@ -1,0 +1,97 @@
+{
+  "pr_number": 2195,
+  "repository": "Zulko/moviepy",
+  "title": "fixes for tests",
+  "body": "- set requred version of pillow to 9.5.0\r\n- test-ffmpeg-reader - change duration number to match video\r\n- ffmpeg-reader - add displaymatrix to be read as video rotation\r\n- config set binary to autodetect\r\n\r\n<!--\r\nPlease tick when you have done these. They don't need to all be completed before the PR is submitted.\r\nDelete them if they are not appropriate for this pull request.\r\n-->\r\n- [x] I have provided code that clearly demonstrates the bug and that only works correctly when applying this fix\r\n- [x] I have added suitable tests demonstrating a fixed bug or new/changed feature to the test suite in `tests/`\r\naddresses issue #2183\r\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T00:58:32.116875",
+    "extractor_version": "1.0.0",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "moviepy/video/io/ffmpeg_reader.py",
+      "status": "modified",
+      "additions": 6,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "parse",
+          "class_name": "FFmpegInfosParser",
+          "full_name": "FFmpegInfosParser.parse",
+          "start_line": 367,
+          "end_line": 601,
+          "lines_changed": [
+            390,
+            391,
+            392,
+            393,
+            394,
+            395
+          ]
+        }
+      ],
+      "patch": "@@ -387,6 +387,12 @@ def parse(self):\n             elif not self._inside_file_metadata and line.startswith(\"  Metadata:\"):\n                 # enter \"  Metadata:\" group\n                 self._inside_file_metadata = True\n+            elif line.startswith(\"      displaymatrix:\"):\n+                pattern = r'\\b\\d+\\.\\d+\\b'\n+                display_matrix_matches = re.findall(pattern, line)\n+                if display_matrix_matches:\n+                    video_rotation = float(display_matrix_matches[0])\n+                    self.result[\"video_rotation\"] = int(video_rotation)\n             elif line.startswith(\"  Duration:\"):\n                 # exit \"  Metadata:\" group\n                 self._inside_file_metadata = False"
+    },
+    {
+      "filename": "setup.py",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 0,
+      "functions_modified": [],
+      "patch": "@@ -75,6 +75,7 @@ def run_tests(self):\n     \"imageio_ffmpeg>=0.2.0\",\n     \"numpy>=1.17.3\",\n     \"proglog<=1.0.0\",\n+    \"Pillow==9.5.0\"\n ]\n \n optional_reqs = ["
+    },
+    {
+      "filename": "tests/test_ffmpeg_reader.py",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "functions_modified": [],
+      "patch": "@@ -59,7 +59,7 @@ def test_ffmpeg_parse_infos_video_nframes():\n     (\"decode_file\", \"expected_duration\"),\n     (\n         (False, 30),\n-        (True, 30.02),\n+        (True, 29.99),\n     ),\n     ids=(\n         \"decode_file=False\","
+    }
+  ],
+  "functions_modified": [
+    {
+      "function_name": "parse",
+      "class_name": "FFmpegInfosParser",
+      "full_name": "FFmpegInfosParser.parse",
+      "start_line": 367,
+      "end_line": 601,
+      "lines_changed": [
+        390,
+        391,
+        392,
+        393,
+        394,
+        395
+      ]
+    }
+  ],
+  "step_plan": {
+    "steps": [
+      {
+        "operation": "Extend ffmpeg output parsing to extract rotation from the `displaymatrix` metadata line and store it in the parse result",
+        "file_to_modify": "moviepy/video/io/ffmpeg_reader.py",
+        "function_to_modify": "FFmpegInfosParser.parse",
+        "reason": "Some ffmpeg builds expose video rotation via a `displaymatrix:` metadata entry rather than other rotation tags; parsing it ensures `video_rotation` is available and fixes rotation-related behavior/tests.",
+        "side_effects": "Downstream code that consumes `self.result[\"video_rotation\"]` may now observe a value where it was previously missing; rotation handling could change for certain files, and parsing robustness depends on the regex matching the ffmpeg output format."
+      },
+      {
+        "operation": "Pin the required Pillow dependency version to 9.5.0 in the test/install requirements",
+        "file_to_modify": "setup.py",
+        "function_to_modify": null,
+        "reason": "Stabilize CI/tests by forcing a known-compatible Pillow version, avoiding regressions or behavior changes introduced by newer releases.",
+        "side_effects": "Users/installations will be constrained to Pillow 9.5.0, which may conflict with other dependencies expecting newer Pillow versions and could impact packaging/resolution in downstream projects."
+      },
+      {
+        "operation": "Update the expected decoded duration value in the ffmpeg reader test to match the actual media/decoder output",
+        "file_to_modify": "tests/test_ffmpeg_reader.py",
+        "function_to_modify": "test_ffmpeg_parse_infos_video_nframes",
+        "reason": "The prior expected duration (30.02) no longer matches the real parsed/decoded duration (29.99), causing a failing assertion; adjusting it aligns the test with current ffmpeg parsing/decoding behavior.",
+        "side_effects": "The test becomes sensitive to slight duration differences across ffmpeg versions/platforms; if duration jitter changes again, this assertion may need a tolerance-based check or updated fixture expectations."
+      }
+    ],
+    "summary": "This PR fixes test failures by pinning Pillow to 9.5.0, aligning an ffmpeg duration expectation with actual output, and enhancing ffmpeg metadata parsing to extract video rotation from the `displaymatrix` field."
+  }
+}

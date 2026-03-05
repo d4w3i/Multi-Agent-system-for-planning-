@@ -1,0 +1,57 @@
+{
+  "pr_number": 1500,
+  "repository": "huggingface/smolagents",
+  "title": "Fix: step callbacks not being triggered for planning steps",
+  "body": "Fixes https://github.com/huggingface/smolagents/issues/1499 \n\nStep callbacks were previously only executed for ActionStep objects but not for PlanningStep objects, creating inconsistent behavior where callbacks that should be invoked for every step were skipped during planning phases.\n\n**Changes:**\n- Modified `_finalize_step()` to accept both `ActionStep | PlanningStep` types\n- Added `_finalize_step(planning_step)` call in planning step flow\n\n**Backward Compatibility:**\n- No breaking changes - existing callbacks continue to work unchanged\n- Preserves same execution order of finalizing step & adding to memory as ActionStep flow\n\n**Testing:**\n- Lightweight test using existing `FakeCodeModelPlanning()` verifies both planning and action step callbacks\n- All existing tests continue to pass",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T13:16:42.983965",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "src/smolagents/agents.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "_finalize_step",
+          "class_name": "MultiStepAgent",
+          "full_name": "MultiStepAgent._finalize_step",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_run_stream",
+          "class_name": "MultiStepAgent",
+          "full_name": "MultiStepAgent._run_stream",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Enable invocation of step callbacks for PlanningStep objects by broadening the _finalize_step parameter type and calling _finalize_step during the planning flow in _run_stream, preserving the finalize -> append -> yield ordering used for ActionStep.",
+    "steps": [
+      {
+        "operation": "Broaden _finalize_step signature and make it accept PlanningStep/MemoryStep",
+        "file_to_modify": "src/smolagents/agents.py",
+        "function_to_modify": "MultiStepAgent._finalize_step",
+        "reason": "Current implementation types _finalize_step for ActionStep only; callbacks and timing logic are generic and apply to both ActionStep and PlanningStep. Changing the signature to accept the common base (e.g., MemoryStep) or a union (ActionStep | PlanningStep) allows planning steps to be finalized the same way as action steps without changing callback invocation behavior.",
+        "side_effects": "Typing change is backwards compatible at runtime (Python) but may require updating static type checks (mypy) if callers relied on the narrower type. All step callbacks will now be invoked for PlanningStep objects as well; user callbacks that assume ActionStep-specific fields might raise errors if they access fields present only on ActionStep. Unit tests that assert callback invocation counts should be updated/added. No API surface change beyond the broader parameter type; instrumentation/metrics systems will now see planning steps as finalized which may change telemetry counts."
+      },
+      {
+        "operation": "Call _finalize_step for PlanningStep in the planning flow and preserve finalize -> append -> yield order",
+        "file_to_modify": "src/smolagents/agents.py",
+        "function_to_modify": "MultiStepAgent._run_stream",
+        "reason": "Planning flow currently appends PlanningStep to memory without calling _finalize_step, so step callbacks are skipped. Modify the planning step handling to: set the planning step timing end, call self._finalize_step(planning_step), then append planning_step to self.memory.steps — matching the established ActionStep ordering (finalize -> append -> yield) and preserving execution order and semantics.",
+        "side_effects": "Behavioral change: planning steps will trigger the same callbacks as action steps. Tests that previously relied on callbacks not being invoked for planning steps must be updated. This may alter metrics/telemetry counts and any downstream code that consumes memory.steps ordering (though ordering is preserved to match action flow). Ensure streaming logic that yields intermediate planning events is not otherwise changed; only finalization and append ordering are updated. Add/adjust unit test(s) to assert callbacks are called for both planning and action steps, and run full test suite to catch regressions."
+      }
+    ]
+  }
+}

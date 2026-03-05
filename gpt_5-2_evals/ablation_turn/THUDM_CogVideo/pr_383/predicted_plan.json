@@ -1,0 +1,42 @@
+{
+  "pr_number": 383,
+  "repository": "THUDM/CogVideo",
+  "title": "fix deprecation of clear_objs_and_retain_memory",
+  "body": "The API of diffusers `clear_objs_and_retain_memory` has been deprecated in huggingface/diffusers#9543 and is replaced with `free_memory`. Therefore, the corresponding parts in the LoRA training script need to be adjusted to adapt to the latest version of diffusers.\n\nExplore the source code to identify the files and functions to modify.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T11:57:48.357807",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "train_cogvideox_lora.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "log_validation",
+          "class_name": null,
+          "full_name": "log_validation",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Update the CogVideoX LoRA training script to replace the deprecated Diffusers `clear_objs_and_retain_memory` VRAM cleanup utility with the new `free_memory` API, optionally keeping backward compatibility via a small import shim.",
+    "steps": [
+      {
+        "operation": "Introduce a diffusers-version-compatible import shim so the script uses `free_memory` when available and falls back to the deprecated `clear_objs_and_retain_memory` on older diffusers versions",
+        "file_to_modify": "train_cogvideox_lora.py",
+        "function_to_modify": "log_validation",
+        "reason": "Newer diffusers releases removed/deprecated `diffusers.training_utils.clear_objs_and_retain_memory` in favor of `free_memory`, so the training script must stop importing/calling the old symbol to avoid runtime ImportError while still supporting older pinned environments.",
+        "side_effects": "Slightly changes import-time behavior (try/except around imports). If the fallback is used, you may see a deprecation warning on older/newer diffusers depending on their implementation. No change to training math; only affects VRAM cleanup after validation."
+      }
+    ]
+  }
+}

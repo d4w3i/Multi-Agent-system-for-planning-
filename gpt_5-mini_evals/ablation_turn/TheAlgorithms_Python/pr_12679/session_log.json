@@ -1,0 +1,201 @@
+{
+  "session_id": "pr12679_20260304_121936",
+  "pr_number": 12679,
+  "repository": "TheAlgorithms/Python",
+  "model": "gpt-5-mini-2025-08-07",
+  "extractor_version": "2.0.0-multiagent",
+  "started_at": "2026-03-04T12:19:36.836750",
+  "completed_at": "2026-03-04T12:20:50.398921",
+  "duration_seconds": 73.5616,
+  "success": true,
+  "error": null,
+  "context": {
+    "pr_title": "Fix: Correct time-and-a-half pay calculation logic",
+    "pr_body": "### Describe your change:\r\n\r\n- [x] Fix a bug or typo in an existing algorithm  \r\n\r\nThis pull request fixes the logic for calculating time-and-a-half pay in the `financial/time_and_half_pay.py` file.\r\n\r\nPreviously, the overtime calculation was incorrect. The fix correctly applies the time-and-a-half formula:\r\n```python\r\novertime_pay = overtime_hours * pay_rate * 1.5\r\n```\r\n\r\n\r\n### Checklist:\r\n* [x] I have read [CONTRIBUTING.md](https://github.com/TheAlgorithms/Python/blob/master/CONTRIBUTING.md).\r\n* [x] This pull request is all my own work -- I have not plagiarized.\r\n* [x] I know that pull requests will not be merged if they fail the automated tests.\r\n* [x] This PR only changes one algorithm file.  To ease review, please open separate PRs for separate algorithms.\r\n* [x] All new Python files are placed inside an existing directory.\r\n* [x] All filenames are in all lowercase characters with no spaces or dashes.\r\n* [x] All functions and variable names follow Python naming conventions.\r\n* [x] All function parameters and return values are annotated with Python [type hints](https://docs.python.org/3/library/typing.html).\r\n* [x] All functions have [doctests](https://docs.python.org/3/library/doctest.html) that pass the automated testing.\r\n* [ ] All new algorithms include at least one URL that points to Wikipedia or another similar explanation.\r\n* [ ] If this pull request resolves one or more open issues then the description above includes the issue number(s) with a [closing keyword](https://docs.github.com/en/issues/tracking-your-work-with-issues/linking-a-pull-request-to-an-issue): \"Fixes #ISSUE-NUMBER\".\r\n",
+    "masca_available": false,
+    "masca_chars": 2803,
+    "call_graph_available": false,
+    "context_files_available": false,
+    "ablation": true
+  },
+  "agents": [
+    {
+      "name": "analysis_agent",
+      "phase": 1,
+      "started_at": "2026-03-04T12:19:36.837996",
+      "completed_at": "2026-03-04T12:20:34.940994",
+      "duration_seconds": 58.1025,
+      "system_prompt": "\nYou are an Analysis Agent specialized in Pull Request analysis.\n\n## Project Context (MASCA Analysis)\n## Project Analysis\n\n### README\n<div align=\"center\">\n<!-- Title: -->\n  <a href=\"https://github.com/TheAlgorithms/\">\n    <img src=\"https://raw.githubusercontent.com/TheAlgorithms/website/1cd824df116b27029f17c2d1b42d81731f28a920/public/logo.svg\" height=\"100\">\n  </a>\n  <h1><a href=\"https://github.com/TheAlgorithms/\">The Algorithms</a> - Python</h1>\n<!-- Labels: -->\n  <!-- First row: -->\n  <a href=\"https://gitpod.io/#https://github.com/TheAlgorithms/Python\">\n    <img src=\"https://img.shields.io/badge/Gitpod-Ready--to--Code-blue?logo=gitpod&style=flat-square\" height=\"20\" alt=\"Gitpod Ready-to-Code\">\n  </a>\n  <a href=\"https://github.com/TheAlgorithms/Python/blob/master/CONTRIBUTING.md\">\n    <img src=\"https://img.shields.io/static/v1.svg?label=Contributions&message=Welcome&color=0059b3&style=flat-square\" height=\"20\" alt=\"Contributions Welcome\">\n  </a>\n  <img src=\"https://img.shields.io/github/repo-size/TheAlgorithms/Python.svg?label=Repo%20size&style=flat-square\" height=\"20\">\n  <a href=\"https://the-algorithms.com/discord\">\n    <img src=\"https://img.shields.io/discord/808045925556682782.svg?logo=discord&colorB=7289DA&style=flat-square\" height=\"20\" alt=\"Discord chat\">\n  </a>\n  <a href=\"https://gitter.im/TheAlgorithms/community\">\n    <img src=\"https://img.shields.io/badge/Chat-Gitter-ff69b4.svg?label=Chat&logo=gitter&style=flat-square\" height=\"20\" alt=\"Gitter chat\">\n  </a>\n  <!-- Second row: -->\n  <br>\n  <a href=\"https://github.com/TheAlgorithms/Python/actions\">\n    <img src=\"https://img.shields.io/github/actions/workflow/status/TheAlgorithms/Python/build.yml?branch=master&label=CI&logo=github&style=flat-square\" height=\"20\" alt=\"GitHub Workflow Status\">\n  </a>\n  <a href=\"https://github.com/pre-commit/pre-commit\">\n    <img src=\"https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white&style=flat-square\" height=\"20\" alt=\"pre-commit\">\n  </a>\n  <a href=\"https://github.com/psf/black\">\n    <img src=\"https://img.shields.io/static/v1?label=code%20style&message=black&color=black&style=flat-square\" height=\"20\" alt=\"code style: black\">\n  </a>\n<!-- Short description: -->\n  <h3>All algorithms implemented in Python - for education</h3>\n</div>\n\nImplementations are for learning purposes only. They may be less efficient than the implementations in the Python standard library. Use them at your discretion.\n\n## Getting Started\n\nRead through our [Contribution Guidelines](CONTRIBUTING.md) before you contribute.\n\n## Community Channels\n\nWe are on [Discord](https://the-algorithms.com/discord) and [Gitter](https://gitter.im/TheAlgorithms/community)! Community channels are a great way for you to ask questions and get help. Please join us!\n\n## List of Algorithms\n\nSee our [directory](DIRECTORY.md) for easier navigation and a better overview of the project.\n\n\n\n## Your Task\nWhen you receive a PR title and body, you must:\n\n1. **Analyze the request**: Understand what the PR wants to achieve\n2. **Explore the code**: Use tools to navigate base_project and find relevant files/functions\n3. **Identify targets**: Determine exactly which files and functions need to be modified\n4. **Optimize MASCA**: Produce a version of the MASCA analysis focused on the specific PR\n\n## Available Tools\n- `read_base_project_file(file_path)`: Read a file from the project\n- `list_base_project_directory(directory, pattern, recursive)`: List files/folders\n\n## Required Output\nYou must produce a structured output with:\n- `pr_title`: PR title\n- `pr_body`: PR body\n- `masca_optimized`: MASCA optimized for this specific PR\n- `files_to_modify`: List of files to modify with motivation\n- `functions_to_modify`: List of functions to modify with motivation\n- `analysis_summary`: Summary of your analysis\n\n## Guidelines\n- Explore the code before drawing conclusions\n- Search for files with names relevant to the PR\n- Identify specific functions, not just generic files\n- Be precise with paths (relative to base_project)\n- For function names use the format \"ClassName.method_name\" for methods\n",
+      "system_prompt_chars": 4110,
+      "input_prompt": "Analyze this Pull Request:\n\n## Title\nFix: Correct time-and-a-half pay calculation logic\n\n## Description\n### Describe your change:\r\n\r\n- [x] Fix a bug or typo in an existing algorithm  \r\n\r\nThis pull request fixes the logic for calculating time-and-a-half pay in the `financial/time_and_half_pay.py` file.\r\n\r\nPreviously, the overtime calculation was incorrect. The fix correctly applies the time-and-a-half formula:\r\n```python\r\novertime_pay = overtime_hours * pay_rate * 1.5\r\n```\r\n\r\n\r\n### Checklist:\r\n* [x] I have read [CONTRIBUTING.md](https://github.com/TheAlgorithms/Python/blob/master/CONTRIBUTING.md).\r\n* [x] This pull request is all my own work -- I have not plagiarized.\r\n* [x] I know that pull requests will not be merged if they fail the automated tests.\r\n* [x] This PR only changes one algorithm file.  To ease review, please open separate PRs for separate algorithms.\r\n* [x] All new Python files are placed inside an existing directory.\r\n* [x] All filenames are in all lowercase characters with no spaces or dashes.\r\n* [x] All functions and variable names follow Python naming conventions.\r\n* [x] All function parameters and return values are annotated with Python [type hints](https://docs.python.org/3/library/typing.html).\r\n* [x] All functions have [doctests](https://docs.python.org/3/library/doctest.html) that pass the automated testing.\r\n* [ ] All new algorithms include at least one URL that points to Wikipedia or another similar explanation.\r\n* [ ] If this pull request resolves one or more open issues then the description above includes the issue number(s) with a [closing keyword](https://docs.github.com/en/issues/tracking-your-work-with-issues/linking-a-pull-request-to-an-issue): \"Fixes #ISSUE-NUMBER\".\r\n\n\nExplore the source code to identify the files and functions to modify.",
+      "input_prompt_chars": 1800,
+      "token_usage": {
+        "agent_name": "analysis_agent",
+        "requests": 4,
+        "input_tokens": 10117,
+        "output_tokens": 2872,
+        "total_tokens": 12989
+      },
+      "retry_count": 0,
+      "retry_events": [],
+      "tool_calls": [
+        {
+          "index": 0,
+          "tool_name": "list_base_project_directory",
+          "arguments": {
+            "directory": "",
+            "pattern": "financial/*",
+            "recursive": true
+          },
+          "raw_result": null,
+          "result": "📁 /Users/davidecroatto/code/planningtest0/PR4Code/dataset_pr_commits_py/TheAlgorithms_Python/pr_12679/base_project\n   Pattern: financial/*\n   Recursive: yes\n\n  📄 financial/README.md  [markdown] (450B)\n  📄 financial/__init__.py  [python] (0B)\n  📄 financial/equated_monthly_installments.py  [python] (1.9KB)\n  📄 financial/exponential_moving_average.py  [python] (2.6KB)\n  📄 financial/interest.py  [python] (3.6KB)\n  📄 financial/present_value.py  [python] (1.4KB)\n  📄 financial/price_plus_tax.py  [python] (413B)\n  📄 financial/simple_moving_average.py  [python] (2.2KB)\n  📄 financial/time_and_half_pay.py  [python] (1.0KB)\n\n📊 Total: 0 folders, 9 files",
+          "result_chars": 648,
+          "truncated": false,
+          "called_at": "2026-03-04T12:19:39.238263",
+          "duration_seconds": 0.0331,
+          "summarization": null
+        },
+        {
+          "index": 1,
+          "tool_name": "read_base_project_file",
+          "arguments": {
+            "file_path": "financial/time_and_half_pay.py"
+          },
+          "raw_result": "\"\"\"\nCalculate time and a half pay\n\"\"\"\n\n\ndef pay(hours_worked: float, pay_rate: float, hours: float = 40) -> float:\n    \"\"\"\n    hours_worked = The total hours worked\n    pay_rate = Amount of money per hour\n    hours = Number of hours that must be worked before you receive time and a half\n\n    >>> pay(41, 1)\n    41.5\n    >>> pay(65, 19)\n    1472.5\n    >>> pay(10, 1)\n    10.0\n    \"\"\"\n    # Check that all input parameters are float or integer\n    assert isinstance(hours_worked, (float, int)), (\n        \"Parameter 'hours_worked' must be of type 'int' or 'float'\"\n    )\n    assert isinstance(pay_rate, (float, int)), (\n        \"Parameter 'pay_rate' must be of type 'int' or 'float'\"\n    )\n    assert isinstance(hours, (float, int)), (\n        \"Parameter 'hours' must be of type 'int' or 'float'\"\n    )\n\n    normal_pay = hours_worked * pay_rate\n    over_time = max(0, hours_worked - hours)\n    over_time_pay = over_time * pay_rate / 2\n    return normal_pay + over_time_pay\n\n\nif __name__ == \"__main__\":\n    # Test\n    import doctest\n\n    doctest.testmod()\n",
+          "result": "\"\"\"\nCalculate time and a half pay\n\"\"\"\n\n\ndef pay(hours_worked: float, pay_rate: float, hours: float = 40) -> float:\n    \"\"\"\n    hours_worked = The total hours worked\n    pay_rate = Amount of money per hour\n    hours = Number of hours that must be worked before you receive time and a half\n\n    >>> pay(41, 1)\n    41.5\n    >>> pay(65, 19)\n    1472.5\n    >>> pay(10, 1)\n    10.0\n    \"\"\"\n    # Check that all input parameters are float or integer\n    assert isinstance(hours_worked, (float, int)), (\n        \"Parameter 'hours_worked' must be of type 'int' or 'float'\"\n    )\n    assert isinstance(pay_rate, (float, int)), (\n        \"Parameter 'pay_rate' must be of type 'int' or 'float'\"\n    )\n    assert isinstance(hours, (float, int)), (\n        \"Parameter 'hours' must be of type 'int' or 'float'\"\n    )\n\n    normal_pay = hours_worked * pay_rate\n    over_time = max(0, hours_worked - hours)\n    over_time_pay = over_time * pay_rate / 2\n    return normal_pay + over_time_pay\n\n\nif __name__ == \"__main__\":\n    # Test\n    import doctest\n\n    doctest.testmod()\n",
+          "result_chars": 1054,
+          "truncated": false,
+          "called_at": "2026-03-04T12:19:41.084022",
+          "duration_seconds": 0.0017,
+          "summarization": null
+        },
+        {
+          "index": 2,
+          "tool_name": "list_base_project_directory",
+          "arguments": {
+            "directory": "",
+            "pattern": "**/*time_and_half_pay.py",
+            "recursive": true
+          },
+          "raw_result": null,
+          "result": "📁 /Users/davidecroatto/code/planningtest0/PR4Code/dataset_pr_commits_py/TheAlgorithms_Python/pr_12679/base_project\n   Pattern: **/*time_and_half_pay.py\n   Recursive: yes\n\n  📄 financial/time_and_half_pay.py  [python] (1.0KB)\n\n📊 Total: 0 folders, 1 files",
+          "result_chars": 252,
+          "truncated": false,
+          "called_at": "2026-03-04T12:19:56.444880",
+          "duration_seconds": 0.0214,
+          "summarization": null
+        }
+      ],
+      "output": {
+        "pr_title": "Fix: Correct time-and-a-half pay calculation logic",
+        "pr_body": "### Describe your change:\n\n- [x] Fix a bug or typo in an existing algorithm  \n\nThis pull request fixes the logic for calculating time-and-a-half pay in the `financial/time_and_half_pay.py` file.\n\nPreviously, the overtime calculation was incorrect. The fix correctly applies the time-and-a-half formula:\n```python\novertime_pay = overtime_hours * pay_rate * 1.5\n```\n\n\n### Checklist:\n* [x] I have read [CONTRIBUTING.md](https://github.com/TheAlgorithms/Python/blob/master/CONTRIBUTING.md).\n* [x] This pull request is all my own work -- I have not plagiarized.\n* [x] I know that pull requests will not be merged if they fail the automated tests.\n* [x] This PR only changes one algorithm file.  To ease review, please open separate PRs for separate algorithms.\n* [x] All new Python files are placed inside an existing directory.\n* [x] All filenames are in all lowercase characters with no spaces or dashes.\n* [x] All functions and variable names follow Python naming conventions.\n* [x] All function parameters and return values are annotated with Python [type hints](https://docs.python.org/3/library/typing.html).\n* [x] All functions have [doctests](https://docs.python.org/3/library/doctest.html) that pass the automated testing.\n* [ ] All new algorithms include at least one URL that points to Wikipedia or another similar explanation.\n* [ ] If this pull request resolves one or more open issues then the description above includes the issue number(s) with a [closing keyword](https://docs.github.com/en/issues/tracking-your-work-with-issues/linking-a-pull-request-to-an-issue): \"Fixes #ISSUE-NUMBER\".",
+        "masca_optimized": "MASCA (optimized for this PR):\n\n1. Monitor the PR intent: The change aims to correct time-and-a-half overtime pay calculation in financial/time_and_half_pay.py.\n\n2. Locate implementation: Inspect financial/time_and_half_pay.py. Identify the public function pay(hours_worked: float, pay_rate: float, hours: float = 40) -> float.\n\n3. Current behavior and bug: Current implementation computes\n   - normal_pay = hours_worked * pay_rate\n   - over_time = max(0, hours_worked - hours)\n   - over_time_pay = over_time * pay_rate / 2\n   - return normal_pay + over_time_pay\n   This yields correct numeric results in current doctests because the code adds only the extra half-pay for overtime on top of full pay for all hours. However this is less clear/readable and would be incorrect if over_time_pay were changed to multiply by 1.5 without adjusting normal_pay (it would double-count overtime). The PR wants to use the explicit time-and-a-half formula: overtime_hours * pay_rate * 1.5, which requires normal_pay to account only for base (non-overtime) hours.\n\n4. Required change: Modify pay so that it:\n   - computes base_hours = min(hours_worked, hours)\n   - normal_pay = base_hours * pay_rate\n   - over_time = max(0, hours_worked - hours)\n   - over_time_pay = over_time * pay_rate * 1.5\n   - return normal_pay + over_time_pay\n   This produces the same doctest outputs but uses the explicit and correct time-and-a-half logic without double-counting.\n\n5. Tests & doctests: Existing doctests (pay(41,1) -> 41.5, pay(65,19) -> 1472.5, pay(10,1) -> 10.0) remain valid. After the change, run doctest and repo unit tests.\n\n6. Edge cases & validations: Current file asserts type of inputs but does not assert non-negativity. Consideration (optional) — add checks hours_worked >= 0, pay_rate >= 0, hours >= 0 to make behavior explicit. Not required by PR description.\n\n7. Files & functions to modify: Only financial/time_and_half_pay.py and specifically pay() function.\n\n8. Summary of modifications to review: Replace calculation of normal_pay and over_time_pay as described, keep doctests and type assertions, ensure formatting/style (PEP8) and type hints unchanged.\n",
+        "files_to_modify": [
+          {
+            "file_path": "financial/time_and_half_pay.py",
+            "reason": "This file contains the pay() function whose overtime-pay logic needs to be corrected to use an explicit time-and-a-half calculation (avoid double-counting overtime)."
+          },
+          {
+            "file_path": "financial/__init__.py",
+            "reason": "(No code change required) Listed for completeness: only the algorithm file is modified; __init__ does not need edits."
+          }
+        ],
+        "functions_to_modify": [
+          {
+            "function_name": "pay",
+            "file_path": "financial/time_and_half_pay.py",
+            "reason": "Adjust calculation: compute normal pay only for base hours (min(hours_worked, hours)) and compute overtime pay as overtime_hours * pay_rate * 1.5, then return their sum. This prevents double-counting and uses the explicit time-and-a-half formula."
+          }
+        ],
+        "analysis_summary": "The PR fixes the overtime calculation logic in financial/time_and_half_pay.py. The single affected function is pay(). The correct approach is to calculate normal pay only for base hours and calculate overtime at 1.5x the pay rate for overtime hours. Doctests remain valid with this approach. Modify pay() accordingly, run doctests and CI. Optionally, add non-negativity checks for inputs, but that is outside the stated scope."
+      }
+    },
+    {
+      "name": "context_planner_agent",
+      "phase": 2,
+      "started_at": "2026-03-04T12:20:34.946175",
+      "completed_at": "2026-03-04T12:20:50.398839",
+      "duration_seconds": 15.4525,
+      "system_prompt": "\nYou are a Context Planner Agent specialized in step plan generation.\n\n## Your Task\nYou receive from the Analysis Agent:\n- PR title and body\n- Optimized MASCA\n- List of files to modify\n- List of functions to modify\n\nYou must:\n1. **Retrieve context**: Use tools to read the context files of the identified functions\n2. **Analyze dependencies**: Understand how the functions interact\n3. **Generate step plan**: Create a detailed step-by-step plan\n\n## Available Tools\n- `read_context_file(file_path)`: Read a pre-generated context file\n- `list_context_files(directory, pattern)`: List available context files\n- `read_call_graph(section)`: Read information from the call graph\n\n## Required Output\nYou must produce a `step_plan` with:\n- `summary`: 1-2 sentence summary of what the PR does\n- `steps`: Ordered list of steps, each with:\n  - `operation`: What to do (e.g., \"Add validation method\")\n  - `file_to_modify`: Relative path of the file to modify (e.g., \"src/module.py\")\n  - `function_to_modify`: Name of the function to modify (e.g., \"ClassName.method_name\")\n  - `reason`: Technical motivation\n  - `side_effects`: Potential impacts\n\n## IMPORTANT RULE for function_to_modify\n- If the file to modify is a Python file (.py), specify the function/method to modify\n- If the file is NOT a Python file (e.g., .js, .html, .css, .json, .yaml, .md, etc.),\n  the value of `function_to_modify` MUST be null\n\n## Guidelines for Steps\n- Each step must be atomic and implementable\n- The order of steps must be logical (dependencies first)\n- For Python files: always specify the function in the format \"FunctionName\" or \"ClassName.method_name\"\n- For non-Python files: function_to_modify must be null\n- The side_effects should mention tests, dependents, and API impacts\n- You MUST generate a number of step EQUAL to the number of the python functions you are intendeed to modify nomore neither less\n\n## Step Examples\n\n### For Python files:\n```json\n{\n  \"operation\": \"Add time_spanned_alpha method\",\n  \"file_to_modify\": \"manimlib/animation/animation.py\",\n  \"function_to_modify\": \"Animation.time_spanned_alpha\",\n  \"reason\": \"To compute animation progress based on actual elapsed time\",\n  \"side_effects\": \"May require downstream animations to call this method\"\n}\n```\n\n### For non-Python files:\n```json\n{\n  \"operation\": \"Update API endpoint configuration\",\n  \"file_to_modify\": \"config/routes.yaml\",\n  \"function_to_modify\": null,\n  \"reason\": \"Add new route for the authentication endpoint\",\n  \"side_effects\": \"Requires server restart to apply changes\"\n}\n```\n",
+      "system_prompt_chars": 2535,
+      "input_prompt": "Generate an implementation plan for this PR:\n\n## PR Title\nFix: Correct time-and-a-half pay calculation logic\n\n## PR Body\n### Describe your change:\n\n- [x] Fix a bug or typo in an existing algorithm  \n\nThis pull request fixes the logic for calculating time-and-a-half pay in the `financial/time_and_half_pay.py` file.\n\nPreviously, the overtime calculation was incorrect. The fix correctly applies the time-and-a-half formula:\n```python\novertime_pay = overtime_hours * pay_rate * 1.5\n```\n\n\n### Checklist:\n* [x] I have read [CONTRIBUTING.md](https://github.com/TheAlgorithms/Python/blob/master/CONTRIBUTING.md).\n* [x] This pull request is all my own work -- I have not plagiarized.\n* [x] I know that pull requests will not be merged if they fail the automated tests.\n* [x] This PR only changes one algorithm file.  To ease review, please open separate PRs for separate algorithms.\n* [x] All new Python files are placed inside an existing directory.\n* [x] All filenames are in all lowercase characters with no spaces or dashes.\n* [x] All functions and variable names follow Python naming conventions.\n* [x] All function parameters and return values are annotated with Python [type hints](https://docs.python.org/3/library/typing.html).\n* [x] All functions have [doctests](https://docs.python.org/3/library/doctest.html) that pass the automated testing.\n* [ ] All new algorithms include at least one URL that points to Wikipedia or another similar explanation.\n* [ ] If this pull request resolves one or more open issues then the description above includes the issue number(s) with a [closing keyword](https://docs.github.com/en/issues/tracking-your-work-with-issues/linking-a-pull-request-to-an-issue): \"Fixes #ISSUE-NUMBER\".\n\n## MASCA Analysis (optimized)\nMASCA (optimized for this PR):\n\n1. Monitor the PR intent: The change aims to correct time-and-a-half overtime pay calculation in financial/time_and_half_pay.py.\n\n2. Locate implementation: Inspect financial/time_and_half_pay.py. Identify the public function pay(hours_worked: float, pay_rate: float, hours: float = 40) -> float.\n\n3. Current behavior and bug: Current implementation computes\n   - normal_pay = hours_worked * pay_rate\n   - over_time = max(0, hours_worked - hours)\n   - over_time_pay = over_time * pay_rate / 2\n   - return normal_pay + over_time_pay\n   This yields correct numeric results in current doctests because the code adds only the extra half-pay for overtime on top of full pay for all hours. However this is less clear/readable and would be incorrect if over_time_pay were changed to multiply by 1.5 without adjusting normal_pay (it would double-count overtime). The PR wants to use the explicit time-and-a-half formula: overtime_hours * pay_rate * 1.5, which requires normal_pay to account only for base (non-overtime) hours.\n\n4. Required change: Modify pay so that it:\n   - computes base_hours = min(hours_worked, hours)\n   - normal_pay = base_hours * pay_rate\n   - over_time = max(0, hours_worked - hours)\n   - over_time_pay = over_time * pay_rate * 1.5\n   - return normal_pay + over_time_pay\n   This produces the same doctest outputs but uses the explicit and correct time-and-a-half logic without double-counting.\n\n5. Tests & doctests: Existing doctests (pay(41,1) -> 41.5, pay(65,19) -> 1472.5, pay(10,1) -> 10.0) remain valid. After the change, run doctest and repo unit tests.\n\n6. Edge cases & validations: Current file asserts type of inputs but does not assert non-negativity. Consideration (optional) — add checks hours_worked >= 0, pay_rate >= 0, hours >= 0 to make behavior explicit. Not required by PR description.\n\n7. Files & functions to modify: Only financial/time_and_half_pay.py and specifically pay() function.\n\n8. Summary of modifications to review: Replace calculation of normal_pay and over_time_pay as described, keep doctests and type assertions, ensure formatting/style (PEP8) and type hints unchanged.\n\n\n## Files to Modify\n- financial/time_and_half_pay.py: This file contains the pay() function whose overtime-pay logic needs to be corrected to use an explicit time-and-a-half calculation (avoid double-counting overtime).\n- financial/__init__.py: (No code change required) Listed for completeness: only the algorithm file is modified; __init__ does not need edits.\n\n## Functions to Modify\n- pay (financial/time_and_half_pay.py): Adjust calculation: compute normal pay only for base hours (min(hours_worked, hours)) and compute overtime pay as overtime_hours * pay_rate * 1.5, then return their sum. This prevents double-counting and uses the explicit time-and-a-half formula.\n\n## Analysis Summary\nThe PR fixes the overtime calculation logic in financial/time_and_half_pay.py. The single affected function is pay(). The correct approach is to calculate normal pay only for base hours and calculate overtime at 1.5x the pay rate for overtime hours. Doctests remain valid with this approach. Modify pay() accordingly, run doctests and CI. Optionally, add non-negativity checks for inputs, but that is outside the stated scope.\n\nUse the context files to understand dependencies and generate a detailed step-by-step plan.",
+      "input_prompt_chars": 5119,
+      "token_usage": {
+        "agent_name": "context_planner_agent",
+        "requests": 4,
+        "input_tokens": 11011,
+        "output_tokens": 855,
+        "total_tokens": 11866
+      },
+      "retry_count": 0,
+      "retry_events": [],
+      "tool_calls": [
+        {
+          "index": 0,
+          "tool_name": "list_context_files",
+          "arguments": {
+            "directory": "",
+            "pattern": "*time_and_half_pay*_context.txt"
+          },
+          "raw_result": null,
+          "result": "❌ context_files directory not found in /Users/davidecroatto/code/planningtest0/gpt_5-mini_evals/ablation_turn/TheAlgorithms_Python/pr_12679/base_project/context_output",
+          "result_chars": 167,
+          "truncated": false,
+          "called_at": "2026-03-04T12:20:36.645662",
+          "duration_seconds": 0.0006,
+          "summarization": null
+        },
+        {
+          "index": 1,
+          "tool_name": "list_context_files",
+          "arguments": {
+            "directory": "financial",
+            "pattern": "*context.txt"
+          },
+          "raw_result": null,
+          "result": "❌ context_files directory not found in /Users/davidecroatto/code/planningtest0/gpt_5-mini_evals/ablation_turn/TheAlgorithms_Python/pr_12679/base_project/context_output",
+          "result_chars": 167,
+          "truncated": false,
+          "called_at": "2026-03-04T12:20:37.734295",
+          "duration_seconds": 0.0005,
+          "summarization": null
+        },
+        {
+          "index": 2,
+          "tool_name": "list_context_files",
+          "arguments": {
+            "directory": ".",
+            "pattern": "*_context.txt"
+          },
+          "raw_result": null,
+          "result": "❌ context_files directory not found in /Users/davidecroatto/code/planningtest0/gpt_5-mini_evals/ablation_turn/TheAlgorithms_Python/pr_12679/base_project/context_output",
+          "result_chars": 167,
+          "truncated": false,
+          "called_at": "2026-03-04T12:20:38.762198",
+          "duration_seconds": 0.0003,
+          "summarization": null
+        }
+      ],
+      "output": {
+        "step_plan": {
+          "steps": [
+            {
+              "operation": "Replace the overtime calculation with explicit time-and-a-half logic",
+              "file_to_modify": "financial/time_and_half_pay.py",
+              "function_to_modify": "pay",
+              "reason": "The existing implementation computed normal_pay = hours_worked * pay_rate and then added only the extra half-pay for overtime (over_time_pay = over_time * pay_rate / 2). This is less clear and fragile: if overtime pay were computed as over_time * pay_rate * 1.5 while keeping normal_pay as-is, overtime would be double-counted. The correct, explicit approach is to compute normal pay only for base hours (base_hours = min(hours_worked, hours)) and compute overtime pay as overtime_hours * pay_rate * 1.5, then return their sum.",
+              "side_effects": "Numeric outputs for existing doctests remain the same, so tests should continue to pass (e.g., pay(41, 1) -> 41.5). API (function signature) does not change. Downstream code that inspects intermediate values (e.g., expects normal_pay to equal pay for all hours) may observe a different internal split (normal_pay now only covers base hours). If added, input validation (e.g., enforcing non-negative inputs) would affect callers that pass negative values. After the change, run doctests and the repository's test suite; ensure linting/formatting (PEP8) and type hints remain intact."
+            }
+          ],
+          "summary": "Fix the pay() function in financial/time_and_half_pay.py to compute normal pay for base hours and apply 1.5x rate to overtime hours, avoiding double-counting and making the time-and-a-half logic explicit."
+        }
+      }
+    }
+  ],
+  "token_summary": {
+    "total_requests": 8,
+    "total_input_tokens": 21128,
+    "total_output_tokens": 3727,
+    "total_tokens": 24855
+  }
+}

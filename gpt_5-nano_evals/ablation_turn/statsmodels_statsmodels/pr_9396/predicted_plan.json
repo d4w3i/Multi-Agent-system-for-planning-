@@ -1,0 +1,42 @@
+{
+  "pr_number": 9396,
+  "repository": "statsmodels/statsmodels",
+  "title": "BUG: Remove method setting in summary2 of genmod",
+  "body": "This PR targets a bug in the GenMod summary2 output where a 'Method' row is included in the model info shown by summary2. The tests for summary2 already expect outputs without a 'Method' line, so we remove the corresponding entry from the info dictionary used to build the summary tables.\n\nWhat changed:\n- Removed the 'Method:' entry from the summary information populated by summary2 (statsmodels/iolib/summary2.py).\n- This aligns the produced output with existing tests that do not expect a 'Method' row in summary2 outputs.\n\nNotes:\n- The change is narrowly scoped to summary2’s information assembly. No changes to the GLM/OLS estimation logic or other summary paths.\n- Tests that rely on the absence of 'Method' should continue to pass; any tests expecting a 'Method' row in summary2 outputs would need updates to reflect this change.\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T14:02:11.168629",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "statsmodels/iolib/summary2.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "summary_model",
+          "class_name": "statsmodels",
+          "full_name": "statsmodels.iolib.summary2.summary_model",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Bug fix to GenMod summary2 outputs by removing the unused 'Method' row from the rendered info, aligning summary2 with tests that expect no Method entry.",
+    "steps": [
+      {
+        "operation": "Remove the 'Method' entry from the info dictionary used by summary2",
+        "file_to_modify": "statsmodels/iolib/summary2.py",
+        "function_to_modify": "summary_model",
+        "reason": "The info dictionary built by summary_model currently includes a 'Method' entry derived from x.method, which tests for summary2 outputs do not expect. Removing this field prevents rendering a stray 'Method' row in summary2 outputs and aligns the produced results with test expectations, without altering estimation logic.",
+        "side_effects": "Minimal risk to other summary2 outputs; downstream code or custom reports relying on a 'Method' field in summary2 may break and would need reintroduction via a separate pathway. Ensure summary2 tests (test_summary2.py) and latex/text outputs remain consistent; no changes to GLM/OLS paths."
+      }
+    ]
+  }
+}

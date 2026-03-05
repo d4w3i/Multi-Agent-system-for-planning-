@@ -1,0 +1,42 @@
+{
+  "pr_number": 1155,
+  "repository": "SWE-agent/SWE-agent",
+  "title": "Fix: Correctly format commit message for PR creation",
+  "body": "The commit message by the agent does not formatted properly\n![image](https://github.com/user-attachments/assets/4d40e248-2761-47e1-a091-26d53bde1179)\n\nThis pull request includes a small change to the `open_pr` function in `sweagent/run/hooks/open_pr.py`. The change updates the string formatting for commit messages to use f-strings for formating the message properly",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T11:55:22.583379",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "open_pr.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "open_pr",
+          "class_name": null,
+          "full_name": "open_pr",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Correct the git commit message created during PR opening so the issue title and number are properly interpolated (using f-strings) while preserving shell-safe quoting.",
+    "steps": [
+      {
+        "operation": "Fix commit message interpolation by switching to f-strings before applying shlex.quote (and ensure the git commit command uses the formatted strings).",
+        "file_to_modify": "open_pr.py",
+        "function_to_modify": "open_pr",
+        "reason": "The current code constructs commit messages with normal string literals (e.g., \"Fix: {issue.title}\") so `{issue.title}` / `{issue.number}` are not interpolated and end up committed literally; using f-strings ensures the actual issue title/number are embedded while preserving shell-safety via `shlex.quote`.",
+        "side_effects": "Changes the exact git commit subject/body produced by the hook; downstream behavior remains the same but any tests/automation that assert the literal old message will need updating. Still relies on `shlex.quote` to safely handle titles with spaces/quotes; recommended to validate by running the hook (or dry-run) and checking `git log -1` output."
+      }
+    ]
+  }
+}

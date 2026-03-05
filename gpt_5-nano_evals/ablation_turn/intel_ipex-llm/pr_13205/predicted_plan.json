@@ -1,0 +1,134 @@
+{
+  "pr_number": 13205,
+  "repository": "intel/ipex-llm",
+  "title": "Fix internvl fp16 error",
+  "body": "This PR addresses an FP16 interval-related error observed when using the llama.cpp bindings under ipex-llm. The issue manifested as incorrect behavior or instability in the FP16 KV/interval handling path when FP16 mode is enabled. The changes target the Python GGML llama bindings to ensure FP16 interval state is properly saved/loaded and sampled without misalignment.\n\nProposed changes focus on:\n- Ensuring the llama state save/load paths correctly account for FP16 memory layout and sizes when f16_kv is enabled.\n- Tightening memory operations around the FP16 path to avoid misalignment or truncated state data.\n- Preserving existing behavior for non-FP16 paths while stabilizing FP16 paths.\n\nThis should reduce crashes or incorrect logits/probabilities when FP16 is active and interval-based sampling is used.\n\nTesting guidance:\n- Unit tests around save_state/load_state paths with f16_kv enabled/disabled.\n- End-to-end generation tests on GPUs supporting FP16 (e.g., Intel Arc) to verify stability.\n- Compare logits/logprobs against baseline non-FP16 runs for sanity checks.\n\nNo new dependencies introduced.\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T13:00:44.214749",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "python/llm/src/ipex_llm/ggml/model/llama/llama.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "save_state",
+          "class_name": "Llama",
+          "full_name": "Llama.save_state",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "load_state",
+          "class_name": "Llama",
+          "full_name": "Llama.load_state",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_sample",
+          "class_name": "Llama",
+          "full_name": "Llama._sample",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "eval",
+          "class_name": "Llama",
+          "full_name": "Llama.eval",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "python/llm/src/ipex_llm/ggml/model/llama/llama.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "save_state",
+          "class_name": "Llama",
+          "full_name": "Llama.save_state",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "load_state",
+          "class_name": "Llama",
+          "full_name": "Llama.load_state",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_sample",
+          "class_name": "Llama",
+          "full_name": "Llama._sample",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "eval",
+          "class_name": "Llama",
+          "full_name": "Llama.eval",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "python/llm/src/ipex_llm/ggml/model/llama/llama_cpp.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    }
+  ],
+  "step_plan": {
+    "summary": "This PR stabilizes FP16 interval handling for the ipex-llm llama bindings by correcting state save/load and tightening FP16-related sampling/evaluation paths, ensuring proper memory layout and size when f16_kv is enabled while preserving non-FP16 behavior.",
+    "steps": [
+      {
+        "operation": "Enhance Llama.save_state to correctly copy and serialize FP16 KV state when f16_kv is enabled",
+        "file_to_modify": "python/llm/src/ipex_llm/ggml/model/llama/llama.py",
+        "function_to_modify": "Llama.save_state",
+        "reason": "To prevent FP16 interval data corruption by ensuring the serialized state has proper size and layout for FP16 memory when f16_kv is active; guard against partial copies and misalignment",
+        "side_effects": "Requires tests for save_state with f16_kv on/off; may affect cache/state serialization format; potential impacts on state patching compatibility and downstream loading paths"
+      },
+      {
+        "operation": "Enhance Llama.load_state to apply FP16-state blobs safely with proper size/compatibility checks",
+        "file_to_modify": "python/llm/src/ipex_llm/ggml/model/llama/llama.py",
+        "function_to_modify": "Llama.load_state",
+        "reason": "Avoid misalignment when restoring FP16 interval state; validate stateSize and ensure deserialization respects FP16 memory layout to prevent corrupted intervals",
+        "side_effects": "May require updates to loading tests; ensure backward compatibility for non-FP16 loads and existing cache handling"
+      },
+      {
+        "operation": "Tighten sampling path for FP16 interval with f16_kv by guarding last_n_tokens_size and ensuring logits are adjusted under FP16",
+        "file_to_modify": "python/llm/src/ipex_llm/ggml/model/llama/llama.py",
+        "function_to_modify": "Llama._sample",
+        "reason": "Prevent FP16 interval artifacts during sampling due to memory layout or size tracking; ensure stable behavior when FP16 path is active while preserving non-FP16 behavior",
+        "side_effects": "Tests must cover FP16 on/off; possible minor changes in sampling timing or edge-case handling; ensure no regression in non-FP16 mode"
+      },
+      {
+        "operation": "Stabilize evaluation path under FP16 by robustly handling logits/state interplay and ensuring no interval misalignment in Llama.eval",
+        "file_to_modify": "python/llm/src/ipex_llm/ggml/model/llama/llama.py",
+        "function_to_modify": "Llama.eval",
+        "reason": "Prevent FP16-related interval inconsistencies during evaluation batches; ensure FP16 path does not disrupt logits/state propagation and maintains parity with non-FP16 behavior",
+        "side_effects": "Requires end-to-end FP16 tests on compatible hardware; monitor for any minor performance impact; verify no regressions for non-FP16 evaluations"
+      }
+    ]
+  }
+}

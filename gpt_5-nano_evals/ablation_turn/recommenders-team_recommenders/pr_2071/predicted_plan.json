@@ -1,0 +1,42 @@
+{
+  "pr_number": 2071,
+  "repository": "recommenders-team/recommenders",
+  "title": "Fixing TF to < 2.16",
+  "body": "Description: Pin TensorFlow version to < 2.16 to ensure compatibility with the codebase's TensorFlow 1.x compatibility usage (tf.compat.v1).\n\nRelated Issues: #2073\n\nRationale: The repository relies on TensorFlow compatibility APIs and may face breaking changes in TF 2.16+. This PR adds explicit version constraints to prevent upgrading to TF 2.16+ unintentionally.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T13:43:15.646192",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "setup.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "setup",
+          "class_name": null,
+          "full_name": "setup",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Pin TensorFlow to versions below 2.16 in setup.py to preserve TF 1.x compatibility usage and prevent accidental upgrades that could break tf.compat.v1 code paths.",
+    "steps": [
+      {
+        "operation": "Pin TensorFlow version in install_requires and extras_require['gpu'] to <2.16",
+        "file_to_modify": "setup.py",
+        "function_to_modify": "setup",
+        "reason": "To prevent upgrading to TensorFlow 2.16+ which may introduce breaking changes for tf.compat.v1 based code paths used in the project",
+        "side_effects": "Dependency resolution will constrain TF to <2.16 for both base install and GPU extras; may require re-installation in environments; CI and test suites should be run with TF<2.16; potential impact on environments expecting TF 2.x features"
+      }
+    ]
+  }
+}

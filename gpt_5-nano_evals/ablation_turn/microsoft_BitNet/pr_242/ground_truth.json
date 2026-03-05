@@ -1,0 +1,57 @@
+{
+  "pr_number": 242,
+  "repository": "microsoft/BitNet",
+  "title": "Fix build error with GCC by forcing Clang in CMake on android/aarch64",
+  "body": "GCC does not recognize Clang-specific warning flags like -Wunreachable-code-break and -Wunreachable-code-return, which are passed by upstream submodules (e.g., ggml). This patch forces CMake to use Clang via command-line arguments, avoiding the need to patch nested submodules.\r\n\r\nThis resolves compiler errors without modifying submodule source code.",
+  "extraction_metadata": {
+    "extracted_at": "2026-02-26T01:09:26.379419",
+    "extractor_version": "1.0.0",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "setup_env.py",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 2,
+      "functions_modified": [
+        {
+          "function_name": "compile",
+          "class_name": null,
+          "full_name": "compile",
+          "start_line": 191,
+          "end_line": 204,
+          "lines_changed": [
+            202
+          ]
+        }
+      ],
+      "patch": "@@ -199,7 +199,7 @@ def compile():\n         logging.error(f\"Arch {arch} is not supported yet\")\n         exit(0)\n     logging.info(\"Compiling the code using CMake.\")\n-    run_command([\"cmake\", \"-B\", \"build\", *COMPILER_EXTRA_ARGS[arch], *OS_EXTRA_ARGS.get(platform.system(), [])], log_step=\"generate_build_files\")\n+    run_command([\"cmake\", \"-B\", \"build\", *COMPILER_EXTRA_ARGS[arch], *OS_EXTRA_ARGS.get(platform.system(), []), \"-DCMAKE_C_COMPILER=clang\", \"-DCMAKE_CXX_COMPILER=clang++\"], log_step=\"generate_build_files\")\n     # run_command([\"cmake\", \"--build\", \"build\", \"--target\", \"llama-cli\", \"--config\", \"Release\"])\n     run_command([\"cmake\", \"--build\", \"build\", \"--config\", \"Release\"], log_step=\"compile\")\n \n@@ -229,4 +229,4 @@ def signal_handler(sig, frame):\n     args = parse_args()\n     Path(args.log_dir).mkdir(parents=True, exist_ok=True)\n     logging.basicConfig(level=logging.INFO)\n-    main()\n\\ No newline at end of file\n+    main()"
+    }
+  ],
+  "functions_modified": [
+    {
+      "function_name": "compile",
+      "class_name": null,
+      "full_name": "compile",
+      "start_line": 191,
+      "end_line": 204,
+      "lines_changed": [
+        202
+      ]
+    }
+  ],
+  "step_plan": {
+    "steps": [
+      {
+        "operation": "Force CMake to use Clang by passing explicit C and C++ compiler definitions during the CMake configure/generate step",
+        "file_to_modify": "setup_env.py",
+        "function_to_modify": "compile",
+        "reason": "On android/aarch64 the build was invoking GCC, but upstream submodules (e.g., ggml) pass Clang-only warning flags like -Wunreachable-code-break/-Wunreachable-code-return, causing GCC to fail. Injecting -DCMAKE_C_COMPILER=clang and -DCMAKE_CXX_COMPILER=clang++ ensures the toolchain matches the flags without patching nested submodules.",
+        "side_effects": "Build toolchain selection changes for any environment that uses this script, potentially requiring Clang to be present in PATH/NDK. It may override user/toolchain-file compiler settings, alter warning/error behavior compared to GCC, and could impact reproducibility or cross-compilation setups that previously relied on GCC."
+      }
+    ],
+    "summary": "Fixes android/aarch64 build failures caused by GCC rejecting Clang-only warning flags by forcing CMake to configure with Clang/Clang++ via command-line definitions."
+  }
+}

@@ -1,0 +1,63 @@
+{
+  "pr_number": 464,
+  "repository": "karpathy/nanoGPT",
+  "title": "fix: h100-mfu-calculation",
+  "body": "I was getting 104% MFU on h100 then i realized that MFU calculation might of been based on a100 312 tflops \n\nh100 is 989 tflops at bfloat16. nvidia claims 1,979tflops but that is for 2:4 sparsity.\n\n<img width=\"515\" alt=\"image\" src=\"https://github.com/karpathy/nanoGPT/assets/47992694/7ed83ae5-3769-4c48-91a6-7cc4d8f6e140\">",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T12:19:20.040236",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "model.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "estimate_mfu",
+          "class_name": "GPT",
+          "full_name": "GPT.estimate_mfu",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "train.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    },
+    {
+      "filename": "config/train_gpt2.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    },
+    {
+      "filename": "README.md",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    }
+  ],
+  "step_plan": {
+    "summary": "Fixes MFU reporting on H100 by removing the implicit A100-based normalization in the MFU calculation and using an H100-appropriate (or user-configurable) BF16 peak FLOPs denominator so MFU no longer exceeds 100% under normal conditions.",
+    "steps": [
+      {
+        "operation": "Make MFU normalization device-aware and/or configurable by replacing the hard-coded A100 peak FLOPs constant with a selectable peak BF16 TFLOPs (e.g., A100=312e12, H100=989e12) and updating the docstring/comments accordingly",
+        "file_to_modify": "model.py",
+        "function_to_modify": "GPT.estimate_mfu",
+        "reason": "The current MFU computation is normalized by an A100 BF16 peak (312 TFLOPs), which can yield MFU > 100% on H100; selecting the correct denominator (or allowing override) fixes the reported utilization while preserving prior A100 behavior.",
+        "side_effects": "MFU values in logs/wandb will change on non-A100 GPUs (notably H100). If a lookup is added using torch.cuda device name/compute capability, behavior on unknown GPUs must be defined (fallback to A100 or require explicit override). Any signature change to estimate_mfu would require updates to its callers (e.g., train.py)."
+      }
+    ]
+  }
+}

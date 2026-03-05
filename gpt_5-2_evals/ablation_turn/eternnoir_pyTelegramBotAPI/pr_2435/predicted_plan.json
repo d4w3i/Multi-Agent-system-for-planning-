@@ -1,0 +1,65 @@
+{
+  "pr_number": 2435,
+  "repository": "eternnoir/pyTelegramBotAPI",
+  "title": "Fixed \"subscription_period\" docstring",
+  "body": "## Description\nFixed method docstring for \"subscription_period\"\n\nPython version: 3.10\n\nOS: macOS Sonoma 14.7\n\n## Checklist:\n- Just minor change of param docstring",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T12:10:48.205807",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "telebot/__init__.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "create_chat_subscription_invite_link",
+          "class_name": "TeleBot",
+          "full_name": "TeleBot.create_chat_subscription_invite_link",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "telebot/async_telebot.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "create_chat_subscription_invite_link",
+          "class_name": "AsyncTeleBot",
+          "full_name": "AsyncTeleBot.create_chat_subscription_invite_link",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Fixes the user-facing docstrings for the `subscription_period` parameter on the sync (`TeleBot`) and async (`AsyncTeleBot`) `create_chat_subscription_invite_link` methods, aligning documentation with Telegram’s Bot API while leaving runtime behavior unchanged.",
+    "steps": [
+      {
+        "operation": "Locate and correct the `subscription_period` parameter description in the synchronous wrapper method docstring (keeping ReST/Sphinx formatting intact and not touching runtime logic).",
+        "file_to_modify": "telebot/__init__.py",
+        "function_to_modify": "TeleBot.create_chat_subscription_invite_link",
+        "reason": "This public API wrapper is the primary user-facing documentation surface; fixing the docstring here ensures `subscription_period` is accurately documented for users calling the sync bot method.",
+        "side_effects": "No behavioral changes expected; only documentation output (help(), generated docs) will change. Ensure the corrected wording still matches the actual payload key (`subscription_period`) and does not imply different units/ranges than Telegram Bot API. If the project has docstring linting/doc build checks, they may need to be rerun."
+      },
+      {
+        "operation": "Mirror the same `subscription_period` docstring correction in the async wrapper method so sync/async APIs remain consistent.",
+        "file_to_modify": "telebot/async_telebot.py",
+        "function_to_modify": "AsyncTeleBot.create_chat_subscription_invite_link",
+        "reason": "The async bot class typically mirrors the sync method’s signature and docstring; keeping parity prevents user confusion and avoids diverging generated documentation between sync and async variants.",
+        "side_effects": "No runtime impact; documentation-only change. Might affect async API docs/help text. Verify the updated text stays consistent with the sync version and with Telegram’s `createChatSubscriptionInviteLink` parameter semantics (e.g., units, allowed values) to avoid future support issues."
+      }
+    ]
+  }
+}

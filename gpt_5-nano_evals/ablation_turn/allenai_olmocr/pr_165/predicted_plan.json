@@ -1,0 +1,56 @@
+{
+  "pr_number": 165,
+  "repository": "allenai/olmocr",
+  "title": "fix jsonl_to_markdown",
+  "body": "Summary of changes:\n\n- Add jsonl_to_markdown.py utility script to convert JSONL files to Markdown format.\n- Script extracts the 'text' field from each line in a JSONL file and saves it as a separate Markdown file.\n- Includes robust error handling for JSON decoding and file I/O errors.\n- Provides a command-line interface with an example usage documented in the module docstring.\n- Adds tests to validate behavior (parsing JSONL lines, writing Markdown files, handling invalid JSON).\n- Adds documentation to describe usage and integration notes (including a short example path referencing existing sample JSONL data in the repo).\n\nRationale:\n\n- There are existing sample JSONL datasets in olmocr/bench/sample_data and olmocr/bench/sample_data/olmocr_pipeline with fields including a text field. A lightweight utility to convert each line's text into separate Markdown files is useful for quick inspection, testing, and downstream tooling.\n- The new script follows existing project structure by placing it under olmocr/scripts, aligns with other standalone utilities, and includes error handling to avoid crashes on malformed lines.\n- Tests ensure behavior remains stable and documentation helps future users understand usage and expectations.\n\nNotes:\n\n- The PR does not alter core OCR or rendering pipelines, only introduces a new utility and its tests/docs.\n- If desired, we can extend the script to support configurable output naming (e.g., by id, pdf, or page) via command-line options in a follow-up.\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T12:21:11.371496",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "olmocr/scripts/jsonl_to_markdown.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "jsonl_to_markdown",
+          "class_name": null,
+          "full_name": "jsonl_to_markdown",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "tests/test_jsonl_to_markdown.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    },
+    {
+      "filename": "docs/source/utilities/jsonl_to_markdown.md",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    }
+  ],
+  "step_plan": {
+    "summary": "Introduce a small, self-contained JSONL-to-Markdown utility by adding a new top-level function jsonl_to_markdown in olmocr/scripts/jsonl_to_markdown.py, along with a CLI interface. This change provides the core functionality described in the PR (extracting the 'text' field from each JSONL line and saving it as Markdown), and sets up the groundwork for accompanying tests and documentation.",
+    "steps": [
+      {
+        "operation": "Add jsonl_to_markdown top-level function and CLI in new script",
+        "file_to_modify": "olmocr/scripts/jsonl_to_markdown.py",
+        "function_to_modify": "jsonl_to_markdown",
+        "reason": "Introduce a small, reusable core that reads a JSONL file, extracts the 'text' field from each line, and writes each as a separate Markdown file. Provide a robust CLI interface with proper error handling for JSON decoding and I/O operations.",
+        "side_effects": "Adds a public API for converting JSONL to Markdown; introduces a CLI usage path; impacts downstream tooling and documentation expectations; will require accompanying unit tests and docs updates to validate behavior (parsing, file writing, and invalid JSON handling)."
+      }
+    ]
+  }
+}

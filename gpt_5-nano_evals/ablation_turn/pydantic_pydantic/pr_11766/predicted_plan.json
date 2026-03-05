@@ -1,0 +1,42 @@
+{
+  "pr_number": 11766,
+  "repository": "pydantic/pydantic",
+  "title": "Fix example in ConfigDict.populate_by_name documentation",
+  "body": "Summary of changes:\n- The docstring for ConfigDict.populate_by_name in pydantic/config.py contains an example that can be misleading by mixing validate_by_name/validate_by_alias with populate_by_name. This PR updates the example to clearly reflect how populate_by_name interacts with the other related settings and demonstrates the intended usage with a corrected snippet. \n- The updated example shows how to configure and populate a model using populate_by_name (and, where appropriate, validate_by_alias) in a way that aligns with the documented behavior and deprecation notes.\n\nRationale:\n- The current example can mislead readers into conflating validate_by_name with populate_by_name. Since the PR title mentions fixing the example, the goal is to make the doc snippet accurate and self-contained, reducing confusion for users reading the docs.\n- This change does not affect runtime behavior or tests; it only clarifies the documentation in the source.\n\nImpact:\n- No code changes beyond documentation strings.\n- Documentation builds (Sphinx) may render the updated example more clearly.\n- Tests remain unaffected.\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T13:32:39.946744",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "pydantic/config.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "populate_by_name",
+          "class_name": "ConfigDict",
+          "full_name": "ConfigDict.populate_by_name",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Documentation-only fix to clarify the ConfigDict.populate_by_name example in pydantic/config.py, ensuring the example accurately conveys how populate_by_name interacts with related settings without altering runtime behavior.",
+    "steps": [
+      {
+        "operation": "Update docstring example for ConfigDict.populate_by_name",
+        "file_to_modify": "pydantic/config.py",
+        "function_to_modify": "ConfigDict.populate_by_name",
+        "reason": "To replace the misleading example that mixes validate_by_name/validate_by_alias with populate_by_name with a corrected, self-contained snippet that demonstrates proper usage and aligns with documentation notes.",
+        "side_effects": "No runtime behavior changes. Docstring tests that check exact content may fail and should be updated; Sphinx/doc builds should render the clearer example; downstream docs may reflect corrected guidance."
+      }
+    ]
+  }
+}

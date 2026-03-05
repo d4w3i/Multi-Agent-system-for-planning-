@@ -1,0 +1,42 @@
+{
+  "pr_number": 21457,
+  "repository": "keras-team/keras",
+  "title": "[OpenVINO backend] fix ops.array",
+  "body": "Fixes a failure when using the OpenVINO backend where keras.ops.array is called with a tensor already produced by the OpenVINO backend (OpenVINOKerasTensor). The existing path could try to convert an OpenVINOKerasTensor to a NumPy array, which is inappropriate for OpenVINO tensors and breaks downstream usage (e.g., RandomSampler with logits in keras_hub tests).\n\nWhat changed:\n- Adjusted the array function to detect OpenVINOKerasTensor inputs and pass them through unchanged instead of attempting a NumPy conversion.\n- This keeps OpenVINO tensors as OpenVINO tensors in symbolic/graph contexts and avoids type/value mismatches in tests that rely on OpenVINO tensors as inputs.\n\nImpact:\n- Minimal surface area, targeted to OpenVINO-backed paths for ops.array.\n- No change to external API behavior for non-OpenVINO backends.\n- Should resolve the failing test path in keras_hub RandomSampler test where logits is an OpenVINOKerasTensor.\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T13:04:04.524649",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "keras/src/ops/numpy.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "array",
+          "class_name": null,
+          "full_name": "array",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Fixes an OpenVINO-specific edge case in keras.ops.numpy.array by bypassing NumPy conversion when given an OpenVINOKerasTensor, preserving OpenVINO tensor semantics in graph contexts.",
+    "steps": [
+      {
+        "operation": "Guard OpenVINOKerasTensor inputs in ops.array and return input unchanged",
+        "file_to_modify": "keras/src/ops/numpy.py",
+        "function_to_modify": "array",
+        "reason": "To avoid converting OpenVINO-produced tensors to NumPy arrays, which breaks OpenVINO tensor semantics and downstream usage in graph contexts and tests.",
+        "side_effects": "OpenVINO-specific paths will bypass NumPy conversion; non-OpenVINO backends remain unaffected; may require re-running OpenVINO-focused tests (e.g., keras_hub RandomSampler) to verify the fix."
+      }
+    ]
+  }
+}

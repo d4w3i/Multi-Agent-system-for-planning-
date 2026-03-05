@@ -1,0 +1,79 @@
+{
+  "pr_number": 1362,
+  "repository": "maurosoria/dirsearch",
+  "title": "python cleanup",
+  "body": "Description\n---------------\n\n`lib/core/dictionary.py` -> fix typo, remove redundant parenthesis since you are returning a tuple anyway\n`lib/core/structures.py` -> remove redundant class parenthesis (not needed in python3)\n`lib/reports/html_report.py` -> simplify comparison statements",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T13:12:13.699253",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "lib/core/dictionary.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "__getstate__",
+          "class_name": "Dictionary",
+          "full_name": "Dictionary.__getstate__",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "lib/core/structures.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    },
+    {
+      "filename": "lib/reports/html_report.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "generate",
+          "class_name": "HTMLReport",
+          "full_name": "HTMLReport.generate",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Clean up Python syntax/style across three modules by removing redundant parentheses in tuple returns, dropping empty class parentheses for Python 3 compatibility, and simplifying HTML report status checks.",
+    "steps": [
+      {
+        "operation": "Refactor __getstate__ to return a tuple without extra parentheses",
+        "file_to_modify": "lib/core/dictionary.py",
+        "function_to_modify": "Dictionary.__getstate__",
+        "reason": "Remove redundant parentheses around a tuple return to align with Python idioms while preserving the exact data returned by __getstate__.",
+        "side_effects": "No functional change; ensure unpickling continues to produce the same tuple; may require running tests related to pickling"
+      },
+      {
+        "operation": "Remove redundant class parentheses in Python 3 style",
+        "file_to_modify": "lib/core/structures.py",
+        "function_to_modify": "OrderedSet",
+        "reason": "Drop empty parentheses in class declaration to adhere to Python 3 style without changing behavior.",
+        "side_effects": "No behavioral change; downstream imports unaffected; minor impact on readability"
+      },
+      {
+        "operation": "Simplify status code comparisons in HTMLReport.generate using range checks",
+        "file_to_modify": "lib/reports/html_report.py",
+        "function_to_modify": "HTMLReport.generate",
+        "reason": "Replace chained comparisons with range-based conditions to improve clarity while preserving equivalent logic for status evaluation.",
+        "side_effects": "No API change; ensure test coverage for HTML report remains valid; potential minor changes in readability for maintainers"
+      }
+    ]
+  }
+}

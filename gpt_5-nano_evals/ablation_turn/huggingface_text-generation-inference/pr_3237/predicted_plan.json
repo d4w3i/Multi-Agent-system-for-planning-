@@ -1,0 +1,88 @@
+{
+  "pr_number": 3237,
+  "repository": "huggingface/text-generation-inference",
+  "title": "move input_ids to hpu and remove disposal of adapter_meta",
+  "body": "Move the input_ids handling to run on the Habana Gaudi HPU and stop disposing of adapter_meta to keep necessary metadata around for debugging and potential reuse. This targets ensuring data paths are consistently on the HPU device and retains adapter metadata in memory during batch processing.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T12:58:12.545301",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "backends/gaudi/server/text_generation_server/layers/attention/hpu.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "attention",
+          "class_name": "backends/gaudi/server/text_generation_server/layers/attention/hpu",
+          "full_name": "backends/gaudi/server/text_generation_server/layers/attention/hpu.py.attention",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "backends/gaudi/server/text_generation_server/layers/attention/common.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "__init__",
+          "class_name": "backends/gaudi/server/text_generation_server/layers/attention/common",
+          "full_name": "backends/gaudi/server/text_generation_server/layers/attention/common.py.Seqlen.__init__",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "backends/gaudi/server/text_generation_server/adapters/weights.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "from_meta",
+          "class_name": "backends/gaudi/server/text_generation_server/adapters/weights",
+          "full_name": "backends/gaudi/server/text_generation_server/adapters/weights.py.AdapterBatchData.from_meta",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Relocate input_ids processing to the Habana Gaudi HPU and stop disposing of adapter_meta to retain metadata for debugging and reuse, improving data locality and stability in adapter-based batching paths.",
+    "steps": [
+      {
+        "operation": "Move input_ids handling to the Habana Gaudi HPU by ensuring Seqlen initialization operates on device-resident tensors and that subsequent indexing/length computations use HPU tensors",
+        "file_to_modify": "backends/gaudi/server/text_generation_server/layers/attention/common.py",
+        "function_to_modify": "Seqlen.__init__",
+        "reason": "To ensure subsequent attention prep uses device-resident input lengths and avoids host-device transfers",
+        "side_effects": "Potential changes to memory usage; ensure tests cover device residency of input_lengths and update any code that assumes CPU-host tensors for seqlen data; downstream components may rely on existing Seqlen behavior and need to adapt to device-guarded inputs"
+      },
+      {
+        "operation": "Ensure attention input tensors (query, key, value) and derived inputs from input_ids are on the same HPU device within the attention path",
+        "file_to_modify": "backends/gaudi/server/text_generation_server/layers/attention/hpu.py",
+        "function_to_modify": "attention",
+        "reason": "To enforce device locality for the core attention computation and prevent CPU-GPU data transfers in critical path",
+        "side_effects": "Requires thorough testing to ensure device consistency; may require adding explicit device checks/guards and minor refactoring of input preparation; potential minimal performance variation depending on device availability"
+      },
+      {
+        "operation": "Preserve adapter metadata by changing AdapterBatchData.from_meta to retain adapter_meta instead of disposing",
+        "file_to_modify": "backends/gaudi/server/text_generation_server/adapters/weights.py",
+        "function_to_modify": "AdapterBatchData.from_meta",
+        "reason": "To keep adapter metadata available for downstream batching, debugging, and potential reuse as requested in the PR",
+        "side_effects": "Increased memory usage due to kept metadata; ensure proper lifecycle management to avoid leaks; regression tests may need updates to reflect retained metadata and stability checks for batching paths"
+      }
+    ]
+  }
+}

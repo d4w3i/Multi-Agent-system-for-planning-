@@ -1,0 +1,67 @@
+{
+    "repository": "vllm-project/vllm",
+    "pull_request_number": 20938,
+    "title": "Fix overflow indexing in causal_conv1d kernel",
+    "body": "## Essential Elements of an Effective PR Description Checklist\n- [x] The purpose of the PR, such as \"Fix some issue (link existing issues this PR will resolve)\".\n- [x] The test plan, such as providing test command.\n- [x] The test results, such as pasting the results comparison before and after, or e2e results\n- [x] (Optional) The necessary documentation update, such as updating `supported_models.md` and `examples` for a new model.\n\n## Purpose\n\nThis PR fixes an indexing overflow issue that can occur when running mamba-based models in V1. Before V1 integration, the value of `conv_state_batch_coord` could vary from `0` to `max_num_seqs-1`. However, with V1 integration it can now vary between `0` and `num_gpu_blocks-1`. Depending on the model and deployment, the number of blocks can be orders of magnitude higher and I'm running into overflow issues unless we explicitly cast to `tl.int64`.\n\nPlease note I already made the [equivalent fix](https://github.com/vllm-project/vllm/blob/main/vllm/model_executor/layers/mamba/ops/mamba_ssm.py#L111) to the `selective_state_update` as part of https://github.com/vllm-project/vllm/pull/20016. I forgot to make the equivalent change to this kernel, my bad. \n\n@tlrmchlsmth @cyang49 @thoangtrvn \n\n## Test Plan\n\nIt is actually not that easy to catch this with a test because you need a lot of blocks and need to let it run for a while until the scheduler starts picking off blocks with a high enough index to cause the overflow. I think it could be good to write some tests to try and catch these kernel overflow issues in general, but I would advocate for getting this fix in now. \n\n## Test Result\n\nn/a\n\n## (Optional) Documentation Update\n\nn/a\n\n<!--- pyml disable-next-line no-emphasis-as-heading -->\n",
+    "pr_date": "2025-07-14T18:16:20Z",
+    "source_branch": "fix-conv1d-index-overflow",
+    "language": "en",
+    "keywords_detected": {
+        "branch": [
+            "fix"
+        ],
+        "requirement": [
+            "fix"
+        ],
+        "body": [
+            "change",
+            "resolve",
+            "fix",
+            "update",
+            "support"
+        ]
+    },
+    "number_of_links_in_pr": 3,
+    "base_sha": "559756214b770d0405939a05172804221c2f5677",
+    "last_commit_sha": "57c81deac25ef1d325ae4a2eec4035150743faa7",
+    "diff_between_base_and_last": [
+        {
+            "sha": "a8bd0067bf45c0d3415caa5d733de37c75db460d",
+            "filename": "vllm/model_executor/layers/mamba/ops/causal_conv1d.py",
+            "status": "modified",
+            "additions": 2,
+            "deletions": 1,
+            "changes": 3,
+            "blob_url": "https://github.com/vllm-project/vllm/blob/57c81deac25ef1d325ae4a2eec4035150743faa7/vllm%2Fmodel_executor%2Flayers%2Fmamba%2Fops%2Fcausal_conv1d.py",
+            "raw_url": "https://github.com/vllm-project/vllm/raw/57c81deac25ef1d325ae4a2eec4035150743faa7/vllm%2Fmodel_executor%2Flayers%2Fmamba%2Fops%2Fcausal_conv1d.py",
+            "contents_url": "https://api.github.com/repos/vllm-project/vllm/contents/vllm%2Fmodel_executor%2Flayers%2Fmamba%2Fops%2Fcausal_conv1d.py?ref=57c81deac25ef1d325ae4a2eec4035150743faa7",
+            "patch": "@@ -92,7 +92,8 @@ def _causal_conv1d_fwd_kernel(  # continuous batching\n \n     if IS_CONTINUOUS_BATCHING:\n         # cache_idx\n-        conv_state_batch_coord = tl.load(conv_state_indices_ptr + idx_seq)\n+        conv_state_batch_coord = tl.load(conv_state_indices_ptr + idx_seq).to(\n+            tl.int64)\n     else:\n         # cache_idx\n         conv_state_batch_coord = idx_seq"
+        }
+    ],
+    "commits": [
+        {
+            "sha": "57c81deac25ef1d325ae4a2eec4035150743faa7",
+            "commit_date": "2025-07-14T18:08:42Z",
+            "message": "Fix overflow indexing in causal_conv1d kernel\n\nSigned-off-by: Thomas Parnell <tpa@zurich.ibm.com>",
+            "number_of_links_in_commit": 0,
+            "files_changed_count": 1,
+            "files": [
+                {
+                    "sha": "a8bd0067bf45c0d3415caa5d733de37c75db460d",
+                    "filename": "vllm/model_executor/layers/mamba/ops/causal_conv1d.py",
+                    "status": "modified",
+                    "additions": 2,
+                    "deletions": 1,
+                    "changes": 3,
+                    "blob_url": "https://github.com/vllm-project/vllm/blob/57c81deac25ef1d325ae4a2eec4035150743faa7/vllm%2Fmodel_executor%2Flayers%2Fmamba%2Fops%2Fcausal_conv1d.py",
+                    "raw_url": "https://github.com/vllm-project/vllm/raw/57c81deac25ef1d325ae4a2eec4035150743faa7/vllm%2Fmodel_executor%2Flayers%2Fmamba%2Fops%2Fcausal_conv1d.py",
+                    "contents_url": "https://api.github.com/repos/vllm-project/vllm/contents/vllm%2Fmodel_executor%2Flayers%2Fmamba%2Fops%2Fcausal_conv1d.py?ref=57c81deac25ef1d325ae4a2eec4035150743faa7",
+                    "patch": "@@ -92,7 +92,8 @@ def _causal_conv1d_fwd_kernel(  # continuous batching\n \n     if IS_CONTINUOUS_BATCHING:\n         # cache_idx\n-        conv_state_batch_coord = tl.load(conv_state_indices_ptr + idx_seq)\n+        conv_state_batch_coord = tl.load(conv_state_indices_ptr + idx_seq).to(\n+            tl.int64)\n     else:\n         # cache_idx\n         conv_state_batch_coord = idx_seq"
+                }
+            ]
+        }
+    ],
+    "pull_request_url": "https://github.com/vllm-project/vllm/pull/20938",
+    "commits_url": "https://github.com/vllm-project/vllm/pull/20938/commits",
+    "files_url": "https://github.com/vllm-project/vllm/pull/20938/files"
+}

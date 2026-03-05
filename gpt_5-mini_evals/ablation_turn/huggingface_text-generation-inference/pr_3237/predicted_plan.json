@@ -1,0 +1,134 @@
+{
+  "pr_number": 3237,
+  "repository": "huggingface/text-generation-inference",
+  "title": "move input_ids to hpu and remove disposal of adapter_meta",
+  "body": "move input_ids to hpu and remove disposal of adapter_meta",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T13:22:43.804080",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "server/text_generation_server/models/causal_lm.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "from_pb",
+          "class_name": "CausalLMBatch",
+          "full_name": "CausalLMBatch.from_pb",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "backends/gaudi/server/text_generation_server/models/causal_lm.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "from_pb",
+          "class_name": "CausalLMBatch",
+          "full_name": "CausalLMBatch.from_pb",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "server/text_generation_server/adapters/weights.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "from_meta",
+          "class_name": "AdapterBatchData",
+          "full_name": "AdapterBatchData.from_meta",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "backends/gaudi/server/text_generation_server/adapters/weights.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "from_meta",
+          "class_name": "AdapterBatchData",
+          "full_name": "AdapterBatchData.from_meta",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "backends/gaudi/server/text_generation_server/adapters/lora.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "load",
+          "class_name": "BatchLoraWeights",
+          "full_name": "BatchLoraWeights.load",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Move model input tensors (input_ids and other model inputs) to the HPU device earlier in batch construction to reduce host/device transfers, and remove any disposal of adapter metadata so AdapterBatchMetadata/AdapterBatchData remain available after creation.",
+    "steps": [
+      {
+        "operation": "Stop disposing adapter metadata and preserve meta reference",
+        "file_to_modify": "server/text_generation_server/adapters/weights.py",
+        "function_to_modify": "AdapterBatchData.from_meta",
+        "reason": "Ensure AdapterBatchData.from_meta does not free/delete adapter_meta after constructing AdapterBatchData so the metadata lifetime is preserved for downstream code that expects to inspect or reuse it. The PR explicitly asks to remove disposal of adapter_meta.",
+        "side_effects": "Keeps adapter metadata live longer which may increase Python memory retention; tests that previously relied on adapter_meta being removed should be updated. Downstream callers will be able to access AdapterBatchData.meta; no API surface changes but behaviour/lifetime changes may affect cleanup logic elsewhere. Unit/integration tests touching adapter lifetimes and memory usage should be added/updated."
+      },
+      {
+        "operation": "Stop disposing adapter metadata in Gaudi backend and preserve meta reference",
+        "file_to_modify": "backends/gaudi/server/text_generation_server/adapters/weights.py",
+        "function_to_modify": "AdapterBatchData.from_meta",
+        "reason": "Mirror the main backend change for the gaudi/HPU variant so adapter metadata isn't prematurely disposed in HPU-specific code paths. This keeps adapter metadata available during HPU-specific weight construction and inference.",
+        "side_effects": "Same lifetime/memory implications as the main adapter change but specifically for the Gaudi backend. Tests for Gaudi adapter loading must assert that meta remains accessible after from_meta. May require coordination with any backend-specific cleanup code."
+      },
+      {
+        "operation": "Avoid freeing/disposing adapter_meta in Gaudi LORA loader and ensure pointer tensors reference live meta",
+        "file_to_modify": "backends/gaudi/server/text_generation_server/adapters/lora.py",
+        "function_to_modify": "BatchLoraWeights.load",
+        "reason": "BatchLoraWeights.load builds pointer/index tensors and uses adapter metadata; ensure it does not free adapter_meta (explicitly or implicitly) during load. Keep references so pointer tensors and rank/ptr structures refer to live metadata and avoid dangling pointers or stale references on HPU.",
+        "side_effects": "Preventing disposal inside load increases retained metadata lifetime and HPU memory usage. Also ensures Gaudi inference kernels that rely on meta are safe. Tests should ensure load returns usable BatchLoraWeights and AdapterBatchMetadata remains accessible. If there are existing cleanup pathways expecting load to own metadata, they must be adjusted."
+      },
+      {
+        "operation": "Move input tensors to model device (HPU) immediately after tokenization and make all_input_ids placement explicit",
+        "file_to_modify": "server/text_generation_server/models/causal_lm.py",
+        "function_to_modify": "CausalLMBatch.from_pb",
+        "reason": "Reduce host<->device transfers and ensure subsequent operations run on-device by moving input_ids (and other model inputs such as attention_mask, position_ids, top_n_tokens_tensor) to the model device (HPU) as soon as tokenization/creation occurs. Make explicit whether all_input_ids used for tokenizer/CPU-side decoding remains on CPU (keep CPU copy) while model inputs are on HPU.",
+        "side_effects": "Changes where tensors live; tests that assumed CPU-side input_ids must be updated. HPU memory use will increase earlier in the pipeline, so warmup/memory planning tests should be run. Ensure any code paths that perform CPU-side decoding or inspect all_input_ids still use a CPU copy; add explicit copies if necessary. This change does not alter the API but changes runtime semantics and performance characteristics."
+      },
+      {
+        "operation": "Move input tensors to HPU early in Gaudi-optimized batch factory and clarify all_input_ids device semantics",
+        "file_to_modify": "backends/gaudi/server/text_generation_server/models/causal_lm.py",
+        "function_to_modify": "CausalLMBatch.from_pb",
+        "reason": "Apply the same early device-transfer optimization for the Gaudi/HPU backend: move input_ids and related tensors to HPU immediately after tokenization. Ensure all_input_ids used for any CPU-side operations is derived from a CPU copy before moving tensors, or explicitly kept on HPU if downstream kernels require it.",
+        "side_effects": "Increases HPU memory pressure earlier; ensures HPU-optimized paths avoid unnecessary host<->device transfers. Tests should assert that returned batch.input_ids.device is the HPU device and that any CPU decoding functionality still receives CPU tensors. May reveal or require adjustment to Gaudi-specific kernels that previously expected CPU-resident inputs."
+      }
+    ]
+  }
+}

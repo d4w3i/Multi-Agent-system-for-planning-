@@ -1,0 +1,42 @@
+{
+  "pr_number": 429,
+  "repository": "yihong0618/bilingual_book_maker",
+  "title": "fix: Fix parameter mismatch in EPUBBookLoaderHelper.translate_with_ba…",
+  "body": "## Problem\nThe `translate_with_backoff` method in `EPUBBookLoaderHelper` class was raising TypeError because of parameter mismatch between the method signature and actual calls through the backoff decorator.\n\nError message:\nTypeError: EPUBBookLoaderHelper.translate_with_backoff() takes 1 positional argument but 3 were given\n\n## Solution\n1. Modified the method signature to properly handle parameters:\n   - Added explicit parameters for text and context_flag\n   - Added jitter=None to backoff decorator\n   \n2. Improved error handling and logging\n#bug",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T15:05:33.754365",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "book_maker/loader/helper.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "translate_with_backoff",
+          "class_name": "EPUBBookLoaderHelper",
+          "full_name": "EPUBBookLoaderHelper.translate_with_backoff",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Fix the TypeError by changing EPUBBookLoaderHelper.translate_with_backoff to accept positional arguments (text, context_flag=False), add jitter=None to the backoff decorator, and add try/except logging with re-raise plus coercion of None to an empty string.",
+    "steps": [
+      {
+        "operation": "Change translate_with_backoff signature, update backoff decorator, add robust error handling and return coercion",
+        "file_to_modify": "book_maker/loader/helper.py",
+        "function_to_modify": "EPUBBookLoaderHelper.translate_with_backoff",
+        "reason": "Call sites (EPUBBookLoaderHelper.deal_new) invoke translate_with_backoff with positional args (text, context_flag). The current method used **kwargs only, causing TypeError when positional args are passed. Updating the signature to accept (self, text, context_flag=False) fixes the mismatch. Adding jitter=None to the backoff.on_exception decorator makes retry behavior explicit and avoids jitter-related warnings. Wrapping the translator call in try/except lets us log truncated text on failure and re-raise so the backoff decorator can retry. Coercing None to '' ensures callers that expect strings (e.g., shorter_result_link) receive a valid string.",
+        "side_effects": "Behavioral: Callers that already pass positional args (e.g., deal_new) will work correctly; callers that previously relied on a permissive **kwargs signature (passing other unexpected keyword args) may break. Backoff: adding jitter=None changes randomness characteristics slightly but retains retry behavior. Error handling: exceptions will be logged with truncated input and re-raised to allow retries; if retries are exhausted the exception still propagates. Return value: None from translate_model.translate is coerced to empty string, preventing downstream TypeErrors but may hide translator failures if callers expected None. Tests: unit/integration tests around EPUB loader, translation, and shorter_result_link should be run/updated. API impact: no external API changes beyond the method signature internal to the class, but search for other callers is recommended to avoid regressions."
+      }
+    ]
+  }
+}

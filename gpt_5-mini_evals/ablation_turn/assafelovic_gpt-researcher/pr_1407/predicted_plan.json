@@ -1,0 +1,42 @@
+{
+  "pr_number": 1407,
+  "repository": "assafelovic/gpt-researcher",
+  "title": "Fix return statements in PyMuPDFScraper",
+  "body": "Hi, just a quick fix for two bugs in `PyMuPDFScraper`:\n\n1. In case of problems, there were no `return` statements in the except blocks, that caused the function to implicitly return `None`, and that errors out [in here](https://github.com/assafelovic/gpt-researcher/blob/master/gpt_researcher/scraper/scraper.py#L103C1-L113C22), because `None` can not be unpacked to three variables. I added returning of empty strings/lists, as is done in other scraper classes as well.\n\n2. It was typed to return `str`, but actually it returns `tuple[str, list[str], str]`",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T12:42:13.735132",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "pymupdf.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "scrape",
+          "class_name": "PyMuPDFScraper",
+          "full_name": "PyMuPDFScraper.scrape",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Fix PyMuPDFScraper.scrape so it always returns a 3-tuple (text, images, title) on all code paths by adding explicit returns in except blocks, and update the function's return type annotation and docstring to tuple[str, list[str], str].",
+    "steps": [
+      {
+        "operation": "Add explicit returns for error paths and update return annotation/docstring",
+        "file_to_modify": "pymupdf.py",
+        "function_to_modify": "PyMuPDFScraper.scrape",
+        "reason": "Ensure scrape() always returns a 3-tuple (str, list[str], str) even on exceptions so callers that unpack the result don't receive None and crash. Also correct the function's return type annotation and docstring from 'str' to 'tuple[str, list[str], str]' to match actual behavior and improve static typing.",
+        "side_effects": "Behavioral: on error paths the function will return ('', [], '') instead of implicitly returning None (which previously caused unpacking errors in callers). This reduces runtime exceptions but may change error visibility (callers must check for empty content). Testing: adjust or add tests to verify timeout and generic error paths return ('', [], ''). Static analysis: mypy/type checkers will now see the correct type; updating the annotation may reveal mismatches elsewhere. Resource management: consider ensuring temporary files are always removed on error (current change does not modify cleanup logic, so review for possible leftover temp files and consider adding a finally block later). No public API signature change beyond correcting the return type, but downstream code that depended on None-on-error should be audited."
+      }
+    ]
+  }
+}

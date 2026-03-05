@@ -1,0 +1,42 @@
+{
+  "pr_number": 8861,
+  "repository": "borgbackup/borg",
+  "title": "tests: fix diff cmd test on macOS HFS+, fixes #8860",
+  "body": "If we touch too quickly after file creation, it would not noticably update the timestamp.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T12:05:43.986527",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "src/borg/testsuite/archiver/diff_cmd_test.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "test_time_diffs",
+          "class_name": null,
+          "full_name": "test_time_diffs",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Make `borg diff`’s timestamp-based test (`test_time_diffs`) reliable on macOS filesystems with coarse timestamp granularity by ensuring mtime/ctime have enough time to advance before operations that are expected to change them.",
+    "steps": [
+      {
+        "operation": "Stabilize timestamp-dependent operations by enforcing a measurable mtime/ctime delta before touch/chmod expectations in the diff test (add/adjust wait/sleep in the test sequence, with Darwin/HFS+ granularity in mind).",
+        "file_to_modify": "src/borg/testsuite/archiver/diff_cmd_test.py",
+        "function_to_modify": "test_time_diffs",
+        "reason": "On macOS (notably HFS+ and sometimes APFS), timestamps can have coarse granularity and may not visibly update if a file is modified too soon after creation; this makes `test_time_diffs` flaky because it assumes immediate mtime/ctime changes will be detectable by `borg diff`. Ensuring a detectable time delta before the operations under test makes the assertions deterministic without changing the product code.",
+        "side_effects": "May slightly increase test runtime on Darwin (potentially ~1s depending on implementation). If implemented as unconditional sleeps, could slow other platforms; prefer conditional logic for Darwin/Windows only. Any timing change may affect assumptions in nearby assertions (e.g., ordering of create/delete/recreate), so run the full testsuite for `diff_cmd_test.py` across platforms."
+      }
+    ]
+  }
+}

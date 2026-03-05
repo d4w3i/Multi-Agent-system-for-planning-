@@ -1,0 +1,56 @@
+{
+  "pr_number": 31674,
+  "repository": "scikit-learn/scikit-learn",
+  "title": "fix(docs): Fix glossary FIXME tags",
+  "body": "#### Reference Issues/PRs\nFixes #31628 \n\n#### What does this implement/fix? Explain your changes.\n\n\n#### Any other comments?\nWhile working on #31628, I encountered a `ModuleNotFoundError` due to a misnamed Sphinx extension (`sphinx-prompt` instead of `sphinx_prompt`). This PR also fixes that to ensure local doc builds (`make`) work correctly.\n\n#### Setup\nPython 3.13.3 (macOS 15.5 arm64)\n... (dependencies listed)",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T12:42:27.823050",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "doc/conf.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "setup",
+          "class_name": null,
+          "full_name": "setup",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "doc/glossary.rst",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    }
+  ],
+  "step_plan": {
+    "summary": "Fix the documentation build by correcting the Sphinx extension module name in `doc/conf.py`, and clean up `FIXME` markers in `doc/glossary.rst` by replacing them with accurate, current glossary wording.",
+    "steps": [
+      {
+        "operation": "Fix Sphinx extension module name in the extensions list (and/or any explicit extension loading) so the docs build can import it successfully",
+        "file_to_modify": "doc/conf.py",
+        "function_to_modify": "setup",
+        "reason": "Sphinx extensions must be specified by their importable Python module name; using the hyphenated form (\"sphinx-prompt\") can trigger ModuleNotFoundError during `make html`. Ensuring the correct module name (\"sphinx_prompt\") restores local documentation builds and aligns with Python import rules.",
+        "side_effects": "Doc builds will start importing the correct extension; if environments previously relied on the incorrect name (unlikely), they’ll now require the actual `sphinx-prompt` package installed. CI docs build may change behavior if it previously skipped/failed early; verify `make html` and any doc build jobs still pass."
+      },
+      {
+        "operation": "Remove/replace glossary `FIXME`-tagged wording (e.g., in the `meta-estimator` entry) with accurate, up-to-date phrasing about current scikit-learn behavior",
+        "file_to_modify": "doc/glossary.rst",
+        "function_to_modify": null,
+        "reason": "FIXME markers in published documentation are stale TODOs and degrade doc quality; issue #31628 tracks cleaning these up. The glossary text should reflect current Pipeline/FeatureUnion (or other referenced components) behavior without TODO annotations, using correct terminology and constraints.",
+        "side_effects": "Rendered glossary content will change; may require minor reflow/wrapping adjustments in the .rst. If other docs reference the old wording verbatim, they may need updates (search for exact phrases). Doc linting (RST formatting) could fail if spacing/indentation is off—rebuild docs to confirm."
+      }
+    ]
+  }
+}

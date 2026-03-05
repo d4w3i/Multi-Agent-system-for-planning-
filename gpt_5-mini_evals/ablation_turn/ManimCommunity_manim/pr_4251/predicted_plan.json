@@ -1,0 +1,72 @@
+{
+  "pr_number": 4251,
+  "repository": "ManimCommunity/manim",
+  "title": "Fix(graph): Allow any Line subclass as edge_type in Graph/DiGraph",
+  "body": "## Overview: What does this pull request change?\n<!--changelog-start-->\nFix #4250 \n<!--changelog-end-->\n**More broadly, this fix allows any subclass of `Line` to be used as an `edge_type`** in the `Graph` and `DiGraph`, making the implementation more flexible and extensible.\n\n## Motivation and Explanation: Why and how do your changes improve the library?\nPreviously, the `Graph` and `DiGraph` classes assumed that the `edge_type`  will always have its first two arguments as start and end point.\nBut, such is not true for subclasses of `Line`. This change lets user use any subclass of `Line` in `Graph` and `DiGraph`.\n\n## Changes\n\n- **Refactored Graph and DiGraph:**\n  - Fixed edge handling logic to support all subclasses of `Line`, not just `LabeledLine`.\n  - Modified `_add_edge` accordingly.\n- **Testing:**\n  - Added/updated tests for `LabeledLine` as edge types in `test_graph.py`.\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T11:55:03.452818",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "manim/mobject/graph.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "_add_edge",
+          "class_name": "GenericGraph",
+          "full_name": "GenericGraph._add_edge",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_populate_edge_dict",
+          "class_name": "Graph",
+          "full_name": "Graph._populate_edge_dict",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_populate_edge_dict",
+          "class_name": "DiGraph",
+          "full_name": "DiGraph._populate_edge_dict",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Allow Graph and DiGraph to accept any Line subclass as edge_type by changing edge instantiation to try (1) positional start/end, (2) keyword start/end, and (3) fallback to creating the edge without endpoints then calling set_points_by_ends(start, end, buff, path_arc), and ensuring z_index is set when needed.",
+    "steps": [
+      {
+        "operation": "Make Graph._populate_edge_dict instantiate edges robustly (positional → keyword → fallback)",
+        "file_to_modify": "manim/mobject/graph.py",
+        "function_to_modify": "Graph._populate_edge_dict",
+        "reason": "Graph._populate_edge_dict currently creates all edge mobjects at initialization by calling edge_type(start, end, ...). This assumes the edge class accepts start and end as the first two positional args. Replace that direct call with a robust instantiation strategy: 1) try positional (preserve existing behavior), 2) if TypeError, try keyword args start=... end=..., 3) if still failing, instantiate with only edge_config and set endpoints afterward using set_points_by_ends(start, end, buff=..., path_arc=...), and set z_index if needed. This makes Graph accept any Line subclass (e.g., LabeledLine) as edge_type while preserving existing behavior for current edge types.",
+        "side_effects": "Tests: Update/extend test_graph.py to include LabeledLine/LabeledArrow as edge_types and ensure they construct and update correctly. Dependents: Custom edge_types with nonstandard constructors will now work. API: No public API change; behavior is more permissive. Risks: A real constructor bug that raises TypeError for other reasons may be caught and retried; ensure the fallback does not silently mask unrelated constructor errors (consider keeping the original exceptions or logging in debug). Minor performance cost from additional try/except attempts during graph initialization."
+      },
+      {
+        "operation": "Make DiGraph._populate_edge_dict instantiate edges robustly (positional → keyword → fallback)",
+        "file_to_modify": "manim/mobject/graph.py",
+        "function_to_modify": "DiGraph._populate_edge_dict",
+        "reason": "DiGraph._populate_edge_dict mirrors Graph._populate_edge_dict for directed graphs and currently assumes edge_type accepts positional start/end args. Apply the same 3-tier instantiation strategy (positional, keyword, fallback + set_points_by_ends) so DiGraph can use any Line subclass as edge_type. Ensure that z_index and edge_config keys (buff, path_arc, etc.) are respected in the fallback path.",
+        "side_effects": "Tests: Add/adjust tests for directed graphs using LabeledLine/LabeledArrow and ensure arrow-specific behavior (e.g., arrow tip) continues to work. Dependents: Directed graph code using custom edge classes will be more flexible. API: No public API change. Risks: Same as Graph: possibility of masking constructor errors — consider clear exceptions or debug logging. Performance impact is negligible and limited to graph initialization."
+      },
+      {
+        "operation": "Make GenericGraph._add_edge instantiate a single new edge robustly (positional → keyword → fallback)",
+        "file_to_modify": "manim/mobject/graph.py",
+        "function_to_modify": "GenericGraph._add_edge",
+        "reason": "GenericGraph._add_edge is used for dynamic addition of edges at runtime and currently constructs new edges by calling edge_type(start, end, ...). To support arbitrary Line subclasses for edges added after initialization (and keep behavior consistent with the populate functions), implement the same robust instantiation strategy here: try positional args first, then keyword args, and finally instantiate without endpoints and call set_points_by_ends(start, end, buff=..., path_arc=...), and set z_index. This ensures runtime edge additions behave like initial population and that updaters relying on the Line API continue to function.",
+        "side_effects": "Tests: Ensure tests cover runtime additions of edges with LabeledLine/LabeledArrow as edge_type and verify that updaters still move edge endpoints correctly. Dependents: Code that calls add_edge or otherwise uses runtime edge creation will accept a wider variety of Line subclasses. API: No public API change. Risks: Same as above regarding masking TypeError; also ensure any edge_config positional parameters (like a label) are still usable — the keyword-attempt lets label remain as first positional param if provided in edge_config. Minor runtime overhead due to try/except logic when adding edges dynamically."
+      }
+    ]
+  }
+}

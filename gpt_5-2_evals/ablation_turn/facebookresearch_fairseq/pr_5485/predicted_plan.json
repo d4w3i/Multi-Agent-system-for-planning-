@@ -1,0 +1,42 @@
+{
+  "pr_number": 5485,
+  "repository": "facebookresearch/fairseq",
+  "title": "The cause of the error has been fixed: \"NameError: name 'help' is not…",
+  "body": "… defined\"\n\n# Before submitting\n\n- [-] Was this discussed/approved via a Github issue? (no need for typos, doc improvements)\n- [+] Did you read the [contributor guideline](https://github.com/pytorch/fairseq/blob/main/CONTRIBUTING.md)?\n- [+] Did you make sure to update the docs?\n- [+] Did you write any new necessary tests?\n\n## What does this PR do?\nA typo in the code causing an error in the operation of File \"fairseq\\dataclass\\configs.py\", line 1080, in EMAConfig has been fixed\nNameError: name 'help' is not defined.\n\n## PR review\nAnyone in the community is free to review the PR once the tests have passed.\nIf we didn't discuss your PR in Github issues there's a high chance it will not be merged.\n\n## Did you have fun?\nMake sure you had fun coding 🙃",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T12:11:49.527205",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "fairseq/dataclass/configs.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "EMAConfig (dataclass field definition for store_ema)",
+          "class_name": null,
+          "full_name": "EMAConfig (dataclass field definition for store_ema)",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Fixes an import-time `NameError` in `fairseq/dataclass/configs.py` by correcting the `EMAConfig.store_ema` field metadata key from an undefined identifier `help` to the string key `\"help\"`, restoring consistent dataclass metadata/help behavior.",
+    "steps": [
+      {
+        "operation": "Fix the invalid metadata dict key in EMAConfig.store_ema to use the string literal \"help\" instead of the undefined identifier help",
+        "file_to_modify": "fairseq/dataclass/configs.py",
+        "function_to_modify": "EMAConfig",
+        "reason": "`metadata={help: ...}` evaluates `help` as a name at import time; since it isn’t defined in the module scope, importing `fairseq.dataclass.configs` can raise `NameError`, breaking Hydra/CLI config composition. Using `metadata={\"help\": ...}` matches the established pattern across the file and restores help-text metadata.",
+        "side_effects": "Importing `fairseq.dataclass.configs` will no longer fail; downstream code that generates argparse/Hydra schema help text will now correctly include the `store_ema` field’s help string. No runtime training logic should change; only config metadata behavior is affected."
+      }
+    ]
+  }
+}

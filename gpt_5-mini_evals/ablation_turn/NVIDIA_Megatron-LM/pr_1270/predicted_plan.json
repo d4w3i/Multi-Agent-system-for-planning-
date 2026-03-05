@@ -1,0 +1,126 @@
+{
+  "pr_number": 1270,
+  "repository": "NVIDIA/Megatron-LM",
+  "title": "[ENHANCEMENT] Add z-loss",
+  "body": "z-loss regularization was shown to stabilize training by preventing logits in the last layer to explode: https://arxiv.org/abs/2309.14322\n\nThis PR: \n- allows one to add zloss regularization\n- since the total loss is not cross entropy anymore but cross entropy + zloss, this PR also allows one to additionally log the original cross-entropy and the z-loss",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T11:59:06.272927",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "megatron/core/transformer/transformer_config.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "TransformerConfig",
+          "class_name": null,
+          "full_name": "TransformerConfig",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "megatron/core/models/gpt/gpt_model.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "forward",
+          "class_name": "GPTModel",
+          "full_name": "GPTModel.forward",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "megatron/inference/gpt/loss_func.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "loss_func",
+          "class_name": null,
+          "full_name": "loss_func",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "pretrain_gpt.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "loss_func",
+          "class_name": null,
+          "full_name": "loss_func",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "forward_step",
+          "class_name": null,
+          "full_name": "forward_step",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Add configurable z-loss regularization by introducing TransformerConfig.z_loss_coeff, computing per-token z-loss in GPTModel.forward and exposing unreduced lm/z components on the model, and update both the inference and pretraining loss functions (and forward_step) to reduce and report 'lm loss' and 'z loss' separately while still returning the combined loss scalar for backprop.",
+    "steps": [
+      {
+        "operation": "Add z_loss_coeff configuration field and documentation",
+        "file_to_modify": "megatron/core/transformer/transformer_config.py",
+        "function_to_modify": "TransformerConfig",
+        "reason": "Expose a tunable coefficient for z-loss regularization so training can enable/disable and configure the strength of z-loss from config/CLI. Keeping a default of 0.0 preserves current behaviour when not used.",
+        "side_effects": "Changes the public TransformerConfig dataclass shape (adds a new float attribute). CLI/config parsing may need to accept this new field (if configs are auto-validated). Defaulting to 0.0 keeps existing training behavior unchanged; unit tests that construct TransformerConfig explicitly may need updates to include or ignore the new field."
+      },
+      {
+        "operation": "Compute per-token z-loss in model forward, add it to returned per-token loss, and expose unreduced components on the model",
+        "file_to_modify": "megatron/core/models/gpt/gpt_model.py",
+        "function_to_modify": "GPTModel.forward",
+        "reason": "Logits are available in GPTModel.forward, which makes it the correct place to compute z = logsumexp(logits, dim=-1) and derive per-token z-loss = 0.5 * coeff * z**2. Adding that per-token z-loss to the per-token loss returned by forward lets the existing masking/reduction/backprop pipeline include z-loss without changing the reduction machinery. Storing self._unreduced_lm_loss and self._unreduced_z_loss enables loss functions to compute and report both components separately.",
+        "side_effects": "Alters the per-token loss content (when z_loss_coeff > 0) so overall scalar loss used for backprop will change. Distributed training behavior should remain the same because per-token tensor shape and masking are preserved, but tests measuring loss values must be updated. Care must be taken to only compute z-loss when config.z_loss_coeff is non-zero/positive to avoid unnecessary computation. Must ensure ephemeral attributes are cleared after they are used to avoid leaking between micro-batches. If other code relied on exact shapes/contents of the returned per-token loss tensor, those areas should be validated."
+      },
+      {
+        "operation": "Extend inference GPT loss function to detect and report separate 'lm loss' and 'z loss' components and to clear ephemeral attributes",
+        "file_to_modify": "megatron/inference/gpt/loss_func.py",
+        "function_to_modify": "loss_func",
+        "reason": "The centralized inference loss function performs masking and all-reduce on the per-token losses and prepares reported metrics. To support separate logging of original cross-entropy and z-loss, this function must detect model._unreduced_lm_loss and model._unreduced_z_loss (if present), apply the existing _mask_loss and _allreduce_loss operations to each component independently to produce scalars for reporting, and still return the combined loss scalar used for any subsequent operations. Clearing the model's ephemeral attributes prevents value leakage into following batches.",
+        "side_effects": "Reporting gains two additional/changed metrics ('lm loss' and 'z loss'), which will affect monitoring dashboards and tests expecting the old metric names/structure. All-reduce patterns are reused, so distributed correctness should be maintained but additional all-reduces (for the two components) could add a small overhead. Must ensure behavior when the attributes are absent (i.e., when z_loss is disabled) remains unchanged. Tests that assert exact logging outputs must be updated."
+      },
+      {
+        "operation": "Change pretrain_gpt.loss_func signature and implementation to accept model and report separate lm/z losses (mirroring inference loss logic)",
+        "file_to_modify": "pretrain_gpt.py",
+        "function_to_modify": "loss_func",
+        "reason": "pretrain_gpt.loss_func participates in the training loop and is responsible for masking, all-reducing, and preparing local token counts and report dictionaries. To log 'lm loss' and 'z loss' using the model-exposed unreduced tensors, the function needs access to the model. Updating its signature to loss_func(loss_mask, model, output_tensor) (or similar) allows it to inspect model._unreduced_lm_loss and model._unreduced_z_loss and perform the separate reductions and reporting while still returning the combined loss scalar for backprop and the expected metadata.",
+        "side_effects": "Alters the API/signature of a function used in training. Call sites of loss_func must be updated to pass the model (see forward_step change). Training behavior will be identical when z_loss is disabled. Tests and utilities that call loss_func directly (or rely on its previous signature) need updates. Additional reductions for the separate components may add minimal overhead."
+      },
+      {
+        "operation": "Modify forward_step to bind the model into the loss function closure returned to the trainer",
+        "file_to_modify": "pretrain_gpt.py",
+        "function_to_modify": "forward_step",
+        "reason": "Since loss_func's signature now requires the model, forward_step must return a closure that already binds the current model (e.g., using functools.partial or a lambda) so the training loop can call the loss function with the expected parameters. This keeps the change localized to forward_step and avoids modifying the training loop itself.",
+        "side_effects": "Changes what forward_step returns (a closure bound to the model). The trainer calling forward_step must still be compatible with the closure signature; verify no assumptions about the exact callable signature exist elsewhere. Unit tests for forward_step and integration tests for the training loop need to be updated to reflect the new closure. This change is minimal and contained, but mis-binding could cause runtime errors if the closure does not match trainer expectations."
+      }
+    ]
+  }
+}

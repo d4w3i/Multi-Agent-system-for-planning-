@@ -1,0 +1,42 @@
+{
+  "pr_number": 1134,
+  "repository": "SYSTRAN/faster-whisper",
+  "title": "change `language_detection_threshold` default value",
+  "body": "the current value of `language_detection_threshold` means that `language_detection_segments` will be 1 regardless of the user set value, the new value will ensure that `language_detection_segments` is respected",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T12:11:52.698360",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "faster_whisper/transcribe.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "transcribe",
+          "class_name": "WhisperModel",
+          "full_name": "WhisperModel.transcribe",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Change the default for WhisperModel.transcribe's language_detection_threshold from None to 1.0 so the language-detection loop no longer breaks immediately and the language_detection_segments parameter is honored by default.",
+    "steps": [
+      {
+        "operation": "Change default value of language_detection_threshold and update docstring",
+        "file_to_modify": "faster_whisper/transcribe.py",
+        "function_to_modify": "WhisperModel.transcribe",
+        "reason": "The current default of language_detection_threshold=None makes the check (language_detection_threshold is None or language_probability > language_detection_threshold) short-circuit true on the first segment, causing the loop to break immediately and ignoring language_detection_segments. Setting the default to a numeric value (1.0) prevents the 'is None' short-circuit and ensures the loop will consider up to language_detection_segments segments by default.",
+        "side_effects": "Behavioral change in default language-detection: callers that relied on the previous implicit early-exit behavior will now have language detection run across multiple segments unless they explicitly pass a threshold. Unit tests that assumed the previous behavior may need updates. Public API signature remains backwards-compatible in type (Optional[float]) but the runtime default behavior changes; downstream code relying on the old default may observe different detected languages. No other code paths or modules should be affected beyond language-detection behavior, but integration tests and any consumer libraries should be checked."
+      }
+    ]
+  }
+}

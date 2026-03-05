@@ -1,0 +1,65 @@
+{
+    "repository": "lllyasviel/stable-diffusion-webui-forge",
+    "pull_request_number": 2303,
+    "title": "fix for Florence-2 space",
+    "body": "previously Florence2 had flash attention as a requirement due to an error in *transformers* (issue with packages Forge uses rather than in Forge itself) (https://huggingface.co/microsoft/Florence-2-base/discussions/4#6673ffb9436907f83a8aaf2d); the workaround was to patch the imports to remove it (https://huggingface.co/microsoft/phi-1_5/discussions/72#65a0339f64520347aa3d703c).\r\nAt some point, an update has made this patch unnecessary. And turned it into an error.\r\n\r\nThis PR simply removes the patch.\r\n\r\nNow the Space loads again; tested a couple of functions as working correctly too.\r\n\r\n#2299\r\n\r\n",
+    "pr_date": "2024-11-11T10:38:33Z",
+    "source_branch": "fix-Florence-2-space",
+    "language": "en",
+    "keywords_detected": {
+        "branch": [
+            "fix"
+        ],
+        "requirement": [
+            "fix"
+        ],
+        "body": [
+            "requirement",
+            "remove",
+            "update"
+        ]
+    },
+    "number_of_links_in_pr": 2,
+    "base_sha": "a8de9ae70c89b3d24c97887ecd557c66b412022a",
+    "last_commit_sha": "c4bd17e651005df96d9bcd1399252b74aa553883",
+    "diff_between_base_and_last": [
+        {
+            "sha": "a9a20b61719ecf8a0dc953087118e44999faad4a",
+            "filename": "extensions-builtin/forge_space_florence_2/forge_app.py",
+            "status": "modified",
+            "additions": 6,
+            "deletions": 14,
+            "changes": 20,
+            "blob_url": "https://github.com/lllyasviel/stable-diffusion-webui-forge/blob/c4bd17e651005df96d9bcd1399252b74aa553883/extensions-builtin%2Fforge_space_florence_2%2Fforge_app.py",
+            "raw_url": "https://github.com/lllyasviel/stable-diffusion-webui-forge/raw/c4bd17e651005df96d9bcd1399252b74aa553883/extensions-builtin%2Fforge_space_florence_2%2Fforge_app.py",
+            "contents_url": "https://api.github.com/repos/lllyasviel/stable-diffusion-webui-forge/contents/extensions-builtin%2Fforge_space_florence_2%2Fforge_app.py?ref=c4bd17e651005df96d9bcd1399252b74aa553883",
+            "patch": "@@ -19,22 +19,14 @@\n \n from unittest.mock import patch\n from transformers.dynamic_module_utils import get_imports\n-def fixed_get_imports(filename: str | os.PathLike) -> list[str]:\n-    if not str(filename).endswith(\"modeling_florence2.py\"):\n-        return get_imports(filename)\n-    imports = get_imports(filename)\n-    imports.remove(\"flash_attn\")\n-    return imports\n-\n \n with spaces.capture_gpu_object() as gpu_object:\n-    with patch(\"transformers.dynamic_module_utils.get_imports\", fixed_get_imports):\n-        models = {\n-            # 'microsoft/Florence-2-large-ft': AutoModelForCausalLM.from_pretrained('microsoft/Florence-2-large-ft', attn_implementation='sdpa', trust_remote_code=True).to(\"cuda\").eval(),\n-            'microsoft/Florence-2-large': AutoModelForCausalLM.from_pretrained('microsoft/Florence-2-large', trust_remote_code=True).to(\"cuda\").eval(),\n-            # 'microsoft/Florence-2-base-ft': AutoModelForCausalLM.from_pretrained('microsoft/Florence-2-base-ft', trust_remote_code=True).to(\"cuda\").eval(),\n-            # 'microsoft/Florence-2-base': AutoModelForCausalLM.from_pretrained('microsoft/Florence-2-base', trust_remote_code=True).to(\"cuda\").eval(),\n-        }\n+    models = {\n+        # 'microsoft/Florence-2-large-ft': AutoModelForCausalLM.from_pretrained('microsoft/Florence-2-large-ft', attn_implementation='sdpa', trust_remote_code=True).to(\"cuda\").eval(),\n+        'microsoft/Florence-2-large': AutoModelForCausalLM.from_pretrained('microsoft/Florence-2-large', trust_remote_code=True).to(\"cuda\").eval(),\n+        # 'microsoft/Florence-2-base-ft': AutoModelForCausalLM.from_pretrained('microsoft/Florence-2-base-ft', trust_remote_code=True).to(\"cuda\").eval(),\n+        # 'microsoft/Florence-2-base': AutoModelForCausalLM.from_pretrained('microsoft/Florence-2-base', trust_remote_code=True).to(\"cuda\").eval(),\n+    }\n \n     processors = {\n         # 'microsoft/Florence-2-large-ft': AutoProcessor.from_pretrained('microsoft/Florence-2-large-ft', trust_remote_code=True),"
+        }
+    ],
+    "commits": [
+        {
+            "sha": "c4bd17e651005df96d9bcd1399252b74aa553883",
+            "commit_date": "2024-11-11T10:23:37Z",
+            "message": "remove patch to fix imports\n\nno longer necessary after other updates,\r\nand causes an error instead",
+            "number_of_links_in_commit": 0,
+            "files_changed_count": 1,
+            "files": [
+                {
+                    "sha": "a9a20b61719ecf8a0dc953087118e44999faad4a",
+                    "filename": "extensions-builtin/forge_space_florence_2/forge_app.py",
+                    "status": "modified",
+                    "additions": 6,
+                    "deletions": 14,
+                    "changes": 20,
+                    "blob_url": "https://github.com/lllyasviel/stable-diffusion-webui-forge/blob/c4bd17e651005df96d9bcd1399252b74aa553883/extensions-builtin%2Fforge_space_florence_2%2Fforge_app.py",
+                    "raw_url": "https://github.com/lllyasviel/stable-diffusion-webui-forge/raw/c4bd17e651005df96d9bcd1399252b74aa553883/extensions-builtin%2Fforge_space_florence_2%2Fforge_app.py",
+                    "contents_url": "https://api.github.com/repos/lllyasviel/stable-diffusion-webui-forge/contents/extensions-builtin%2Fforge_space_florence_2%2Fforge_app.py?ref=c4bd17e651005df96d9bcd1399252b74aa553883",
+                    "patch": "@@ -19,22 +19,14 @@\n \n from unittest.mock import patch\n from transformers.dynamic_module_utils import get_imports\n-def fixed_get_imports(filename: str | os.PathLike) -> list[str]:\n-    if not str(filename).endswith(\"modeling_florence2.py\"):\n-        return get_imports(filename)\n-    imports = get_imports(filename)\n-    imports.remove(\"flash_attn\")\n-    return imports\n-\n \n with spaces.capture_gpu_object() as gpu_object:\n-    with patch(\"transformers.dynamic_module_utils.get_imports\", fixed_get_imports):\n-        models = {\n-            # 'microsoft/Florence-2-large-ft': AutoModelForCausalLM.from_pretrained('microsoft/Florence-2-large-ft', attn_implementation='sdpa', trust_remote_code=True).to(\"cuda\").eval(),\n-            'microsoft/Florence-2-large': AutoModelForCausalLM.from_pretrained('microsoft/Florence-2-large', trust_remote_code=True).to(\"cuda\").eval(),\n-            # 'microsoft/Florence-2-base-ft': AutoModelForCausalLM.from_pretrained('microsoft/Florence-2-base-ft', trust_remote_code=True).to(\"cuda\").eval(),\n-            # 'microsoft/Florence-2-base': AutoModelForCausalLM.from_pretrained('microsoft/Florence-2-base', trust_remote_code=True).to(\"cuda\").eval(),\n-        }\n+    models = {\n+        # 'microsoft/Florence-2-large-ft': AutoModelForCausalLM.from_pretrained('microsoft/Florence-2-large-ft', attn_implementation='sdpa', trust_remote_code=True).to(\"cuda\").eval(),\n+        'microsoft/Florence-2-large': AutoModelForCausalLM.from_pretrained('microsoft/Florence-2-large', trust_remote_code=True).to(\"cuda\").eval(),\n+        # 'microsoft/Florence-2-base-ft': AutoModelForCausalLM.from_pretrained('microsoft/Florence-2-base-ft', trust_remote_code=True).to(\"cuda\").eval(),\n+        # 'microsoft/Florence-2-base': AutoModelForCausalLM.from_pretrained('microsoft/Florence-2-base', trust_remote_code=True).to(\"cuda\").eval(),\n+    }\n \n     processors = {\n         # 'microsoft/Florence-2-large-ft': AutoProcessor.from_pretrained('microsoft/Florence-2-large-ft', trust_remote_code=True),"
+                }
+            ]
+        }
+    ],
+    "pull_request_url": "https://github.com/lllyasviel/stable-diffusion-webui-forge/pull/2303",
+    "commits_url": "https://github.com/lllyasviel/stable-diffusion-webui-forge/pull/2303/commits",
+    "files_url": "https://github.com/lllyasviel/stable-diffusion-webui-forge/pull/2303/files"
+}

@@ -1,0 +1,33 @@
+{
+  "pr_number": 3597,
+  "repository": "piskvorky/gensim",
+  "title": "Clarify BM25 Documentation in Gensim Core Tutorials (Document Fix)",
+  "body": "This pull request corrects the documentation for the BM25 algorithm within the core tutorials of the Gensim library. The previous documentation misleadingly implied that BM25 transforms vectors into other vectors while altering their values based on feature rarity. This update provides an accurate description of BM25, highlighting its actual function as a scoring algorithm that does not manipulate the dimensionality of its input data.\n\nWhy are these changes needed?\n\nThe correction ensures the Gensim documentation accurately reflects the true nature of BM25 as a relevance scoring mechanism, not a vector transformation tool. It rectifies misconceptions and provides clarity, which is vital for users and developers relying on the Gensim documentation for implementing and understanding BM25.\n\nFile Modified\n\n- gensim/docs/src/gallery/core/run_topics_and_transformations.py",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T13:25:15.421148",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "docs/src/gallery/core/run_topics_and_transformations.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    }
+  ],
+  "step_plan": {
+    "summary": "This PR updates the BM25 description in the core tutorials to clarify that BM25 is a scoring function and does not alter vector dimensionality.",
+    "steps": [
+      {
+        "operation": "Update BM25 documentation text to accurately describe BM25 as a scoring function (not a vector transformer)",
+        "file_to_modify": "docs/src/gallery/core/run_topics_and_transformations.py",
+        "function_to_modify": "describe_available_transformations",
+        "reason": "BM25 should be described as a relevance scoring function that does not change input vector dimensionality; the current documentation incorrectly implies vector transformation.",
+        "side_effects": "No code behavior changes; documentation rendering/tests may need revalidation; potential need for cross-file consistency checks in other tutorials referencing BM25"
+      }
+    ]
+  }
+}

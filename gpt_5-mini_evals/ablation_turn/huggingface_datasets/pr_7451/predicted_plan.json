@@ -1,0 +1,42 @@
+{
+  "pr_number": 7451,
+  "repository": "huggingface/datasets",
+  "title": "Fix resuming after `ds.set_epoch(new_epoch)`",
+  "body": "close https://github.com/huggingface/datasets/issues/7447\n\nExplore the source code to identify the files and functions to modify.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T13:15:41.232440",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "src/datasets/iterable_dataset.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "load_state_dict",
+          "class_name": "_BaseExamplesIterable",
+          "full_name": "_BaseExamplesIterable.load_state_dict",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Fix load_state_dict in _BaseExamplesIterable so loading a partial state does not overwrite existing in-memory subtrees with None; this preserves RNG/epoch state set by ds.set_epoch(new_epoch) and restores correct resume behavior for iterable datasets.",
+    "steps": [
+      {
+        "operation": "Make load_state_dict preserve existing subtrees when new_state is None (merge semantics)",
+        "file_to_modify": "src/datasets/iterable_dataset.py",
+        "function_to_modify": "_BaseExamplesIterable.load_state_dict",
+        "reason": "The recursive helper in _BaseExamplesIterable.load_state_dict currently returns new_state unconditionally, which causes existing in-memory subtrees (including RNG/epoch state set by ds.set_epoch) to be overwritten with None when new_state has None for that subtree. Changing the fallback so that a None new_state preserves the existing state subtree turns load_state_dict into a merge operation and prevents unintentional clobbering of RNG/epoch state.",
+        "side_effects": "Behavioral: Calls to load_state_dict that include None in some subtrees will no longer wipe the corresponding existing in-memory subtrees; instead those subtrees will be preserved. This fixes resuming after ds.set_epoch(new_epoch) for all iterable dataset variants that inherit from _BaseExamplesIterable (shuffle/cycle/etc.). Tests: Existing tests that relied on the old behavior of replacing subtrees with None may need to be updated; add (or update) a unit test that verifies resuming after set_epoch(new_epoch) (advance dataset, save state, set_epoch, load saved state, ensure RNG/epoch-driven behavior is preserved). Dependents/API: No public API change; change is internal to iterable dataset state handling, but it changes semantics of load_state_dict (from overwrite-with-None to preserve-on-None). Backwards compatibility: likely safe and desirable, but audit callers that intentionally expected None-to-clobber behavior. Performance: negligible extra branching in the recursive helper. "
+      }
+    ]
+  }
+}

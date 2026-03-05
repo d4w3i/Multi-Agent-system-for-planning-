@@ -1,0 +1,63 @@
+{
+    "repository": "angr/angr",
+    "pull_request_number": 5479,
+    "title": "arg_session: Ensure created void* types have arch.",
+    "body": "This PR fixes the following exception:\r\n\r\n```python\r\nFile F:\\angr\\angr\\angr\\calling_conventions.py:878, in SimCC.arg_locs(self, prototype)\r\n    876 if prototype._arch is None:\r\n    877     prototype = prototype.with_arch(self.arch)\r\n--> 878 session = self.arg_session(prototype.returnty)\r\n    879 return [self.next_arg(session, arg_ty) for arg_ty in prototype.args]\r\n\r\nFile F:\\angr\\angr\\angr\\calling_conventions.py:728, in SimCC.arg_session(self, ret_ty)\r\n    726 session = self.ArgSession(self)\r\n    727 if self.return_in_implicit_outparam(ret_ty):\r\n--> 728     self.next_arg(session, SimTypePointer(SimTypeBottom()))\r\n    729 return session\r\n\r\nFile F:\\angr\\angr\\angr\\calling_conventions.py:1614, in SimCCSystemVAMD64.next_arg(self, session, arg_type)\r\n   1612     arg_type = SimTypePointer(arg_type.elem_type).with_arch(self.arch)\r\n   1613 state = session.getstate()\r\n-> 1614 classification = self._classify(arg_type)\r\n   1615 try:\r\n   1616     mapped_classes = []\r\n\r\nFile F:\\angr\\angr\\angr\\calling_conventions.py:1678, in SimCCSystemVAMD64._classify(self, ty, chunksize)\r\n   1676     chunksize = self.arch.bytes\r\n   1677 # treat BOT as INTEGER\r\n-> 1678 nchunks = 1 if isinstance(ty, SimTypeBottom) else (ty.size // self.arch.byte_width + chunksize - 1) // chunksize\r\n   1679 if isinstance(ty, (SimTypeFloat,)):\r\n   1680     return [\"SSE\"] + [\"SSEUP\"] * (nchunks - 1)\r\n\r\nFile F:\\angr\\angr\\angr\\sim_type.py:778, in SimTypePointer.size(self)\r\n    775 @property\r\n    776 def size(self):\r\n    777     if self._arch is None:\r\n--> 778         raise ValueError(\"Can't tell my size without an arch!\")\r\n    779     return self._arch.bits\r\n\r\nValueError: Can't tell my size without an arch!\r\n```",
+    "pr_date": "2025-05-17T06:40:03Z",
+    "source_branch": "fix/simcc_return_in_implicit_outparam_voidstar_arch",
+    "language": "en",
+    "keywords_detected": {
+        "branch": [
+            "fix"
+        ],
+        "requirement": [
+            "create"
+        ],
+        "body": [
+            "fix"
+        ]
+    },
+    "number_of_links_in_pr": 0,
+    "base_sha": "c7a3c8abbc1cdaa394e3ee0387c039ddc0f6c2c9",
+    "last_commit_sha": "01f5704d1fe78845afcc23b9fc674107e33c3578",
+    "diff_between_base_and_last": [
+        {
+            "sha": "f5197b87a9208e67a45f9efb51de255f70841fc6",
+            "filename": "angr/calling_conventions.py",
+            "status": "modified",
+            "additions": 3,
+            "deletions": 3,
+            "changes": 6,
+            "blob_url": "https://github.com/angr/angr/blob/01f5704d1fe78845afcc23b9fc674107e33c3578/angr%2Fcalling_conventions.py",
+            "raw_url": "https://github.com/angr/angr/raw/01f5704d1fe78845afcc23b9fc674107e33c3578/angr%2Fcalling_conventions.py",
+            "contents_url": "https://api.github.com/repos/angr/angr/contents/angr%2Fcalling_conventions.py?ref=01f5704d1fe78845afcc23b9fc674107e33c3578",
+            "patch": "@@ -725,7 +725,7 @@ def arg_session(self, ret_ty: SimType | None):\n         \"\"\"\n         session = self.ArgSession(self)\n         if self.return_in_implicit_outparam(ret_ty):\n-            self.next_arg(session, SimTypePointer(SimTypeBottom()))\n+            self.next_arg(session, SimTypePointer(SimTypeBottom()).with_arch(self.arch))\n         return session\n \n     def return_in_implicit_outparam(self, ty) -> bool:  # pylint:disable=unused-argument\n@@ -762,7 +762,7 @@ def return_val(self, ty, perspective_returned=False):\n                 assert self.RETURN_VAL is not None\n                 ptr_loc = self.RETURN_VAL\n             else:\n-                ptr_loc = self.next_arg(self.ArgSession(self), SimTypePointer(SimTypeBottom()))\n+                ptr_loc = self.next_arg(self.ArgSession(self), SimTypePointer(SimTypeBottom()).with_arch(self.arch))\n             return SimReferenceArgument(\n                 ptr_loc, SimStackArg(0, ty.size // self.arch.byte_width, is_fp=isinstance(ty, SimTypeFloat))\n             )\n@@ -1445,7 +1445,7 @@ def return_val(self, ty, perspective_returned=False):\n                     size = subty.size\n             if chosen is None:\n                 # fallback to void*\n-                chosen = SimTypePointer(SimTypeBottom())\n+                chosen = SimTypePointer(SimTypeBottom()).with_arch(self.arch)\n             return self.return_val(chosen, perspective_returned=perspective_returned)\n \n         if not isinstance(ty, SimStruct):"
+        }
+    ],
+    "commits": [
+        {
+            "sha": "01f5704d1fe78845afcc23b9fc674107e33c3578",
+            "commit_date": "2025-05-17T06:38:18Z",
+            "message": "arg_session: Ensure created void* types have arch.",
+            "number_of_links_in_commit": 0,
+            "files_changed_count": 1,
+            "files": [
+                {
+                    "sha": "f5197b87a9208e67a45f9efb51de255f70841fc6",
+                    "filename": "angr/calling_conventions.py",
+                    "status": "modified",
+                    "additions": 3,
+                    "deletions": 3,
+                    "changes": 6,
+                    "blob_url": "https://github.com/angr/angr/blob/01f5704d1fe78845afcc23b9fc674107e33c3578/angr%2Fcalling_conventions.py",
+                    "raw_url": "https://github.com/angr/angr/raw/01f5704d1fe78845afcc23b9fc674107e33c3578/angr%2Fcalling_conventions.py",
+                    "contents_url": "https://api.github.com/repos/angr/angr/contents/angr%2Fcalling_conventions.py?ref=01f5704d1fe78845afcc23b9fc674107e33c3578",
+                    "patch": "@@ -725,7 +725,7 @@ def arg_session(self, ret_ty: SimType | None):\n         \"\"\"\n         session = self.ArgSession(self)\n         if self.return_in_implicit_outparam(ret_ty):\n-            self.next_arg(session, SimTypePointer(SimTypeBottom()))\n+            self.next_arg(session, SimTypePointer(SimTypeBottom()).with_arch(self.arch))\n         return session\n \n     def return_in_implicit_outparam(self, ty) -> bool:  # pylint:disable=unused-argument\n@@ -762,7 +762,7 @@ def return_val(self, ty, perspective_returned=False):\n                 assert self.RETURN_VAL is not None\n                 ptr_loc = self.RETURN_VAL\n             else:\n-                ptr_loc = self.next_arg(self.ArgSession(self), SimTypePointer(SimTypeBottom()))\n+                ptr_loc = self.next_arg(self.ArgSession(self), SimTypePointer(SimTypeBottom()).with_arch(self.arch))\n             return SimReferenceArgument(\n                 ptr_loc, SimStackArg(0, ty.size // self.arch.byte_width, is_fp=isinstance(ty, SimTypeFloat))\n             )\n@@ -1445,7 +1445,7 @@ def return_val(self, ty, perspective_returned=False):\n                     size = subty.size\n             if chosen is None:\n                 # fallback to void*\n-                chosen = SimTypePointer(SimTypeBottom())\n+                chosen = SimTypePointer(SimTypeBottom()).with_arch(self.arch)\n             return self.return_val(chosen, perspective_returned=perspective_returned)\n \n         if not isinstance(ty, SimStruct):"
+                }
+            ]
+        }
+    ],
+    "pull_request_url": "https://github.com/angr/angr/pull/5479",
+    "commits_url": "https://github.com/angr/angr/pull/5479/commits",
+    "files_url": "https://github.com/angr/angr/pull/5479/files"
+}

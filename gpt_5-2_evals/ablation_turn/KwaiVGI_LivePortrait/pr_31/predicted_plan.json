@@ -1,0 +1,65 @@
+{
+  "pr_number": 31,
+  "repository": "KwaiVGI/LivePortrait",
+  "title": "Fix: add sound in generated video",
+  "body": "Amazing project!!!\r\nI found a small bug where the generated video does not have the sound of the original video.\n\nExplore the source code to identify the files and functions to modify.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T11:47:20.345981",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "src/live_portrait_pipeline.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "execute",
+          "class_name": "LivePortraitPipeline",
+          "full_name": "LivePortraitPipeline.execute",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "src/utils/video.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "merge_audio_video",
+          "class_name": null,
+          "full_name": "merge_audio_video",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Preserve the original driving-video audio by muxing it into the generated MP4 outputs after frame-to-video encoding. The fix updates the FFmpeg mux helper for robustness and integrates it into the main pipeline for video-file driving inputs.",
+    "steps": [
+      {
+        "operation": "Harden FFmpeg audio muxing to support using a driving video as the audio source, handle missing-audio cases safely, and avoid duration issues via `-shortest`/explicit stream mapping.",
+        "file_to_modify": "src/utils/video.py",
+        "function_to_modify": "merge_audio_video",
+        "reason": "Current outputs are frame-only MP4s (silent). The repo already has a mux helper but it is not robust enough for real-world inputs (driving video with/without audio, multiple streams, duration mismatch). Updating this function makes the pipeline change reliable and allows graceful fallback when the driving video has no audio stream.",
+        "side_effects": "Changes FFmpeg invocation behavior for any existing callers (if any). May require FFmpeg availability at runtime; failures should be caught/handled to avoid breaking inference. Output audio codec/container compatibility may change (e.g., forcing AAC) and could slightly affect processing time."
+      },
+      {
+        "operation": "After writing generated MP4(s) from frames, detect when `args.driving_info` is a real video file and mux the driving video’s audio into the generated output(s) (main and optional concat) using `merge_audio_video`, with safe fallback to silent output on mux errors.",
+        "file_to_modify": "src/live_portrait_pipeline.py",
+        "function_to_modify": "LivePortraitPipeline.execute",
+        "reason": "`images2video()` produces silent videos; the pipeline is the correct integration point because it knows (a) where the output MP4 paths are and (b) what the driving input type is (video file vs template/frames). Calling the mux step only for real driving videos ensures templates/dir inputs remain unchanged while restoring expected audio for typical usage.",
+        "side_effects": "Generated output files may be overwritten/replaced after muxing (implementation-dependent); ensure mux happens after writers close. If muxing fails (no audio stream, FFmpeg error), pipeline should still return valid silent videos. Behavior may differ slightly for videos with longer audio than video (with `-shortest`, output may end earlier/align to shortest stream)."
+      }
+    ]
+  }
+}

@@ -1,0 +1,69 @@
+{
+    "repository": "saleor/saleor",
+    "pull_request_number": 17947,
+    "title": "Fix incorrect multipler for limit field",
+    "body": "I want to merge this change because we recently introduced the `values` field with input limit. By accident the query cost was added to incorrect place. This PR fixes this. \r\n\r\n> [!IMPORTANT]  \r\n> The changes on `SelectedAttribute` is expected. We don't have `limit` there, and it is not paginated.  (The query cost for this field will be handled separatly)\r\n\r\n<!-- Please mention all relevant issue numbers. -->\r\n<!-- GitHub issue number is required for external contributions. -->\r\n\r\n# Impact\r\n\r\n- [ ] New migrations\r\n- [ ] New/Updated API fields or mutations\r\n- [ ] Deprecated API fields or mutations\r\n- [ ] Removed API types, fields, or mutations\r\n\r\n# Docs\r\n\r\n<!-- Docs are stored in a separate repository: https://github.com/saleor/saleor-docs/. -->\r\n<!-- Please provide a link to the PR that updates documentation for your changes. -->\r\n<!-- If changes in docs are not required, please mention that in the description. -->\r\n\r\n- [ ] Link to documentation:\r\n\r\n# Pull Request Checklist\r\n\r\n<!-- Please keep this section. It will make the maintainer's life easier. -->\r\n\r\n- [ ] Privileged queries and mutations are either absent or guarded by proper permission checks\r\n- [ ] Database queries are optimized and the number of queries is constant\r\n- [ ] Database migrations are either absent or optimized for zero downtime\r\n- [ ] The changes are covered by test cases\r\n- [ ] All new fields/inputs/mutations have proper labels added (`ADDED_IN_X`, `PREVIEW_FEATURE`, etc.)\r\n- [ ] All migrations have proper dependencies\r\n- [ ] All indexes are added concurrently in migrations\r\n- [ ] All RunSql and RunPython migrations have revert option defined\r\n",
+    "pr_date": "2025-07-10T07:44:44Z",
+    "source_branch": "fix-cost-of-attribute-values-field",
+    "language": "en",
+    "keywords_detected": {
+        "branch": [
+            "fix"
+        ],
+        "requirement": [
+            "fix"
+        ],
+        "body": [
+            "feature",
+            "add",
+            "remove",
+            "change",
+            "fix",
+            "update",
+            "merge"
+        ]
+    },
+    "number_of_links_in_pr": 1,
+    "base_sha": "a204638fd6c3f1174488524e76c18bfa64f934e9",
+    "last_commit_sha": "6a9c934327eb181d09d88e22c1d2abce96453997",
+    "diff_between_base_and_last": [
+        {
+            "sha": "73bcf885fe4151371ef6359285b01c85e56cc05d",
+            "filename": "saleor/graphql/query_cost_map.py",
+            "status": "modified",
+            "additions": 7,
+            "deletions": 2,
+            "changes": 9,
+            "blob_url": "https://github.com/saleor/saleor/blob/6a9c934327eb181d09d88e22c1d2abce96453997/saleor%2Fgraphql%2Fquery_cost_map.py",
+            "raw_url": "https://github.com/saleor/saleor/raw/6a9c934327eb181d09d88e22c1d2abce96453997/saleor%2Fgraphql%2Fquery_cost_map.py",
+            "contents_url": "https://api.github.com/repos/saleor/saleor/contents/saleor%2Fgraphql%2Fquery_cost_map.py?ref=6a9c934327eb181d09d88e22c1d2abce96453997",
+            "patch": "@@ -143,7 +143,12 @@\n     },\n     \"Attribute\": {\n         \"choices\": {\"complexity\": 1, \"multipliers\": [\"first\", \"last\"]},\n-        \"values\": {\"complexity\": 1, \"multipliers\": [\"first\", \"last\"]},\n+        \"values\": {\n+            \"complexity\": 1,\n+            \"multipliers\": [\n+                \"limit\",\n+            ],\n+        },\n         \"productTypes\": {\"complexity\": 1, \"multipliers\": [\"first\", \"last\"]},\n         \"productVariantTypes\": {\"complexity\": 1, \"multipliers\": [\"first\", \"last\"]},\n     },\n@@ -302,7 +307,7 @@\n     },\n     \"SelectedAttribute\": {\n         \"attribute\": {\"complexity\": 1},\n-        \"values\": {\"complexity\": 1, \"multipliers\": [\"limit\"]},\n+        \"values\": {\"complexity\": 1},\n     },\n     \"ShippingMethodChannelListing\": {\n         \"channel\": {\"complexity\": 1},"
+        }
+    ],
+    "commits": [
+        {
+            "sha": "6a9c934327eb181d09d88e22c1d2abce96453997",
+            "commit_date": "2025-07-10T07:42:17Z",
+            "message": "Fix incorrect multipler for limit field",
+            "number_of_links_in_commit": 0,
+            "files_changed_count": 1,
+            "files": [
+                {
+                    "sha": "73bcf885fe4151371ef6359285b01c85e56cc05d",
+                    "filename": "saleor/graphql/query_cost_map.py",
+                    "status": "modified",
+                    "additions": 7,
+                    "deletions": 2,
+                    "changes": 9,
+                    "blob_url": "https://github.com/saleor/saleor/blob/6a9c934327eb181d09d88e22c1d2abce96453997/saleor%2Fgraphql%2Fquery_cost_map.py",
+                    "raw_url": "https://github.com/saleor/saleor/raw/6a9c934327eb181d09d88e22c1d2abce96453997/saleor%2Fgraphql%2Fquery_cost_map.py",
+                    "contents_url": "https://api.github.com/repos/saleor/saleor/contents/saleor%2Fgraphql%2Fquery_cost_map.py?ref=6a9c934327eb181d09d88e22c1d2abce96453997",
+                    "patch": "@@ -143,7 +143,12 @@\n     },\n     \"Attribute\": {\n         \"choices\": {\"complexity\": 1, \"multipliers\": [\"first\", \"last\"]},\n-        \"values\": {\"complexity\": 1, \"multipliers\": [\"first\", \"last\"]},\n+        \"values\": {\n+            \"complexity\": 1,\n+            \"multipliers\": [\n+                \"limit\",\n+            ],\n+        },\n         \"productTypes\": {\"complexity\": 1, \"multipliers\": [\"first\", \"last\"]},\n         \"productVariantTypes\": {\"complexity\": 1, \"multipliers\": [\"first\", \"last\"]},\n     },\n@@ -302,7 +307,7 @@\n     },\n     \"SelectedAttribute\": {\n         \"attribute\": {\"complexity\": 1},\n-        \"values\": {\"complexity\": 1, \"multipliers\": [\"limit\"]},\n+        \"values\": {\"complexity\": 1},\n     },\n     \"ShippingMethodChannelListing\": {\n         \"channel\": {\"complexity\": 1},"
+                }
+            ]
+        }
+    ],
+    "pull_request_url": "https://github.com/saleor/saleor/pull/17947",
+    "commits_url": "https://github.com/saleor/saleor/pull/17947/commits",
+    "files_url": "https://github.com/saleor/saleor/pull/17947/files"
+}

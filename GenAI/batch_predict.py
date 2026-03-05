@@ -92,7 +92,12 @@ load_dotenv()
 from GenAI.pr_step_planner import PRStepPlanner
 
 
-def find_pr_directories(base_path: Path, limit: Optional[int] = None, skip_existing: bool = False) -> List[Path]:
+def find_pr_directories(
+    base_path: Path,
+    limit: Optional[int] = None,
+    skip_existing: bool = False,
+    target_file: str = "predicted_plan.json",
+) -> List[Path]:
     """
     Find all valid PR directories under the specified path.
 
@@ -103,7 +108,10 @@ def find_pr_directories(base_path: Path, limit: Optional[int] = None, skip_exist
     Args:
         base_path: Base directory to explore
         limit: Maximum number of PRs to process (None = all)
-        skip_existing: If True, skip PRs that already have predicted_plan.json
+        skip_existing: If True, skip PRs that already have the target output file
+        target_file: Relative path (from PR root) used to detect already-processed PRs.
+                     Default is "predicted_plan.json"; pass
+                     "evals/ablation_turn/predicted_plan.json" for ablation mode.
 
     Returns:
         List of Paths to PR directories, sorted alphabetically.
@@ -123,8 +131,8 @@ def find_pr_directories(base_path: Path, limit: Optional[int] = None, skip_exist
         if not data_json.exists() or not base_project.exists():
             continue
 
-        # Skip if predicted_plan.json already exists
-        if skip_existing and (item / "predicted_plan.json").exists():
+        # Skip if target output file already exists
+        if skip_existing and (item / target_file).exists():
             continue
 
         pr_dirs.append(item)
@@ -141,7 +149,8 @@ def find_pr_directories(base_path: Path, limit: Optional[int] = None, skip_exist
 def process_single_pr(
     pr_dir: Path,
     model_name: str,
-    verbose: bool = False
+    verbose: bool = False,
+    ablation: bool = False,
 ) -> Tuple[Path, bool, str]:
     """
     Process a single PR.
@@ -153,7 +162,8 @@ def process_single_pr(
         planner = PRStepPlanner(
             pr_dir=str(pr_dir),
             model_name=model_name,
-            verbose=verbose
+            verbose=verbose,
+            ablation=ablation,
         )
 
         output_path = planner.save_output()
@@ -173,7 +183,8 @@ def run_batch(
     skip_existing: bool = False,
     verbose: bool = False,
     parallel: int = 1,
-    pr_dirs_override: Optional[List[Path]] = None
+    pr_dirs_override: Optional[List[Path]] = None,
+    ablation: bool = False,
 ) -> dict:
     """
     Execute batch processing of PRs.
@@ -206,14 +217,16 @@ def run_batch(
     print(f"{Fore.CYAN}{'='*80}{Style.RESET_ALL}\n")
 
     # Find PR directories (or use the provided override list)
+    target_file = "evals/ablation_turn/predicted_plan.json" if ablation else "predicted_plan.json"
+
     if pr_dirs_override is not None:
         pr_dirs = pr_dirs_override
         if skip_existing:
-            pr_dirs = [d for d in pr_dirs if not (d / "predicted_plan.json").exists()]
+            pr_dirs = [d for d in pr_dirs if not (d / target_file).exists()]
         print(f"{Fore.YELLOW}Using {len(pr_dirs)} PRs from subset{Style.RESET_ALL}")
     else:
         print(f"{Fore.YELLOW}Searching for PR directories...{Style.RESET_ALL}")
-        pr_dirs = find_pr_directories(base, limit, skip_existing)
+        pr_dirs = find_pr_directories(base, limit, skip_existing, target_file=target_file)
 
     if not pr_dirs:
         print(f"{Fore.RED}No PRs found to process{Style.RESET_ALL}")
@@ -239,7 +252,7 @@ def run_batch(
 
         with ThreadPoolExecutor(max_workers=parallel) as executor:
             futures = {
-                executor.submit(process_single_pr, pr_dir, model_name, verbose): pr_dir
+                executor.submit(process_single_pr, pr_dir, model_name, verbose, ablation): pr_dir
                 for pr_dir in pr_dirs
             }
 
@@ -262,7 +275,7 @@ def run_batch(
 
             print(f"\n{Fore.YELLOW}[{i}/{len(pr_dirs)}] Processing: {pr_name}{Style.RESET_ALL}")
 
-            pr_dir, success, message = process_single_pr(pr_dir, model_name, verbose)
+            pr_dir, success, message = process_single_pr(pr_dir, model_name, verbose, ablation)
 
             if success:
                 results["success"] += 1
@@ -392,6 +405,15 @@ Examples:
         help="Path to save the batch JSON report"
     )
 
+    parser.add_argument(
+        "--ablation",
+        action="store_true",
+        help=(
+            "Ablation mode: use raw file content instead of LLM-summarized content. "
+            "Outputs are written to pr_dir/evals/ablation_turn/."
+        )
+    )
+
     args = parser.parse_args()
 
     # Verify API key
@@ -414,7 +436,8 @@ Examples:
             skip_existing=args.skip_existing,
             verbose=args.verbose,
             parallel=args.parallel,
-            pr_dirs_override=pr_dirs_override
+            pr_dirs_override=pr_dirs_override,
+            ablation=args.ablation,
         )
 
         # Save report if requested

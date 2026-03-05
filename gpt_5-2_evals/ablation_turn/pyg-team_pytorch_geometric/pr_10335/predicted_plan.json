@@ -1,0 +1,156 @@
+{
+  "pr_number": 10335,
+  "repository": "pyg-team/pytorch_geometric",
+  "title": "Fixes to WebQSP Indexer and GRetriever so that unnecessary disk writes are reduced.",
+  "body": "Quick fix to webqsp and gretriever to help with unnecessary cruft on disk and out of date api in examples.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T12:37:40.663600",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "torch_geometric/data/large_graph_indexer.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "save",
+          "class_name": "LargeGraphIndexer",
+          "full_name": "LargeGraphIndexer.save",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "torch_geometric/datasets/web_qsp_dataset.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "_build_graph",
+          "class_name": "KGQABaseDataset",
+          "full_name": "KGQABaseDataset._build_graph",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_retrieve_subgraphs",
+          "class_name": "KGQABaseDataset",
+          "full_name": "KGQABaseDataset._retrieve_subgraphs",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "process",
+          "class_name": "KGQABaseDataset",
+          "full_name": "KGQABaseDataset.process",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "examples/llm/g_retriever.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "train",
+          "class_name": null,
+          "full_name": "train",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "save_params_dict",
+          "class_name": null,
+          "full_name": "save_params_dict",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "examples/llm/nvtx_examples/nvtx_webqsp_example.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "__main__ (script entry)",
+          "class_name": null,
+          "full_name": "__main__ (script entry)",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Reduce unnecessary disk writes in the WebQSP/CWQ processing pipeline by making LargeGraphIndexer and dataset split saving conditional, and update GRetriever/NVTX examples to avoid default artifact dumping and to match the current dataset API.",
+    "steps": [
+      {
+        "operation": "Make LargeGraphIndexer.save incremental/conditional (avoid unconditional rmtree) and add a “skip if already saved” path (respecting force/overwrite semantics)",
+        "file_to_modify": "torch_geometric/data/large_graph_indexer.py",
+        "function_to_modify": "LargeGraphIndexer.save",
+        "reason": "LargeGraphIndexer.save is the core source of disk churn because it deletes and recreates the whole index directory on every call. Making it conditional (e.g., only create missing files, and only delete/rewrite on explicit overwrite/force) prevents unnecessary writes when reprocessing datasets or reusing cached artifacts.",
+        "side_effects": "Changes persistence semantics: callers that relied on implicit cleanup may now need an explicit overwrite/force flag. Must ensure no partial/corrupt state on interrupted writes (consider temp-dir + rename or write-marker). May require updating any loader that assumes all files are always rewritten."
+      },
+      {
+        "operation": "Guard graph indexer building/saving: if on-disk indexer already exists and we are not force-reloading, skip saving (and preferably skip rebuilding)",
+        "file_to_modify": "torch_geometric/datasets/web_qsp_dataset.py",
+        "function_to_modify": "KGQABaseDataset._build_graph",
+        "reason": "_build_graph currently always saves the indexer after encoding. Even if the indexer is already available and up-to-date, this triggers needless writes. Adding existence checks (and/or deferring to the improved save behavior) reduces repeated disk modifications when users re-instantiate datasets.",
+        "side_effects": "If the existence check is too naive, it could skip rebuilding when raw data changed. Needs alignment with dataset caching semantics (processed file naming, versioning, and force_reload)."
+      },
+      {
+        "operation": "Skip per-split save() when processed split artifacts already exist and not force_reload; only compute/rewrite missing splits",
+        "file_to_modify": "torch_geometric/datasets/web_qsp_dataset.py",
+        "function_to_modify": "KGQABaseDataset._retrieve_subgraphs",
+        "reason": "_retrieve_subgraphs always computes and then saves each split, which can rewrite split .pt files on every run. Guarding on processed_paths (and force_reload) prevents unnecessary split-file rewrites and speeds up repeated dataset initialization.",
+        "side_effects": "Must ensure the “exists” check matches what InMemoryDataset.load expects (e.g., correct filenames/paths). If partial split outputs exist, logic should either rebuild missing splits or force a full rebuild to avoid inconsistent dataset state."
+      },
+      {
+        "operation": "Tighten overall process() caching logic: load existing processed artifacts (indexer + splits) when present, and only build/retrieve when missing or force_reload=True",
+        "file_to_modify": "torch_geometric/datasets/web_qsp_dataset.py",
+        "function_to_modify": "KGQABaseDataset.process",
+        "reason": "process() orchestrates when the indexer is built and when splits are generated. Improving its existence/validity checks ensures re-running processing doesn’t cascade into indexer/split rewrites, and that force_reload remains the single switch to rebuild everything.",
+        "side_effects": "Behavior changes for users who expect process() to refresh artifacts implicitly. May need to update/log messaging to clarify when work is skipped. Tests that assert processing side-effects may need updates."
+      },
+      {
+        "operation": "Make saving of model/eval artifacts opt-in (CLI flag / argument), and avoid writing to CWD by default; route outputs to a configurable directory when enabled",
+        "file_to_modify": "examples/llm/g_retriever.py",
+        "function_to_modify": "train",
+        "reason": "The GRetriever example currently saves checkpoints/params/eval outputs by default, creating “cruft” in the working directory. Making this opt-in (and allowing an output_dir) aligns with the PR goal to reduce unnecessary disk writes and improves example hygiene.",
+        "side_effects": "Example CLI/API changes: users may need to pass a new flag to get previous behavior. Any downstream docs/scripts expecting files to appear by default will need updates. Ensure training still reports metrics without depending on saved files."
+      },
+      {
+        "operation": "Harden/adjust save_params_dict helper to support optional saving and output_dir creation (or make it a no-op when saving disabled)",
+        "file_to_modify": "examples/llm/g_retriever.py",
+        "function_to_modify": "save_params_dict",
+        "reason": "If train() no longer always saves, the helper should either (a) be called only when saving is enabled, or (b) accept configuration (enabled flag, output_dir) and handle directory creation to avoid scattered I/O logic and accidental writes.",
+        "side_effects": "Minor signature change may require updating call sites within the example. If other examples import this helper (unlikely but possible), they may need adjustment."
+      },
+      {
+        "operation": "Update NVTX WebQSP example to use current dataset import/API and patch the correct process entrypoint (class-based), keeping NVTX instrumentation working",
+        "file_to_modify": "examples/llm/nvtx_examples/nvtx_webqsp_example.py",
+        "function_to_modify": "__main__",
+        "reason": "The NVTX example appears to reference the web_qsp_dataset module directly and patch module-level objects, which can drift from the public API. Updating to `from torch_geometric.datasets import WebQSPDataset` (and patching `WebQSPDataset.process` or the appropriate class method) keeps the example aligned with current API and reduces breakage.",
+        "side_effects": "If the dataset internals changed, the patch target may need adjustment (e.g., different method name or call path). The example’s runtime behavior should remain the same, but imports/patching may need careful validation to ensure NVTX ranges still wrap the intended work."
+      }
+    ]
+  }
+}

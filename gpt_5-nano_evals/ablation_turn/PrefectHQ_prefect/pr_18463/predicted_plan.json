@@ -1,0 +1,140 @@
+{
+  "pr_number": 18463,
+  "repository": "PrefectHQ/prefect",
+  "title": "Fix failing unit tests",
+  "body": "This PR addresses unit test failures introduced around the internal concurrency waiters and call handling. The focus is to stabilize the wake-up, cancellation, and timeout paths exercised by AsyncWaiter/SyncWaiter in tests like test_waiter_repr, test_async_waiter*, test_sync_waiter*, and related cancellation scenarios. Changes target the internal concurrency layer to ensure:\n- Early submissions are reliably re-seeded into the event loop when the loop becomes available.\n- Cancellation/timeouts propagate promptly and deterministically through futures and callbacks.\n- Waiting callbacks and done-callbacks are executed in the correct thread/loop context without deadlocks or race conditions.\n\nNo public API surface changes; the changes are purely to fix flaky test behavior and ensure deterministic test outcomes across the waiters tests and related call scheduling.\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T12:06:53.742793",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "src/prefect/_internal/concurrency/waiters.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "__init__",
+          "class_name": "AsyncWaiter",
+          "full_name": "AsyncWaiter.__init__",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "wait",
+          "class_name": "AsyncWaiter",
+          "full_name": "AsyncWaiter.wait",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_handle_waiting_callbacks",
+          "class_name": "AsyncWaiter",
+          "full_name": "AsyncWaiter._handle_waiting_callbacks",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_handle_done_callbacks",
+          "class_name": "AsyncWaiter",
+          "full_name": "AsyncWaiter._handle_done_callbacks",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "src/prefect/_internal/concurrency/calls.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "run",
+          "class_name": "Call",
+          "full_name": "Call.run",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "enforce_async_deadline",
+          "class_name": "Future",
+          "full_name": "Future.enforce_async_deadline",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "enforce_sync_deadline",
+          "class_name": "Future",
+          "full_name": "Future.enforce_sync_deadline",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "This PR stabilizes internal concurrency waiters (AsyncWaiter/SyncWaiter) and the Call/Future deadline/cancellation machinery to fix flaky unit tests by making early submissions, wake-ups, and cancellation paths deterministic without altering public APIs.",
+    "steps": [
+      {
+        "operation": "Initialize robust guards in AsyncWaiter.__init__ to support early submissions and safe loop/queue binding",
+        "file_to_modify": "src/prefect/_internal/concurrency/waiters.py",
+        "function_to_modify": "AsyncWaiter.__init__",
+        "reason": "To ensure internal state (queue, loop reference, early_submissions) is consistently prepared before wait() is invoked, preventing race when waiter is created outside loop",
+        "side_effects": "Potentially affects tests that instantiate waiters outside loop; minor performance overhead; may require tests to account for explicit state initialization"
+      },
+      {
+        "operation": "Strengthen AsyncWaiter.wait to robustly re-seed early_submissions into the owning loop and propagate cancellation signals",
+        "file_to_modify": "src/prefect/_internal/concurrency/waiters.py",
+        "function_to_modify": "AsyncWaiter.wait",
+        "reason": "Early submissions must be enqueued when loop becomes available; cancellation should unblock promptly",
+        "side_effects": "Could alter ordering of callbacks; ensure deterministic wakeups; may require tests to adapt to timing expectations"
+      },
+      {
+        "operation": "Refine AsyncWaiter._handle_waiting_callbacks to guarantee proper gathering and interleaving of callbacks across threads/loop",
+        "file_to_modify": "src/prefect/_internal/concurrency/waiters.py",
+        "function_to_modify": "AsyncWaiter._handle_waiting_callbacks",
+        "reason": "Make sure waiting callbacks are executed in proper context even under cancellation/timeouts; avoid deadlocks",
+        "side_effects": "May impact tests around callback ordering; ensure cross-thread coordination remains deterministic"
+      },
+      {
+        "operation": "Refine AsyncWaiter._handle_done_callbacks to ensure cancellation-sensitive execution and correct lifecycle of done callbacks",
+        "file_to_modify": "src/prefect/_internal/concurrency/waiters.py",
+        "function_to_modify": "AsyncWaiter._handle_done_callbacks",
+        "reason": "Ensure done callbacks fire reliably, respect cancellation, and run in expected loop, preventing missed signals or deadlocks",
+        "side_effects": "Tests asserting done callback invocation order may need to adapt; keeps public API unchanged"
+      },
+      {
+        "operation": "Tighten Call.run scheduling to respect per-context event loop and avoid misrouted coroutines under test timing",
+        "file_to_modify": "src/prefect/_internal/concurrency/calls.py",
+        "function_to_modify": "Call.run",
+        "reason": "Guarantee that the execution path uses the correct loop and context in both sync and async paths; reduce race conditions with cancellations",
+        "side_effects": "Potential changes in how tasks are scheduled; may affect tests relying on exact scheduling; ensure compatibility with existing public APIs"
+      },
+      {
+        "operation": "Strengthen Future.enforce_async_deadline with robust cancellation callbacks alignment for async paths",
+        "file_to_modify": "src/prefect/_internal/concurrency/calls.py",
+        "function_to_modify": "Future.enforce_async_deadline",
+        "reason": "Ensure that async deadlines reliably cancel and trigger cancellation callbacks, reducing flaky timeout races",
+        "side_effects": "Tests exercising async deadlines should be more deterministic; potential changes to timing semantics across tests"
+      },
+      {
+        "operation": "Strengthen Future.enforce_sync_deadline with robust cancellation callbacks alignment for sync paths",
+        "file_to_modify": "src/prefect/_internal/concurrency/calls.py",
+        "function_to_modify": "Future.enforce_sync_deadline",
+        "reason": "Mirror the async deadline handling for sync path to ensure consistent behavior and deterministic tests",
+        "side_effects": "Similar to async, may adjust test timing expectations; ensure no public API changes"
+      }
+    ]
+  }
+}

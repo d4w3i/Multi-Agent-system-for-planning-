@@ -1,0 +1,65 @@
+{
+  "pr_number": 1264,
+  "repository": "XiaoMi/ha_xiaomi_home",
+  "title": "feat: do not subscribe BLE device online/offline state message",
+  "body": "# Why\r\nIn the issue #1251, MIoT cloud published an offline state message when the device became offline, but did not publish an online state message when the device became online. So, even xiaomi_home got properties_changed and event_occured message, the device entities was still shown unavailable.\r\nMIoT cloud can not accurately determine the BLE device's online/offline state. Also see #1207. \r\n\r\n# Changed\r\n- Do not subscribe BLE device online/offline state message. Assume that all BLE devices are online.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T09:45:14.523428",
+    "extractor_version": "1.0.0",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "custom_components/xiaomi_home/miot/miot_mips.py",
+      "status": "modified",
+      "additions": 5,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "sub_device_state",
+          "class_name": "MipsCloudClient",
+          "full_name": "MipsCloudClient.sub_device_state",
+          "start_line": 972,
+          "end_line": 1003,
+          "lines_changed": [
+            997,
+            998,
+            999,
+            1000,
+            1001
+          ]
+        }
+      ],
+      "patch": "@@ -994,6 +994,11 @@ def on_state_msg(topic: str, payload: str, ctx: Any) -> None:\n                 handler(\n                     did, MIoTDeviceState.ONLINE if msg['event'] == 'online'\n                     else MIoTDeviceState.OFFLINE, ctx)\n+\n+        if did.startswith('blt.'):\n+        # MIoT cloud may not publish BLE device online/offline state message.\n+        # Do not subscribe BLE device online/offline state.\n+            return True\n         return self.__reg_broadcast_external(\n             topic=topic, handler=on_state_msg, handler_ctx=handler_ctx)\n "
+    }
+  ],
+  "functions_modified": [
+    {
+      "function_name": "sub_device_state",
+      "class_name": "MipsCloudClient",
+      "full_name": "MipsCloudClient.sub_device_state",
+      "start_line": 972,
+      "end_line": 1003,
+      "lines_changed": [
+        997,
+        998,
+        999,
+        1000,
+        1001
+      ]
+    }
+  ],
+  "step_plan": {
+    "steps": [
+      {
+        "operation": "Add early-return guard to skip subscribing to MIoT cloud online/offline state broadcasts for BLE devices (DIDs starting with 'blt.')",
+        "file_to_modify": "custom_components/xiaomi_home/miot/miot_mips.py",
+        "function_to_modify": "on_state_msg",
+        "reason": "MIoT cloud does not reliably publish BLE device online/offline state messages (offline may be emitted without a corresponding online), which leaves BLE entities stuck in an unavailable state; assuming BLE devices are online avoids incorrect availability transitions driven by unreliable state topics.",
+        "side_effects": "BLE devices will no longer transition to OFFLINE based on MIoT state messages, so true BLE disconnections may not be reflected as unavailable; availability will instead depend on other message types (e.g., properties_changed/event_occured) or higher-level timeouts/health checks elsewhere in the integration."
+      }
+    ],
+    "summary": "Stops subscribing to MIoT cloud online/offline state messages for BLE devices to avoid incorrect availability when MIoT fails to publish reliable online events, effectively treating BLE devices as always online."
+  }
+}

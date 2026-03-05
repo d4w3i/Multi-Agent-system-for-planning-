@@ -1,0 +1,42 @@
+{
+  "pr_number": 5625,
+  "repository": "pyodide/pyodide",
+  "title": "Fix test_package_index test",
+  "body": "It started to fail a few days ago, because of some extra terminal output.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T14:21:36.594787",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "src/js/load-package.ts",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "initializePackageIndex",
+          "class_name": null,
+          "full_name": "initializePackageIndex",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Silence stderr during package-index initialization by adding a no-op errorCallback to the loadPackage call in src/js/load-package.ts, preventing extra terminal output that caused a test to fail.",
+    "steps": [
+      {
+        "operation": "Pass a no-op errorCallback to loadPackage in initializePackageIndex",
+        "file_to_modify": "src/js/load-package.ts",
+        "function_to_modify": null,
+        "reason": "initializePackageIndex currently calls loadPackage(toLoad, { messageCallback() {} }) which suppresses normal progress messages but leaves stderr (console.error) active. Providing an errorCallback no-op (errorCallback() {}) ensures PackageManager.setCallbacks will override stderr for the duration of the initial load, preventing spurious terminal output that breaks tests.",
+        "side_effects": "This silences stderr output during the package-index initialization only. It will fix the failing test that asserts no extra terminal output. Potential impacts: any warnings/errors emitted during this initial load will not appear in CI logs or developer consoles, which could hide useful diagnostics; ensure no other tests rely on seeing those stderr messages. No public API changes. Downstream code behavior is unchanged outside of suppressed logging during this initialization."
+      }
+    ]
+  }
+}

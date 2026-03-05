@@ -1,0 +1,57 @@
+{
+  "pr_number": 249,
+  "repository": "labmlai/annotated_deep_learning_paper_implementations",
+  "title": "fix dim error in rope",
+  "body": "fix the following error when running _test_rotary():\r\n\r\n\"\"\"\r\n...\r\n    x_rope = (x_rope * self.cos_cached[:x.shape[0]]) + (neg_half_x * self.sin_cached[:x.shape[0]])\r\nRuntimeError: The size of tensor a (3) must match the size of tensor b (4) at non-singleton dimension 3\r\n\"\"\"",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T01:02:10.558407",
+    "extractor_version": "1.0.0",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "labml_nn/transformers/rope/__init__.py",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "functions_modified": [
+        {
+          "function_name": "forward",
+          "class_name": "RotaryPositionalEmbeddings",
+          "full_name": "RotaryPositionalEmbeddings.forward",
+          "start_line": 164,
+          "end_line": 191,
+          "lines_changed": [
+            188
+          ]
+        }
+      ],
+      "patch": "@@ -185,7 +185,7 @@ def forward(self, x: torch.Tensor):\n         # \\end{align}\n         #\n         # for $i \\in {1, 2, ..., \\frac{d}{2}}$\n-        x_rope = (x_rope * self.cos_cached[:x.shape[0]]) + (neg_half_x * self.sin_cached[:x.shape[0]])\n+        x_rope = (x_rope * self.cos_cached[: x.shape[0], ..., : self.d]) + (neg_half_x * self.sin_cached[: x.shape[0], ..., : self.d])\n \n         #\n         return torch.cat((x_rope, x_pass), dim=-1)"
+    }
+  ],
+  "functions_modified": [
+    {
+      "function_name": "forward",
+      "class_name": "RotaryPositionalEmbeddings",
+      "full_name": "RotaryPositionalEmbeddings.forward",
+      "start_line": 164,
+      "end_line": 191,
+      "lines_changed": [
+        188
+      ]
+    }
+  ],
+  "step_plan": {
+    "steps": [
+      {
+        "operation": "Fix rotary embedding cache broadcasting by slicing cached cos/sin tensors to match the input tensor’s last-dimension size (`self.d`) in the elementwise rotation computation.",
+        "file_to_modify": "labml_nn/transformers/rope/__init__.py",
+        "function_to_modify": "forward",
+        "reason": "The previous slicing only restricted the sequence length dimension (`:x.shape[0]`) and could leave an extra feature dimension in `cos_cached`/`sin_cached` that didn’t match `x_rope` (e.g., 4 vs 3 in the last axis), causing a runtime size-mismatch during elementwise multiplication/addition.",
+        "side_effects": "Changes how cached rotary factors are applied when `x` uses fewer than the full cached rotary dimension; may affect downstream transformer attention numerics for such cases and could expose shape assumptions in any callers/tests that relied on the previous (incorrect) broadcasting behavior."
+      }
+    ],
+    "summary": "Fixes a tensor dimension mismatch in RoPE’s `forward` pass by slicing cached cosine/sine tensors to both the sequence length and the configured rotary dimension before applying the rotation."
+  }
+}

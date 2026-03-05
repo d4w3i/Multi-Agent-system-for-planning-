@@ -1,0 +1,57 @@
+{
+  "pr_number": 1002,
+  "repository": "FoundationAgents/OpenManus",
+  "title": "remove unnecessary actions while ensuring required tool calls",
+  "body": "**Features**\n- remove unnecessary actions while ensuring required tool calls\n\n**Feature Docs**\nI am struggling to understand the rationale behind handing over the decision to continue processing to the act method and throwing an exception when `tool_choices` is set to `required` and `tool_calls` is empty. In my opinion, it would be more appropriate to simply return `False` in this scenario, as the current approach seems unnecessary and could potentially be removed.\n\n**Influence**\nno influence",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T11:47:43.163196",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "base_project/toolcall.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "think",
+          "class_name": "ToolCallAgent",
+          "full_name": "ToolCallAgent.think",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "act",
+          "class_name": "ToolCallAgent",
+          "full_name": "ToolCallAgent.act",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Change handling of missing required tool calls so the agent stops in think() instead of deferring to act(), and make act() resilient by removing the ValueError and returning the usual fallback content when invoked with no tool_calls.",
+    "steps": [
+      {
+        "operation": "Return False when REQUIRED tool choices produce no tool_calls",
+        "file_to_modify": "base_project/toolcall.py",
+        "function_to_modify": "ToolCallAgent.think",
+        "reason": "Currently think() returns True when tool_choices == ToolChoice.REQUIRED and no tool_calls are returned, deferring the error decision to act(). Semantically, if required tool calls were expected but none were provided, the agent cannot proceed — so think() should return False to stop further processing and avoid calling act(). This keeps the loop behavior explicit and prevents unnecessary delegations to act().",
+        "side_effects": "Behavioral change in agent control flow: when ToolChoice.REQUIRED and the LLM returns no tool_calls, the agent will stop (think() -> False) instead of proceeding to act(). Any callers or tests that relied on think() returning True in this scenario must be updated. This reduces the chance act() will be invoked with empty tool_calls, lowering the likelihood of previously-raised exceptions. No other functions should be directly impacted, but tests verifying REQUIRED-mode error handling should be revised to assert think() returns False and act() is not invoked."
+      },
+      {
+        "operation": "Remove the hard ValueError when no tool_calls and fall back to returning last message content",
+        "file_to_modify": "base_project/toolcall.py",
+        "function_to_modify": "ToolCallAgent.act",
+        "reason": "act() currently raises ValueError(TOOL_CALL_REQUIRED) when tool_choices == ToolChoice.REQUIRED and there are no tool_calls. After changing think() to return False for this case, act() should no longer enforce a hard exception. Removing the raise makes act() robust if it is invoked directly or by an external caller despite think() indicating no further action; instead it should return the same fallback content used for non-required modes.",
+        "side_effects": "Removes an explicit exception that some callers or tests might expect; code that relied on catching ValueError(TOOL_CALL_REQUIRED) must be updated. act() will now return the last assistant message content (or the existing default string) when invoked with empty tool_calls, which may mask upstream misconfigurations if act() is called incorrectly — consider adding logging to highlight the unexpected path. Tests should be added/updated to assert that act() returns fallback content when tool_calls is empty, and to ensure ToolChoice.NONE and ToolChoice.AUTO behaviors remain unchanged."
+      }
+    ]
+  }
+}

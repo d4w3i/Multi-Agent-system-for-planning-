@@ -1,0 +1,46 @@
+{
+  "pr_number": 18102,
+  "repository": "apache/tvm",
+  "title": "[RELAX] Fix rotary embedding buffer size calculation",
+  "body": "- Change head_dim//2 to rotary_dim//2 in LongRope scaling\n- Fixes buffer size when rotary_dim differs from head_dim when partial_rotary_factor < 1.0",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T12:24:10.501098",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [],
+  "step_plan": {
+    "summary": "Relax rotary embedding buffer sizing by using rotary_dim//2 in LongRope scaling to fix mis-sizing when rotary_dim differs from head_dim and partial_rotary_factor < 1.0; add tests and runtime assertions to guard against under/overflow.",
+    "steps": [
+      {
+        "operation": "Update LongRope scaling calculation to use rotary_dim//2 instead of head_dim//2",
+        "file_to_modify": "src/rotary/longrope_scaling.py",
+        "function_to_modify": "LongRope.compute_scale",
+        "reason": "Ensure the half-dimension used in scaling corresponds to rotary_dim, not head_dim, so buffer sizing remains correct when rotary_dim != head_dim.",
+        "side_effects": "May affect any path that consumes the computed scale; downstream components relying on old scale could need adjustments; check for performance implications in tight loops"
+      },
+      {
+        "operation": "Adjust preallocation logic to use rotary_dim in half-size calculation when partial_rotary_factor < 1.0",
+        "file_to_modify": "src/rotary/longrope_scaling.py",
+        "function_to_modify": "LongRope._preallocate_buffers",
+        "reason": "When partial_rotary_factor < 1.0, buffer sizing must reflect rotary_dim//2 to avoid under/over-allocation; aligns memory layout with new half-size calculation.",
+        "side_effects": "Changes in memory usage patterns; verify no overflows/underflows in edge cases; may require updates to related tests or fixtures"
+      },
+      {
+        "operation": "Propagate dim-based sizing changes in RotaryEmbedding initialization and add runtime assertions",
+        "file_to_modify": "src/rotary/embedding.py",
+        "function_to_modify": "RotaryEmbedding.__init__",
+        "reason": "Rotary embedding initialization may allocate buffers using head_dim; switch to rotary_dim and add assertions to enforce rotary_dim//2 usage and bounds checks.",
+        "side_effects": "API behavior for RotaryEmbedding construction may change; add tests to cover new assertions; ensure memory alignment assumptions remain valid"
+      },
+      {
+        "operation": "Add unit tests for cases where rotary_dim != head_dim and partial_rotary_factor < 1.0; and implement test for buffer sizing",
+        "file_to_modify": "tests/test_rotary_buffer_size.py",
+        "function_to_modify": "test_rotary_buffer_size_diff_dims",
+        "reason": "Validate buffer allocations align with rotary_dim//2 under differing dimensional configurations and partial_rotary_factor values; prevent regressions",
+        "side_effects": "Increases test coverage; CI may need to run extended rotary tests; ensures correctness of new sizing logic"
+      }
+    ]
+  }
+}

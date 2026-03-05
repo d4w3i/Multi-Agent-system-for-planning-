@@ -20,9 +20,12 @@ from flask import Flask, abort, jsonify, redirect, render_template_string, reque
 _BASE = Path(__file__).parent.parent
 
 DATASETS: dict[str, Path] = {
-    "gpt_5-2":    _BASE / "gpt_5-2_evals"   / "first_turn",
-    "gpt_5-mini": _BASE / "gpt_5-mini_evals" / "first_turn",
-    "gpt_5-nano": _BASE / "gpt_5-nano_evals"  / "first_turn",
+    "gpt_5-2":             _BASE / "gpt_5-2_evals"   / "first_turn",
+    "gpt_5-mini":          _BASE / "gpt_5-mini_evals" / "first_turn",
+    "gpt_5-nano":          _BASE / "gpt_5-nano_evals"  / "first_turn",
+    "gpt_5-2_ablation":    _BASE / "gpt_5-2_evals"   / "ablation_turn",
+    "gpt_5-mini_ablation": _BASE / "gpt_5-mini_evals" / "ablation_turn",
+    "gpt_5-nano_ablation": _BASE / "gpt_5-nano_evals"  / "ablation_turn",
 }
 DEFAULT_EVAL = "gpt_5-2"
 

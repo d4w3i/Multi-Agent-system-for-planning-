@@ -1,0 +1,57 @@
+{
+  "pr_number": 1706,
+  "repository": "confident-ai/deepeval",
+  "title": "Fixing IndexError list index out of range in Synthesizer.generate_goldens_from_docs()",
+  "body": "Root cause: When generating goldens from docs, the code maps each generated context to a corresponding source_file via source_files[i]. If lengths between contexts and source_files are mismatched (e.g., some contexts don't yield a source file), an IndexError can occur.\n\nWhat this PR changes:\n- Add safe checks to guard indexing when pairing contexts with their source files in both synchronous and asynchronous code paths.\n- Ensure that if a context does not have a corresponding source_file, we gracefully set source_file to None instead of attempting to index past the end of the list.\n- This fixes the observed IndexError (list index out of range) in Synthesizer.generate_goldens_from_docs() for edge cases where contexts and source_files lengths diverge.\n\nNo behavioral changes to the core synthesis logic beyond preventing this crash. The generated golden data remains aligned with available context data when present; missing source_file data simply defaults to None.\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T12:29:09.414291",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "deepeval/Synthesizer/synthesizer.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "generate_goldens_from_contexts",
+          "class_name": "Synthesizer",
+          "full_name": "Synthesizer.generate_goldens_from_contexts",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_a_generate_from_context",
+          "class_name": "Synthesizer",
+          "full_name": "Synthesizer._a_generate_from_context",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "The PR defensively guards indexing when pairing contexts with source_files in both synchronous and asynchronous code paths to prevent IndexError during docs-based golden generation, defaulting to None for missing source_files.",
+    "steps": [
+      {
+        "operation": "Add bounds-checked access for source_files in generate_goldens_from_contexts",
+        "file_to_modify": "deepeval/Synthesizer/synthesizer.py",
+        "function_to_modify": "Synthesizer.generate_goldens_from_contexts",
+        "reason": "Prevent IndexError when the number of contexts exceeds or mismatches the number of source_files by ensuring we only access source_files[i] when i < len(source_files). This preserves existing behavior when lengths align and avoids crashes in edge cases.",
+        "side_effects": "Introduces a safe fallback to None for source_file when no corresponding entry exists; tests should cover mismatched lengths. Downstream code relying on source_file being a valid string should correctly handle None. No change to core generation semantics when data is aligned."
+      },
+      {
+        "operation": "Add bounds-checked access for source_files in the asynchronous path _a_generate_from_context",
+        "file_to_modify": "deepeval/Synthesizer/synthesizer.py",
+        "function_to_modify": "Synthesizer._a_generate_from_context",
+        "reason": "Guard indexing in the async code path to prevent IndexError when the corresponding source_file for a context is missing, ensuring robust doc-based golden generation in edge cases.",
+        "side_effects": "Similarly to the sync path, a missing source_file will result in None for that context's source_file. Requires tests to validate behavior under mismatched lengths and ensure alignment when lengths match. No behavioral change when data is aligned; potential minor performance considerations due to bounds checks."
+      }
+    ]
+  }
+}

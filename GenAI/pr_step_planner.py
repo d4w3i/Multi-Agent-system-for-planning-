@@ -390,6 +390,7 @@ class SessionContext(BaseModel):
     masca_chars: int
     call_graph_available: bool
     context_files_available: bool
+    ablation: bool = False
 
 class SessionLog(BaseModel):
     """
@@ -655,6 +656,141 @@ def create_base_project_tools(
 
     return [read_base_project_file, list_base_project_directory]
 
+
+def create_base_project_tools_ablation(
+    base_project_path: Path,
+    tool_call_log: list,
+):
+    """
+    Ablation variant of create_base_project_tools.
+    Returns raw truncated file content directly — no LLM summarization.
+    Tool signature is reduced to file_path only (no reason / expected_information).
+    """
+    base_dir_str = str(base_project_path.resolve())
+
+    @function_tool
+    def read_base_project_file(file_path: str) -> str:
+        """
+        Read a file from the base_project directory and return its raw content.
+        Large files are truncated to 60,000 characters.
+
+        Args:
+            file_path: Relative path inside base_project
+                       (e.g. "src/module.py", "README.md")
+
+        Returns:
+            Raw file content, or an error message starting with ❌.
+        """
+        called_at = datetime.now().isoformat()
+        t0 = time.perf_counter()
+
+        print(f"\n{Fore.CYAN}🔧 TOOL [ablation]: read_base_project_file")
+        print(f"{Fore.CYAN}   📥 file_path: {file_path}{Style.RESET_ALL}")
+
+        full_path = str(base_project_path / file_path)
+        raw_content = _read_file_impl(
+            file_path=full_path,
+            base_dir=base_dir_str,
+            include_metadata=False,
+            verbose=False,
+        )
+
+        is_error = raw_content.startswith("❌")
+        duration = round(time.perf_counter() - t0, 4)
+
+        if is_error:
+            tool_call_log.append({
+                "index": len(tool_call_log),
+                "tool_name": "read_base_project_file",
+                "arguments": {"file_path": file_path},
+                "raw_result": raw_content,
+                "result": raw_content,
+                "result_chars": len(raw_content),
+                "truncated": False,
+                "called_at": called_at,
+                "duration_seconds": duration,
+                "summarization": None,
+            })
+            print(f"{Fore.RED}   {raw_content}{Style.RESET_ALL}")
+            return raw_content
+
+        truncated = len(raw_content) > MAX_FILE_CHARS
+        result = (
+            raw_content[:MAX_FILE_CHARS]
+            + f"\n\n... [TRUNCATED: showing first {MAX_FILE_CHARS} of {len(raw_content)} chars] ..."
+            if truncated else raw_content
+        )
+        lines = raw_content.count('\n') + 1
+        print(f"{Fore.GREEN}   ✅ {lines} lines read (raw, no summarizer){Style.RESET_ALL}")
+
+        tool_call_log.append({
+            "index": len(tool_call_log),
+            "tool_name": "read_base_project_file",
+            "arguments": {"file_path": file_path},
+            "raw_result": raw_content,
+            "result": result,
+            "result_chars": len(result),
+            "truncated": truncated,
+            "called_at": called_at,
+            "duration_seconds": duration,
+            "summarization": None,
+        })
+        return result
+
+    @function_tool
+    def list_base_project_directory(
+        directory: str = ".",
+        pattern: str = "*",
+        recursive: bool = False
+    ) -> str:
+        """
+        List files and folders in the base_project directory.
+
+        Args:
+            directory: Subdirectory to explore (relative to base_project)
+            pattern: Glob pattern (e.g., "*.py")
+            recursive: If True, search recursively
+
+        Returns:
+            Formatted list of files
+        """
+        called_at = datetime.now().isoformat()
+        t0 = time.perf_counter()
+
+        print(f"\n{Fore.CYAN}TOOL: list_base_project_directory")
+        print(f"{Fore.CYAN}   directory: {directory} | pattern: {pattern} | recursive: {recursive}{Style.RESET_ALL}")
+
+        full_dir = str(base_project_path / directory)
+        result = _list_directory_impl(
+            dir_path=full_dir,
+            pattern=pattern,
+            recursive=recursive,
+            base_dir=base_dir_str,
+            show_hidden=False,
+            max_items=150,
+            verbose=False
+        )
+
+        duration = round(time.perf_counter() - t0, 4)
+        tool_call_log.append({
+            "index": len(tool_call_log),
+            "tool_name": "list_base_project_directory",
+            "arguments": {"directory": directory, "pattern": pattern, "recursive": recursive},
+            "result": result,
+            "result_chars": len(result),
+            "truncated": False,
+            "called_at": called_at,
+            "duration_seconds": duration,
+        })
+        if not result.startswith("❌"):
+            print(f"{Fore.GREEN}   Directory listed{Style.RESET_ALL}")
+        else:
+            print(f"{Fore.RED}   {result}{Style.RESET_ALL}")
+        return result
+
+    return [read_base_project_file, list_base_project_directory]
+
+
 def create_context_files_tools(context_output_path: Path, tool_call_log: list):
     """
     Create sandboxed tools for the Context Planner Agent.
@@ -906,7 +1042,8 @@ def create_analysis_agent(
     summarizer_model_name: str,
     masca_analysis: str,
     base_project_path: Path,
-    tool_call_log: list
+    tool_call_log: list,
+    ablation: bool = False,
 ) -> Agent:
     """
     Create the Analysis Agent.
@@ -927,7 +1064,10 @@ def create_analysis_agent(
         openai_client=client
     )
 
-    tools = create_base_project_tools(base_project_path, tool_call_log, client, summarizer_model_name)
+    if ablation:
+        tools = create_base_project_tools_ablation(base_project_path, tool_call_log)
+    else:
+        tools = create_base_project_tools(base_project_path, tool_call_log, client, summarizer_model_name)
 
     instructions = get_analysis_agent_prompt(masca_analysis)
 
@@ -994,7 +1134,8 @@ class PRStepPlanner:
         self,
         pr_dir: str,
         model_name: Optional[str] = None,
-        verbose: bool = True
+        verbose: bool = True,
+        ablation: bool = False,
     ):
         """
         Initialize the planner.
@@ -1006,9 +1147,13 @@ class PRStepPlanner:
                         When omitted, per-agent models are loaded from
                         GenAI/agents_config.toml.
             verbose: If True, print detailed output
+            ablation: If True, use raw file content instead of LLM summaries and
+                      strip reason/expected_information from the tool schema.
+                      Outputs are written to pr_dir/evals/ablation_turn/.
         """
         self.pr_dir = Path(pr_dir).resolve()
         self.verbose = verbose
+        self.ablation = ablation
 
         # Resolve per-agent models from config, with optional CLI-level override
         cfg = load_config()
@@ -1104,7 +1249,8 @@ class PRStepPlanner:
             self.model_file_summarizer,
             self.masca_analysis,
             self.base_project_path,
-            tool_call_log
+            tool_call_log,
+            ablation=self.ablation,
         )
 
         pr_title = self.pr_data.get("title", "")
@@ -1420,6 +1566,7 @@ Use the context files to understand dependencies and generate a detailed step-by
                 masca_chars=len(self.masca_analysis),
                 call_graph_available=(self.context_output_path / "call_graph.json").exists(),
                 context_files_available=(self.context_output_path / "context_files").exists(),
+                ablation=self.ablation,
             ),
             agents=[agent1_session, agent2_session],
             token_summary=token_summary,
@@ -1459,17 +1606,19 @@ Use the context files to understand dependencies and generate a detailed step-by
         """
         output, session_log = self.run_sync()
 
-        # Save predicted plan
+        # Determine output directory
         if output_path is None:
             out_path = self.pr_dir / "predicted_plan.json"
+            out_dir = self.pr_dir
         else:
             out_path = Path(output_path)
+            out_dir = out_path.parent
 
         with open(out_path, 'w', encoding='utf-8') as f:
             json.dump(output, f, indent=2, ensure_ascii=False)
 
         # Save token usage report (backward-compatible format)
-        token_path = out_path.parent / "token_usage.json"
+        token_path = out_dir / "token_usage.json"
         token_report = TokenUsageReport(
             pr_number=session_log.pr_number,
             repository=session_log.repository,
@@ -1486,9 +1635,16 @@ Use the context files to understand dependencies and generate a detailed step-by
             json.dump(token_report.model_dump(), f, indent=2, ensure_ascii=False)
 
         # Save full session log for the dashboard
-        session_path = out_path.parent / "session_log.json"
+        session_path = out_dir / "session_log.json"
         with open(session_path, 'w', encoding='utf-8') as f:
             json.dump(session_log.model_dump(), f, indent=2, ensure_ascii=False)
+
+        # For ablation: copy ground_truth.json so the evaluator can find it
+        if self.ablation:
+            import shutil
+            gt_src = self.pr_dir / "ground_truth.json"
+            if gt_src.exists():
+                shutil.copy2(gt_src, out_dir / "ground_truth.json")
 
         if self.verbose:
             print(f"\n{Fore.GREEN}💾 Output saved:      {out_path}")

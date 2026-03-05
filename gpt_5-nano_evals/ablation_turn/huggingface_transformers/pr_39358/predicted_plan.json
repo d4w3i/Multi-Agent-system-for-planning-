@@ -1,0 +1,42 @@
+{
+  "pr_number": 39358,
+  "repository": "huggingface/transformers",
+  "title": "fix(siglip2): improve pooled output logic in modular file",
+  "body": "Summary of changes:\n- Ensure Siglip2VisionTransformer always produces a pooled output. When the model is configured without a pooling head (use_head is False), compute a meaningful pooled representation by performing masked mean pooling over the last_hidden_state, guided by the attention_mask. If a pooling head is present, preserve the existing behavior.\n- This avoids returning pooler_output as None and makes downstream components more robust, especially for configurations that don’t use the dedicated pooling head.\n\nRationale:\n- Some downstream code paths assume a non-None pooler_output. Previously, if use_head was False, pooler_output could be None, leading to shape/None-dereference errors during feature extraction or loss computation.\n- The change keeps backward compatibility for configurations that rely on the pooling head while providing a sensible default pooling strategy when the head is disabled.\n\nImpact:\n- Public API remains the same for users who rely on pooler_output. No signature changes.\n- Potential minor shift in pooled representations for configurations without a pooling head (masked mean pooling vs custom head), but this aligns with commonly used pooling strategies and avoids broken code paths.\n\nTesting suggestions:\n- Add a test that constructs Siglip2VisionModel with use_head disabled and passes a dummy input to ensure pooler_output is not None and has shape [B, D].\n- Verify that the pooled output matches mean-pooled representations when an attention_mask is provided, and matches the head-based pooling when a head is present.\n- Validate that existing tests relying on pooler_output continue to pass for configurations with a pooling head.\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T12:59:12.358608",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "base_project/modular_siglip2.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "forward",
+          "class_name": "Siglip2VisionTransformer",
+          "full_name": "Siglip2VisionTransformer.forward",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Improve pooled output logic in Siglip2VisionTransformer by ensuring pooler_output is always produced. When the vision pooling head is not used, compute a meaningful pooled representation via masked mean pooling over last_hidden_state guided by attention_mask; preserve existing behavior when a pooling head is present.",
+    "steps": [
+      {
+        "operation": "Modify Siglip2VisionTransformer.forward pooling logic to always produce pooler_output",
+        "file_to_modify": "base_project/modular_siglip2.py",
+        "function_to_modify": "Siglip2VisionTransformer.forward",
+        "reason": "Existing behavior returns pooler_output as None when use_head is False. This PR requires a robust pooler_output in all configurations by computing a meaningful pooled representation via masked mean pooling over last_hidden_state when the pooling head is not used, ensuring downstream components relying on pooler_output do not encounter None dereferences.",
+        "side_effects": "Preserves current behavior for configurations with a pooling head; introduces a deterministic mean-pooled pooler_output for no-head configurations. Potential changes in the exact pooler_output values for no-head setups; downstream components that previously depended on pooler_output being None will now receive a valid tensor. May require targeted tests to validate shapes and equivalence against head-based pooling when a head exists."
+      }
+    ]
+  }
+}

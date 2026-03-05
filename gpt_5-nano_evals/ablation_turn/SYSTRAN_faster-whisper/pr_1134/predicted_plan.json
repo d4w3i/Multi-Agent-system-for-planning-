@@ -1,0 +1,57 @@
+{
+  "pr_number": 1134,
+  "repository": "SYSTRAN/faster-whisper",
+  "title": "change language_detection_threshold default value",
+  "body": "Summary:\n- The current multilingual language-detection loop in the transcribe path breaks after the first language detection when language_detection_threshold is None due to this condition: if language_detection_threshold is None or language_probability > language_detection_threshold: break\n- This effectively ignores language_detection_segments beyond the first segment, making language_detection_segments irrelevant when no explicit threshold is provided.\n- Proposed change: modify the condition so that we only break early if a threshold is actually provided and the detected probability exceeds that threshold. This preserves language_detection_segments behavior even when language_detection_threshold is not explicitly set by the user.\n- Implementations affected: both the non-batched (WhisperModel.transcribe) and batched (BatchedInferencePipeline.transcribe) code paths in faster_whisper/transcribe.py.\n- Expected impact: language detection will respect language_detection_segments by scanning up to language_detection_segments segments when no threshold is given, improving robustness for languages that require more context for confident detection. No public API changes beyond the threshold semantics; default behavior remains effectively “no early-break” unless a threshold is supplied.\n- Testing notes: add tests to verify that with language_detection_segments > 1 and language_detection_threshold=None, more than one segment can contribute to language selection; also verify that when language_detection_threshold is set, the early-break behavior remains as intended. Update existing tests if necessary.\n- Risks: low risk to existing decoding accuracy; performance impact is minimal (a few extra language-detection passes when threshold is None, which is the default).",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T12:09:14.019010",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "faster_whisper/transcribe.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "transcribe",
+          "class_name": "WhisperModel",
+          "full_name": "WhisperModel.transcribe",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "transcribe",
+          "class_name": "BatchedInferencePipeline",
+          "full_name": "BatchedInferencePipeline.transcribe",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Modify language detection threshold semantics so that early-break only occurs when a real threshold is provided, allowing language_detection_segments to influence language selection even when language_detection_threshold is None. This applies to both non-batched (WhisperModel.transcribe) and batched (BatchedInferencePipeline.transcribe) paths.",
+    "steps": [
+      {
+        "operation": "Refactor threshold-based break condition in non-batched language detection loop",
+        "file_to_modify": "faster_whisper/transcribe.py",
+        "function_to_modify": "WhisperModel.transcribe",
+        "reason": "Currently the loop breaks after the first language detection when language_detection_threshold is None due to an unconditional break, which ignores language_detection_segments. The new condition should only break when a real threshold is provided, preserving multi-segment detection behavior when threshold is not set by the user.",
+        "side_effects": "Requires updates to unit/integration tests for language_detection_segments > 1 with language_detection_threshold=None; minor potential performance impact due to evaluating multiple segments; downstream components relying on threshold-based early exit remain unaffected when a threshold is provided."
+      },
+      {
+        "operation": "Apply the same threshold-aware break refactor in the batched language detection path",
+        "file_to_modify": "faster_whisper/transcribe.py",
+        "function_to_modify": "BatchedInferencePipeline.transcribe",
+        "reason": "Ensure consistent behavior across the batched transcription path by applying the same conditional change so early exit occurs only when language_detection_threshold is not None and the probability exceeds the threshold.",
+        "side_effects": "Tests for the batched path will need updates; potential minor performance implications similar to the non-batched path; API behavior remains unchanged when a threshold is supplied."
+      }
+    ]
+  }
+}

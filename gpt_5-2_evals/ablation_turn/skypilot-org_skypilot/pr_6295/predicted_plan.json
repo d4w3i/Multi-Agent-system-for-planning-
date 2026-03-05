@@ -1,0 +1,42 @@
+{
+  "pr_number": 6295,
+  "repository": "skypilot-org/skypilot",
+  "title": "Fix hyperbolic unit test",
+  "body": "The `1x-T4-4-17` instance type were missing in the latest catalog (commit 06cb4087855609446f3ce9739d863ffd92cdbcd6), causing this unit test to fail, as it's explicitly looking for that type.\n\nThis PR fixes it by switching to a valid instance type which exist on the latest catalog.\n\nWe probably should still investigate though why `1x-T4-4-17` went missing.\n\nTested:\n- formatting\n- relevant individual tests\n\nNot run:\n- full smoke tests\n- backward compat tests",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T12:43:58.915217",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "tests/unit_tests/test_hyperbolic.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "test_hyperbolic_resource_feasibility",
+          "class_name": null,
+          "full_name": "test_hyperbolic_resource_feasibility",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Fixes a failing Hyperbolic unit test by replacing a hard-coded, now-missing instance type (`1x-T4-4-17`) with an instance type that exists in the latest Hyperbolic catalog, ideally chosen in a more stable/catalog-driven way.",
+    "steps": [
+      {
+        "operation": "Update the Hyperbolic feasibility unit test to use a currently valid instance type (preferably selected dynamically from the Hyperbolic catalog, falling back to a known-good hard-coded type) instead of the removed `1x-T4-4-17`.",
+        "file_to_modify": "tests/unit_tests/test_hyperbolic.py",
+        "function_to_modify": "test_hyperbolic_resource_feasibility",
+        "reason": "The test currently hard-codes an instance type that no longer exists in the latest Hyperbolic catalog, causing `Hyperbolic._get_feasible_launchable_resources()` to raise `ValueError('Invalid instance type: ...')`. Selecting an instance type that exists (and matches `accelerators={'T4': 1}`) makes the test pass against the updated catalog and reduces future breakage from catalog churn.",
+        "side_effects": "Only affects unit test behavior. If implemented as dynamic selection, the test may become sensitive to catalog availability/shape (e.g., if T4 disappears entirely); mitigate by asserting a non-empty candidate list with a clear failure message or skipping when no matching types exist. No production code/API changes expected; run `pytest tests/unit_tests/test_hyperbolic.py -k resource_feasibility` to validate."
+      }
+    ]
+  }
+}

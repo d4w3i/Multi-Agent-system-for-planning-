@@ -1,0 +1,57 @@
+{
+  "pr_number": 6987,
+  "repository": "cython/cython",
+  "title": "Fix return type of bytes.join()",
+  "body": "Summary of the request:\n- The PR aims to fix the return type inference for the built-in bytes.join() operation.\n- The tests already exercise bytes.join in tests/run/bytesmethods.pyx, but in some non-trivial cases the return type was not correctly inferred (i.e., MASCA inferred a generic Python object instead of a concrete 'bytes' type).\n\nWhat I plan to modify:\n- Adjust the MASCA-aware type inference path for built-in type methods (specifically bytes.join) so that the return type is inferred as a bytes object rather than a generic Python object when applicable.\n- Target a minimal, focused patch that affects the type-signature used when modeling CPython built-in methods (i.e., the return type of the bytes.join method).\n\nImpact considerations:\n- Should improve static type information for tests that rely on typeof(result) returning 'bytes object'.\n- Should not affect runtime behavior, only static typing/inference.\n\nProposed approach (high level):\n- Detect the bytes.join slot path and ensure its return type is the concrete bytes type (not a generic object) within the MASCA/type-inference layer.\n- Keep changes localized to the type-inference/signature machinery to minimize risk to other built-in methods.\n\nNo changes to test inputs are strictly required for this PR, but after the patch, tests like bytes_join in tests/run/bytesmethods.pyx should report 'bytes object' for the result type.\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T12:31:33.328329",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "Cython/Compiler/TypeSlots.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "return_type",
+          "class_name": "Signature",
+          "full_name": "Signature.return_type",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "__init__",
+          "class_name": "SlotTable",
+          "full_name": "SlotTable.__init__",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Fix MASCA return type inference for bytes.join so it yields a concrete bytes type instead of a generic object, improving static type information without altering runtime behavior.",
+    "steps": [
+      {
+        "operation": "Add special-case in Signature.return_type to map bytes.join to bytes",
+        "file_to_modify": "Cython/Compiler/TypeSlots.py",
+        "function_to_modify": "Signature.return_type",
+        "reason": "MASCA needs to return a concrete bytes type for bytes.join rather than a generic PyObject in inference, to align with tests expecting 'bytes object'.",
+        "side_effects": "May affect inference of other built-in methods if the special-case is too broad; requires regression checks on other slots and existing type signatures."
+      },
+      {
+        "operation": "Update SlotTable.__init__ to wire bytes.join slot through new signature path",
+        "file_to_modify": "Cython/Compiler/TypeSlots.py",
+        "function_to_modify": "SlotTable.__init__",
+        "reason": "Ensure the bytes.join built-in path uses the updated return_type resolution so MASCA propagates the concrete bytes type correctly through the inference graph.",
+        "side_effects": "Could impact related slot mappings; run inference/tests to confirm no regressions in other built-in slots."
+      }
+    ]
+  }
+}

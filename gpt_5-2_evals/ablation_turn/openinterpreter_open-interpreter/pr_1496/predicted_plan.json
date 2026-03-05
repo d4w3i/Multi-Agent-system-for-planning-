@@ -1,0 +1,33 @@
+{
+  "pr_number": 1496,
+  "repository": "openinterpreter/open-interpreter",
+  "title": "Fix: Change date format string for Windows compatibility",
+  "body": "# Fix date format string for Windows compatibility\r\n\r\n## Problem\r\nWhen running `interpreter --os` on Windows, the program crashes with a ValueError due to an incompatible date format string (`%-d`).\r\n\r\n## Solution\r\nChanged the date format string from `%-d` to `%d` to ensure compatibility with Windows systems.\r\n\r\n## Changes\r\n- Modified `interpreter/computer_use/loop.py` to use Windows-compatible date format\r\n- Replaced `%-d` with `%d` in `strftime()` call\r\n\r\n## Testing\r\nTested on:\r\n- Windows 11\r\n- Python 3.11\r\n- open-interpreter 0.4.1\r\n\r\nThe fix allows the program to start normally with the `--os` flag on Windows.\r\n\r\nFixes #1495",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T12:28:13.509654",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "interpreter/computer_use/loop.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    }
+  ],
+  "step_plan": {
+    "summary": "Fixes `interpreter --os` crashing on Windows by changing the SYSTEM_PROMPT date `strftime` format from the Unix-only `%-d` to Windows-compatible `%d` in `interpreter/computer_use/loop.py`.",
+    "steps": [
+      {
+        "operation": "Replace the Unix-only day-of-month strftime modifier in the SYSTEM_PROMPT date string with a Windows-compatible token (\"%d\" instead of \"%-d\"), ensuring module import/OS-mode startup cannot raise ValueError on Windows",
+        "file_to_modify": "interpreter/computer_use/loop.py",
+        "function_to_modify": "<module>",
+        "reason": "Windows’ C-runtime strftime does not support the \"%-d\" (no-leading-zero) modifier and raises ValueError when encountered; this code runs during SYSTEM_PROMPT construction, which is exercised when starting `interpreter --os`. Swapping to \"%d\" preserves a valid date while restoring cross-platform compatibility.",
+        "side_effects": "Day-of-month will become zero-padded (e.g., \"01\") instead of non-padded (\"1\"), slightly changing prompt text formatting on all platforms. Any code/tests that snapshot or compare the prompt string may need updates (none indicated in the PR). OS mode should start normally on Windows after this change."
+      }
+    ]
+  }
+}

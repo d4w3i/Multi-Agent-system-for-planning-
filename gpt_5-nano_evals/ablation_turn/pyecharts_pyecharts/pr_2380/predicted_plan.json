@@ -1,0 +1,80 @@
+{
+  "pr_number": 2380,
+  "repository": "pyecharts/pyecharts",
+  "title": "fix and update",
+  "body": "* 修复 `timeline` 的 bug，关联：https://github.com/pyecharts/pyecharts/issues/2361\n* 更新一些配置的引用位置和方式\n    * `markline`, `markarea` 增加动画配置项：https://github.com/pyecharts/pyecharts/issues/2362",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T13:35:50.509924",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "pyecharts/charts/composite_charts/timeline.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "add",
+          "class_name": "Timeline",
+          "full_name": "Timeline.add",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "pyecharts/options/series_options.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "__init__",
+          "class_name": "MarkLineOpts",
+          "full_name": "MarkLineOpts.__init__",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "__init__",
+          "class_name": "MarkAreaOpts",
+          "full_name": "MarkAreaOpts.__init__",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "This PR fixes a Timeline mutation bug by snapshotting per-time-point options to isolate configurations, and adds per-mark animation configuration (animation and animationDuration) to MarkLine and MarkArea options for better animation control, while preserving backward compatibility.",
+    "steps": [
+      {
+        "operation": "Snapshot per-time-point options in Timeline.add to prevent cross-point mutation",
+        "file_to_modify": "pyecharts/charts/composite_charts/timeline.py",
+        "function_to_modify": "Timeline.add",
+        "reason": "Timeline currently reuses mutable option dictionaries when appending time points; this can cause options from one time point to leak into others. Implementing a deep copy/snapshot of the per-time-point options ensures each time point retains an independent configuration, addressing the mutation bug described in issue #2361.",
+        "side_effects": "Slight increase in memory usage due to deep copies; may require updates to tests that relied on object identity; downstream code should use the copied structures without unintended cross-time-point mutations."
+      },
+      {
+        "operation": "Add per-mark animation configuration to MarkLineOpts to support animations",
+        "file_to_modify": "pyecharts/options/series_options.py",
+        "function_to_modify": "MarkLineOpts.__init__",
+        "reason": "Expose per-mark animation settings for markLine to support the animation feature described in issue #2362; maintain backward compatibility by introducing new optional fields with default values that replicate current behavior when not provided.",
+        "side_effects": "Serialization should include new keys when provided; existing users should see no behavior change unless they opt into the new animation fields; tests should validate JSON includes animation fields when set."
+      },
+      {
+        "operation": "Add per-mark animation configuration to MarkAreaOpts to support animations",
+        "file_to_modify": "pyecharts/options/series_options.py",
+        "function_to_modify": "MarkAreaOpts.__init__",
+        "reason": "Expose per-mark animation settings for markArea to support animations in marks as described in issue #2362; maintain backward compatibility with default values when not specified.",
+        "side_effects": "Serialization should include new keys when provided; potential test updates to verify proper rendering of animation fields in options; ensures consistent behavior with MarkLineOpts changes."
+      }
+    ]
+  }
+}

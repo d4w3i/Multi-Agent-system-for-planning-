@@ -1,0 +1,77 @@
+{
+  "evaluated_at": "2026-03-04T14:48:44.129930",
+  "pr_dir": "/Users/davidecroatto/code/planningtest0/gpt_5-2_evals/ablation_turn/vikhyat_moondream/pr_277",
+  "pr_number": 277,
+  "repository": "vikhyat/moondream",
+  "files": {
+    "precision": 0.6667,
+    "recall": 0.6667,
+    "f1": 0.6667,
+    "predicted_count": 3,
+    "actual_count": 3,
+    "correct_count": 2
+  },
+  "functions": {
+    "precision": 0.2,
+    "recall": 0.1111,
+    "f1": 0.1429,
+    "predicted_count": 5,
+    "actual_count": 9,
+    "correct_count": 1
+  },
+  "steps": {
+    "predicted_steps": 5,
+    "actual_steps": 10,
+    "step_diff": -5,
+    "target_coverage": 0.6,
+    "targets_matched": 3,
+    "targets_total": 5
+  },
+  "semantic": {
+    "summary_similarity": 0.888,
+    "avg_step_similarity": 0.5932,
+    "step_matches": [
+      {
+        "pred_idx": 0,
+        "pred_text": "Operation: Fix label construction so each box contributes exactly 4 labels (x,y use linear bins; w,h...",
+        "gt_idx": 9,
+        "gt_text": "Operation: Remove duplicated/incorrect extra bounding-box label appending and update the script’s tr...",
+        "similarity": 0.7367
+      },
+      {
+        "pred_idx": 1,
+        "pred_text": "Operation: Verify/update the region loss indexing logic to match the corrected label layout (x,y tre...",
+        "gt_idx": 8,
+        "gt_text": "Operation: Fix coordinate bin label generation to use Python ints (avoid tensor objects) when buildi...",
+        "similarity": 0.5858
+      },
+      {
+        "pred_idx": 2,
+        "pred_text": "Operation: Implement waste detection evaluation: load `moondream/waste_detection`, run region predic...",
+        "gt_idx": 4,
+        "gt_text": "Operation: Add evaluation loop to run detection per label and aggregate TP/FP/FN into precision/reca...",
+        "similarity": 0.7613
+      },
+      {
+        "pred_idx": 3,
+        "pred_text": "Operation: Register the new waste detection evaluator in the unified eval entrypoint so it can be in...",
+        "gt_idx": 0,
+        "gt_text": "Operation: Update gitignore rules to exclude experiment artifacts (Weights & Biases runs and produce...",
+        "similarity": 0.3774
+      },
+      {
+        "pred_idx": 4,
+        "pred_text": "Operation: Ensure the shared eval model constructor supports the waste detection eval’s inference ne...",
+        "gt_idx": 6,
+        "gt_text": "Operation: Add CLI entrypoint to select model path, IoU threshold, GPU index, and debug mode and pri...",
+        "similarity": 0.505
+      }
+    ],
+    "overall_semantic_score": 0.6816,
+    "computed": true,
+    "error": null
+  },
+  "has_prediction": true,
+  "has_ground_truth": true,
+  "error": null
+}

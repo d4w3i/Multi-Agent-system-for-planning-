@@ -1,0 +1,69 @@
+{
+    "repository": "SWE-agent/SWE-agent",
+    "pull_request_number": 1155,
+    "title": "Fix: Correctly format commit message for PR creation",
+    "body": "The commit message by the agent does not formatted properly\r\n![image](https://github.com/user-attachments/assets/4d40e248-2761-47e1-a091-26d53bde1179)\r\n\r\n<!--\r\nThanks for contributing a pull request!\r\n-->\r\n\r\n#### Reference Issues/PRs\r\n<!--\r\nExample: \"Fixes #1234\", \"See also #3456\"\r\nPlease use keywords (e.g., Fixes) to create link to the issues or pull requests\r\nyou resolved, so that they will automatically be closed when your pull request\r\nis merged. See https://github.com/blog/1506-closing-issues-via-pull-requests\r\n-->\r\n\r\n#### What does this implement/fix? Explain your changes.\r\n<!--\r\nPlease include a brief explanation of how your solution\r\nfixes the tagged issue(s), along with what files / entities have\r\nbeen modified for this fix.\r\n-->\r\n\r\nThis pull request includes a small change to the `open_pr` function in `sweagent/run/hooks/open_pr.py`. The change updates the string formatting for commit messages to use f-strings for formating the message properly",
+    "pr_date": "2025-05-24T00:20:47Z",
+    "source_branch": "fix-commit_msg",
+    "language": "en",
+    "keywords_detected": {
+        "branch": [
+            "fix"
+        ],
+        "requirement": [
+            "fix"
+        ],
+        "body": [
+            "implement",
+            "change",
+            "create",
+            "resolve",
+            "fix",
+            "update",
+            "merge"
+        ]
+    },
+    "number_of_links_in_pr": 3,
+    "base_sha": "ccde3635a758bd4496098edc5f9a91c6d7e632c0",
+    "last_commit_sha": "e69b81e913e0cc0023260379f081e79d414c6ffb",
+    "diff_between_base_and_last": [
+        {
+            "sha": "d77b5017da06cf910d73425951ce04cc7a062ac0",
+            "filename": "sweagent/run/hooks/open_pr.py",
+            "status": "modified",
+            "additions": 2,
+            "deletions": 2,
+            "changes": 4,
+            "blob_url": "https://github.com/SWE-agent/SWE-agent/blob/e69b81e913e0cc0023260379f081e79d414c6ffb/sweagent%2Frun%2Fhooks%2Fopen_pr.py",
+            "raw_url": "https://github.com/SWE-agent/SWE-agent/raw/e69b81e913e0cc0023260379f081e79d414c6ffb/sweagent%2Frun%2Fhooks%2Fopen_pr.py",
+            "contents_url": "https://api.github.com/repos/SWE-agent/SWE-agent/contents/sweagent%2Frun%2Fhooks%2Fopen_pr.py?ref=e69b81e913e0cc0023260379f081e79d414c6ffb",
+            "patch": "@@ -50,8 +50,8 @@ def open_pr(*, logger, token, env: SWEEnv, github_url, trajectory, _dry_run: boo\n     env.communicate(input=\"git add .\", error_msg=\"Failed to add commits\", timeout=10, check=\"raise\")\n     dry_run_flag = \"--allow-empty\" if _dry_run else \"\"\n     commit_msg = [\n-        shlex.quote(\"Fix: {issue.title}\"),\n-        shlex.quote(\"Closes #{issue.number}\"),\n+        shlex.quote(f\"Fix: {issue.title}\"),\n+        shlex.quote(f\"Closes #{issue.number}\"),\n     ]\n     out = env.communicate(\n         input=f\"git commit -m {commit_msg[0]} -m  {commit_msg[1]} {dry_run_flag}\","
+        }
+    ],
+    "commits": [
+        {
+            "sha": "e69b81e913e0cc0023260379f081e79d414c6ffb",
+            "commit_date": "2025-05-24T00:10:57Z",
+            "message": "Fix: Correctly format commit message for PR creation",
+            "number_of_links_in_commit": 0,
+            "files_changed_count": 1,
+            "files": [
+                {
+                    "sha": "d77b5017da06cf910d73425951ce04cc7a062ac0",
+                    "filename": "sweagent/run/hooks/open_pr.py",
+                    "status": "modified",
+                    "additions": 2,
+                    "deletions": 2,
+                    "changes": 4,
+                    "blob_url": "https://github.com/SWE-agent/SWE-agent/blob/e69b81e913e0cc0023260379f081e79d414c6ffb/sweagent%2Frun%2Fhooks%2Fopen_pr.py",
+                    "raw_url": "https://github.com/SWE-agent/SWE-agent/raw/e69b81e913e0cc0023260379f081e79d414c6ffb/sweagent%2Frun%2Fhooks%2Fopen_pr.py",
+                    "contents_url": "https://api.github.com/repos/SWE-agent/SWE-agent/contents/sweagent%2Frun%2Fhooks%2Fopen_pr.py?ref=e69b81e913e0cc0023260379f081e79d414c6ffb",
+                    "patch": "@@ -50,8 +50,8 @@ def open_pr(*, logger, token, env: SWEEnv, github_url, trajectory, _dry_run: boo\n     env.communicate(input=\"git add .\", error_msg=\"Failed to add commits\", timeout=10, check=\"raise\")\n     dry_run_flag = \"--allow-empty\" if _dry_run else \"\"\n     commit_msg = [\n-        shlex.quote(\"Fix: {issue.title}\"),\n-        shlex.quote(\"Closes #{issue.number}\"),\n+        shlex.quote(f\"Fix: {issue.title}\"),\n+        shlex.quote(f\"Closes #{issue.number}\"),\n     ]\n     out = env.communicate(\n         input=f\"git commit -m {commit_msg[0]} -m  {commit_msg[1]} {dry_run_flag}\","
+                }
+            ]
+        }
+    ],
+    "pull_request_url": "https://github.com/SWE-agent/SWE-agent/pull/1155",
+    "commits_url": "https://github.com/SWE-agent/SWE-agent/pull/1155/commits",
+    "files_url": "https://github.com/SWE-agent/SWE-agent/pull/1155/files"
+}

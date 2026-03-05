@@ -1,0 +1,82 @@
+{
+    "repository": "pyodide/pyodide",
+    "pull_request_number": 5625,
+    "title": "Fix test_package_index test",
+    "body": "It started to fail a few days ago, because of some extra terminal output.",
+    "pr_date": "2025-05-09T09:59:37Z",
+    "source_branch": "fix-cmdline-runner-test",
+    "language": "en",
+    "keywords_detected": {
+        "branch": [
+            "fix"
+        ],
+        "requirement": [
+            "fix"
+        ],
+        "body": []
+    },
+    "number_of_links_in_pr": 0,
+    "base_sha": "c778309e8fcb593ceee5025b9c091ab275dce002",
+    "last_commit_sha": "9bdd4e038b81b65811d50a5ccb9d79cec08dcc13",
+    "diff_between_base_and_last": [
+        {
+            "sha": "5c0f6bae8f150c9176ca4882c17ace7bea5a09cf",
+            "filename": "src/tests/test_cmdline_runner.py",
+            "status": "modified",
+            "additions": 2,
+            "deletions": 2,
+            "changes": 4,
+            "blob_url": "https://github.com/pyodide/pyodide/blob/9bdd4e038b81b65811d50a5ccb9d79cec08dcc13/src%2Ftests%2Ftest_cmdline_runner.py",
+            "raw_url": "https://github.com/pyodide/pyodide/raw/9bdd4e038b81b65811d50a5ccb9d79cec08dcc13/src%2Ftests%2Ftest_cmdline_runner.py",
+            "contents_url": "https://api.github.com/repos/pyodide/pyodide/contents/src%2Ftests%2Ftest_cmdline_runner.py?ref=9bdd4e038b81b65811d50a5ccb9d79cec08dcc13",
+            "patch": "@@ -495,8 +495,8 @@ def test_package_index(tmp_path):\n     assert result.returncode == 0\n     stdout = re.sub(r\"(?<=[<>=-])([\\d+]\\.?)+\", \"*\", result.stdout)\n     assert (\n-        stdout.strip().rsplit(\"\\n\", 1)[-1]\n-        == \"Successfully installed attrs-* micropip-* numpy-* packaging-* sharedlib-test-py-*\"\n+        \"Successfully installed attrs-* micropip-* numpy-* packaging-* sharedlib-test-py-*\"\n+        in stdout.strip().rsplit(\"\\n\", 1)[-1]\n     )\n \n "
+        }
+    ],
+    "commits": [
+        {
+            "sha": "6e19fa67b06af4118791b73f2014793e752b665c",
+            "commit_date": "2025-05-09T09:58:36Z",
+            "message": "Fix package index test",
+            "number_of_links_in_commit": 0,
+            "files_changed_count": 1,
+            "files": [
+                {
+                    "sha": "ab0cc817d57090eea423c9edb3dec898a4c26c64",
+                    "filename": "src/tests/test_cmdline_runner.py",
+                    "status": "modified",
+                    "additions": 1,
+                    "deletions": 2,
+                    "changes": 3,
+                    "blob_url": "https://github.com/pyodide/pyodide/blob/6e19fa67b06af4118791b73f2014793e752b665c/src%2Ftests%2Ftest_cmdline_runner.py",
+                    "raw_url": "https://github.com/pyodide/pyodide/raw/6e19fa67b06af4118791b73f2014793e752b665c/src%2Ftests%2Ftest_cmdline_runner.py",
+                    "contents_url": "https://api.github.com/repos/pyodide/pyodide/contents/src%2Ftests%2Ftest_cmdline_runner.py?ref=6e19fa67b06af4118791b73f2014793e752b665c",
+                    "patch": "@@ -495,8 +495,7 @@ def test_package_index(tmp_path):\n     assert result.returncode == 0\n     stdout = re.sub(r\"(?<=[<>=-])([\\d+]\\.?)+\", \"*\", result.stdout)\n     assert (\n-        stdout.strip().rsplit(\"\\n\", 1)[-1]\n-        == \"Successfully installed attrs-* micropip-* numpy-* packaging-* sharedlib-test-py-*\"\n+        \"Successfully installed attrs-* micropip-* numpy-* packaging-* sharedlib-test-py-*\" in stdout.strip().rsplit(\"\\n\", 1)[-1]\n     )\n \n "
+                }
+            ]
+        },
+        {
+            "sha": "9bdd4e038b81b65811d50a5ccb9d79cec08dcc13",
+            "commit_date": "2025-05-09T10:00:10Z",
+            "message": "[pre-commit.ci] auto fixes from pre-commit.com hooks\n\nfor more information, see https://pre-commit.ci",
+            "number_of_links_in_commit": 1,
+            "files_changed_count": 1,
+            "files": [
+                {
+                    "sha": "5c0f6bae8f150c9176ca4882c17ace7bea5a09cf",
+                    "filename": "src/tests/test_cmdline_runner.py",
+                    "status": "modified",
+                    "additions": 2,
+                    "deletions": 1,
+                    "changes": 3,
+                    "blob_url": "https://github.com/pyodide/pyodide/blob/9bdd4e038b81b65811d50a5ccb9d79cec08dcc13/src%2Ftests%2Ftest_cmdline_runner.py",
+                    "raw_url": "https://github.com/pyodide/pyodide/raw/9bdd4e038b81b65811d50a5ccb9d79cec08dcc13/src%2Ftests%2Ftest_cmdline_runner.py",
+                    "contents_url": "https://api.github.com/repos/pyodide/pyodide/contents/src%2Ftests%2Ftest_cmdline_runner.py?ref=9bdd4e038b81b65811d50a5ccb9d79cec08dcc13",
+                    "patch": "@@ -495,7 +495,8 @@ def test_package_index(tmp_path):\n     assert result.returncode == 0\n     stdout = re.sub(r\"(?<=[<>=-])([\\d+]\\.?)+\", \"*\", result.stdout)\n     assert (\n-        \"Successfully installed attrs-* micropip-* numpy-* packaging-* sharedlib-test-py-*\" in stdout.strip().rsplit(\"\\n\", 1)[-1]\n+        \"Successfully installed attrs-* micropip-* numpy-* packaging-* sharedlib-test-py-*\"\n+        in stdout.strip().rsplit(\"\\n\", 1)[-1]\n     )\n \n "
+                }
+            ]
+        }
+    ],
+    "pull_request_url": "https://github.com/pyodide/pyodide/pull/5625",
+    "commits_url": "https://github.com/pyodide/pyodide/pull/5625/commits",
+    "files_url": "https://github.com/pyodide/pyodide/pull/5625/files"
+}

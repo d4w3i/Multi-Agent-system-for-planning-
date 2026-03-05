@@ -1,0 +1,204 @@
+{
+  "pr_number": 2644,
+  "repository": "TomSchimansky/CustomTkinter",
+  "title": "Fix CTkEntry place_holder",
+  "body": "- Fixed place holder behavior when assigning a textvariable to a CTkEntry\r\n- Added flag to control textvariable_callback event",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T00:58:23.028758",
+    "extractor_version": "1.0.0",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "customtkinter/windows/widgets/ctk_entry.py",
+      "status": "modified",
+      "additions": 12,
+      "deletions": 4,
+      "functions_modified": [
+        {
+          "function_name": "__init__",
+          "class_name": "CTkEntry",
+          "full_name": "CTkEntry.__init__",
+          "start_line": 25,
+          "end_line": 99,
+          "lines_changed": [
+            62,
+            67
+          ]
+        },
+        {
+          "function_name": "_textvariable_callback",
+          "class_name": "CTkEntry",
+          "full_name": "CTkEntry._textvariable_callback",
+          "start_line": 120,
+          "end_line": 125,
+          "lines_changed": [
+            121,
+            124,
+            125
+          ]
+        },
+        {
+          "function_name": "_activate_placeholder",
+          "class_name": "CTkEntry",
+          "full_name": "CTkEntry._activate_placeholder",
+          "start_line": 302,
+          "end_line": 313,
+          "lines_changed": [
+            303,
+            304,
+            313
+          ]
+        },
+        {
+          "function_name": "_deactivate_placeholder",
+          "class_name": "CTkEntry",
+          "full_name": "CTkEntry._deactivate_placeholder",
+          "start_line": 315,
+          "end_line": 325,
+          "lines_changed": [
+            316,
+            325
+          ]
+        },
+        {
+          "function_name": "_entry_focus_out",
+          "class_name": "CTkEntry",
+          "full_name": "CTkEntry._entry_focus_out",
+          "start_line": 327,
+          "end_line": 329,
+          "lines_changed": [
+            329
+          ]
+        },
+        {
+          "function_name": "_entry_focus_in",
+          "class_name": "CTkEntry",
+          "full_name": "CTkEntry._entry_focus_in",
+          "start_line": 331,
+          "end_line": 333,
+          "lines_changed": [
+            333
+          ]
+        }
+      ],
+      "patch": "@@ -59,11 +59,12 @@ def __init__(self,\n         self._border_width = ThemeManager.theme[\"CTkEntry\"][\"border_width\"] if border_width is None else border_width\n \n         # text and state\n-        self._is_focused: bool = True\n+        self._is_focused: bool = False\n         self._placeholder_text = placeholder_text\n         self._placeholder_text_active = False\n         self._pre_placeholder_arguments = {}  # some set arguments of the entry will be changed for placeholder and then set back\n         self._textvariable = textvariable\n+        self._textvariable_callback_blocked:bool = False\n         self._state = state\n         self._textvariable_callback_name: str = \"\"\n \n@@ -117,8 +118,11 @@ def _create_grid(self):\n                              pady=(self._apply_widget_scaling(self._border_width), self._apply_widget_scaling(self._border_width + 1)))\n \n     def _textvariable_callback(self, var_name, index, mode):\n+        if self._textvariable_callback_blocked: return\n         if self._textvariable.get() == \"\":\n             self._activate_placeholder()\n+        elif self._placeholder_text_active:\n+            self.insert(0, self._textvariable.get())\n \n     def _set_scaling(self, *args, **kwargs):\n         super()._set_scaling(*args, **kwargs)\n@@ -296,7 +300,8 @@ def unbind(self, sequence=None, funcid=None):\n         self._create_bindings(sequence=sequence)  # restore internal callbacks for sequence\n \n     def _activate_placeholder(self):\n-        if self._entry.get() == \"\" and self._placeholder_text is not None and (self._textvariable is None or self._textvariable == \"\"):\n+        self._textvariable_callback_blocked = True\n+        if self._entry.get() == \"\" and self._placeholder_text is not None and self._is_focused is False:\n             self._placeholder_text_active = True\n \n             self._pre_placeholder_arguments = {\"show\": self._entry.cget(\"show\")}\n@@ -305,8 +310,10 @@ def _activate_placeholder(self):\n                                show=\"\")\n             self._entry.delete(0, tkinter.END)\n             self._entry.insert(0, self._placeholder_text)\n+        self._textvariable_callback_blocked = False\n \n     def _deactivate_placeholder(self):\n+        self._textvariable_callback_blocked = True\n         if self._placeholder_text_active and self._entry.cget(\"state\") != \"readonly\":\n             self._placeholder_text_active = False\n \n@@ -315,14 +322,15 @@ def _deactivate_placeholder(self):\n             self._entry.delete(0, tkinter.END)\n             for argument, value in self._pre_placeholder_arguments.items():\n                 self._entry[argument] = value\n+        self._textvariable_callback_blocked = False\n \n     def _entry_focus_out(self, event=None):\n-        self._activate_placeholder()\n         self._is_focused = False\n+        self._activate_placeholder()\n \n     def _entry_focus_in(self, event=None):\n-        self._deactivate_placeholder()\n         self._is_focused = True\n+        self._deactivate_placeholder()\n \n     def delete(self, first_index, last_index=None):\n         self._entry.delete(first_index, last_index)"
+    }
+  ],
+  "functions_modified": [
+    {
+      "function_name": "__init__",
+      "class_name": "CTkEntry",
+      "full_name": "CTkEntry.__init__",
+      "start_line": 25,
+      "end_line": 99,
+      "lines_changed": [
+        62,
+        67
+      ]
+    },
+    {
+      "function_name": "_textvariable_callback",
+      "class_name": "CTkEntry",
+      "full_name": "CTkEntry._textvariable_callback",
+      "start_line": 120,
+      "end_line": 125,
+      "lines_changed": [
+        121,
+        124,
+        125
+      ]
+    },
+    {
+      "function_name": "_activate_placeholder",
+      "class_name": "CTkEntry",
+      "full_name": "CTkEntry._activate_placeholder",
+      "start_line": 302,
+      "end_line": 313,
+      "lines_changed": [
+        303,
+        304,
+        313
+      ]
+    },
+    {
+      "function_name": "_deactivate_placeholder",
+      "class_name": "CTkEntry",
+      "full_name": "CTkEntry._deactivate_placeholder",
+      "start_line": 315,
+      "end_line": 325,
+      "lines_changed": [
+        316,
+        325
+      ]
+    },
+    {
+      "function_name": "_entry_focus_out",
+      "class_name": "CTkEntry",
+      "full_name": "CTkEntry._entry_focus_out",
+      "start_line": 327,
+      "end_line": 329,
+      "lines_changed": [
+        329
+      ]
+    },
+    {
+      "function_name": "_entry_focus_in",
+      "class_name": "CTkEntry",
+      "full_name": "CTkEntry._entry_focus_in",
+      "start_line": 331,
+      "end_line": 333,
+      "lines_changed": [
+        333
+      ]
+    }
+  ],
+  "step_plan": {
+    "steps": [
+      {
+        "operation": "Initialize focus state to not-focused so placeholder activation can be driven correctly by focus events",
+        "file_to_modify": "customtkinter/windows/widgets/ctk_entry.py",
+        "function_to_modify": "__init__",
+        "reason": "The placeholder should only appear when the entry is empty and not focused; starting with `_is_focused=True` caused incorrect placeholder behavior on initial render and when a `textvariable` is attached.",
+        "side_effects": "May change initial placeholder visibility for newly created CTkEntry instances (placeholder may now appear until the widget receives focus), which could affect layouts or tests that assumed the previous default focus state."
+      },
+      {
+        "operation": "Add a re-entrancy/guard flag to suppress textvariable trace callbacks during internal placeholder mutations",
+        "file_to_modify": "customtkinter/windows/widgets/ctk_entry.py",
+        "function_to_modify": "__init__",
+        "reason": "Activating/deactivating the placeholder mutates the underlying Tk entry text; without blocking, those mutations can trigger the `textvariable` trace and create loops or incorrect placeholder deletion when the variable is set repeatedly (e.g., empty value twice).",
+        "side_effects": "Any logic relying on trace callbacks firing for placeholder-driven internal entry updates will no longer observe those intermediate transitions."
+      },
+      {
+        "operation": "Gate the textvariable trace handler and restore real text when placeholder is active and the variable becomes non-empty",
+        "file_to_modify": "customtkinter/windows/widgets/ctk_entry.py",
+        "function_to_modify": "_textvariable_callback",
+        "reason": "Prevents placeholder-related internal updates from recursively re-triggering the callback, and fixes the case where assigning a non-empty textvariable while placeholder is shown should insert the variable value instead of leaving placeholder text visible.",
+        "side_effects": "Changes timing/behavior of updates propagated from the variable to the widget: when placeholder is active, the entry text will now be replaced with the variable content, which may affect user code that expected placeholder to remain until focus-in."
+      },
+      {
+        "operation": "Refine placeholder activation conditions and wrap placeholder insertion with callback blocking",
+        "file_to_modify": "customtkinter/windows/widgets/ctk_entry.py",
+        "function_to_modify": "_activate_placeholder",
+        "reason": "The previous condition tried to infer placeholder eligibility from `textvariable` presence/value; using `_is_focused is False` correctly ties placeholder activation to focus state, and blocking the callback prevents trace-induced bugs while deleting/inserting placeholder text.",
+        "side_effects": "Placeholder may now activate in cases where a textvariable is attached but the widget is unfocused and empty (intended), which could change behavior for code that relied on the old textvariable-based gating."
+      },
+      {
+        "operation": "Wrap placeholder removal with callback blocking to avoid trace recursion while clearing placeholder state and restoring entry config",
+        "file_to_modify": "customtkinter/windows/widgets/ctk_entry.py",
+        "function_to_modify": "_deactivate_placeholder",
+        "reason": "Deactivating the placeholder deletes text and restores entry arguments; without blocking, these operations can trigger the textvariable callback and mistakenly re-activate or clear content in edge cases (notably repeated empty assignments).",
+        "side_effects": "Reduces the number of variable trace events observed during focus transitions, which may alter event ordering for integrations listening to variable changes."
+      },
+      {
+        "operation": "Update focus event handlers to set `_is_focused` before invoking placeholder transitions",
+        "file_to_modify": "customtkinter/windows/widgets/ctk_entry.py",
+        "function_to_modify": "_entry_focus_out",
+        "reason": "Ensures `_activate_placeholder()` evaluates the correct focus state (unfocused) when deciding whether to show the placeholder, preventing a race where placeholder logic ran with stale `_is_focused` value.",
+        "side_effects": "Focus-out timing changes slightly: placeholder activation now happens after internal focus state is updated, which can affect code that inspects widget state during focus callbacks."
+      }
+    ],
+    "summary": "Fixes CTkEntry placeholder behavior when using a textvariable by correctly tying placeholder display to focus state and preventing trace-callback recursion. Adds a blocking flag to control textvariable callback firing during internal placeholder updates and fixes edge cases with repeated empty assignments."
+  }
+}

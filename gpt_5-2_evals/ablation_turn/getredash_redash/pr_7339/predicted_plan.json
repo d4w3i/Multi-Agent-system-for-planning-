@@ -1,0 +1,86 @@
+{
+  "pr_number": 7339,
+  "repository": "getredash/redash",
+  "title": "Sanitize NaN, Infinite, -Infinite causing error when saving as PostgreSQL JSON",
+  "body": "Bug fix: Redash executor crashes when query output includes NaN/Infinity/-Infinity because PostgreSQL JSON/JSONB (and Redash’s JSON serialization settings) do not allow out-of-range float values. Stacktrace shows failure during INSERT into query_results.data.\n\nRoot cause: after #6685 removed simplejson (which used ignore_nan=True), Redash now uses `redash.utils.json_dumps` with `allow_nan=False`, which raises `ValueError: Out of range float values are not JSON compliant` when encoding data containing NaN/Inf.\n\nDesired behavior: sanitize NaN/Inf/-Inf to `None` (JSON null), matching JavaScript `JSON.stringify` behavior. Add unit tests and confirm manually with example BigQuery/PostgreSQL queries.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T12:13:32.284495",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "redash/utils/__init__.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "json_dumps",
+          "class_name": "redash",
+          "full_name": "redash.utils.json_dumps",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "redash/models/types.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "process_bind_param",
+          "class_name": "redash",
+          "full_name": "redash.models.types.JSONText.process_bind_param",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "tests/models/test_query_results.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    },
+    {
+      "filename": "tests/test_utils.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    }
+  ],
+  "step_plan": {
+    "summary": "Prevent Redash workers from crashing when query results include NaN/Infinity/-Infinity by recursively sanitizing non-finite floats to JSON-null (Python None) before PostgreSQL JSON/JSONB persistence. Add/adjust serialization and persistence coverage so query results save and round-trip successfully with allow_nan=False.",
+    "steps": [
+      {
+        "operation": "Add recursive sanitization of non-finite floats (NaN/Infinity/-Infinity) to None before JSON encoding, while keeping allow_nan=False",
+        "file_to_modify": "redash/utils/__init__.py",
+        "function_to_modify": "json_dumps",
+        "reason": "`json.dumps(..., allow_nan=False)` raises `ValueError` when the payload contains NaN/Inf. Centralizing a recursive sanitizer in `json_dumps` ensures any Redash code path that relies on this helper (DB persistence, caching, API responses where used) produces JSON-compliant output and matches JavaScript `JSON.stringify` behavior (non-finite numbers -> null).",
+        "side_effects": "Changes serialization semantics globally for callers of `json_dumps`: NaN/Inf/-Inf will silently become `null` instead of erroring. This may affect any downstream logic that previously depended on the exception or on preserving NaN/Inf tokens (which are invalid JSON anyway). Add/adjust unit tests that assert conversion and ensure performance is acceptable for large result payloads."
+      },
+      {
+        "operation": "Ensure DB-bound JSON serialization path cannot write non-finite floats by relying on updated json_dumps (and/or adding a final defensive sanitize pass before returning)",
+        "file_to_modify": "redash/models/types.py",
+        "function_to_modify": "JSONText.process_bind_param",
+        "reason": "This is the SQLAlchemy boundary used to serialize `QueryResult.data` into Postgres JSON/JSONB-compatible text. Even if other code bypasses `json_dumps`, this method must guarantee JSON compliance so inserts/updates never crash during flush.",
+        "side_effects": "If additional sanitization is added here, it may duplicate work already done by `json_dumps` (minor CPU overhead). Behavioral change affects all columns using `JSONText`: persisted JSON will contain nulls for non-finite floats rather than raising. Requires confirming round-trip decode produces Python `None`."
+      },
+      {
+        "operation": "Sanitize runner output before storing it into QueryResult.data (if maintainers prefer a narrower or defense-in-depth fix at the query-results boundary)",
+        "file_to_modify": "redash/models/__init__.py",
+        "function_to_modify": "QueryResult.store_result",
+        "reason": "`store_result` is where raw query-runner results are attached to the model before persistence. Applying sanitization here provides defense-in-depth and makes the behavior explicit for query results, even if other storage paths later change. This also helps keep `QueryResult.data` consistently free of non-finite floats in memory (not only at serialization time).",
+        "side_effects": "May increase memory usage and CPU due to deep transformation of result payloads at store time (in addition to serialization). Could slightly change in-memory behavior for callers that inspect `QueryResult.data` prior to commit. If sanitization is already fully handled in `json_dumps`/`JSONText`, this step might be redundant—ensure tests reflect intended single-source-of-truth to avoid double-processing."
+      }
+    ]
+  }
+}

@@ -1,0 +1,80 @@
+{
+  "pr_number": 988,
+  "repository": "babysor/MockingBird",
+  "title": "fix-issues-963:preprocess_audio.py--The .npy file failed to save",
+  "body": "https://github.com/babysor/MockingBird/issues/963\n![image](https://github.com/babysor/MockingBird/assets/55903432/a7544cd3-8242-4008-9dbd-3b7badeaed1d)",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T12:05:18.379166",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "models/synthesizer/preprocess_audio.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "_process_utterance",
+          "class_name": null,
+          "full_name": "_process_utterance",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "preprocess_general",
+          "class_name": null,
+          "full_name": "preprocess_general",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "models/synthesizer/preprocess.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "preprocess_dataset",
+          "class_name": null,
+          "full_name": "preprocess_dataset",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Fixes synthesizer dataset preprocessing so mel/audio `.npy` files are reliably written by correcting the `_process_utterance` call contract, removing path-variable confusion, and hardening directory/path handling in both the worker and orchestrator.",
+    "steps": [
+      {
+        "operation": "Fix argument mismatch and path shadowing in the per-utterance processing loop (ensure correct mel/audio output paths are constructed and passed into the saver).",
+        "file_to_modify": "models/synthesizer/preprocess_audio.py",
+        "function_to_modify": "preprocess_general",
+        "reason": "Issue #963 most plausibly occurs because `preprocess_general` calls `_process_utterance` with a parameter order/count that does not match the callee signature (e.g., passing `False` where `mel_fpath` is expected) and also reuses names like `wav_fpath` for both input wavs and output `.npy` paths, which can cause the wrong path/object to be sent downstream or crash before any `np.save` occurs.",
+        "side_effects": "May change preprocessing behavior for edge cases (e.g., skipping logic previously controlled by a boolean argument). Downstream metadata generation may now reference files that correctly exist; any external scripts depending on the previous (buggy) signature/call pattern could break, but this is internal to preprocessing."
+      },
+      {
+        "operation": "Harden `_process_utterance` saving: validate/normalize output paths, ensure parent directories exist, and make `np.save` receive proper filesystem paths for both mel and audio arrays.",
+        "file_to_modify": "models/synthesizer/preprocess_audio.py",
+        "function_to_modify": "_process_utterance",
+        "reason": "Even with correct call wiring, `.npy` persistence can fail if parent directories are missing or if `np.save` receives an invalid/None/incorrectly-typed path. Normalizing to `Path`/`str`, creating `mel_fpath.parent`/`wav_fpath.parent` with `parents=True, exist_ok=True`, and adding targeted error reporting makes saving reliable and the failure mode actionable.",
+        "side_effects": "Creates directories when missing (could be considered a behavior change for callers that expected failure). Improved exceptions/logging may reveal previously silent failures; tests/smoke runs should verify output layout (`mels/`, `audio/`) remains consistent."
+      },
+      {
+        "operation": "Ensure preprocessing orchestration creates/uses the expected output directory structure and passes a consistent interface into `preprocess_audio.preprocess_general` for multiprocessing workers.",
+        "file_to_modify": "models/synthesizer/preprocess.py",
+        "function_to_modify": "preprocess_dataset",
+        "reason": "`preprocess_dataset` is the upstream orchestrator responsible for setting up `out_dir` and spawning workers; if subdirectories are not created with `parents=True` (or if a mismatched interface is used when dispatching jobs), workers may fail to save `.npy` files even after local fixes. Aligning directory creation and invocation contract prevents regressions and makes `preprocess_general` safe when invoked via multiprocessing.",
+        "side_effects": "May alter filesystem writes (additional `mkdir` calls) and worker argument passing; could require updating any wrappers/CLI scripts that call `preprocess_dataset`. After change, end-to-end preprocessing should be re-run to confirm `train.txt` entries correspond to actual `mel-*.npy` and `audio-*.npy` files."
+      }
+    ]
+  }
+}

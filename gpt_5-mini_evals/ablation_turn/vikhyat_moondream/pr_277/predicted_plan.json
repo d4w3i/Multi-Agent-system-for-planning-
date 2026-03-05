@@ -1,0 +1,42 @@
+{
+  "pr_number": 277,
+  "repository": "vikhyat/moondream",
+  "title": "finetune_region.py fixed. Added waste_detection eval",
+  "body": "Fixed bug in finetune_region.py that was introduced when log2 was added. Bug pointed out here: https://github.com/vikhyat/moondream/issues/267\n\nIncluded an eval script for waste detection. The F1 score improves from 65.67 ->  66.23 after 1 epoch of finetuning.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T14:56:07.179949",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "moondream/finetune/finetune_region.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "main",
+          "class_name": null,
+          "full_name": "main",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Fix finetune_region.py label construction so each box produces exactly four labels ([x, y, w_log2_bin, h_log2_bin]) by removing the legacy linear-size-bin append and converting coordinate labels to plain Python ints. This corrects the misalignment with region_loss and restores expected training behavior. (Optional: the PR also notes an added waste_detection eval script; that file is not changed here.)",
+    "steps": [
+      {
+        "operation": "Fix label construction for region finetuning: remove duplicate linear-size-bin appends and ensure coordinate labels are plain Python ints",
+        "file_to_modify": "moondream/finetune/finetune_region.py",
+        "function_to_modify": "main",
+        "reason": "When log2-based size binning was added the code accidentally kept appending the legacy linear-size bins as well, doubling the number of labels per object (8 instead of the required 4). region_loss and the region encoding/decoding utilities expect 4 labels per object in the order [x, y, w_bin, h_bin]. Remove the redundant append and make coordinate labels explicit integers (use torch.clamp/round(...).item()) so the cs_labels list contains plain ints matching token outputs.",
+        "side_effects": "Fixing label alignment will change the training signal for finetune_region (likely improving or correcting training behavior). Tests that assume the previous (incorrect) behavior will need updating; add or run unit/integration tests verifying label length = 4 * num_boxes and that region_loss accepts the labels. No public API changes outside finetune_region.py, but downstream artifacts (trained checkpoints, evaluation metrics) may change. Ensure region_loss and any code that consumes cs_labels still expects 4-per-box ordering; update or re-run evaluation (e.g., waste_detection) to confirm F1/mAP changes."
+      }
+    ]
+  }
+}

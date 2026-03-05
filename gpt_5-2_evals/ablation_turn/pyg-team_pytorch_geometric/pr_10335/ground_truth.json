@@ -1,0 +1,153 @@
+{
+  "pr_number": 10335,
+  "repository": "pyg-team/pytorch_geometric",
+  "title": "Fixes to WebQSP Indexer and GRetriever so that unnecessary disk writes are reduced.",
+  "body": "Quick fix to webqsp and gretriever to help with unnecessary cruft on disk and out of date api in examples.",
+  "extraction_metadata": {
+    "extracted_at": "2026-02-26T01:10:43.012935",
+    "extractor_version": "1.0.0",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "examples/llm/g_retriever.py",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 2,
+      "functions_modified": [
+        {
+          "function_name": "train",
+          "class_name": null,
+          "full_name": "train",
+          "start_line": 206,
+          "end_line": 386,
+          "lines_changed": [
+            287
+          ]
+        }
+      ],
+      "patch": "@@ -284,8 +284,7 @@ def train(\n     if model_save_name == 'llm':\n         model = llm\n     else:\n-        model = GRetriever(llm=llm, gnn=gnn,\n-                           mlp_out_channels=llm.word_embedding.embedding_dim)\n+        model = GRetriever(llm=llm, gnn=gnn)\n \n     # Create optimizer\n     params = [p for _, p in model.named_parameters() if p.requires_grad]"
+    },
+    {
+      "filename": "torch_geometric/datasets/web_qsp_dataset.py",
+      "status": "modified",
+      "additions": 6,
+      "deletions": 9,
+      "functions_modified": [
+        {
+          "function_name": "processed_file_names",
+          "class_name": "KGQABaseDataset",
+          "full_name": "KGQABaseDataset.processed_file_names",
+          "start_line": 91,
+          "end_line": 92,
+          "lines_changed": [
+            92
+          ]
+        },
+        {
+          "function_name": "_build_graph",
+          "class_name": "KGQABaseDataset",
+          "full_name": "KGQABaseDataset._build_graph",
+          "start_line": 122,
+          "end_line": 152,
+          "lines_changed": [
+            152
+          ]
+        },
+        {
+          "function_name": "process",
+          "class_name": "KGQABaseDataset",
+          "full_name": "KGQABaseDataset.process",
+          "start_line": 212,
+          "end_line": 244,
+          "lines_changed": [
+            222,
+            223,
+            224,
+            228
+          ]
+        }
+      ],
+      "patch": "@@ -87,13 +87,9 @@ def __init__(\n     def raw_file_names(self) -> List[str]:\n         return [\"raw.pt\"]\n \n-    @property\n-    def _processed_split_file_names(self) -> List[str]:\n-        return [\"train_data.pt\", \"val_data.pt\", \"test_data.pt\"]\n-\n     @property\n     def processed_file_names(self) -> List[str]:\n-        return self._processed_split_file_names + [\"large_graph_indexer\"]\n+        return [\"train_data.pt\", \"val_data.pt\", \"test_data.pt\"]\n \n     def download(self) -> None:\n         import datasets\n@@ -153,7 +149,7 @@ def _build_graph(self) -> None:\n         )\n \n         print(\"\\tSaving graph...\")\n-        self.indexer.save(self.processed_paths[-1])\n+        self.indexer.save(self.indexer_path)\n \n     def _retrieve_subgraphs(self) -> None:\n         for split_name, dataset, path in zip(\n@@ -223,12 +219,13 @@ def process(self) -> None:\n         self.model: SentenceTransformer = SentenceTransformer(model_name).to(\n             device)\n         self.model.eval()\n-        if self.force_reload or not os.path.exists(self.processed_paths[-1]):\n+        self.indexer_path = os.path.join(self.processed_dir,\n+                                         \"large_graph_indexer\")\n+        if self.force_reload or not os.path.exists(self.indexer_path):\n             self._build_graph()\n         else:\n             print(\"Loading graph...\")\n-            self.indexer = LargeGraphIndexer.from_disk(\n-                self.processed_paths[-1])\n+            self.indexer = LargeGraphIndexer.from_disk(self.indexer_path)\n         self.textual_nodes = DataFrame.from_dict(\n             {\"node_attr\": self.indexer.get_node_features()})\n         self.textual_nodes[\"node_id\"] = self.textual_nodes.index"
+    }
+  ],
+  "functions_modified": [
+    {
+      "function_name": "train",
+      "class_name": null,
+      "full_name": "train",
+      "start_line": 206,
+      "end_line": 386,
+      "lines_changed": [
+        287
+      ]
+    },
+    {
+      "function_name": "processed_file_names",
+      "class_name": "KGQABaseDataset",
+      "full_name": "KGQABaseDataset.processed_file_names",
+      "start_line": 91,
+      "end_line": 92,
+      "lines_changed": [
+        92
+      ]
+    },
+    {
+      "function_name": "_build_graph",
+      "class_name": "KGQABaseDataset",
+      "full_name": "KGQABaseDataset._build_graph",
+      "start_line": 122,
+      "end_line": 152,
+      "lines_changed": [
+        152
+      ]
+    },
+    {
+      "function_name": "process",
+      "class_name": "KGQABaseDataset",
+      "full_name": "KGQABaseDataset.process",
+      "start_line": 212,
+      "end_line": 244,
+      "lines_changed": [
+        222,
+        223,
+        224,
+        228
+      ]
+    }
+  ],
+  "step_plan": {
+    "steps": [
+      {
+        "operation": "Update GRetriever instantiation to match the new/default interface by removing the explicit `mlp_out_channels` argument",
+        "file_to_modify": "examples/llm/g_retriever.py",
+        "function_to_modify": "train",
+        "reason": "The example was passing an outdated/now-unnecessary parameter (`mlp_out_channels=llm.word_embedding.embedding_dim`) to `GRetriever(...)`, causing API drift with the current GRetriever constructor and making the example harder to keep in sync.",
+        "side_effects": "If downstream code relied on explicitly controlling the MLP output dimension from the example, behavior may change to the model’s internal default sizing; any custom checkpoints trained with the old setting might not be directly comparable."
+      },
+      {
+        "operation": "Remove the internal split-file-name helper property and stop including the indexer artifact in `processed_file_names`",
+        "file_to_modify": "torch_geometric/datasets/web_qsp_dataset.py",
+        "function_to_modify": "WebQSPDataset.processed_file_names",
+        "reason": "`processed_file_names` should list the dataset’s canonical processed artifacts (`train/val/test`), not auxiliary files like the graph indexer; keeping the indexer there made it participate in PyG’s processed-file bookkeeping and could trigger unnecessary disk checks/writes.",
+        "side_effects": "Any external tooling that expected `processed_paths[-1]` to be the indexer location will no longer work; processed file existence checks will now only reflect split tensors, not the indexer file."
+      },
+      {
+        "operation": "Change graph indexer save location to a dedicated `indexer_path` instead of relying on `processed_paths[-1]`",
+        "file_to_modify": "torch_geometric/datasets/web_qsp_dataset.py",
+        "function_to_modify": "WebQSPDataset._build_graph",
+        "reason": "After removing the indexer from `processed_file_names`, `processed_paths[-1]` no longer points to the indexer. Saving to an explicit `indexer_path` ensures the indexer is written to a stable, intentional location and avoids accidental overwrites/mismatched path assumptions.",
+        "side_effects": "The indexer file will always be stored at `processed_dir/large_graph_indexer`; any code assuming a different filename/order in `processed_paths` must be updated accordingly."
+      },
+      {
+        "operation": "Introduce and use an explicit `self.indexer_path` for existence checks and loading the indexer from disk to avoid unnecessary rebuilds/writes",
+        "file_to_modify": "torch_geometric/datasets/web_qsp_dataset.py",
+        "function_to_modify": "WebQSPDataset.process",
+        "reason": "Previously, the decision to rebuild/load the indexer was tied to `processed_paths[-1]`, which became unreliable and could cause redundant rebuilds (extra disk writes). Defining `self.indexer_path` and checking/loading it directly makes the cache check correct and reduces unnecessary disk activity.",
+        "side_effects": "Processing now depends on `self.indexer_path` being set before `_build_graph()` and `from_disk()` usage; any subclasses/overrides of `process()` must preserve this initialization order."
+      }
+    ],
+    "summary": "This PR updates the GRetriever example to match the current constructor API and refactors WebQSP dataset processing to store/load the large graph indexer via an explicit path, preventing incorrect cache checks and reducing unnecessary disk writes."
+  }
+}

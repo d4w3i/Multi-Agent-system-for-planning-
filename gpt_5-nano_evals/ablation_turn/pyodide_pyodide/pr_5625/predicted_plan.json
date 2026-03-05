@@ -1,0 +1,42 @@
+{
+  "pr_number": 5625,
+  "repository": "pyodide/pyodide",
+  "title": "Fix test_package_index test",
+  "body": "The test_package_index test started failing recently due to extra terminal output being produced during package import checks. The failure is likely caused by noisy stdout/stderr output from the test harness or package loading steps, which interferes with test stability.\n\nProposed fix: silence non-essential terminal output when loading packages and importing test modules in the test suite, specifically around the test_import path that exercises package imports according to the lockfile. This minimizes spurious output and stabilizes the test results without affecting the assertions or core logic of the test.\n\nNotes:\n- The change should be narrow to avoid affecting test semantics. \n- Ensure stdout/stderr is restored after the critical section so other tests aren’t affected.\n- No changes to the actual package loading logic; only the test harness output is silenced.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T13:39:24.893979",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "packages/_tests/test_packages_common.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "test_import",
+          "class_name": "packages/_tests/test_packages_common",
+          "full_name": "packages/_tests/test_packages_common.py.test_import",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Silence noisy terminal output in the test_packages_common.py test_import path to stabilize test_package_index without altering core test logic or package loading behavior.",
+    "steps": [
+      {
+        "operation": "Silence stdout/stderr during critical test_import execution by wrapping package loading and import checks with a suppression context and adding necessary imports",
+        "file_to_modify": "packages/_tests/test_packages_common.py",
+        "function_to_modify": "test_import",
+        "reason": "To prevent extraneous terminal output from interfering with the test stability when loading packages and executing import statements, while preserving test semantics.",
+        "side_effects": "Adds imports (contextlib, io) and a narrow stdout/stderr suppression around selenium_standalone.load_package(...) and the import execution. May hide debugging output during CI runs; stdout/stderr are restored after the critical section to avoid affecting other tests or tests outside this block."
+      }
+    ]
+  }
+}

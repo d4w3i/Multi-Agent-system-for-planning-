@@ -1,0 +1,49 @@
+{
+  "pr_number": 40,
+  "repository": "langchain-ai/local-deep-researcher",
+  "title": "convert max_web_research_loops to int to make sure comparison works",
+  "body": "This PR fixes a bug where max_web_research_loops was loaded from the environment as a string, which caused the comparison in the research routing logic to behave incorrectly. The fix ensures the value is treated as an int during the comparison and clarifies the intended type handling for environment-driven configuration.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T13:07:02.725510",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "src/assistant/configuration.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "from_runnable_config",
+          "class_name": "src/assistant",
+          "full_name": "src/assistant.configuration.Configuration.from_runnable_config",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Fix typing for environment-driven configuration by casting max_web_research_loops to int and converting related fields to their proper types, ensuring deterministic numeric comparisons in research routing.",
+    "steps": [
+      {
+        "operation": "Add robust type casting in Configuration.from_runnable_config",
+        "file_to_modify": "src/assistant/configuration.py",
+        "function_to_modify": "Configuration.from_runnable_config",
+        "reason": "Environment-derived inputs may come in as strings (e.g., max_web_research_loops) and must be cast to their declared types (int, bool, enum) to ensure downstream comparisons in routing behave correctly and to preserve zero or other falsy-but-valid values.",
+        "side_effects": "Tests should cover env var parsing for numeric and enum-like fields; downstream code relying on typed config may be affected; backward compatibility with existing configs should be preserved."
+      },
+      {
+        "operation": "Defensively cast max_web_research_loops to int in route_research",
+        "file_to_modify": "src/assistant.graph.py",
+        "function_to_modify": "route_research",
+        "reason": "To provide a safety net ensuring numeric comparisons remain correct even if an input slips through as a string, reinforcing robustness of the routing decision logic.",
+        "side_effects": "Minor performance overhead from an additional cast; routing tests should pass; may duplicate casting logic but improves reliability across environments."
+      }
+    ]
+  }
+}

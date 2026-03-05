@@ -1,0 +1,67 @@
+{
+  "pr_number": 237,
+  "repository": "JoeanAmier/XHS-Downloader",
+  "title": "fix can't run by source code",
+  "body": "the error is:    fix NoMatches: No nodes match <class 'textual.widgets._rich_log.RichLog'> on XHSDownloader",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T00:57:03.379169",
+    "extractor_version": "1.0.0",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "source/TUI/app.py",
+      "status": "modified",
+      "additions": 6,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "on_mount",
+          "class_name": "XHSDownloader",
+          "full_name": "XHSDownloader.on_mount",
+          "start_line": 46,
+          "end_line": 73,
+          "lines_changed": [
+            57,
+            58,
+            59,
+            60,
+            61,
+            62
+          ]
+        }
+      ],
+      "patch": "@@ -54,6 +54,12 @@ async def on_mount(self) -> None:\n         self.install_screen(Loading(), name=\"loading\")\n         self.install_screen(About(), name=\"about\")\n         self.install_screen(Record(self.APP, ), name=\"record\")\n+        \n+        # 1. first add RichLog component\n+        rich_log = RichLog()\n+        await self.mount(rich_log)\n+        \n+        # 2. then use query_one\n         await self.push_screen(\"index\")\n         self.SETTINGS.check_keys(\n             self.parameter,"
+    }
+  ],
+  "functions_modified": [
+    {
+      "function_name": "on_mount",
+      "class_name": "XHSDownloader",
+      "full_name": "XHSDownloader.on_mount",
+      "start_line": 46,
+      "end_line": 73,
+      "lines_changed": [
+        57,
+        58,
+        59,
+        60,
+        61,
+        62
+      ]
+    }
+  ],
+  "step_plan": {
+    "steps": [
+      {
+        "operation": "Mount a `RichLog` widget during app startup before any code path calls `query_one(RichLog)`",
+        "file_to_modify": "source/TUI/app.py",
+        "function_to_modify": "on_mount",
+        "reason": "Textual raises `NoMatches` when `query_one(RichLog)` is executed but no `RichLog` node exists in the DOM; explicitly creating and mounting a `RichLog()` in `on_mount` ensures the widget is present before later screens/components attempt to query it.",
+        "side_effects": "Adds an always-present `RichLog` node to the app DOM, which may affect layout/focus order and memory usage; any existing logic that mounts its own `RichLog` could now result in duplicate logs unless guarded."
+      }
+    ],
+    "summary": "Fixes a Textual runtime crash (`NoMatches` for `RichLog`) by ensuring a `RichLog` widget is mounted during `on_mount` so later queries can find it."
+  }
+}

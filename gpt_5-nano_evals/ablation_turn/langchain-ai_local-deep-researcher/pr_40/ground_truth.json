@@ -1,0 +1,57 @@
+{
+  "pr_number": 40,
+  "repository": "langchain-ai/local-deep-researcher",
+  "title": "convert max_web_research_loops to int to make sure comparison works",
+  "body": "This PR fixes a bug introduced by my previous PR and the getting the max_web_research_loops from the environment variable. I'm not sure why it is a string value when doing the `if state.research_loop_count <= int(configurable.max_web_research_loops):` compare, I fixed it with just another `int()` around it.\r\n\r\nSorry for that!",
+  "extraction_metadata": {
+    "extracted_at": "2026-02-26T01:08:52.822275",
+    "extractor_version": "1.0.0",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "src/assistant/graph.py",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "functions_modified": [
+        {
+          "function_name": "route_research",
+          "class_name": null,
+          "full_name": "route_research",
+          "start_line": 135,
+          "end_line": 142,
+          "lines_changed": [
+            139
+          ]
+        }
+      ],
+      "patch": "@@ -136,7 +136,7 @@ def route_research(state: SummaryState, config: RunnableConfig) -> Literal[\"fina\n     \"\"\" Route the research based on the follow-up query \"\"\"\n \n     configurable = Configuration.from_runnable_config(config)\n-    if state.research_loop_count <= configurable.max_web_research_loops:\n+    if state.research_loop_count <= int(configurable.max_web_research_loops):\n         return \"web_research\"\n     else:\n         return \"finalize_summary\""
+    }
+  ],
+  "functions_modified": [
+    {
+      "function_name": "route_research",
+      "class_name": null,
+      "full_name": "route_research",
+      "start_line": 135,
+      "end_line": 142,
+      "lines_changed": [
+        139
+      ]
+    }
+  ],
+  "step_plan": {
+    "steps": [
+      {
+        "operation": "Fix type mismatch in research loop guard by coercing `max_web_research_loops` to an integer at comparison time",
+        "file_to_modify": "src/assistant/graph.py",
+        "function_to_modify": "route_research",
+        "reason": "`Configuration.from_runnable_config(config)` can populate `max_web_research_loops` from an environment variable as a string, which breaks/invalidates the numeric `<=` comparison against `state.research_loop_count`; wrapping it in `int()` ensures the comparison is numeric and the routing logic behaves correctly.",
+        "side_effects": "If `max_web_research_loops` is not a valid integer string (e.g., empty or non-numeric), `int()` will raise a `ValueError`, potentially causing routing to fail at runtime; any callers relying on implicit string handling will now get strict numeric behavior."
+      }
+    ],
+    "summary": "Ensures the research loop routing condition compares numeric values by casting `max_web_research_loops` (potentially sourced as a string from the environment) to an int in `route_research`."
+  }
+}

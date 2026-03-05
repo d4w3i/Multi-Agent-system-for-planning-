@@ -1,0 +1,64 @@
+{
+    "repository": "apache/tvm",
+    "pull_request_number": 18102,
+    "title": "[RELAX] Fix rotary embedding buffer size calculation",
+    "body": "- Change head_dim//2 to rotary_dim//2 in LongRope scaling\r\n- Fixes buffer size when rotary_dim differs from head_dim when partial_rotary_factor < 1.0",
+    "pr_date": "2025-06-30T20:09:26Z",
+    "source_branch": "fix-rotary-dim-buffer-size",
+    "language": "en",
+    "keywords_detected": {
+        "branch": [
+            "fix"
+        ],
+        "requirement": [
+            "fix"
+        ],
+        "body": [
+            "change",
+            "fix"
+        ]
+    },
+    "number_of_links_in_pr": 0,
+    "base_sha": "9eb8b3004bf90d9082be680db5ce38121366c1d3",
+    "last_commit_sha": "be9d8d828abe1bc8a9012cbeb0e4f363741e0519",
+    "diff_between_base_and_last": [
+        {
+            "sha": "1a1659b29e1889ecee03946db65dc941a6eceece",
+            "filename": "python/tvm/relax/frontend/nn/llm/position_embedding.py",
+            "status": "modified",
+            "additions": 1,
+            "deletions": 1,
+            "changes": 2,
+            "blob_url": "https://github.com/apache/tvm/blob/be9d8d828abe1bc8a9012cbeb0e4f363741e0519/python%2Ftvm%2Frelax%2Ffrontend%2Fnn%2Fllm%2Fposition_embedding.py",
+            "raw_url": "https://github.com/apache/tvm/raw/be9d8d828abe1bc8a9012cbeb0e4f363741e0519/python%2Ftvm%2Frelax%2Ffrontend%2Fnn%2Fllm%2Fposition_embedding.py",
+            "contents_url": "https://api.github.com/repos/apache/tvm/contents/python%2Ftvm%2Frelax%2Ffrontend%2Fnn%2Fllm%2Fposition_embedding.py?ref=be9d8d828abe1bc8a9012cbeb0e4f363741e0519",
+            "patch": "@@ -493,7 +493,7 @@ def fused_rope_longrope_scaling(  # pylint: disable=too-many-locals\n         var_q: T.handle,\n         var_k: T.handle,\n         var_v: T.handle,\n-        ext_factors: T.Buffer((head_dim // 2,), \"float32\"),  # type: ignore\n+        ext_factors: T.Buffer((rotary_dim // 2,), \"float32\"),  # type: ignore\n     ):\n         T.func_attr(\n             {"
+        }
+    ],
+    "commits": [
+        {
+            "sha": "be9d8d828abe1bc8a9012cbeb0e4f363741e0519",
+            "commit_date": "2025-06-30T20:06:21Z",
+            "message": "[RELAX] Fix rotary embedding buffer size calculation\n\n* Change head_dim//2 to rotary_dim//2 in LongRope scaling\n* Fixes buffer size when rotary_dim differs from head_dim",
+            "number_of_links_in_commit": 0,
+            "files_changed_count": 1,
+            "files": [
+                {
+                    "sha": "1a1659b29e1889ecee03946db65dc941a6eceece",
+                    "filename": "python/tvm/relax/frontend/nn/llm/position_embedding.py",
+                    "status": "modified",
+                    "additions": 1,
+                    "deletions": 1,
+                    "changes": 2,
+                    "blob_url": "https://github.com/apache/tvm/blob/be9d8d828abe1bc8a9012cbeb0e4f363741e0519/python%2Ftvm%2Frelax%2Ffrontend%2Fnn%2Fllm%2Fposition_embedding.py",
+                    "raw_url": "https://github.com/apache/tvm/raw/be9d8d828abe1bc8a9012cbeb0e4f363741e0519/python%2Ftvm%2Frelax%2Ffrontend%2Fnn%2Fllm%2Fposition_embedding.py",
+                    "contents_url": "https://api.github.com/repos/apache/tvm/contents/python%2Ftvm%2Frelax%2Ffrontend%2Fnn%2Fllm%2Fposition_embedding.py?ref=be9d8d828abe1bc8a9012cbeb0e4f363741e0519",
+                    "patch": "@@ -493,7 +493,7 @@ def fused_rope_longrope_scaling(  # pylint: disable=too-many-locals\n         var_q: T.handle,\n         var_k: T.handle,\n         var_v: T.handle,\n-        ext_factors: T.Buffer((head_dim // 2,), \"float32\"),  # type: ignore\n+        ext_factors: T.Buffer((rotary_dim // 2,), \"float32\"),  # type: ignore\n     ):\n         T.func_attr(\n             {"
+                }
+            ]
+        }
+    ],
+    "pull_request_url": "https://github.com/apache/tvm/pull/18102",
+    "commits_url": "https://github.com/apache/tvm/pull/18102/commits",
+    "files_url": "https://github.com/apache/tvm/pull/18102/files"
+}

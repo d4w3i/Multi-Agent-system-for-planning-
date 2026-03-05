@@ -1,0 +1,556 @@
+{
+  "pr_number": 3237,
+  "repository": "huggingface/text-generation-inference",
+  "title": "move input_ids to hpu and remove disposal of adapter_meta",
+  "body": "# What does this PR do?\r\n\r\n<!--\r\nCongratulations! You've made it this far! You're not quite done yet though.\r\n\r\nOnce merged, your PR is going to appear in the release notes with the title you set, so make sure it's a great title that fully reflects the extent of your awesome contribution.\r\n\r\nThen, please replace this with a description of the change and which issue is fixed (if applicable). Please also include relevant motivation and context. List any dependencies (if any) that are required for this change.\r\n\r\nOnce you're done, someone will review your PR shortly (see the section \"Who can review?\" below to tag some potential reviewers). They may suggest changes to make the code even better. If no one reviewed your PR after a week has passed, don't hesitate to post a new comment @-mentioning the same persons---sometimes notifications get lost.\r\n-->\r\n\r\n<!-- Remove if not applicable -->\r\n\r\nFixes # (issue)\r\n\r\n\r\n## Before submitting\r\n- [ ] This PR fixes a typo or improves the docs (you can dismiss the other checks if that's the case).\r\n- [ ] Did you read the [contributor guideline](https://github.com/huggingface/transformers/blob/main/CONTRIBUTING.md#start-contributing-pull-requests),\r\n      Pull Request section?\r\n- [ ] Was this discussed/approved via a Github issue or the [forum](https://discuss.huggingface.co/)? Please add a link\r\n      to it if that's the case.\r\n- [ ] Did you make sure to update the documentation with your changes? Here are the\r\n      [documentation guidelines](https://github.com/huggingface/transformers/tree/main/docs), and\r\n      [here are tips on formatting docstrings](https://github.com/huggingface/transformers/tree/main/docs#writing-source-documentation).\r\n- [ ] Did you write any new necessary tests?\r\n\r\n\r\n## Who can review?\r\n\r\nAnyone in the community is free to review the PR once the tests have passed. Feel free to tag\r\nmembers/contributors who may be interested in your PR.\r\n\r\n<!-- Your PR will be replied to more quickly if you can figure out the right person to tag with @\r\n\r\n\r\n@OlivierDehaene OR @Narsil\r\n\r\n -->\r\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T01:01:22.415932",
+    "extractor_version": "1.0.0",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "backends/gaudi/server/text_generation_server/layers/attention/common.py",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "_async_h2d_tensor_copy",
+          "class_name": null,
+          "full_name": "_async_h2d_tensor_copy",
+          "start_line": 90,
+          "end_line": 98,
+          "lines_changed": [
+            93,
+            94
+          ]
+        }
+      ],
+      "patch": "@@ -90,6 +90,8 @@ def clamp(self, max):\n def _async_h2d_tensor_copy(source, device=\"hpu\"):\n     if source is None:\n         return None\n+    if source.device.type == \"hpu\":\n+        return source\n     assert source.device.type == \"cpu\", \"Source tensor is not present in host memory!\"\n     target = torch.empty(source.shape, dtype=source.dtype, device=device)\n     target.copy_(source, non_blocking=True)"
+    },
+    {
+      "filename": "backends/gaudi/server/text_generation_server/models/flash_causal_lm.py",
+      "status": "modified",
+      "additions": 128,
+      "deletions": 101,
+      "functions_modified": [
+        {
+          "function_name": "filter",
+          "class_name": "FlashCausalLMBatch",
+          "full_name": "FlashCausalLMBatch.filter",
+          "start_line": 512,
+          "end_line": 700,
+          "lines_changed": [
+            642,
+            643,
+            644,
+            645,
+            646,
+            647,
+            648,
+            649,
+            650,
+            651,
+            652,
+            653,
+            654,
+            655
+          ]
+        },
+        {
+          "function_name": "concatenate",
+          "class_name": "FlashCausalLMBatch",
+          "full_name": "FlashCausalLMBatch.concatenate",
+          "start_line": 704,
+          "end_line": 976,
+          "lines_changed": [
+            717,
+            771,
+            772,
+            773,
+            774,
+            775,
+            776,
+            777,
+            778,
+            779,
+            830,
+            854,
+            855,
+            856,
+            867,
+            868,
+            869,
+            870,
+            871,
+            872,
+            873,
+            874,
+            875,
+            876,
+            877,
+            878,
+            879,
+            880,
+            881,
+            924,
+            971
+          ]
+        },
+        {
+          "function_name": "prepare_for_prefill",
+          "class_name": "FlashCausalLMBatch",
+          "full_name": "FlashCausalLMBatch.prepare_for_prefill",
+          "start_line": 1031,
+          "end_line": 1331,
+          "lines_changed": [
+            1047,
+            1058,
+            1063,
+            1256,
+            1257,
+            1258,
+            1314,
+            1315,
+            1316,
+            1317,
+            1318,
+            1319,
+            1320,
+            1321,
+            1322,
+            1323,
+            1324,
+            1325,
+            1326,
+            1327,
+            1328,
+            1329,
+            1330,
+            1331
+          ]
+        },
+        {
+          "function_name": "forward",
+          "class_name": "FlashCausalLM",
+          "full_name": "FlashCausalLM.forward",
+          "start_line": 1889,
+          "end_line": 1993,
+          "lines_changed": [
+            1957,
+            1961,
+            1981
+          ]
+        },
+        {
+          "function_name": "generate_token",
+          "class_name": "FlashCausalLM",
+          "full_name": "FlashCausalLM.generate_token",
+          "start_line": 1996,
+          "end_line": 2426,
+          "lines_changed": [
+            2075,
+            2076,
+            2077,
+            2078,
+            2081,
+            2083,
+            2084,
+            2093,
+            2094,
+            2095,
+            2096,
+            2097,
+            2098,
+            2099,
+            2100,
+            2101,
+            2102,
+            2103,
+            2104,
+            2105,
+            2106,
+            2119,
+            2120,
+            2121,
+            2122,
+            2123,
+            2124,
+            2125,
+            2126,
+            2130,
+            2221,
+            2222,
+            2223,
+            2224,
+            2225,
+            2226,
+            2227,
+            2228,
+            2229,
+            2230,
+            2231,
+            2232,
+            2233,
+            2234,
+            2235,
+            2236,
+            2238,
+            2239,
+            2240,
+            2241,
+            2242,
+            2243,
+            2244,
+            2245,
+            2246,
+            2247
+          ]
+        }
+      ],
+      "patch": "@@ -634,21 +634,25 @@ def filter(self, request_ids: List[int]) -> \"FlashCausalLMBatch\":\n             # Index into tensors\n             input_ids = self.input_ids[indices]\n             position_ids = self.position_ids[indices]\n-            adapter_indices = self.adapter_meta.adapter_indices[indices]\n             input_lengths_tensor = self.input_lengths_tensor[indices]\n             cache_lengths_tensor = self.cache_lengths_tensor[indices]\n \n             # Move to GPU now that we have the whole tensor\n             slot_indices = slot_indices.to(device)\n-\n-            adapter_segments, adapter_segment_indices = find_segments(adapter_indices)\n-            adapter_segments = torch.tensor(adapter_segments, dtype=torch.int32)\n-            adapter_meta = AdapterBatchMetadata(\n-                adapter_indices=adapter_indices,\n-                adapter_set=adapter_set,\n-                adapter_segments=adapter_segments,\n-                segment_indices=adapter_segment_indices,\n-            )\n+            if self.adapter_meta is not None:\n+                adapter_indices = self.adapter_meta.adapter_indices[indices]\n+                adapter_segments, adapter_segment_indices = find_segments(\n+                    adapter_indices\n+                )\n+                adapter_segments = torch.tensor(adapter_segments, dtype=torch.int32)\n+                adapter_meta = AdapterBatchMetadata(\n+                    adapter_indices=adapter_indices,\n+                    adapter_set=adapter_set,\n+                    adapter_segments=adapter_segments,\n+                    segment_indices=adapter_segment_indices,\n+                )\n+            else:\n+                adapter_meta = None\n         htorch.core.mark_step()\n         return type(self)(\n             batch_id=self.batch_id,\n@@ -710,6 +714,7 @@ def concatenate(cls, batches: List[\"FlashCausalLMBatch\"]) -> \"FlashCausalLMBatch\n         max_length = 0\n         max_input_length = 0\n         max_current_length = 0\n+        ADAPTER_TO_INDEX = get_adapter_to_index()\n         for b in batches:\n             total_batch_size += len(b)\n             max_blocks = max(max_blocks, b.max_blocks)\n@@ -763,14 +768,15 @@ def concatenate(cls, batches: List[\"FlashCausalLMBatch\"]) -> \"FlashCausalLMBatch\n             cache_lengths_tensor = batches[0].cache_lengths_tensor.new_empty(\n                 total_batch_size\n             )\n-            total_indices_size = sum(\n-                b.adapter_meta.adapter_indices.shape[0] for b in batches\n-            )\n-            adapter_indices = batches[0].adapter_meta.adapter_indices.new_empty(\n-                total_indices_size\n-            )\n-            adapter_segment_builder = SegmentConcatBuilder()\n-            adapter_set = set()\n+            if ADAPTER_TO_INDEX:\n+                total_indices_size = sum(\n+                    b.adapter_meta.adapter_indices.shape[0] for b in batches\n+                )\n+                adapter_indices = batches[0].adapter_meta.adapter_indices.new_empty(\n+                    total_indices_size\n+                )\n+                adapter_segment_builder = SegmentConcatBuilder()\n+                adapter_set = set()\n \n         prompt_lengths_tensor = batches[0].prompt_lengths_tensor.new_empty(\n             total_batch_size\n@@ -821,9 +827,7 @@ def concatenate(cls, batches: List[\"FlashCausalLMBatch\"]) -> \"FlashCausalLMBatch\n             start_index = cumulative_batch_size\n             end_index = cumulative_batch_size + valid_bsize\n \n-            index = torch.tensor(\n-                list(range(start_index, end_index)), device=batch.input_ids.device\n-            )\n+            index = torch.tensor(list(range(start_index, end_index)), device=\"cpu\")\n             top_n_tokens_tensor.index_copy_(0, index, batch.top_n_tokens_tensor)\n             all_input_ids_tensor[\n                 start_index:end_index, : batch.all_input_ids_tensor.shape[1]\n@@ -847,7 +851,9 @@ def concatenate(cls, batches: List[\"FlashCausalLMBatch\"]) -> \"FlashCausalLMBatch\n             )\n \n             if not prefilling:\n-                input_ids.index_copy_(0, index, batch.input_ids[:valid_bsize])\n+                input_ids.index_copy_(\n+                    0, index.to(input_ids.device), batch.input_ids[:valid_bsize]\n+                )\n                 position_ids.index_copy_(0, index, batch.position_ids[:valid_bsize])\n                 slot_indices.index_copy_(\n                     0, index, batch.slot_indices + cumulative_slots\n@@ -858,20 +864,21 @@ def concatenate(cls, batches: List[\"FlashCausalLMBatch\"]) -> \"FlashCausalLMBatch\n                 cache_lengths_tensor.index_copy_(\n                     0, index, batch.cache_lengths_tensor[:valid_bsize]\n                 )\n-                adapter_start_index = cumulative_adapter_indices_size\n-                adapter_end_index = (\n-                    cumulative_adapter_indices_size\n-                    + batch.adapter_meta.adapter_indices.shape[0]\n-                )\n-                adapter_indices[adapter_start_index:adapter_end_index] = (\n-                    batch.adapter_meta.adapter_indices\n-                )\n-                cumulative_adapter_indices_size = adapter_end_index\n-                adapter_set.update(batch.adapter_meta.adapter_set)\n-                adapter_segment_builder.concat(\n-                    batch.adapter_meta.adapter_segments,\n-                    batch.adapter_meta.segment_indices,\n-                )\n+                if ADAPTER_TO_INDEX:\n+                    adapter_start_index = cumulative_adapter_indices_size\n+                    adapter_end_index = (\n+                        cumulative_adapter_indices_size\n+                        + batch.adapter_meta.adapter_indices.shape[0]\n+                    )\n+                    adapter_indices[adapter_start_index:adapter_end_index] = (\n+                        batch.adapter_meta.adapter_indices\n+                    )\n+                    cumulative_adapter_indices_size = adapter_end_index\n+                    adapter_set.update(batch.adapter_meta.adapter_set)\n+                    adapter_segment_builder.concat(\n+                        batch.adapter_meta.adapter_segments,\n+                        batch.adapter_meta.segment_indices,\n+                    )\n             else:\n                 if isinstance(batch.input_ids, torch.Tensor):\n                     batch.input_ids = batch.input_ids.view(-1, 1).tolist()\n@@ -914,7 +921,7 @@ def concatenate(cls, batches: List[\"FlashCausalLMBatch\"]) -> \"FlashCausalLMBatch\n         else:\n             speculative_ids = None\n \n-        if adapter_segment_builder is not None:\n+        if ADAPTER_TO_INDEX and adapter_segment_builder is not None:\n             adapter_segments, adapter_segment_indices = adapter_segment_builder.build()\n             adapter_meta = AdapterBatchMetadata(\n                 adapter_indices=adapter_indices,\n@@ -961,7 +968,7 @@ def concatenate(cls, batches: List[\"FlashCausalLMBatch\"]) -> \"FlashCausalLMBatch\n             num_blocks=num_blocks,\n             max_blocks=max_blocks,\n             speculative_ids=speculative_ids,\n-            adapter_meta=adapter_meta,\n+            adapter_meta=adapter_meta if ADAPTER_TO_INDEX else None,\n             hpu_attn_meta=None,\n             next_token_logits=None,\n             speculative_logits=None,\n@@ -1037,6 +1044,7 @@ def prepare_for_prefill(self, max_padded_input_len, max_padded_bs):\n         # need extra pad to match warmup seq\n         extra_pad = max_padded_input_len - self.max_input_length\n         extra_pad_bs = max_padded_bs - len(self)\n+        device = self.all_input_ids_tensor.device\n         if isinstance(self.input_ids, list) and len(self) > 1:\n             input_ids_padded_length = []\n             input_ids = []\n@@ -1047,12 +1055,12 @@ def prepare_for_prefill(self, max_padded_input_len, max_padded_bs):\n                 input_ids.append(input_id)\n                 input_ids_padded_length.append(padded)\n             input_ids = np.concatenate(input_ids, dtype=np.int64)\n-            self.input_ids = torch.tensor(input_ids, dtype=torch.int64)\n+            self.input_ids = torch.tensor(input_ids, dtype=torch.int64, device=device)\n         elif isinstance(self.input_ids, list):\n             input_ids = self.input_ids[0]\n             input_ids_padded_length.append(extra_pad)\n             input_ids = [0] * extra_pad + input_ids\n-            self.input_ids = torch.tensor(input_ids, dtype=torch.int64)\n+            self.input_ids = torch.tensor(input_ids, dtype=torch.int64, device=device)\n         else:\n             self.input_ids = F.pad(self.input_ids, (extra_pad, 0), value=0)\n             input_ids_padded_length.extend([extra_pad] * len(self))\n@@ -1245,7 +1253,9 @@ def prepare_for_prefill(self, max_padded_input_len, max_padded_bs):\n         self.slot_indices = slot_indices\n \n         self.prefill_cu_outlens = prefill_cu_outlens\n-        self.prefill_cache_indices = torch.zeros_like(self.input_ids, dtype=torch.bool)\n+        self.prefill_cache_indices = torch.zeros_like(\n+            self.input_ids, dtype=torch.bool, device=\"cpu\"\n+        )\n         self.prefill_cache_indices[prefill_cache_indices] = True\n \n         if all_prefill_logprobs:\n@@ -1301,21 +1311,24 @@ def prepare_for_prefill(self, max_padded_input_len, max_padded_bs):\n             fsm_grammar_states,\n         )\n \n-        if adapter_set:\n-            adapter_indices = torch.cat(adapter_indices_list).to(dtype=torch.int64)\n-            adapter_segments, adapter_segment_indices = find_segments(adapter_indices)\n-        else:\n-            adapter_indices = torch.zeros_like(self.input_ids)\n-            adapter_segments = [0, len(adapter_indices)]\n-            adapter_segment_indices = [len(adapter_indices) - 1]\n-\n-        adapter_segments = torch.tensor(adapter_segments, dtype=torch.int32)\n-        self.adapter_meta = AdapterBatchMetadata(\n-            adapter_indices=adapter_indices,\n-            adapter_set=adapter_set,\n-            adapter_segments=adapter_segments,\n-            segment_indices=adapter_segment_indices,\n-        )\n+        if ADAPTER_TO_INDEX:\n+            if adapter_set:\n+                adapter_indices = torch.cat(adapter_indices_list).to(dtype=torch.int64)\n+                adapter_segments, adapter_segment_indices = find_segments(\n+                    adapter_indices\n+                )\n+            else:\n+                adapter_indices = torch.zeros_like(self.input_ids)\n+                adapter_segments = [0, len(adapter_indices)]\n+                adapter_segment_indices = [len(adapter_indices) - 1]\n+\n+            adapter_segments = torch.tensor(adapter_segments, dtype=torch.int32)\n+            self.adapter_meta = AdapterBatchMetadata(\n+                adapter_indices=adapter_indices,\n+                adapter_set=adapter_set,\n+                adapter_segments=adapter_segments,\n+                segment_indices=adapter_segment_indices,\n+            )\n \n     def __len__(self):\n         return len(self.requests)\n@@ -1941,11 +1954,11 @@ def forward(\n             # This makes sure the max_s for the decode pass is correct.\n             max_s = min(self.max_past(), max_s)\n         if batch.prefill_cache_indices is not None:\n-            slots_pad = torch.zeros_like(input_ids)\n+            slots_pad = torch.zeros_like(input_ids, device=slots.device)\n             slots_pad[batch.prefill_cache_indices] = slots\n             slots = slots_pad\n         else:\n-            slots_pad = torch.zeros_like(input_ids)\n+            slots_pad = torch.zeros_like(input_ids, device=slots.device)\n             slots_pad[: slots.shape[0]] = slots\n             slots = slots_pad\n         seqlen = Seqlen(\n@@ -1965,7 +1978,7 @@ def forward(\n             )\n \n         logits, speculative_logits = self.model.forward(\n-            input_ids=_async_h2d_tensor_copy(input_ids),\n+            input_ids=input_ids,\n             position_ids=_async_h2d_tensor_copy(position_ids),\n             cu_seqlen_prefill=_async_h2d_tensor_copy(cu_seqlen_prefill),\n             kv_cache=kv_cache,\n@@ -2059,15 +2072,16 @@ def generate_token(\n                         batch.position_ids = batch.position_ids[indices]\n \n                     batch.slot_indices = batch.slot_indices[indices[: len(batch)]]\n-                    batch.adapter_meta.adapter_indices = (\n-                        batch.adapter_meta.adapter_indices[indices]\n-                    )\n+                    if batch.adapter_meta is not None:\n+                        batch.adapter_meta.adapter_indices = (\n+                            batch.adapter_meta.adapter_indices[indices]\n+                        )\n                 # For each member of the batch\n                 # Cumulative length\n-                accepted_ids = accepted_ids.cpu()\n-                cu_accepted_ids = accepted_ids.new_zeros(accepted_ids.shape[0] + 1)\n-                torch.cumsum(accepted_ids, dim=0, out=cu_accepted_ids[1:])\n+\n                 if batch.speculative_logits is not None:\n+                    cu_accepted_ids = accepted_ids.new_zeros(accepted_ids.shape[0] + 1)\n+                    torch.cumsum(accepted_ids, dim=0, out=cu_accepted_ids[1:])\n                     for i in range(len(batch)):\n                         batch.all_input_ids_tensor[\n                             i,\n@@ -2076,6 +2090,20 @@ def generate_token(\n                             + batch.input_lengths[i]\n                             + accepted_ids[i],\n                         ] = next_input_ids[cu_accepted_ids[i] : cu_accepted_ids[i + 1]]\n+                    batch.input_ids = next_input_ids[cu_accepted_ids[1:] - 1]\n+                    accepted_ids = accepted_ids.cpu()\n+                    if batch.position_ids.dim() == 2:\n+                        # Qwen2_vl case:\n+                        batch.position_ids += accepted_ids.unsqueeze(-1)\n+                    else:\n+                        batch.position_ids += accepted_ids\n+                    batch.cache_lengths_tensor += (\n+                        batch.input_lengths_tensor + accepted_ids - 1\n+                    )\n+                    batch.input_lengths_tensor = torch.ones_like(\n+                        batch.input_lengths_tensor\n+                    )\n+                    batch.slot_indices += accepted_ids[: len(batch)]\n                 else:\n                     index = batch.cache_lengths_tensor + batch.input_lengths_tensor\n                     index = index.to(batch.all_input_ids_tensor.device)\n@@ -2088,22 +2116,18 @@ def generate_token(\n                     batch.all_input_ids_tensor.index_put_(\n                         (batch_idx, index.long()), next_input_ids\n                     )\n-                next_input_ids = next_input_ids.cpu()\n-                batch.input_ids = next_input_ids[cu_accepted_ids[1:] - 1]\n+                    batch.input_ids = next_input_ids\n+                    batch.position_ids += 1\n+                    batch.cache_lengths_tensor += batch.input_lengths_tensor\n+                    batch.input_lengths_tensor = torch.ones_like(\n+                        batch.input_lengths_tensor\n+                    )\n+                    batch.slot_indices += 1\n+\n                 batch.speculative_ids = speculative_ids\n-                if batch.position_ids.dim() == 2:\n-                    # Qwen2_vl case:\n-                    batch.position_ids += accepted_ids.unsqueeze(-1)\n-                else:\n-                    batch.position_ids += accepted_ids\n-                batch.cache_lengths_tensor += (\n-                    batch.input_lengths_tensor + accepted_ids - 1\n-                )\n-                batch.input_lengths_tensor = torch.ones_like(batch.input_lengths_tensor)\n-                batch.slot_indices += accepted_ids[: len(batch)]\n \n                 # Does a HPU <-> CPU sync internally\n-                if prefill:\n+                if prefill and batch.adapter_meta is not None:\n                     # adjust segment lengths to account for all request lengths being 1 during decoding\n                     adapter_segments, _ = find_segments(\n                         batch.adapter_meta.adapter_indices\n@@ -2194,30 +2218,33 @@ def generate_token(\n         prefill_logprobs = batch.prefill_next_token_indices is not None\n         # Update adapter indices for speculative tokens (if present)\n         adapter_meta = batch.adapter_meta\n-        if batch.speculative_ids is not None:\n-            B, speculative_length = batch.speculative_ids.shape\n-            new_length = speculative_length + 1\n-            adapter_indices = (\n-                adapter_meta.adapter_indices.unsqueeze(-1)\n-                .expand(B, new_length)\n-                .reshape(-1)\n-            )\n-            adapter_segments = adapter_meta.adapter_segments * new_length\n-            adapter_meta = AdapterBatchMetadata(\n-                adapter_indices=adapter_indices,\n-                adapter_set=adapter_meta.adapter_set,\n-                adapter_segments=adapter_segments,\n-                segment_indices=adapter_meta.segment_indices,\n-            )\n+        if adapter_meta is not None:\n+            if batch.speculative_ids is not None:\n+                B, speculative_length = batch.speculative_ids.shape\n+                new_length = speculative_length + 1\n+                adapter_indices = (\n+                    adapter_meta.adapter_indices.unsqueeze(-1)\n+                    .expand(B, new_length)\n+                    .reshape(-1)\n+                )\n+                adapter_segments = adapter_meta.adapter_segments * new_length\n+                adapter_meta = AdapterBatchMetadata(\n+                    adapter_indices=adapter_indices,\n+                    adapter_set=adapter_meta.adapter_set,\n+                    adapter_segments=adapter_segments,\n+                    segment_indices=adapter_meta.segment_indices,\n+                )\n \n-        # Assign pointers to adapter weights\n-        # TODO(travis): don't update this if indices haven't changed\n-        adapter_data = AdapterBatchData.from_meta(\n-            adapter_meta,\n-            self.layer_to_adapter_weights,\n-            prefill,\n-            batch.prefill_head_indices,\n-        )\n+            # Assign pointers to adapter weights\n+            # TODO(travis): don't update this if indices haven't changed\n+            adapter_data = AdapterBatchData.from_meta(\n+                adapter_meta,\n+                self.layer_to_adapter_weights,\n+                prefill,\n+                batch.prefill_head_indices,\n+            )\n+        else:\n+            adapter_data = None\n \n         out, speculative_logits = self.forward(batch, adapter_data)\n "
+    },
+    {
+      "filename": "backends/gaudi/server/text_generation_server/models/flash_vlm_causal_lm.py",
+      "status": "modified",
+      "additions": 3,
+      "deletions": 3,
+      "functions_modified": [
+        {
+          "function_name": "forward",
+          "class_name": "FlashVlmCausalLM",
+          "full_name": "FlashVlmCausalLM.forward",
+          "start_line": 549,
+          "end_line": 664,
+          "lines_changed": [
+            630,
+            634,
+            642
+          ]
+        }
+      ],
+      "patch": "@@ -627,19 +627,19 @@ def forward(\n                 batch.prefilling, seqlen, batch_size\n             )\n         if batch.prefill_cache_indices is not None:\n-            slots_pad = torch.zeros_like(input_ids)\n+            slots_pad = torch.zeros_like(input_ids, device=slots.device)\n             slots_pad[batch.prefill_cache_indices] = slots\n             slots = slots_pad\n         else:\n-            slots_pad = torch.zeros_like(input_ids)\n+            slots_pad = torch.zeros_like(input_ids, device=slots.device)\n             slots_pad[: slots.shape[0]] = slots\n             slots = slots_pad\n \n         seqlen = Seqlen(\n             input_lengths=_async_h2d_tensor_copy(input_lengths),\n         )\n         logits, speculative_logits = self.model.forward(\n-            input_ids=_async_h2d_tensor_copy(input_ids),\n+            input_ids=input_ids,\n             position_ids=_async_h2d_tensor_copy(position_ids),\n             cu_seqlen_prefill=_async_h2d_tensor_copy(cu_seqlen_prefill),\n             kv_cache=kv_cache,"
+    },
+    {
+      "filename": "backends/gaudi/server/text_generation_server/models/mllama_causal_lm.py",
+      "status": "modified",
+      "additions": 4,
+      "deletions": 4,
+      "functions_modified": [
+        {
+          "function_name": "from_pb_processor",
+          "class_name": "FlashMllamaCausalLMBatch",
+          "full_name": "FlashMllamaCausalLMBatch.from_pb_processor",
+          "start_line": 171,
+          "end_line": 212,
+          "lines_changed": [
+            193
+          ]
+        },
+        {
+          "function_name": "forward",
+          "class_name": "FlashMllamaCausalLM",
+          "full_name": "FlashMllamaCausalLM.forward",
+          "start_line": 455,
+          "end_line": 590,
+          "lines_changed": [
+            540,
+            544,
+            573
+          ]
+        }
+      ],
+      "patch": "@@ -190,7 +190,7 @@ def from_pb_processor(\n                 input_ids = np.concatenate(batch.input_ids, dtype=np.int64)\n             else:\n                 input_ids = batch.input_ids[0]\n-            batch.input_ids = torch.tensor(input_ids, dtype=torch.int64)\n+            batch.input_ids = torch.tensor(input_ids, dtype=torch.int64, device=device)\n \n         batch.input_ids = batch.input_ids.clamp(max=config.text_config.vocab_size - 1)\n \n@@ -537,11 +537,11 @@ def forward(\n             )\n \n         if batch.prefill_cache_indices is not None:\n-            slots_pad = torch.zeros_like(input_ids)\n+            slots_pad = torch.zeros_like(input_ids, device=slots.device)\n             slots_pad[batch.prefill_cache_indices] = slots\n             slots = slots_pad\n         else:\n-            slots_pad = torch.zeros_like(input_ids)\n+            slots_pad = torch.zeros_like(input_ids, device=slots.device)\n             slots_pad[: slots.shape[0]] = slots\n             slots = slots_pad\n         orig_bs = len(batch)\n@@ -570,7 +570,7 @@ def forward(\n             input_lengths=_async_h2d_tensor_copy(input_lengths),\n         )\n         logits, speculative_logits = self.model.forward(\n-            input_ids=_async_h2d_tensor_copy(input_ids),\n+            input_ids=input_ids,\n             position_ids=_async_h2d_tensor_copy(position_ids),\n             cu_seqlen_prefill=_async_h2d_tensor_copy(cu_seqlen_prefill),\n             kv_cache=kv_cache,"
+    }
+  ],
+  "functions_modified": [
+    {
+      "function_name": "_async_h2d_tensor_copy",
+      "class_name": null,
+      "full_name": "_async_h2d_tensor_copy",
+      "start_line": 90,
+      "end_line": 98,
+      "lines_changed": [
+        93,
+        94
+      ]
+    },
+    {
+      "function_name": "filter",
+      "class_name": "FlashCausalLMBatch",
+      "full_name": "FlashCausalLMBatch.filter",
+      "start_line": 512,
+      "end_line": 700,
+      "lines_changed": [
+        642,
+        643,
+        644,
+        645,
+        646,
+        647,
+        648,
+        649,
+        650,
+        651,
+        652,
+        653,
+        654,
+        655
+      ]
+    },
+    {
+      "function_name": "concatenate",
+      "class_name": "FlashCausalLMBatch",
+      "full_name": "FlashCausalLMBatch.concatenate",
+      "start_line": 704,
+      "end_line": 976,
+      "lines_changed": [
+        717,
+        771,
+        772,
+        773,
+        774,
+        775,
+        776,
+        777,
+        778,
+        779,
+        830,
+        854,
+        855,
+        856,
+        867,
+        868,
+        869,
+        870,
+        871,
+        872,
+        873,
+        874,
+        875,
+        876,
+        877,
+        878,
+        879,
+        880,
+        881,
+        924,
+        971
+      ]
+    },
+    {
+      "function_name": "prepare_for_prefill",
+      "class_name": "FlashCausalLMBatch",
+      "full_name": "FlashCausalLMBatch.prepare_for_prefill",
+      "start_line": 1031,
+      "end_line": 1331,
+      "lines_changed": [
+        1047,
+        1058,
+        1063,
+        1256,
+        1257,
+        1258,
+        1314,
+        1315,
+        1316,
+        1317,
+        1318,
+        1319,
+        1320,
+        1321,
+        1322,
+        1323,
+        1324,
+        1325,
+        1326,
+        1327,
+        1328,
+        1329,
+        1330,
+        1331
+      ]
+    },
+    {
+      "function_name": "forward",
+      "class_name": "FlashCausalLM",
+      "full_name": "FlashCausalLM.forward",
+      "start_line": 1889,
+      "end_line": 1993,
+      "lines_changed": [
+        1957,
+        1961,
+        1981
+      ]
+    },
+    {
+      "function_name": "generate_token",
+      "class_name": "FlashCausalLM",
+      "full_name": "FlashCausalLM.generate_token",
+      "start_line": 1996,
+      "end_line": 2426,
+      "lines_changed": [
+        2075,
+        2076,
+        2077,
+        2078,
+        2081,
+        2083,
+        2084,
+        2093,
+        2094,
+        2095,
+        2096,
+        2097,
+        2098,
+        2099,
+        2100,
+        2101,
+        2102,
+        2103,
+        2104,
+        2105,
+        2106,
+        2119,
+        2120,
+        2121,
+        2122,
+        2123,
+        2124,
+        2125,
+        2126,
+        2130,
+        2221,
+        2222,
+        2223,
+        2224,
+        2225,
+        2226,
+        2227,
+        2228,
+        2229,
+        2230,
+        2231,
+        2232,
+        2233,
+        2234,
+        2235,
+        2236,
+        2238,
+        2239,
+        2240,
+        2241,
+        2242,
+        2243,
+        2244,
+        2245,
+        2246,
+        2247
+      ]
+    },
+    {
+      "function_name": "forward",
+      "class_name": "FlashVlmCausalLM",
+      "full_name": "FlashVlmCausalLM.forward",
+      "start_line": 549,
+      "end_line": 664,
+      "lines_changed": [
+        630,
+        634,
+        642
+      ]
+    },
+    {
+      "function_name": "from_pb_processor",
+      "class_name": "FlashMllamaCausalLMBatch",
+      "full_name": "FlashMllamaCausalLMBatch.from_pb_processor",
+      "start_line": 171,
+      "end_line": 212,
+      "lines_changed": [
+        193
+      ]
+    },
+    {
+      "function_name": "forward",
+      "class_name": "FlashMllamaCausalLM",
+      "full_name": "FlashMllamaCausalLM.forward",
+      "start_line": 455,
+      "end_line": 590,
+      "lines_changed": [
+        540,
+        544,
+        573
+      ]
+    }
+  ],
+  "step_plan": {
+    "steps": [
+      {
+        "operation": "Add an early-return guard to avoid copying tensors that are already on HPU",
+        "file_to_modify": "backends/gaudi/server/text_generation_server/layers/attention/common.py",
+        "function_to_modify": "_async_h2d_tensor_copy",
+        "reason": "With later changes moving `input_ids` to HPU earlier, the existing helper would assert that the source tensor is on CPU. Returning the tensor unchanged when it is already on HPU prevents unnecessary copies and avoids the assertion failure.",
+        "side_effects": "Any caller relying on the assertion to catch non-CPU tensors will no longer fail for HPU tensors; behavior becomes more permissive and may mask unexpected device placement issues for HPU specifically."
+      },
+      {
+        "operation": "Make adapter metadata handling optional when filtering a batch (avoid unconditional access and rebuilding when adapters are disabled)",
+        "file_to_modify": "backends/gaudi/server/text_generation_server/models/flash_causal_lm.py",
+        "function_to_modify": "FlashCausalLMBatch.filter",
+        "reason": "The PR removes disposal/mandatory presence of `adapter_meta`; this function previously assumed `self.adapter_meta` always existed and would crash when adapters are not configured. Guarding the segment computation and metadata construction allows adapter-less operation.",
+        "side_effects": "Downstream code paths that expect `adapter_meta` to be present must tolerate `None`; this can change behavior for mixed adapter/non-adapter requests and affects any logic that uses adapter segmentation."
+      },
+      {
+        "operation": "Gate concatenation-time adapter index aggregation behind adapter availability and adjust index tensor device usage",
+        "file_to_modify": "backends/gaudi/server/text_generation_server/models/flash_causal_lm.py",
+        "function_to_modify": "FlashCausalLMBatch.concatenate",
+        "reason": "Concatenation previously always allocated/filled adapter index buffers and built adapter segments, which fails when adapters are not enabled and is wasted work otherwise. Additionally, constructing the `index` tensor on CPU and explicitly moving it only for `input_ids.index_copy_` avoids device mismatch when `input_ids` is on HPU while other tensors remain CPU.",
+        "side_effects": "If `get_adapter_to_index()` is empty/falsey, adapter metadata will be `None`, affecting downstream adapter weight selection. Device transfers for `index` may slightly change performance characteristics and expose latent device assumptions in other `index_copy_` calls."
+      },
+      {
+        "operation": "Ensure prefill padding creates `input_ids` on the same device as existing batch tensors and keep prefill cache mask on CPU",
+        "file_to_modify": "backends/gaudi/server/text_generation_server/models/flash_causal_lm.py",
+        "function_to_modify": "FlashCausalLMBatch.prepare_for_prefill",
+        "reason": "The PR goal is to move `input_ids` to HPU; when `input_ids` is rebuilt from Python lists/numpy during prefill padding, it must be created directly on the correct device to avoid later mismatches. Keeping `prefill_cache_indices` on CPU matches its usage as a boolean mask and avoids HPU allocation/transfer overhead.",
+        "side_effects": "Any code assuming `input_ids` is CPU after prefill preparation will break; CPU-resident boolean masks used to index HPU tensors can have framework-specific constraints and may trigger implicit sync/copies depending on PyTorch/HPU backend behavior."
+      },
+      {
+        "operation": "Fix slots padding tensor device placement to match the `slots` tensor during forward pass",
+        "file_to_modify": "backends/gaudi/server/text_generation_server/models/flash_causal_lm.py",
+        "function_to_modify": "FlashCausalLM.forward",
+        "reason": "`torch.zeros_like(input_ids)` will place the pad tensor on the same device as `input_ids`; once `input_ids` is on HPU but `slots` lives elsewhere (or vice-versa), assignment can fail. Creating the pad tensor on `slots.device` prevents cross-device assignment errors.",
+        "side_effects": "If `input_ids` and `slots` were intentionally on different devices for some reason, this change forces the pad buffer to follow `slots`, potentially altering device memory usage and performance."
+      },
+      {
+        "operation": "Pass `input_ids` directly into the model forward (remove async CPU→HPU copy for `input_ids`)",
+        "file_to_modify": "backends/gaudi/server/text_generation_server/models/flash_causal_lm.py",
+        "function_to_modify": "FlashCausalLM.forward",
+        "reason": "After moving `input_ids` to HPU earlier, calling `_async_h2d_tensor_copy(input_ids)` is redundant and may assert/copy incorrectly. Passing through directly ensures `input_ids` stays on-device and avoids extra transfers.",
+        "side_effects": "Callers must now ensure `input_ids` is already on the correct device (HPU) before `model.forward`; otherwise performance regresses (implicit transfers) or execution fails depending on backend expectations."
+      },
+      {
+        "operation": "Refactor token generation state updates to avoid unnecessary CPU transfers and make adapter updates conditional",
+        "file_to_modify": "backends/gaudi/server/text_generation_server/models/flash_causal_lm.py",
+        "function_to_modify": "FlashCausalLM.generate_token",
+        "reason": "The implementation adjusts speculative vs non-speculative update paths so that `next_input_ids`/`input_ids` can remain on-device and only converts `accepted_ids` to CPU when needed for scalar-like updates. It also avoids touching `batch.adapter_meta` when it is `None`, aligning with the 'remove disposal of adapter_meta' intent and preventing attribute errors.",
+        "side_effects": "Generation-time bookkeeping (`position_ids`, `cache_lengths_tensor`, `slot_indices`) is now updated in different branches; subtle off-by-one or shape differences could affect decoding correctness. Conditional adapter segment recomputation changes when adapter metadata is refreshed, potentially impacting adapter routing for prefill+decode transitions."
+      },
+      {
+        "operation": "Only build adapter batch data when adapter metadata exists (and handle speculative expansion conditionally)",
+        "file_to_modify": "backends/gaudi/server/text_generation_server/models/flash_causal_lm.py",
+        "function_to_modify": "FlashCausalLM.generate",
+        "reason": "The generate loop previously always expanded `adapter_meta` for speculative tokens and always created `AdapterBatchData`, which fails when adapters are disabled. Guarding these operations allows adapter-less inference and prevents unnecessary work.",
+        "side_effects": "When adapters are disabled, downstream layers must tolerate `adapter_data=None`. Any code assuming adapters are always present (e.g., fused kernels expecting adapter pointers) must have a safe no-adapter path."
+      },
+      {
+        "operation": "Align other Gaudi model variants to stop copying `input_ids` and fix slots padding device placement (and create input_ids on-device where constructed)",
+        "file_to_modify": "backends/gaudi/server/text_generation_server/models/flash_vlm_causal_lm.py",
+        "function_to_modify": "FlashVLMCausalLM.forward",
+        "reason": "To keep behavior consistent across model types, VLM forward must also pass `input_ids` directly (since it may already be on HPU) and allocate `slots_pad` on `slots.device` to avoid device mismatch when `input_ids` device changes.",
+        "side_effects": "VLM execution now depends on upstream code to ensure `input_ids` is on the right device; any remaining call sites that kept `input_ids` on CPU may now fail or incur implicit transfers."
+      }
+    ],
+    "summary": "This PR moves `input_ids` handling to stay on HPU (avoiding redundant CPU→HPU copies) and makes adapter metadata truly optional by guarding adapter-related logic throughout batching and generation. It also fixes several device-placement issues (notably slot padding tensors) that become visible once `input_ids` is no longer CPU-bound."
+  }
+}

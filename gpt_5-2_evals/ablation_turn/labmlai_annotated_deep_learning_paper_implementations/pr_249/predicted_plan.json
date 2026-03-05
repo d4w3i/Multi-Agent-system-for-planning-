@@ -1,0 +1,102 @@
+{
+  "pr_number": 249,
+  "repository": "labmlai/annotated_deep_learning_paper_implementations",
+  "title": "fix dim error in rope",
+  "body": "fix the following error when running _test_rotary():\n\n\"\"\"\n...\n    x_rope = (x_rope * self.cos_cached[:x.shape[0]]) + (neg_half_x * self.sin_cached[:x.shape[0]])\nRuntimeError: The size of tensor a (3) must match the size of tensor b (4) at non-singleton dimension 3\n\"\"\"",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T12:20:38.189794",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "labml_nn/transformers/rope/__init__.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "__init__",
+          "class_name": "RotaryPositionalEmbeddings",
+          "full_name": "RotaryPositionalEmbeddings.__init__",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_build_cache",
+          "class_name": "RotaryPositionalEmbeddings",
+          "full_name": "RotaryPositionalEmbeddings._build_cache",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "forward",
+          "class_name": "RotaryPositionalEmbeddings",
+          "full_name": "RotaryPositionalEmbeddings.forward",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "__init__",
+          "class_name": "RotaryPEMultiHeadAttention",
+          "full_name": "RotaryPEMultiHeadAttention.__init__",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_test_rotary",
+          "class_name": null,
+          "full_name": "_test_rotary",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Fixes a RoPE dimension mismatch by making the rotary dimension consistently even across initialization, cache construction, and forward application, preventing cached cos/sin tensors from disagreeing with the sliced input. Also hardens RoPE-enabled attention to avoid producing odd rotary dimensions and updates the included rotary test accordingly.",
+    "steps": [
+      {
+        "operation": "Enforce an even rotary dimension (or derive an internal even `d_rope`) and store it consistently for downstream cache/forward usage; raise a clear error if the provided `d` is invalid for the chosen policy (e.g., odd or > input width assumptions).",
+        "file_to_modify": "labml_nn/transformers/rope/__init__.py",
+        "function_to_modify": "RotaryPositionalEmbeddings.__init__",
+        "reason": "RoPE rotates features in pairs; allowing odd `d` causes cache construction to implicitly expand to an even size while `forward()` slices to the odd size, creating deterministic shape mismatches like the reported 3 vs 4.",
+        "side_effects": "May change behavior for callers that previously passed odd `d` (they will either get a ValueError or have `d` rounded). Any docs/comments/tests that instantiate RoPE with odd dims may need updating."
+      },
+      {
+        "operation": "Rebuild cos/sin cache so the cached last dimension matches the *effective* rotary dimension exactly (the even `d_rope` used in `forward`), and ensure caching uses the correct device/dtype and max sequence length semantics.",
+        "file_to_modify": "labml_nn/transformers/rope/__init__.py",
+        "function_to_modify": "RotaryPositionalEmbeddings._build_cache",
+        "reason": "Current cache logic uses `torch.arange(0, self.d, 2)` and concatenation, which yields `2 * ceil(d/2)` features; when `d` is odd this becomes larger than the sliced `x_rope` and triggers the runtime broadcast error.",
+        "side_effects": "Cache tensor shapes will change for odd requested `d` (now aligned to effective even rotary dim). Any code that assumes the old cache shapes (unlikely outside the class) could be affected; cache invalidation/rebuild conditions should be checked to avoid stale shapes."
+      },
+      {
+        "operation": "Make `forward()` apply RoPE to exactly the same even rotary sub-dimension used to build the cache, and handle leftovers consistently (e.g., concatenate unrotated tail back). Add explicit runtime checks for `x.shape[-1] >= d_rope` and for cached shapes matching the computed `x_rope` shape.",
+        "file_to_modify": "labml_nn/transformers/rope/__init__.py",
+        "function_to_modify": "RotaryPositionalEmbeddings.forward",
+        "reason": "The mismatch currently surfaces in `forward()` where `x_rope = x[..., :self.d]` can be odd-sized while cache is even-sized. Aligning slicing with cache and/or validating sizes prevents silent broadcasting issues and produces actionable errors.",
+        "side_effects": "Behavior for odd `d` becomes deterministic (either error or rotate first even part). Additional checks may raise earlier exceptions in misconfigured models; may require minor performance consideration but should be negligible."
+      },
+      {
+        "operation": "Ensure the computed `d_rope = int(self.d_k * rope_percentage)` is always compatible with pairwise rotation by forcing it to an even number per the chosen policy (e.g., floor to nearest even, or clamp to >=2 and even), and pass that into `RotaryPositionalEmbeddings`.",
+        "file_to_modify": "labml_nn/transformers/rope/__init__.py",
+        "function_to_modify": "RotaryPEMultiHeadAttention.__init__",
+        "reason": "Even if RoPE is fixed, `RotaryPEMultiHeadAttention` can still request an odd rotary dimension depending on `rope_percentage` and `d_k`, re-triggering the same cache/input incompatibility in real model runs.",
+        "side_effects": "Slightly changes effective rope coverage for some hyperparameter combinations (odd -> nearest even). Could affect numerical outputs and reproducibility for existing configs; should be documented in code comment or constructor validation message."
+      },
+      {
+        "operation": "Update `_test_rotary()` to use a valid even rotary dimension (e.g., 4) and/or add a test branch that asserts the new behavior for odd `d` (either raises a clear error or rounds and runs) to prevent regressions.",
+        "file_to_modify": "labml_nn/transformers/rope/__init__.py",
+        "function_to_modify": "_test_rotary",
+        "reason": "The current test constructs `RotaryPositionalEmbeddings(3)` against an input with last dim 4, which is invalid for pairwise RoPE and directly triggers the reported runtime error. The test should reflect supported behavior and lock it in.",
+        "side_effects": "Test expectations change: it will no longer reproduce the runtime error; instead it will validate the corrected dimension handling. If the repo’s CI relies on this test behavior, it should now pass and guard against future odd-d regressions."
+      }
+    ]
+  }
+}

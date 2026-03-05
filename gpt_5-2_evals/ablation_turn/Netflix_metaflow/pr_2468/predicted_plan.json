@@ -1,0 +1,80 @@
+{
+  "pr_number": 2468,
+  "repository": "Netflix/metaflow",
+  "title": "Fixup how commands show up as part of the Runner API",
+  "body": "When injecting commands to the runner, the stubs generated were not accurate or complete. This addresses this issue",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T11:53:20.252205",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "metaflow/runner/metaflow_runner.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "__new__",
+          "class_name": "RunnerMeta",
+          "full_name": "RunnerMeta.__new__",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "metaflow/cmd/develop/stub_generator.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "_generate_class_stub",
+          "class_name": "StubGenerator",
+          "full_name": "StubGenerator._generate_class_stub",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_generate_function_stub",
+          "class_name": "StubGenerator",
+          "full_name": "StubGenerator._generate_function_stub",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Fix Runner API stub generation so dynamically injected CLI subcommands appear completely and with correct names, docstrings, and signatures. This is achieved by preserving/attaching callable signature metadata at injection time and teaching the stub generator to use that metadata when emitting Runner class stubs.",
+    "steps": [
+      {
+        "operation": "Preserve and expose accurate CLI command metadata/signatures for dynamically injected Runner methods",
+        "file_to_modify": "metaflow/runner/metaflow_runner.py",
+        "function_to_modify": "RunnerMeta.__new__",
+        "reason": "Runner subcommands are injected as wrapper methods with a generic `(*args, **kwargs)` signature, which causes runtime-introspection stub generation to emit incomplete/incorrect stubs. Attach the underlying callable and/or its `inspect.Signature` to the injected method (e.g., via `__signature__`, `__wrapped__`, and/or a class-level mapping like `_runner_injected_methods[name] = runner_subcommand`) so stubgen can recover the real API surface reliably.",
+        "side_effects": "May change how `help()`, IDEs, and introspection report Runner methods (now showing the underlying signature). If `__signature__` is set, downstream code relying on the old generic signature could observe differences. Ensure wrapper still forwards args correctly and remains compatible with all injected commands."
+      },
+      {
+        "operation": "Extend class stub generation to special-case Runner and emit stubs for injected commands using preserved metadata",
+        "file_to_modify": "metaflow/cmd/develop/stub_generator.py",
+        "function_to_modify": "StubGenerator._generate_class_stub",
+        "reason": "The stub generator already needs explicit handling for metaclass/dynamic injection patterns (as noted for other classes). Add Runner-specific logic to (a) discover injected Runner methods (preferably via a mapping/metadata installed by `RunnerMeta.__new__`), (b) include all injected commands in the class stub (ensuring completeness), and (c) use the underlying callable/signature/docstring rather than the wrapper’s `*args, **kwargs`.",
+        "side_effects": "Generated `metaflow-stubs` will change (more methods and/or corrected signatures). Any tests that snapshot stubs will need updates. If discovery relies on a new attribute (e.g., `_runner_injected_methods`), stubgen becomes coupled to that contract and should handle older versions gracefully (fallback to current behavior if missing)."
+      },
+      {
+        "operation": "Allow function stub generation to accept an override signature/callable for injected Runner methods and render it correctly",
+        "file_to_modify": "metaflow/cmd/develop/stub_generator.py",
+        "function_to_modify": "StubGenerator._generate_function_stub",
+        "reason": "To avoid duplicating signature formatting logic, adjust `_generate_function_stub` to support a provided signature (or an alternate callable such as the underlying runner CLI function) when generating a method stub. This ensures Runner-injected methods can be emitted with accurate positional/keyword-only args, defaults, and annotations even when the runtime wrapper differs.",
+        "side_effects": "May affect stub output for other dynamically generated methods if they start using this override mechanism. Requires careful handling of bound-method `self` (drop/keep first parameter as appropriate) and consistent rendering of annotations/defaults to avoid breaking existing stub formatting expectations."
+      }
+    ]
+  }
+}

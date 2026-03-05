@@ -1,0 +1,65 @@
+{
+  "pr_number": 40,
+  "repository": "langchain-ai/local-deep-researcher",
+  "title": "convert max_web_research_loops to int to make sure comparison works",
+  "body": "This PR fixes a bug introduced by my previous PR and the getting the max_web_research_loops from the environment variable. I'm not sure why it is a string value when doing the `if state.research_loop_count <= int(configurable.max_web_research_loops):` compare, I fixed it with just another `int()` around it.\n\nSorry for that!",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T13:33:02.471499",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "src/assistant/graph.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "route_research",
+          "class_name": null,
+          "full_name": "route_research",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "src/assistant/configuration.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "from_runnable_config",
+          "class_name": "Configuration",
+          "full_name": "Configuration.from_runnable_config",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Fix the runtime comparison bug by casting configurable.max_web_research_loops to int in route_research and optionally harden Configuration.from_runnable_config to coerce environment-provided strings into the dataclass field types (int/bool/Enum) and avoid dropping valid zero values.",
+    "steps": [
+      {
+        "operation": "Cast configured max to int at comparison site",
+        "file_to_modify": "src/assistant/graph.py",
+        "function_to_modify": "route_research",
+        "reason": "When configuration values are loaded from environment variables they can be strings. The comparison between state.research_loop_count (int) and configurable.max_web_research_loops (potentially a str) fails or behaves incorrectly. Casting the configured value to int at the comparison ensures a correct numeric comparison with minimal, localized change.",
+        "side_effects": "Minimal runtime impact; prevents the numeric-vs-string comparison bug. Tests touching route_research that assume numeric behavior should pass after the change; if any code elsewhere expects configurable.max_web_research_loops to remain a string, it will not be affected because this change only performs an int() at comparison time. If the environment value is not parseable as int, a ValueError may be raised at runtime — consider adding validation in Configuration.from_runnable_config (see next step) or wrapping with a safe conversion to provide clearer error messages."
+      },
+      {
+        "operation": "Coerce runnable config values to dataclass field types (int/bool/Enum) and avoid dropping valid zero values",
+        "file_to_modify": "src/assistant/configuration.py",
+        "function_to_modify": "Configuration.from_runnable_config",
+        "reason": "from_runnable_config currently injects raw environment/config strings into the Configuration dataclass, leaving numeric or boolean fields as strings. Converting incoming values to the target dataclass field types (using dataclasses.fields to inspect types, converting to int/bool, resolving Enums, etc.) prevents similar type-related bugs throughout the codebase. Also, adjust any filtering that removes falsy values so valid values such as 0 are preserved (e.g., only filter out None or empty strings, not numeric zero).",
+        "side_effects": "Broad effect on how configuration is created: other code will now receive proper typed values (ints/bools/Enums) which can prevent many runtime issues but may reveal places that incorrectly rely on raw strings. Tests that construct configurations with strings should still work but tests that rely on preceding behavior of filtering falsy values (e.g., dropping '0') need to be updated. Invalid values (e.g., non-integer strings for integer fields) should be surfaced as clear configuration errors — consider adding validation and clear error messages. This change is backward-compatible for callers that expect typed fields, but may require small updates where code intentionally relied on the prior raw-string behavior."
+      }
+    ]
+  }
+}

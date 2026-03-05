@@ -1,0 +1,57 @@
+{
+  "pr_number": 925,
+  "repository": "plasma-umass/scalene",
+  "title": "Fix for overwriting LD_PRELOAD if it contains libscalene.so and other values",
+  "body": "It looks like in some cases setup_preload gets called more than once, so it was adding `libscalene.so` to `LD_PRELOAD` the first time then later replacing `LD_PRELOAD`  with just `libscalene.so`, this fixes that case.\n\nExplore the source code to identify the files and functions to modify.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T12:32:41.845773",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "scalene/scalene_preload.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "get_preload_environ",
+          "class_name": "ScalenePreload",
+          "full_name": "ScalenePreload.get_preload_environ",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "setup_preload",
+          "class_name": "ScalenePreload",
+          "full_name": "ScalenePreload.setup_preload",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Fix Linux preload setup so repeated calls to setup_preload/get_preload_environ never clobber an existing LD_PRELOAD that already contains libscalene.so alongside other libraries. The change makes LD_PRELOAD handling token-aware and idempotent, preventing accidental overwrites and unnecessary respawns.",
+    "steps": [
+      {
+        "operation": "Make LD_PRELOAD construction idempotent by parsing the existing value, detecting whether libscalene.so is already present, and only adding it when missing while preserving all other entries (no clobbering on repeated calls).",
+        "file_to_modify": "scalene/scalene_preload.py",
+        "function_to_modify": "ScalenePreload.get_preload_environ",
+        "reason": "The bug described (LD_PRELOAD first being extended, then later overwritten to only libscalene.so) originates in how get_preload_environ() builds env['LD_PRELOAD'] from os.environ. Ensuring exact token-based detection and preserving existing entries makes repeated invocations safe and stable.",
+        "side_effects": "Changes the exact string form/order of LD_PRELOAD in some cases (e.g., deduping or normalizing separators), which can affect downstream equality checks and may slightly change preload ordering semantics. Should be verified on Linux with typical existing LD_PRELOAD values (paths, multiple libs, empty tokens)."
+      },
+      {
+        "operation": "Adjust the respawn/update decision to avoid unnecessary churn when the effective LD_PRELOAD already contains libscalene.so and other libraries, and ensure repeated setup_preload() calls do not trigger an environment rewrite that collapses LD_PRELOAD.",
+        "file_to_modify": "scalene/scalene_preload.py",
+        "function_to_modify": "ScalenePreload.setup_preload",
+        "reason": "setup_preload() is the repeated entry point mentioned in the PR; its logic depends on comparing the required environment from get_preload_environ() with the current process environment. Once LD_PRELOAD handling is fixed, setup_preload should (a) not overwrite the parent environment in a way that can re-trigger the bug and (b) not respawn solely due to superficial string differences.",
+        "side_effects": "May reduce the number of respawns / env rewrites in some scenarios; if any code relied on the previous (buggy) overwrite behavior or on strict string equality (including ordering) to force a respawn, behavior will change. Requires manual verification that the profiler still activates correctly after multiple invocations in the same process."
+      }
+    ]
+  }
+}

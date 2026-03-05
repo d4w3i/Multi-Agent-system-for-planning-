@@ -1,0 +1,42 @@
+{
+  "pr_number": 1706,
+  "repository": "confident-ai/deepeval",
+  "title": "Fixing IndexError list index out of range in Synthesizer.generate_goldens_from_docs()",
+  "body": "This fixes https://github.com/confident-ai/deepeval/issues/1682\n\nExplore the source code to identify the files and functions to modify.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T12:46:31.639454",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "deepeval/synthesizer/synthesizer.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "generate_goldens_from_contexts",
+          "class_name": "Synthesizer",
+          "full_name": "Synthesizer.generate_goldens_from_contexts",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Fix a variable-shadowing bug in Synthesizer.generate_goldens_from_contexts by renaming the inner-loop index so the outer context index is not overwritten, preventing IndexError when accessing source_files/_context_scores.",
+    "steps": [
+      {
+        "operation": "Rename inner-loop index variable to avoid shadowing outer context index and update its usages",
+        "file_to_modify": "deepeval/synthesizer/synthesizer.py",
+        "function_to_modify": "Synthesizer.generate_goldens_from_contexts",
+        "reason": "The synchronous implementation currently uses `for i, context in enumerate(contexts):` as the outer loop and reuses `i` in an inner loop (`for i in range(max_goldens_per_context):`), which rebinds the outer context index. This causes later lookups like source_files[i] and _context_scores[i] to reference the wrong index (and sometimes be out of range). Renaming the inner loop variable (e.g., `k`) and adjusting any uses (such as in progress bar labels or local indexing that meant the per-golden index) prevents shadowing and preserves correct indexing into source_files and _context_scores.",
+        "side_effects": "Low-risk, localized change. Potential impacts: unit tests that assert exact progress-bar text or refer to the inner loop variable name could need updates (unlikely). No API changes — function signature unchanged. Async generation paths are unaffected because they already use a non-shadowing outer index name. Downstream code that relies on correct source_files/_context_scores mapping will now behave correctly; run/generate tests that cover synchronous generation with multiple contexts and max_goldens_per_context > 1 to confirm fix. If any local variables inside the inner loop previously used the name `k` or another chosen new name, ensure no naming collision when selecting the replacement variable name."
+      }
+    ]
+  }
+}

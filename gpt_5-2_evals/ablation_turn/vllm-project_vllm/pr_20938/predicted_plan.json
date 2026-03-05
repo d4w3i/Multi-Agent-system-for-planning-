@@ -1,0 +1,95 @@
+{
+  "pr_number": 20938,
+  "repository": "vllm-project/vllm",
+  "title": "Fix overflow indexing in causal_conv1d kernel",
+  "body": "This PR fixes an indexing overflow issue that can occur when running mamba-based models in V1. Before V1 integration, the value of `conv_state_batch_coord` could vary from `0` to `max_num_seqs-1`. However, with V1 integration it can now vary between `0` and `num_gpu_blocks-1`. Depending on the model and deployment, the number of blocks can be orders of magnitude higher and I'm running into overflow issues unless we explicitly cast to `tl.int64`.\n\nPlease note I already made the equivalent fix to the `selective_state_update` as part of #20016. I forgot to make the equivalent change to this kernel.\n\nTest plan/result: n/a (hard to repro deterministically).",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T12:51:01.323988",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "vllm/model_executor/layers/mamba/ops/causal_conv1d.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "_causal_conv1d_fwd_kernel",
+          "class_name": null,
+          "full_name": "_causal_conv1d_fwd_kernel",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_causal_conv1d_update_kernel",
+          "class_name": null,
+          "full_name": "_causal_conv1d_update_kernel",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "tests/kernels/mamba/test_causal_conv1d.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "test_causal_conv1d_update_with_batch_gather",
+          "class_name": null,
+          "full_name": "test_causal_conv1d_update_with_batch_gather",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "test_causal_conv1d_varlen",
+          "class_name": null,
+          "full_name": "test_causal_conv1d_varlen",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Fix an indexing overflow risk in the Mamba causal_conv1d Triton kernels by promoting conv_state_batch_coord to tl.int64 before address calculations in both forward and update kernels. Optionally strengthen existing causal_conv1d tests to better cover large cache/block index regimes introduced by V1 integration.",
+    "steps": [
+      {
+        "operation": "Promote conv_state_batch_coord to tl.int64 before any pointer arithmetic and make bounds/mask comparisons type-consistent in the forward Triton kernel",
+        "file_to_modify": "vllm/model_executor/layers/mamba/ops/causal_conv1d.py",
+        "function_to_modify": "_causal_conv1d_fwd_kernel",
+        "reason": "With V1 integration, conv_state_batch_coord can be as large as num_gpu_blocks-1; if it remains tl.int32, intermediate products like conv_state_batch_coord * stride_conv_state_seq (and any subsequent adds) can overflow and yield incorrect addresses. Casting immediately after tl.load ensures all downstream address math is performed in 64-bit.",
+        "side_effects": "Slightly higher cost for a few scalar index ops; should be negligible vs memory/convolution work. May require adjusting any comparisons (e.g., against pad_slot_id / num_cache_lines) to avoid unintended implicit casts. Existing kernel tests should continue to pass; this reduces risk of silent memory corruption in large-block deployments."
+      },
+      {
+        "operation": "Promote conv_state_batch_coord to tl.int64 early and ensure all conv-state pointer expressions use the widened type in the update/decode Triton kernel",
+        "file_to_modify": "vllm/model_executor/layers/mamba/ops/causal_conv1d.py",
+        "function_to_modify": "_causal_conv1d_update_kernel",
+        "reason": "The update kernel uses conv_state_batch_coord in multiple pointer computations (e.g., conv_states_base / conv_state_ptrs_source / conv_state_base). If any of these compute offsets with 32-bit intermediates, large V1 block indices can overflow and misaddress reads/writes. Casting right after load guarantees correct 64-bit offset computation throughout the kernel.",
+        "side_effects": "Same performance/correctness tradeoff as the fwd kernel: minimal overhead, improved safety. May require harmonizing dtypes in pad-slot checks and cache-line bounds checks to keep masking correct. Downstream callers unchanged, but the kernel becomes robust for large num_gpu_blocks scenarios."
+      },
+      {
+        "operation": "Strengthen the update-kernel continuous-batching gather test to include large conv_state_indices values (within allocated cache) and higher total_entries, to exercise int64 index math paths",
+        "file_to_modify": "tests/kernels/mamba/test_causal_conv1d.py",
+        "function_to_modify": "test_causal_conv1d_update_with_batch_gather",
+        "reason": "True 32-bit overflow is hard to reproduce deterministically in unit tests, but this regression-style enhancement can still cover the intended behavior by (a) generating conv_state_indices with large magnitudes (e.g., near the maximum allocated cache line) and (b) increasing total_entries enough to stress address calculations and masking. This increases the chance of catching accidental regressions where indices remain int32 or are cast too late.",
+        "side_effects": "Test runtime and memory usage may increase; needs careful sizing to stay within CI GPU limits. Randomized large indices must remain in-bounds to avoid invalid memory accesses; may require seeding for stability."
+      },
+      {
+        "operation": "Strengthen the varlen forward-kernel test to use large cache_indices/conv_state_indices (still in-bounds) and non-trivial shapes so conv-state base pointer math is exercised under large-index conditions",
+        "file_to_modify": "tests/kernels/mamba/test_causal_conv1d.py",
+        "function_to_modify": "test_causal_conv1d_varlen",
+        "reason": "The forward varlen path is the other kernel site where conv_state_batch_coord participates in stride-based pointer arithmetic. Expanding the test to place sequences at high cache-line indices helps ensure the tl.int64 promotion is effective and that pad-slot/bounds masks still behave correctly for large indices.",
+        "side_effects": "Potentially increases test time; must keep allocations reasonable. May need to tune parameters (num_seqs/total_entries/cache size) to avoid flakiness and ensure determinism while still exercising large-index pointer computations."
+      }
+    ]
+  }
+}

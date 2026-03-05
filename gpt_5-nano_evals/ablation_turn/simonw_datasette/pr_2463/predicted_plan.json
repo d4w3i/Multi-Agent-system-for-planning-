@@ -1,0 +1,42 @@
+{
+  "pr_number": 2463,
+  "repository": "simonw/datasette",
+  "title": "Use the event_loop fixture",
+  "body": "This PR updates the test fixtures to explicitly consume the event_loop fixture provided by pytest-asyncio. By declaring the event_loop parameter on the ds_client fixture, pytest will manage the asyncio event loop lifecycle more reliably across tests, reducing the risk of nested loop usage or runtime warnings.\n\nNo production code changes are involved; only test scaffolding is adjusted to align with pytest-asyncio best practices referenced in the related discussion (see PR description link in the PR body).",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T13:51:01.268303",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "tests/conftest.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "ds_client",
+          "class_name": null,
+          "full_name": "ds_client",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Adopt the event_loop fixture in the ds_client test fixture to ensure pytest-asyncio manages the asyncio loop lifecycle consistently across tests.",
+    "steps": [
+      {
+        "operation": "Modify ds_client fixture to accept the event_loop fixture",
+        "file_to_modify": "tests/conftest.py",
+        "function_to_modify": "ds_client",
+        "reason": "To delegate event loop lifecycle management to pytest-asyncio by consuming the event_loop fixture, aligning with best practices and preventing potential nested loop warnings.",
+        "side_effects": "Test suite will depend on pytest-asyncio's event_loop fixture; ensure pytest-asyncio is configured in the test environment; minor adjustments may be needed if tests reference the loop directly; no production code changes; run tests to confirm there are no regressions"
+      }
+    ]
+  }
+}

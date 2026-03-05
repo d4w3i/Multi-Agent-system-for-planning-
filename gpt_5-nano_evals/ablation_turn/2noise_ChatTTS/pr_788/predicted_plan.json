@@ -1,0 +1,42 @@
+{
+  "pr_number": 788,
+  "repository": "2noise/ChatTTS",
+  "title": "Fix for Ascend NPU when using ChatTTS to sample the voice of a real speaker",
+  "body": "Bugfix: Avoid complex dtype operations in MelSpectrogram when running on Ascend NPU (torch_npu) during sampling of a real speaker with ChatTTS. The issue arises during MelSpectrogram computation, which can trigger unsupported complex dtype operations on some NPU backends. The proposed change moves MelSpectrogram computation off the Ascend NPU to CPU when NPU is detected, then transfers the result back to the target device for subsequent processing. This keeps sampling functional on Ascend hardware without requiring changes to the broader model flow.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T11:40:26.327710",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "ChatTTS/model/dvae.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "forward",
+          "class_name": "MelSpectrogramFeatures",
+          "full_name": "MelSpectrogramFeatures.forward",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Fix runtime issues on Ascend NPU by computing MelSpectrogram on CPU when NPU is detected and transferring the result back to the target device, isolating the change to MelSpectrogramFeatures.forward.",
+    "steps": [
+      {
+        "operation": "Implement device-aware MelSpectrogram computation in MelSpectrogramFeatures.forward",
+        "file_to_modify": "ChatTTS/model/dvae.py",
+        "function_to_modify": "MelSpectrogramFeatures.forward",
+        "reason": "To avoid unsupported complex dtype operations on Ascend NPU during sampling by performing MelSpectrogram on CPU and moving the result back to the configured device",
+        "side_effects": "Adds cross-device tensor transfers; may incur small performance overhead during sampling on NPU; downstream computations must handle tensors on the original device; requires regression tests on CPU and Ascend NPU paths; keep existing CPU/GPU paths unchanged"
+      }
+    ]
+  }
+}

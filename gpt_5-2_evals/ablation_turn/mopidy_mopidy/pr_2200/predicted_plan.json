@@ -1,0 +1,124 @@
+{
+  "pr_number": 2200,
+  "repository": "mopidy/mopidy",
+  "title": "add workaround for gstreamer 1.25.0 to 1.26.2",
+  "body": "see-also: https://gitlab.freedesktop.org/gstreamer/gstreamer/-/commit/bbf60305ed2ee35f4ecf7a5de2bb139203dda2af",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T12:26:43.698567",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "src/mopidy/audio/actor.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "_setup_playbin",
+          "class_name": "Audio",
+          "full_name": "Audio._setup_playbin",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_setup_audio_sink",
+          "class_name": "Audio",
+          "full_name": "Audio._setup_audio_sink",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "on_message",
+          "class_name": "_Handler",
+          "full_name": "_Handler.on_message",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "on_pad_event",
+          "class_name": "_Handler",
+          "full_name": "_Handler.on_pad_event",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "src/mopidy/internal/gi.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    },
+    {
+      "filename": "src/mopidy/internal/deps.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "gstreamer_info",
+          "class_name": null,
+          "full_name": "gstreamer_info",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Add a narrowly-scoped, version-gated workaround for a GStreamer regression affecting versions 1.25.0 through 1.26.1, applying it during Mopidy’s GStreamer playbin/sink setup and/or message/event handling. Also surface a diagnostic note in dependency reporting to make the workaround discoverable and easy to remove when older GStreamer versions are no longer supported.",
+    "steps": [
+      {
+        "operation": "Add a reusable helper to detect GStreamer versions affected by the 1.25.0–1.26.1 regression (>=1.25.0 and <1.26.2), using Gst.version() semantics, and expose it for audio pipeline code to use as a narrow feature gate.",
+        "file_to_modify": "src/mopidy/internal/gi.py",
+        "function_to_modify": "(add helper near Gst init, e.g., is_gst_version_between / is_gst_workaround_needed)",
+        "reason": "Centralizes version-range logic so the workaround is consistently applied and easy to remove once Mopidy’s minimum supported GStreamer is bumped past 1.26.1.",
+        "side_effects": "Any importers may start depending on the helper; ensure it does not trigger Gst.init side effects earlier than today. Might require adjusting internal API expectations if other modules import gi.py at startup."
+      },
+      {
+        "operation": "Gate the workaround at playbin construction time: after creating playbin and setting core properties/signals, conditionally apply the smallest upstream-aligned tweak (property toggle, signal hookup change, or ordering change) only when the affected-version helper returns true; also add a debug/info log stating the workaround is active and why.",
+        "file_to_modify": "src/mopidy/audio/actor.py",
+        "function_to_modify": "Audio._setup_playbin",
+        "reason": "Playbin setup is the safest point to apply behavior changes that avoid the regression while keeping runtime handling unchanged outside the affected range.",
+        "side_effects": "May slightly alter playback behavior (buffering/flags/source-setup timing) on affected versions only; mis-scoping could impact stable versions, so keep the conditional tight and the change minimal. Might require updating any tests or assumptions about playbin property defaults."
+      },
+      {
+        "operation": "If the regression touches sink-bin/queue behavior, apply a version-gated adjustment in the custom audio-sink bin assembly (e.g., queue properties, caps/event forwarding choice, or linking order), again logging when activated; otherwise ensure sink setup remains identical and only references the shared gate for clarity.",
+        "file_to_modify": "src/mopidy/audio/actor.py",
+        "function_to_modify": "Audio._setup_audio_sink",
+        "reason": "Many GStreamer regressions manifest at the sink/queue boundary (segment/caps/event propagation). Keeping the workaround localized here prevents broad pipeline rewrites and reduces risk.",
+        "side_effects": "Could change latency/buffering characteristics on affected versions; may impact users with custom audio sink configuration. Must not break non-affected versions’ negotiation or linking."
+      },
+      {
+        "operation": "Add version-conditional filtering/handling for the specific problematic bus message pattern introduced by the regression (e.g., ignore/defang a spurious ERROR/STATE_CHANGED/STREAM_START ordering or special-case a transient failure), ensuring normal behavior for other versions and preserving existing state machine expectations.",
+        "file_to_modify": "src/mopidy/audio/actor.py",
+        "function_to_modify": "_Handler.on_message",
+        "reason": "If upstream changed message ordering or introduced transient messages in 1.25–1.26.1, the most robust workaround is to normalize or ignore the problematic messages at the bus boundary under a strict version gate.",
+        "side_effects": "Risk of masking real errors if the filter is too broad; keep the condition narrow (message type + details + version range) and include logging to aid debugging. Could affect downstream actor state transitions and tests that assert message-driven behavior."
+      },
+      {
+        "operation": "Guard/adjust pad probe SEGMENT (or related) event parsing/handling under the affected-version gate (e.g., tolerate unexpected segment formats/fields, avoid raising on parse failure, or skip processing when it would trigger the regression), with debug logs for traceability.",
+        "file_to_modify": "src/mopidy/audio/actor.py",
+        "function_to_modify": "_Handler.on_pad_event",
+        "reason": "The referenced upstream fix suggests event/segment semantics could have changed; a conditional relaxation here prevents Mopidy from mis-handling events or triggering the buggy code path on affected versions.",
+        "side_effects": "May reduce accuracy of position/segment-related bookkeeping on affected versions. If skipping processing, ensure no invariants elsewhere rely on these events for correctness."
+      },
+      {
+        "operation": "Extend dependency diagnostics to surface when Mopidy is running on an affected GStreamer version and that a workaround is enabled (include detected version and range), without changing output for other versions.",
+        "file_to_modify": "src/mopidy/internal/deps.py",
+        "function_to_modify": "gstreamer_info",
+        "reason": "Improves supportability: users/reporters can immediately see they are in the impacted version range and that Mopidy applied a workaround, reducing time to diagnose issues.",
+        "side_effects": "Changes `mopidy deps` (or equivalent) output formatting; may require updating documentation or tests that assert exact dependency-report strings."
+      }
+    ]
+  }
+}

@@ -1,0 +1,42 @@
+{
+  "pr_number": 243,
+  "repository": "darrenburns/posting",
+  "title": "fix(collection): prevent markup parsing",
+  "body": "Prevent the request description from being parsed as markup.\n\nFixes #241.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T12:33:05.349581",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "src/posting/widgets/collection/browser.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "watch_request",
+          "class_name": "RequestPreview",
+          "full_name": "RequestPreview.watch_request",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Fix rendering of request descriptions in the collection browser to treat descriptions as plain text, avoiding markup parsing.",
+    "steps": [
+      {
+        "operation": "Wrap description rendering in RequestPreview.watch_request with a plain-text renderable",
+        "file_to_modify": "src/posting/widgets/collection/browser.py",
+        "function_to_modify": "RequestPreview.watch_request",
+        "reason": "Current rendering passes the raw description string to a UI component that may interpret markup. Wrapping it in a plain-text renderable prevents markup parsing and renders the text as-is.",
+        "side_effects": "UI now renders descriptions as plain text; tests relying on markup rendering may require updates to expect plain text; may require importing/using a Text renderable; no changes to data model or persistence."
+      }
+    ]
+  }
+}

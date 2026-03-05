@@ -1,0 +1,65 @@
+{
+  "pr_number": 1632,
+  "repository": "ultrafunkamsterdam/undetected-chromedriver",
+  "title": "fixed options not having headless attribute",
+  "body": "Fixes errors:\n\nline 398, in __init__\n    if headless or options.headless:\n                   ^^^^^^^^^^^^^^^^\nAttributeError: 'ChromeOptions' object has no attribute 'headless'\n\n\nline 488, in __init__\n    if options.headless:\n       ^^^^^^^^^^^^^^^^\nAttributeError: 'ChromeOptions' object has no attribute 'headless'",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T12:49:40.563528",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "undetected_chromedriver/__init__.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "__init__",
+          "class_name": "Chrome",
+          "full_name": "Chrome.__init__",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "undetected_chromedriver/options.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "from_options",
+          "class_name": "ChromeOptions",
+          "full_name": "ChromeOptions.from_options",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Fix `AttributeError` crashes by ensuring headless state is safely accessible even when Selenium options objects don’t expose a `.headless` attribute. Update `Chrome.__init__` to guard reads and update `ChromeOptions.from_options` to guarantee a default `headless` attribute after cloning.",
+    "steps": [
+      {
+        "operation": "Make headless checks robust by using a safe accessor and persisting a default headless flag on the options object",
+        "file_to_modify": "undetected_chromedriver/__init__.py",
+        "function_to_modify": "Chrome.__init__",
+        "reason": "`Chrome.__init__` currently reads `options.headless` directly (e.g., `if headless or options.headless:` and later `if options.headless:`), but Selenium’s `ChromeOptions/ChromiumOptions` may not define a `.headless` attribute, causing `AttributeError`. Using `getattr(options, 'headless', False)` (or equivalent) eliminates the crash and allows both UC options and Selenium-native options to work. Persisting the resolved value via `setattr(options, 'headless', bool_value)` ensures later code paths have a consistent attribute to read.",
+        "side_effects": "May slightly change behavior for callers passing a Selenium options instance that happens to have a different headless representation (arguments only): the code will now infer headless from the explicit `headless` parameter and/or existing headless args if you add that inference. Ensure downstream logic that injects/removes `--headless*` flags still behaves as expected across Chrome versions; run any integration tests that launch Chrome in headless/non-headless modes."
+      },
+      {
+        "operation": "Ensure cloned/normalized options always have a `headless` attribute with a safe default after copying from external options",
+        "file_to_modify": "undetected_chromedriver/options.py",
+        "function_to_modify": "ChromeOptions.from_options",
+        "reason": "`ChromeOptions.from_options` clones an arbitrary Selenium options object (often via `__dict__`). If the source options lacks `.headless`, the resulting UC `ChromeOptions` can also lack it, and later reads in `Chrome.__init__` (or other code) can fail. After cloning, explicitly set `headless` to `getattr(source, 'headless', False)` (or default `False`) on the returned `ChromeOptions` instance so the attribute is always present and predictable.",
+        "side_effects": "If callers rely on headless being implied solely by presence of `--headless*` arguments, you may want to keep `headless` defaulting to `False` unless explicitly set; otherwise you could optionally infer from arguments. Validate that `from_options()` continues to preserve other option fields (binary location, prefs, experimental options) and doesn’t regress serialization or equality expectations."
+      }
+    ]
+  }
+}

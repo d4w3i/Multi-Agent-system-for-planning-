@@ -1,0 +1,124 @@
+{
+  "pr_number": 2127,
+  "repository": "DLR-RM/stable-baselines3",
+  "title": "Feature/batch norm",
+  "body": "Added a boolean `use_batch_norm` flag to the CNN and MLP feature extractors.\n- In **NatureCNN**, each convolutional block now conditionally inserts an `nn.BatchNorm2d` layer (before the ReLU) when `use_batch_norm=True`.\n- In **create_mlp**, an initial `nn.BatchNorm1d` may be applied to the inputs, and batch-norm modules can wrap each linear layer.\nAll defaults remain unchanged (batch norm off), and existing behavior is fully preserved.\n\nMotivation: optional batch norm can improve training stability and convergence; claims improved PPO performance on Atari-like benchmarks.\n\nChecklist mentions: changelog, docs, tests updated.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T11:44:04.395904",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "stable_baselines3/common/torch_layers.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "__init__",
+          "class_name": "NatureCNN",
+          "full_name": "NatureCNN.__init__",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "create_mlp",
+          "class_name": null,
+          "full_name": "create_mlp",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "__init__",
+          "class_name": "CombinedExtractor",
+          "full_name": "CombinedExtractor.__init__",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "stable_baselines3/common/policies.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "__init__",
+          "class_name": "BaseModel",
+          "full_name": "BaseModel.__init__",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "make_features_extractor",
+          "class_name": "BaseModel",
+          "full_name": "BaseModel.make_features_extractor",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "tests/test_cnn.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    },
+    {
+      "filename": "docs/misc/changelog.rst",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    }
+  ],
+  "step_plan": {
+    "summary": "Add an opt-in `use_batch_norm` flag to SB3’s built-in NatureCNN and `create_mlp` utilities, inserting BatchNorm layers when enabled while keeping defaults and existing behavior unchanged. Ensure policy plumbing continues to pass `features_extractor_kwargs` correctly so users can enable BatchNorm via policy kwargs without breaking save/load or inference.",
+    "steps": [
+      {
+        "operation": "Add `use_batch_norm` parameter and conditionally insert `nn.BatchNorm2d` layers in each conv block (Conv2d -> BatchNorm2d -> ReLU) while preserving the exact previous architecture when disabled",
+        "file_to_modify": "stable_baselines3/common/torch_layers.py",
+        "function_to_modify": "NatureCNN.__init__",
+        "reason": "Implements the opt-in BatchNorm behavior for the default CNN feature extractor without changing existing defaults or output shapes, ensuring stability improvements are available but not forced.",
+        "side_effects": "Changes the module graph when enabled; affects train/eval behavior (BatchNorm running stats) and may behave poorly with very small batch sizes; requires updating/adding tests that check layer ordering and forward pass consistency."
+      },
+      {
+        "operation": "Extend `create_mlp` API with a `use_batch_norm: bool = False` (and, if required by the PR description, an input BN option) and inject `nn.BatchNorm1d` either as an initial input module and/or wrapping each linear layer in the hidden stack while keeping defaults identical",
+        "file_to_modify": "stable_baselines3/common/torch_layers.py",
+        "function_to_modify": "create_mlp",
+        "reason": "Provides an ergonomic, backwards-compatible way to enable BatchNorm in MLP builders used across SB3 (policy/value nets), leveraging SB3’s existing pre/post-linear module mechanism while making BatchNorm a first-class opt-in.",
+        "side_effects": "Signature expansion may require updating call sites only if they use positional args beyond the existing signature; BatchNorm introduces running statistics and different behavior between `.train()`/`.eval()`; must ensure output layer behavior remains unchanged and that no BN is applied when `use_batch_norm=False`."
+      },
+      {
+        "operation": "Ensure `CombinedExtractor` remains compatible with the new `NatureCNN` signature (and optionally pass through BN-related kwargs if the extractor supports it) without changing default behavior",
+        "file_to_modify": "stable_baselines3/common/torch_layers.py",
+        "function_to_modify": "CombinedExtractor.__init__",
+        "reason": "`CombinedExtractor` instantiates `NatureCNN` internally; if `NatureCNN` gains new kwargs, this initializer must either remain unaffected (via defaults) or explicitly handle/passthrough kwargs to avoid breaking multi-input observation policies.",
+        "side_effects": "Potentially alters feature extractor construction for Dict observation spaces when BN is enabled; may require adding/adjusting tests for MultiInputPolicy or dict observations if BN kwargs are intended to propagate."
+      },
+      {
+        "operation": "Validate and document that `features_extractor_kwargs` safely carries the new `use_batch_norm` option (no collisions with existing auto-injected kwargs like `normalized_image`) and that it is stored for serialization",
+        "file_to_modify": "stable_baselines3/common/policies.py",
+        "function_to_modify": "BaseModel.__init__",
+        "reason": "Policies are the user-facing entry point; the constructor is responsible for normalizing/storing `features_extractor_kwargs`. Confirming compatibility ensures users can enable BN via `policy_kwargs={'features_extractor_kwargs': {'use_batch_norm': True}}` and still save/load models reliably.",
+        "side_effects": "If logic is added to sanitize/merge kwargs, it can affect existing downstream policies; requires verifying that serialization of constructor parameters continues to include the new flag when provided."
+      },
+      {
+        "operation": "Ensure feature extractor construction passes `features_extractor_kwargs` through unchanged so `use_batch_norm` reaches `NatureCNN` (and any other extractor) and add/adjust any typing/docstring hints to reflect the new supported kwarg",
+        "file_to_modify": "stable_baselines3/common/policies.py",
+        "function_to_modify": "BaseModel.make_features_extractor",
+        "reason": "This is the choke point where extractors are instantiated. Verifying pass-through guarantees the new flag actually activates BatchNorm in practice when configured via policy kwargs.",
+        "side_effects": "If additional validation is introduced, it could reject previously tolerated kwargs; requires running existing policy construction tests and adding a targeted test that a CNN policy builds with `use_batch_norm=True` and can run a forward pass."
+      }
+    ]
+  }
+}

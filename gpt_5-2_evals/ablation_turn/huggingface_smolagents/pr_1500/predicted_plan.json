@@ -1,0 +1,64 @@
+{
+  "pr_number": 1500,
+  "repository": "huggingface/smolagents",
+  "title": "Fix: step callbacks not being triggered for planning steps",
+  "body": "Fixes https://github.com/huggingface/smolagents/issues/1499 \n\nStep callbacks were previously only executed for ActionStep objects but not for PlanningStep objects, creating inconsistent behavior where callbacks that should be invoked for every step were skipped during planning phases.\n\n**Changes:**\n- Modified `_finalize_step()` to accept both `ActionStep | PlanningStep` types\n- Added `_finalize_step(planning_step)` call in planning step flow\n\n**Backward Compatibility:**\n- No breaking changes - existing callbacks continue to work unchanged\n- Preserves same execution order of finalizing step & adding to memory as ActionStep flow\n\n**Testing:**\n- Lightweight test using existing `FakeCodeModelPlanning()` verifies both planning and action step callbacks\n- All existing tests continue to pass",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T12:16:32.264831",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "src/smolagents/agents.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "_finalize_step",
+          "class_name": "MultiStepAgent",
+          "full_name": "MultiStepAgent._finalize_step",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_run_stream",
+          "class_name": "MultiStepAgent",
+          "full_name": "MultiStepAgent._run_stream",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "tests/test_agents.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    }
+  ],
+  "step_plan": {
+    "summary": "Ensure MultiStepAgent step callbacks run for both PlanningStep and ActionStep by generalizing _finalize_step to accept planning steps and calling it from the planning-step path in _run_stream, preserving the action-step finalization/append ordering.",
+    "steps": [
+      {
+        "operation": "Generalize step finalization to support planning steps as well as action steps (invoke callbacks, finalize timing/token usage defensively).",
+        "file_to_modify": "src/smolagents/agents.py",
+        "function_to_modify": "MultiStepAgent._finalize_step",
+        "reason": "Callbacks are currently only executed for ActionStep because _finalize_step is action-step-specific. Widening the accepted step type (ActionStep | PlanningStep) and ensuring common finalization logic (e.g., setting timing.end_time if missing, attaching token usage fields if applicable) allows callbacks to run consistently for every produced step.",
+        "side_effects": "Behavior change: step callbacks (e.g., Monitor.update_metrics) will now be invoked during planning; any callback that assumes the step is always an ActionStep may need to handle PlanningStep as well. Step numbering/metrics may now include planning steps. No public API break since _finalize_step is internal and callback signature remains the same."
+      },
+      {
+        "operation": "Invoke _finalize_step for planning steps in the streaming run loop, preserving the same ordering as action steps (finalize → append to memory → yield).",
+        "file_to_modify": "src/smolagents/agents.py",
+        "function_to_modify": "MultiStepAgent._run_stream",
+        "reason": "PlanningStep objects are currently appended to memory without being passed through _finalize_step, so step_callbacks are skipped during planning phases. Adding _finalize_step(planning_step) in the planning branch ensures callbacks are triggered for planning steps and keeps ordering consistent with the action-step finally-block behavior.",
+        "side_effects": "May alter observable execution order for code that relied on planning steps being stored before callbacks (unlikely, but possible). Ensures timing.end_time is set earlier; if any downstream logic overwrote timing after append, ensure it remains consistent. Existing tests that assert step counts/order may need minor updates if they implicitly excluded planning steps from callback-driven metrics."
+      }
+    ]
+  }
+}

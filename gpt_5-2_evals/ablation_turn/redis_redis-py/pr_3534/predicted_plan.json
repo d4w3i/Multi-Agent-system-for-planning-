@@ -1,0 +1,116 @@
+{
+  "pr_number": 3534,
+  "repository": "redis/redis-py",
+  "title": "fix(lock): Fix LockError message when releasing a lock.",
+  "body": "Fix #3535 \n\n### Pull Request check-list\n\n_Please make sure to review and check all of these items:_\n\n- [ ] Do tests and lints pass with this change?\n- [ ] Do the CI tests pass with this change (enable it first in your forked repo and wait for the github action build to finish)?\n- [ ] Is the new or changed code fully tested?\n- [ ] Is a documentation update included (if this change modifies existing APIs, or introduces new ones)?\n- [ ] Is there an example added to the examples folder (if applicable)?\n- [ ] Was the change added to CHANGES file?\n\n_NOTE: these things are not required to open a PR and can be done\nafterwards / while the PR is open._\n\n### Description of change\n\nWe can get expect result for the test code in #3535  with this implementation:\n```\nThread 2: Lock error: Cannot release a lock that's no longer owned\n```",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T12:41:22.410982",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "redis/lock.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "release",
+          "class_name": "Lock",
+          "full_name": "Lock.release",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "do_release",
+          "class_name": "Lock",
+          "full_name": "Lock.do_release",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "redis/asyncio/lock.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "release",
+          "class_name": "Lock",
+          "full_name": "Lock.release",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "do_release",
+          "class_name": "Lock",
+          "full_name": "Lock.do_release",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "tests/test_lock.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    },
+    {
+      "filename": "tests/test_asyncio/test_lock.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    },
+    {
+      "filename": "docs/lock.rst",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    }
+  ],
+  "step_plan": {
+    "summary": "Fixes the exception raised when releasing a lock that is no longer owned so that it consistently raises LockNotOwnedError with the exact message “Cannot release a lock that's no longer owned”, aligning behavior across synchronous and asyncio lock implementations.",
+    "steps": [
+      {
+        "operation": "Align synchronous release() behavior to surface the correct LockNotOwnedError message when ownership is lost, while preserving the unlocked-lock guard",
+        "file_to_modify": "redis/lock.py",
+        "function_to_modify": "Lock.release",
+        "reason": "The user-visible exception originates from the release()→do_release() flow; ensuring release() consistently delegates ownership-loss failures (token exists locally but redis key/token mismatch) to do_release() without altering/overwriting the resulting exception message prevents incorrect LockError messaging from surfacing.",
+        "side_effects": "May slightly change which exception/message callers observe in edge cases (e.g., when token is cleared); downstream code that string-matches errors could be affected. Run sync lock tests to ensure no regressions."
+      },
+      {
+        "operation": "Fix/standardize the synchronous not-owned release error to raise LockNotOwnedError with the exact message \"Cannot release a lock that's no longer owned\" (and ensure any metadata such as lock_name remains consistent)",
+        "file_to_modify": "redis/lock.py",
+        "function_to_modify": "Lock.do_release",
+        "reason": "This is the authoritative point where the Lua release result indicates the lock is no longer owned (e.g., token mismatch or key missing). Standardizing the exception type and message here directly addresses #3535’s incorrect/undesired output.",
+        "side_effects": "Changes the exception string for this failure mode; any tests or client code relying on the previous wording may need updates. Ensure lock_name propagation remains intact for parity with existing sync behavior."
+      },
+      {
+        "operation": "Align asyncio release() behavior to mirror the sync release flow and not mask the not-owned LockNotOwnedError message after token clearing",
+        "file_to_modify": "redis/asyncio/lock.py",
+        "function_to_modify": "Lock.release",
+        "reason": "Async release has the same two failure modes (unlocked vs lost ownership). Ensuring release() consistently surfaces do_release()’s not-owned exception message (rather than producing/propagating a generic LockError) is necessary to make async behavior match the fixed sync behavior.",
+        "side_effects": "Potentially changes the observed exception/message in async edge cases; could impact user code or tests that depend on previous messaging. Run asyncio lock tests and any CI that exercises async paths."
+      },
+      {
+        "operation": "Fix/standardize the asyncio not-owned release error to raise LockNotOwnedError with the exact message \"Cannot release a lock that's no longer owned\" and ensure parity with sync (including lock_name metadata if supported by the exception type)",
+        "file_to_modify": "redis/asyncio/lock.py",
+        "function_to_modify": "Lock.do_release",
+        "reason": "Async do_release() is the primary emission site for the ownership-loss error; message parity with sync is required by the PR acceptance criteria and to reproduce the expected output in #3535.",
+        "side_effects": "May introduce a small behavior change if lock_name metadata is added where it previously was absent; tests may need updating accordingly. Ensure no incompatibility with older exception constructors/attributes."
+      }
+    ]
+  }
+}

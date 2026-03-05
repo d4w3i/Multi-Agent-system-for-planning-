@@ -1,0 +1,57 @@
+{
+  "pr_number": 5479,
+  "repository": "angr/angr",
+  "title": "arg_session: Ensure created void* types have arch.",
+  "body": "This PR fixes the following exception:\n\n```python\nFile F:\\angr\\angr\\angr\\calling_conventions.py:878, in SimCC.arg_locs(self, prototype)\n    876 if prototype._arch is None:\n    877     prototype = prototype.with_arch(self.arch)\n--> 878 session = self.arg_session(prototype.returnty)\n    879 return [self.next_arg(session, arg_ty) for arg_ty in prototype.args]\n\nFile F:\\angr\\angr\\angr\\calling_conventions.py:728, in SimCC.arg_session(self, ret_ty)\n    726 session = self.ArgSession(self)\n    727 if self.return_in_implicit_outparam(ret_ty):\n--> 728     self.next_arg(session, SimTypePointer(SimTypeBottom()))\n    729 return session\n\nFile F:\\angr\\angr\\angr\\calling_conventions.py:1614, in SimCCSystemVAMD64.next_arg(self, session, arg_type)\n   1612     arg_type = SimTypePointer(arg_type.elem_type).with_arch(self.arch)\n   1613 state = session.getstate()\n-> 1614 classification = self._classify(arg_type)\n   1615 try:\n   1616     mapped_classes = []\n\nFile F:\\angr\\angr\\angr\\calling_conventions.py:1678, in SimCCSystemVAMD64._classify(self, ty, chunksize)\n   1676     chunksize = self.arch.bytes\n   1677 # treat BOT as INTEGER\n-> 1678 nchunks = 1 if isinstance(ty, SimTypeBottom) else (ty.size // self.arch.byte_width + chunksize - 1) // chunksize\n   1679 if isinstance(ty, (SimTypeFloat,)):\n   1680     return [\"SSE\"] + [\"SSEUP\"] * (nchunks - 1)\n\nFile F:\\angr\\angr\\angr\\sim_type.py:778, in SimTypePointer.size(self)\n    775 @property\n    776 def size(self):\n    777     if self._arch is None:\n--> 778         raise ValueError(\"Can't tell my size without an arch!\")\n    779     return self._arch.bits\n\nValueError: Can't tell my size without an arch!\n```",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T12:37:52.824203",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "angr/calling_conventions.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "arg_session",
+          "class_name": "SimCC",
+          "full_name": "SimCC.arg_session",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "return_val",
+          "class_name": "SimCC",
+          "full_name": "SimCC.return_val",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Ensure temporary void* placeholder types created by SimCC carry the calling-convention's arch by calling .with_arch(self.arch) where SimTypePointer(SimTypeBottom()) is constructed in arg_session and return_val, preventing ValueError from SimType.size during classification.",
+    "steps": [
+      {
+        "operation": "Attach arch to temporary void* created in arg_session",
+        "file_to_modify": "angr/calling_conventions.py",
+        "function_to_modify": "SimCC.arg_session",
+        "reason": "arg_session currently constructs a placeholder void* using SimTypePointer(SimTypeBottom()) without setting its _arch. Downstream calling-convention code expects types to have an arch so size/classification computations can run; attaching .with_arch(self.arch) ensures SimType.size is available and classification won't raise ValueError.",
+        "side_effects": "Behavioral semantics are unchanged because the pointer is a placeholder; however, tests that exercise calling-convention classification (especially implicit outparam paths) will now run without raising. Some callers that previously relied on a typeless void* may now receive an arch-aware type — this is safe and consistent with other code that already sets arch. Add or update unit tests to cover the implicit outparam path. No public API changes expected, but downstream CC logic that inspects type sizes will behave deterministically based on the CC's arch."
+      },
+      {
+        "operation": "Attach arch to temporary void* created in return_val implicit-outparam branch",
+        "file_to_modify": "angr/calling_conventions.py",
+        "function_to_modify": "SimCC.return_val",
+        "reason": "In the implicit outparam branch, return_val calls next_arg(..., SimTypePointer(SimTypeBottom())) without setting an arch. Classification/size logic later expects an arch-aware SimType; calling .with_arch(self.arch) on the created pointer prevents ValueError from SimType.size and keeps behavior consistent with other places that construct pointer placeholders.",
+        "side_effects": "No change to external API behavior because the pointer is a placeholder used for argument location computation; it only adds arch metadata used for size/classification. Tests that exercise return-value handling and implicit outparam flows should be updated or added to ensure no exceptions occur. Downstream code which inspects the pointer's size/classification will now use the CC's arch, potentially affecting how return slots are classified — this matches existing patterns elsewhere in the codebase."
+      }
+    ]
+  }
+}

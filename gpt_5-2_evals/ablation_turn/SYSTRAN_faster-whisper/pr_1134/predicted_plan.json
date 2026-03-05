@@ -1,0 +1,56 @@
+{
+  "pr_number": 1134,
+  "repository": "SYSTRAN/faster-whisper",
+  "title": "change `language_detection_threshold` default value",
+  "body": "the current value of `language_detection_threshold` means that `language_detection_segments` will be 1 regardless of the user set value, the new value will ensure that `language_detection_segments` is respected",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T11:55:55.867947",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "faster_whisper/transcribe.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "transcribe",
+          "class_name": "WhisperModel",
+          "full_name": "WhisperModel.transcribe",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "README.md",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    },
+    {
+      "filename": "tests/test_transcribe.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    }
+  ],
+  "step_plan": {
+    "summary": "Update the default `language_detection_threshold` so that multi-segment language detection in `WhisperModel.transcribe()` does not stop after the first segment by default, making `language_detection_segments` effective without requiring user overrides.",
+    "steps": [
+      {
+        "operation": "Change the default value of `language_detection_threshold` in the `transcribe` signature and align the language-detection loop’s early-break behavior with the new default so multi-segment language detection can actually iterate past the first segment when confidence is low.",
+        "file_to_modify": "faster_whisper/transcribe.py",
+        "function_to_modify": "WhisperModel.transcribe",
+        "reason": "Today the default `language_detection_threshold=None` makes the language-detection loop break on the first segment, effectively ignoring `language_detection_segments` unless the user overrides the threshold. Setting a numeric default (and ensuring `None` still means “accept first segment immediately”, if that behavior is retained) makes `language_detection_segments` respected by default.",
+        "side_effects": "Behavior change for users who relied on the implicit `None` default: language detection may evaluate additional segments before deciding, which can slightly increase startup latency and may change detected language in ambiguous audio. Any downstream code/tests asserting single-segment language detection under defaults will need updating."
+      }
+    ]
+  }
+}

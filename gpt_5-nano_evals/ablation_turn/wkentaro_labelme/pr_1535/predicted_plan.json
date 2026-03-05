@@ -1,0 +1,65 @@
+{
+  "pr_number": 1535,
+  "repository": "wkentaro/labelme",
+  "title": "feat: support AI-generated masks in shape_to_mask",
+  "body": "Summary:\n\nThis PR enables the export/import flow to handle AI-generated masks provided in JSON exports. Specifically:\n- Mask data in shapes can now be provided as either base64-encoded images or as raw list/array formats (2D mask arrays).\n- During loading (LabelFile.load), mask fields are decoded from multiple formats rather than assuming only base64 strings.\n- During label-mapping (shapes_to_label), if a shape already carries a mask (AI-generated mask), that mask will be used directly to fill the label arrays instead of reconstructing the mask from polygon points.\n\nWhat this enables:\n- Seamless use of AI-generated masks in downstream workflows that rely on labelme’s mask-based shapes.\n- Compatibility with both older labelme JSON exports (base64 masks) and new exports that include 2D mask arrays or list formats.\n\nTesting guidance:\n- Create a JSON export with a shape that includes a base64 mask and confirm it loads as a boolean mask and maps correctly to the label image.\n- Create a JSON export with a shape that includes a 2D list/array mask and confirm it loads as a boolean mask and maps correctly.\n- Create a JSON export with a shape that includes a base64 mask and verify that the shapes_to_label pipeline uses the mask directly when present.\n- Validate that existing behavior (when no mask is provided) remains unchanged.\n\nImpact:\n- Small, targeted changes to two modules to support flexible AI-generated mask formats while preserving existing behavior for traditional masks.\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T14:08:08.030188",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "labelme/label_file.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "load",
+          "class_name": "LabelFile",
+          "full_name": "LabelFile.load",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "labelme/utils/shape.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "shapes_to_label",
+          "class_name": "labelme",
+          "full_name": "labelme.utils.shape.shapes_to_label",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Enable support for AI-generated masks in shape-to-mask workflow by accepting multiple mask formats on load and by using precomputed masks during shape-to-label mapping.",
+    "steps": [
+      {
+        "operation": "Extend LabelFile.load to decode masks from multiple formats and normalize to boolean numpy array",
+        "file_to_modify": "labelme/label_file.py",
+        "function_to_modify": "LabelFile.load",
+        "reason": "To support AI-generated masks provided as base64 strings or 2D list/array in JSON exports; ensure mask is stored as boolean mask for downstream label mapping",
+        "side_effects": "Downstream code consuming shapes.mask must handle boolean arrays; may require numpy availability; ensures backward compatibility with existing base64 mask data; may necessitate updates to unit tests that exercise mask decoding paths"
+      },
+      {
+        "operation": "Modify shapes_to_label to prefer using an existing precomputed 'mask' on a shape when present",
+        "file_to_modify": "labelme/utils/shape.py",
+        "function_to_modify": "shapes_to_label",
+        "reason": "Enable AI-generated masks to be consumed directly without reconstructing from polygon points; improves compatibility with JSON exports that include 2D masks",
+        "side_effects": "Label mapping now uses the provided mask directly when present; may require validation of mask dimensions and types; existing behavior remains for shapes without an inline mask; may require updates to tests and documentation"
+      }
+    ]
+  }
+}

@@ -1,0 +1,42 @@
+{
+  "pr_number": 237,
+  "repository": "JoeanAmier/XHS-Downloader",
+  "title": "fix can't run by source code",
+  "body": "the error is:    fix NoMatches: No nodes match <class 'textual.widgets._rich_log.RichLog'> on XHSDownloader\n\nExplore the source code to identify the files and functions to modify.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T11:51:59.834028",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "source/TUI/app.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "on_mount",
+          "class_name": "XHSDownloader",
+          "full_name": "XHSDownloader.on_mount",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Fixes a runtime NoMatches error by changing the widget lookup in XHSDownloader.on_mount from self.screen.query_one(RichLog) to self.query_one(RichLog), ensuring the RichLog composed on the Index screen is found when the app starts.",
+    "steps": [
+      {
+        "operation": "Replace usage of screen.query_one with app-wide query for RichLog",
+        "file_to_modify": "source/TUI/app.py",
+        "function_to_modify": "XHSDownloader.on_mount",
+        "reason": "The call self.screen.query_one(RichLog) raises NoMatches because the RichLog instance is composed on the pushed Index screen and is not found on the object being queried. Using the app-wide query self.query_one(RichLog) correctly searches the active widget tree and will locate the RichLog widget after the Index screen is pushed, matching the usage elsewhere and preventing the runtime NoMatches error.",
+        "side_effects": "Behavior: Fixes the NoMatches runtime error and allows Settings.check_keys to log to the RichLog. If multiple RichLog widgets exist, self.query_one will return the first match — this mirrors other code paths but could change which RichLog receives logs in rare multi-log layouts. Tests: update or add an integration test that instantiates XHSDownloader (or runs main.py) to ensure no exception is raised and settings logging is visible. Dependents: No external API changes; callers of XHSDownloader.on_mount are unaffected. Other TUI screens/components should continue to work, but verify logging behavior if the app later composes additional RichLog widgets."
+      }
+    ]
+  }
+}

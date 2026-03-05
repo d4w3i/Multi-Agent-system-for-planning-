@@ -1,0 +1,35 @@
+{
+  "pr_number": 5485,
+  "repository": "facebookresearch/fairseq",
+  "title": "The cause of the error has been fixed: \"NameError: name 'help' is not…",
+  "body": "… defined\"\r\n\r\n# Before submitting\r\n\r\n- [-] Was this discussed/approved via a Github issue? (no need for typos, doc improvements)\r\n- [+] Did you read the [contributor guideline](https://github.com/pytorch/fairseq/blob/main/CONTRIBUTING.md)?\r\n- [+] Did you make sure to update the docs?\r\n- [+] Did you write any new necessary tests?\r\n\r\n## What does this PR do?\r\nA typo in the code causing an error in the operation of File \"fairseq\\dataclass\\configs.py\", line 1080, in EMAConfig has been fixed\r\nNameError: name 'help' is not defined.\r\n\r\n## PR review\r\nAnyone in the community is free to review the PR once the tests have passed.\r\nIf we didn't discuss your PR in Github issues there's a high chance it will not be merged.\r\n\r\n## Did you have fun?\r\nMake sure you had fun coding 🙃\r\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-02-26T01:08:10.236982",
+    "extractor_version": "1.0.0",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "fairseq/dataclass/configs.py",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "functions_modified": [],
+      "patch": "@@ -1100,7 +1100,7 @@ class InteractiveConfig(FairseqDataclass):\n @dataclass\n class EMAConfig(FairseqDataclass):\n     store_ema: bool = field(\n-        default=False, metadata={help: \"store exponential moving average shadow model\"}\n+        default=False, metadata={\"help\": \"store exponential moving average shadow model\"}\n     )\n     ema_decay: float = field(\n         default=0.9999, metadata={\"help\": \"decay for exponential moving average model\"}"
+    }
+  ],
+  "functions_modified": [],
+  "step_plan": {
+    "steps": [
+      {
+        "operation": "Fix dataclass field metadata key from an unquoted identifier to the expected string literal so the metadata dictionary is valid.",
+        "file_to_modify": "fairseq/dataclass/configs.py",
+        "function_to_modify": null,
+        "reason": "The field() metadata dict used `help` without quotes, which is treated as a variable name and raises `NameError: name 'help' is not defined` at import/runtime. Changing it to `\"help\"` matches the expected dataclass metadata convention and prevents the crash.",
+        "side_effects": "This affects how `EMAConfig.store_ema` exposes its help text to downstream config/CLI generation and documentation tooling; behavior should otherwise remain unchanged aside from eliminating the NameError during module import."
+      }
+    ],
+    "summary": "Fixes a NameError in `EMAConfig` by correcting a typo in the `store_ema` field metadata key (`help` -> `\"help\"`) so fairseq config code loads correctly."
+  }
+}

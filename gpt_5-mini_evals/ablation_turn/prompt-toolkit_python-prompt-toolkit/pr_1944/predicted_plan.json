@@ -1,0 +1,185 @@
+{
+  "pr_number": 1944,
+  "repository": "prompt-toolkit/python-prompt-toolkit",
+  "title": "Fixes bug whereby read_only bool is called as a function",
+  "body": "This is a simple bug fix to remedy the following issue:\n\n```python\n  File \".../site-packages/prompt_toolkit/filters/app.py\", line 374, in emacs_insert_mode\n    or app.current_buffer.read_only()\n       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n\nException 'bool' object is not callable\n```\n\nIt would appear to be a simple typo, calling the boolean `read_only` property as if it were a function.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T14:04:20.820475",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "src/prompt_toolkit/filters/app.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "is_read_only",
+          "class_name": null,
+          "full_name": "is_read_only",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "vi_navigation_mode",
+          "class_name": null,
+          "full_name": "vi_navigation_mode",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "vi_insert_mode",
+          "class_name": null,
+          "full_name": "vi_insert_mode",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "vi_insert_multiple_mode",
+          "class_name": null,
+          "full_name": "vi_insert_multiple_mode",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "vi_replace_mode",
+          "class_name": null,
+          "full_name": "vi_replace_mode",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "vi_replace_single_mode",
+          "class_name": null,
+          "full_name": "vi_replace_single_mode",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "emacs_insert_mode",
+          "class_name": null,
+          "full_name": "emacs_insert_mode",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "src/prompt_toolkit/buffer.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "text",
+          "class_name": "Buffer",
+          "full_name": "Buffer.text",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "set_document",
+          "class_name": "Buffer",
+          "full_name": "Buffer.set_document",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "open_in_editor",
+          "class_name": "Buffer",
+          "full_name": "Buffer.open_in_editor",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Replace direct calls to buffer.read_only() in prompt_toolkit with is_true(buffer.read_only) so both boolean values and Filter instances are evaluated safely; add necessary imports and update buffer and filter modules to avoid 'bool' object not callable errors.",
+    "steps": [
+      {
+        "operation": "Replace callable read_only access with is_true in is_read_only filter and add import if needed",
+        "file_to_modify": "src/prompt_toolkit/filters/app.py",
+        "function_to_modify": "is_read_only",
+        "reason": "is_read_only currently returns get_app().current_buffer.read_only() which calls .read_only() assuming it's always a callable Filter. If .read_only is a bool, that raises 'bool' object is not callable. Use is_true(...) to safely evaluate both Filter and bool. Also ensure is_true is imported from the package utils.",
+        "side_effects": "Adds a dependency on is_true import in the module. Behavior for Filter instances is preserved (is_true will evaluate the Filter correctly). Tests that previously set read_only to a boolean and hit this code path should now pass; add/adjust tests accordingly. No API change, but module import lines change and linters/type-checkers may need to be updated."
+      },
+      {
+        "operation": "Replace app.current_buffer.read_only() with is_true(...) in vi_navigation_mode",
+        "file_to_modify": "src/prompt_toolkit/filters/app.py",
+        "function_to_modify": "vi_navigation_mode",
+        "reason": "vi_navigation_mode contains conditions like 'or app.current_buffer.read_only()' which call .read_only() directly. Using is_true(...) prevents calling a boolean and correctly handles Filter instances.",
+        "side_effects": "Requires is_true import in this module (if not already added by previous step). Maintains previous semantics for Filter values. Tests covering Vi navigation filters should be run; no external API change but internal filter evaluation is more robust."
+      },
+      {
+        "operation": "Replace app.current_buffer.read_only() with is_true(...) in vi_insert_mode",
+        "file_to_modify": "src/prompt_toolkit/filters/app.py",
+        "function_to_modify": "vi_insert_mode",
+        "reason": "vi_insert_mode has an early-return condition that calls app.current_buffer.read_only(); replace with is_true(...) to avoid TypeError when read_only is a bool.",
+        "side_effects": "Same as above: import of is_true required; behavior preserved for Filters. Tests for vi insert mode should be run/updated (especially tests that set buffer.read_only = True)."
+      },
+      {
+        "operation": "Replace app.current_buffer.read_only() with is_true(...) in vi_insert_multiple_mode",
+        "file_to_modify": "src/prompt_toolkit/filters/app.py",
+        "function_to_modify": "vi_insert_multiple_mode",
+        "reason": "This function also calls app.current_buffer.read_only() in its logic; use is_true(...) to support both bool and Filter types.",
+        "side_effects": "Requires is_true import; no API change. Ensure tests that exercise multi-insert vi behavior with boolean read_only do not raise TypeError."
+      },
+      {
+        "operation": "Replace app.current_buffer.read_only() with is_true(...) in vi_replace_mode",
+        "file_to_modify": "src/prompt_toolkit/filters/app.py",
+        "function_to_modify": "vi_replace_mode",
+        "reason": "vi_replace_mode calls app.current_buffer.read_only() and can raise if read_only is a bool; is_true(...) handles both bool and Filter.",
+        "side_effects": "Requires is_true import. Maintain semantics for Filter objects. Run/update tests for vi replace behavior."
+      },
+      {
+        "operation": "Replace app.current_buffer.read_only() with is_true(...) in vi_replace_single_mode",
+        "file_to_modify": "src/prompt_toolkit/filters/app.py",
+        "function_to_modify": "vi_replace_single_mode",
+        "reason": "This function calls app.current_buffer.read_only(); replacing the call with is_true(...) prevents the 'bool' object not callable error and supports Filter instances properly.",
+        "side_effects": "Requires is_true import. No public API change. Run tests for single-character replace mode."
+      },
+      {
+        "operation": "Replace app.current_buffer.read_only() with is_true(...) in emacs_insert_mode",
+        "file_to_modify": "src/prompt_toolkit/filters/app.py",
+        "function_to_modify": "emacs_insert_mode",
+        "reason": "emacs_insert_mode currently does 'or app.current_buffer.read_only()' which raises if read_only is a boolean. Use is_true(...) to evaluate both booleans and Filter objects robustly.",
+        "side_effects": "Requires is_true import. Preserves existing behavior for Filter values. Update/verify tests exercising emacs insert mode when buffer.read_only is set to a boolean."
+      },
+      {
+        "operation": "Use is_true(self.read_only) in Buffer.text setter to guard against boolean read_only and add import if needed",
+        "file_to_modify": "src/prompt_toolkit/buffer.py",
+        "function_to_modify": "Buffer.text",
+        "reason": "The setter currently does 'if self.read_only(): raise EditReadOnlyBuffer()' which calls read_only() and fails if read_only is a bool. Replace with is_true(self.read_only) so both bool and Filter are handled. Ensure import from prompt_toolkit.filters.utils (or package-appropriate utils) is present.",
+        "side_effects": "Adds an import dependency on is_true in buffer.py. Preserves semantics when read_only is a Filter. Tests that set buffer.read_only = True and then attempt to set text should now raise EditReadOnlyBuffer without TypeError. Code that relied on calling an actual callable with side effects as read_only (unlikely) may be affected."
+      },
+      {
+        "operation": "Use is_true(self.read_only) in Buffer.set_document to avoid calling boolean read_only",
+        "file_to_modify": "src/prompt_toolkit/buffer.py",
+        "function_to_modify": "Buffer.set_document",
+        "reason": "set_document currently checks 'if not bypass_readonly and self.read_only(): raise EditReadOnlyBuffer()'. Replace the call with is_true(self.read_only) to support boolean and Filter values.",
+        "side_effects": "Requires is_true import in buffer.py (if not already added). Preserves Filter semantics. Update tests that call set_document with read_only set to True to ensure correct exception is raised without TypeError."
+      },
+      {
+        "operation": "Use is_true(self.read_only) in Buffer.open_in_editor to prevent TypeError when read_only is a bool",
+        "file_to_modify": "src/prompt_toolkit/buffer.py",
+        "function_to_modify": "Buffer.open_in_editor",
+        "reason": "open_in_editor checks 'if self.read_only(): raise EditReadOnlyBuffer()' before opening the editor. Replace with is_true(self.read_only) so boolean assignments do not cause a TypeError.",
+        "side_effects": "Adds is_true import if missing. No API changes. Ensure tests that attempt to open editor while buffer.read_only is True now raise EditReadOnlyBuffer cleanly (no TypeError)."
+      }
+    ]
+  }
+}

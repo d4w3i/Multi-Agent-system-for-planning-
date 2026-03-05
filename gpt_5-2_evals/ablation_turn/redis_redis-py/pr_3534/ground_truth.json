@@ -1,0 +1,105 @@
+{
+  "pr_number": 3534,
+  "repository": "redis/redis-py",
+  "title": "fix(lock): Fix LockError message when releasing a lock.",
+  "body": "Fix #3535 \r\n\r\n### Pull Request check-list\r\n\r\n_Please make sure to review and check all of these items:_\r\n\r\n- [ ] Do tests and lints pass with this change?\r\n- [ ] Do the CI tests pass with this change (enable it first in your forked repo and wait for the github action build to finish)?\r\n- [ ] Is the new or changed code fully tested?\r\n- [ ] Is a documentation update included (if this change modifies existing APIs, or introduces new ones)?\r\n- [ ] Is there an example added to the examples folder (if applicable)?\r\n- [ ] Was the change added to CHANGES file?\r\n\r\n_NOTE: these things are not required to open a PR and can be done\r\nafterwards / while the PR is open._\r\n\r\n### Description of change\r\n\r\nWe can get expect result for the test code in #3535  with this implementation:\r\n```\r\nThread 2: Lock error: Cannot release a lock that's no longer owned\r\n```",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T01:04:52.866258",
+    "extractor_version": "1.0.0",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "redis/asyncio/lock.py",
+      "status": "modified",
+      "additions": 4,
+      "deletions": 1,
+      "functions_modified": [
+        {
+          "function_name": "release",
+          "class_name": "Lock",
+          "full_name": "Lock.release",
+          "start_line": 248,
+          "end_line": 259,
+          "lines_changed": [
+            252,
+            253,
+            254,
+            255
+          ]
+        }
+      ],
+      "patch": "@@ -249,7 +249,10 @@ def release(self) -> Awaitable[None]:\n         \"\"\"Releases the already acquired lock\"\"\"\n         expected_token = self.local.token\n         if expected_token is None:\n-            raise LockError(\"Cannot release an unlocked lock\")\n+            raise LockError(\n+                \"Cannot release a lock that's not owned or is already unlocked.\",\n+                lock_name=self.name,\n+            )\n         self.local.token = None\n         return self.do_release(expected_token)\n "
+    },
+    {
+      "filename": "redis/lock.py",
+      "status": "modified",
+      "additions": 4,
+      "deletions": 1,
+      "functions_modified": [
+        {
+          "function_name": "release",
+          "class_name": "Lock",
+          "full_name": "Lock.release",
+          "start_line": 248,
+          "end_line": 259,
+          "lines_changed": [
+            254,
+            255,
+            256,
+            257
+          ]
+        }
+      ],
+      "patch": "@@ -251,7 +251,10 @@ def release(self) -> None:\n         \"\"\"\n         expected_token = self.local.token\n         if expected_token is None:\n-            raise LockError(\"Cannot release an unlocked lock\", lock_name=self.name)\n+            raise LockError(\n+                \"Cannot release a lock that's not owned or is already unlocked.\",\n+                lock_name=self.name,\n+            )\n         self.local.token = None\n         self.do_release(expected_token)\n "
+    }
+  ],
+  "functions_modified": [
+    {
+      "function_name": "release",
+      "class_name": "Lock",
+      "full_name": "Lock.release",
+      "start_line": 248,
+      "end_line": 259,
+      "lines_changed": [
+        252,
+        253,
+        254,
+        255
+      ]
+    },
+    {
+      "function_name": "release",
+      "class_name": "Lock",
+      "full_name": "Lock.release",
+      "start_line": 248,
+      "end_line": 259,
+      "lines_changed": [
+        254,
+        255,
+        256,
+        257
+      ]
+    }
+  ],
+  "step_plan": {
+    "steps": [
+      {
+        "operation": "Update the synchronous lock release path to raise a more informative LockError when no token is present (non-owned thread or already unlocked).",
+        "file_to_modify": "redis/lock.py",
+        "function_to_modify": "Lock.release",
+        "reason": "When `self.local.token` is `None`, the caller is either trying to release a lock they don't own (e.g., different thread) or the lock is already unlocked; the previous message (“Cannot release an unlocked lock”) was misleading and didn’t match the expected behavior described in issue #3535.",
+        "side_effects": "Any code/tests that assert on the exact exception message will need to be updated. Logging/monitoring that groups errors by message text may see a new message. The exception type remains `LockError`, so exception handling by type should be unaffected."
+      },
+      {
+        "operation": "Mirror the synchronous behavior in the asyncio lock implementation by updating the error message and including `lock_name` when `self.local.token` is missing.",
+        "file_to_modify": "redis/asyncio/lock.py",
+        "function_to_modify": "Lock.release",
+        "reason": "Async locks should behave consistently with sync locks; without this change, releasing from a non-owning task/thread (or after unlocking) yields an inconsistent/less accurate error message compared to the sync implementation and the expected output in #3535.",
+        "side_effects": "Async test cases or user code asserting the previous message text may break and require updates. Error reporting/telemetry may change due to new message content and inclusion of `lock_name` in the exception context."
+      }
+    ],
+    "summary": "Fixes misleading LockError messaging when releasing a lock without ownership (or after it’s already unlocked) by updating both synchronous and asyncio `release` implementations to raise a clearer error including the lock name."
+  }
+}

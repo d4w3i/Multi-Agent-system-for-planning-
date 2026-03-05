@@ -1,0 +1,65 @@
+{
+  "pr_number": 31,
+  "repository": "KwaiVGI/LivePortrait",
+  "title": "Fix: add sound in generated video",
+  "body": "A bug was found where the generated video does not preserve or include audio from the driving video. This PR introduces audio extraction from the driving input (when it is a video) and merges that audio track into the produced output video, ensuring the final video has sound aligned with the frames.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T11:54:44.710693",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "base_project/src/live_portrait_pipeline.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "execute",
+          "class_name": "LivePortraitPipeline",
+          "full_name": "LivePortraitPipeline.execute",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "base_project/src/utils/video.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "images2video",
+          "class_name": null,
+          "full_name": "images2video",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "This PR adds audio extraction from the driving video and merges it into the generated output video, preserving sound when present and keeping backward compatibility when audio is absent.",
+    "steps": [
+      {
+        "operation": "Detect driving video audio, extract to temporary audio file, and pass audio_path to the video writer",
+        "file_to_modify": "base_project/src/live_portrait_pipeline.py",
+        "function_to_modify": "LivePortraitPipeline.execute",
+        "reason": "Enable downstream merging of audio by providing an audio_path to the writer; maintain backward compatibility when driving input has no audio",
+        "side_effects": "Temporary audio file created; requires cleanup; relies on ffmpeg or equivalent for extraction; safe fallback if driving input lacks audio (audio_path will be None)"
+      },
+      {
+        "operation": "Extend images2video to accept optional audio_path and merge audio with generated video",
+        "file_to_modify": "base_project/src/utils/video.py",
+        "function_to_modify": "images2video",
+        "reason": "Merge the extracted driving audio with the final video, preserving synchronization; fallback to no-merge if audio_path is None or ffmpeg unavailable",
+        "side_effects": "Requires ffmpeg or internal wrapper; potential failures if ffmpeg missing; impacts tests for audio-less paths and ensures cleanup of any temporary audio artifacts"
+      }
+    ]
+  }
+}

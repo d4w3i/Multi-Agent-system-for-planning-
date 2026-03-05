@@ -1,0 +1,111 @@
+{
+  "pr_number": 152,
+  "repository": "trycua/cua",
+  "title": "[Agent] Improved drag tool and standardized UITARS response",
+  "body": "This PR standardizes the UITARS loop responses to use the AgentResponse format. The Gradio UI now displays AgentResponse objects more clearly to reflect the standardized output.\n\nAlso includes some bugfixes for the drag tool, and allows for dragging along a path with more than two points to support upcoming agent features",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T14:53:17.559885",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "libs/agent/agent/providers/uitars/loop.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "run",
+          "class_name": "UITARSLoop",
+          "full_name": "UITARSLoop.run",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "libs/agent/agent/providers/uitars/utils.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "parse_action_parameters",
+          "class_name": null,
+          "full_name": "parse_action_parameters",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "libs/agent/agent/providers/uitars/tools/computer.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "__call__",
+          "class_name": "ComputerTool",
+          "full_name": "ComputerTool.__call__",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "libs/agent/agent/ui/gradio/app.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "process_agent_result",
+          "class_name": null,
+          "full_name": "process_agent_result",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Standardize UITARS loop outputs to AgentResponse-shaped dictionaries and extend drag support to accept multi-point paths: parse_action_parameters will emit a 'path' for drag actions, ComputerTool.__call__ will execute sequential drags along that path (with backward compatibility), UITARSLoop.run will yield AgentResponse-formatted results, and the Gradio process_agent_result will render them robustly while keeping legacy fallbacks.",
+    "steps": [
+      {
+        "operation": "Extend coordinate parsing to collect ordered (x,y) pairs and return a 'path' for drag actions",
+        "file_to_modify": "libs/agent/agent/providers/uitars/utils.py",
+        "function_to_modify": "parse_action_parameters",
+        "reason": "The drag action needs to support an arbitrary-length path (multiple points) instead of only start/end coordinates. parse_action_parameters is the canonical place to transform the model-generated parameter string into structured tool arguments. Collecting all (x,y) pairs in order and returning them as either the existing start/end fields (for backward compatibility) or as a 'path' list when more than two points are found enables multi-point drags and keeps other actions unchanged.",
+        "side_effects": "Changes the output shape consumed by computer tool and tests that assert old two-point-only parsing. Requires updating or adding unit tests for parse_action_parameters to cover multi-point path extraction and legacy two-point behavior; downstream callers (ComputerTool.__call__) must handle the new 'path' field. No external API change beyond internal tool-arg shapes, but integration tests (drag flows) must be updated."
+      },
+      {
+        "operation": "Handle 'path' argument in drag branch and execute sequential drags (move to first point then drag_to each subsequent point)",
+        "file_to_modify": "libs/agent/agent/providers/uitars/tools/computer.py",
+        "function_to_modify": "ComputerTool.__call__",
+        "reason": "ComputerTool is responsible for performing the drag actions. To support multi-point drags, it must accept the 'path' kwarg produced by parse_action_parameters and convert it into a sequence of move_cursor/drag_to calls: move to the first point, then drag_to each subsequent point in order. This function must also preserve backward compatibility with the previous start_x/start_y,end_x,end_y signature when 'path' is not provided. Adding short sleeps (e.g., 0.2-0.5s) between steps stabilizes cursor events and makes UIs/OS deliver expected results. Take final screenshot as before and return the same result shape.",
+        "side_effects": "Modifies runtime drag behavior and interaction timing; may affect integration tests that rely on exact timing or cursor traces. Must ensure awaited calls and sleeps do not break async flow or event loops. Consumers expecting only start/end behavior continue to work, but tests or code that inspect the tool's details should accept the presence of 'path'. Potential flakiness if sleeps are too short/long; tests should assert functional outcomes rather than precise timing."
+      },
+      {
+        "operation": "Translate generator yields into AgentResponse-shaped dictionaries and yield those from the UITARS run loop",
+        "file_to_modify": "libs/agent/agent/providers/uitars/loop.py",
+        "function_to_modify": "UITARSLoop.run",
+        "reason": "The UITARS loop currently yields plain assistant-style dicts ({'role','content'}). To standardize behavior with other agent loops and to make the Gradio UI and other consumers render outputs consistently, the run() generator should convert internal responses into AgentResponse-shaped dictionaries (e.g., include 'text': {'value': <synthesized_text>}, and 'metadata': {'title': ..., 'status': ...} or an 'output' key). This keeps internal model interaction logic untouched but ensures external emitted messages follow the AgentResponse contract.",
+        "side_effects": "Changes the shape of streamed responses emitted by the UITARS provider. Consumers that previously expected raw role/content dicts will need to accept AgentResponse shapes; however, the plan preserves compatibility by embedding synthesized text and metadata similarly to other loop implementations. Update or add tests verifying the new emitted format. UI and any other consumers will now receive standardized objects, so they may rely on metadata fields."
+      },
+      {
+        "operation": "Improve Gradio result processing to detect and render AgentResponse-shaped outputs while preserving legacy role/content fallback",
+        "file_to_modify": "libs/agent/agent/ui/gradio/app.py",
+        "function_to_modify": "process_agent_result",
+        "reason": "With the UITARS loop now yielding AgentResponse-like objects, the Gradio UI must reliably detect and display the 'text'/'metadata' (or 'output') structure. process_agent_result is the right place to add robust detection and rendering logic: prefer AgentResponse fields (text.value, metadata.title/status) when present, but fall back to legacy {'role','content'} shapes so older providers remain supported. Small formatting improvements ensure AgentResponse objects appear clearly in the chat UI.",
+        "side_effects": "Alters UI rendering logic; must update UI tests and visual/acceptance tests that expect previous formatting. No API changes outside the front-end. If other UI code depends on exact message shapes, update them to use the AgentResponse fields. This change improves consistency across providers and reduces ad-hoc parsing in the UI."
+      }
+    ]
+  }
+}

@@ -1,0 +1,42 @@
+{
+  "pr_number": 2778,
+  "repository": "eosphoros-ai/DB-GPT",
+  "title": "fix: Change plan manager prompt in order to avoid calling tools directly",
+  "body": "Related to #2777 \n在默认plan manager prompt中加入了对tool直接调用的严格限制\n\n# How Has This Been Tested?\n\n经过对话测试，plan manager 成功避免直接调用 Tools\n\n# Snapshots:\n\n(omitted images)\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T12:59:30.222327",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "packages/dbgpt-core/src/dbgpt/agent/core/plan/team_auto_plan.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "profile",
+          "class_name": "AutoPlanChatManager",
+          "full_name": "AutoPlanChatManager.profile",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Modify AutoPlanChatManager.profile to include an explicit constraint (and a Chinese localized constraint) forbidding direct tool calls so the Plan Manager coordinates/assigns tool-using tasks to agents instead of invoking tools itself.",
+    "steps": [
+      {
+        "operation": "Add explicit 'constraints' DynConfig (and Chinese counterpart) into the Plan Manager profile",
+        "file_to_modify": "packages/dbgpt-core/src/dbgpt/agent/core/plan/team_auto_plan.py",
+        "function_to_modify": "AutoPlanChatManager.profile",
+        "reason": "Inject a strict system-prompt constraint that prevents the Plan Manager from calling tools directly and instead instructs it to assign tasks to agents that may use tools. The project uses ProfileConfig.constraints when rendering the system prompt, so adding a constraints DynConfig here will modify the manager's default prompt without touching prompt-rendering logic elsewhere. Also add a localized Chinese variant (_constraints_zh) so the restriction appears in Chinese prompts.",
+        "side_effects": "Changes to the manager's system prompt will alter runtime behavior: the Plan Manager will avoid direct tool invocation which may affect any code or tests that previously relied on the manager calling tools. Prompt-related snapshot tests and any assertions about system prompt content must be updated. There is a small risk of longer prompt length; validate token usage. Downstream agents should still be able to perform tool actions when assigned; verify end-to-end conversation tests to ensure coordination works as intended."
+      }
+    ]
+  }
+}

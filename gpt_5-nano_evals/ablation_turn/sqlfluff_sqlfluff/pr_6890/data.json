@@ -1,0 +1,69 @@
+{
+    "repository": "sqlfluff/sqlfluff",
+    "pull_request_number": 6890,
+    "title": "Fix RawFileSlice idx and tags in lexer_test",
+    "body": "<!--Thanks for adding this feature!-->\r\n\r\n<!--Please give the Pull Request a meaningful title for the release notes-->\r\n\r\n### Brief summary of the change made\r\n<!--Please include `fixes #XXXX` to automatically close any corresponding issue when the pull request is merged. Alternatively if not fully closed you can say `makes progress on #XXXX`.-->\r\nWhile running the lexer test in rust mode, these `RawFileSlice` tags came across with type errors. This fixes the order of the `block_idx` and `tag`.\r\n\r\n### Are there any other side effects of this change that we should be aware of?\r\nNone\r\n\r\n### Pull Request checklist\r\n- [x] Please confirm you have completed any of the necessary steps below.\r\n\r\n- Included test cases to demonstrate any code changes, which may be one or more of the following:\r\n  - `.yml` rule test cases in `test/fixtures/rules/std_rule_cases`.\r\n  - `.sql`/`.yml` parser test cases in `test/fixtures/dialects` (note YML files can be auto generated with `tox -e generate-fixture-yml`).\r\n  - Full autofix test cases in `test/fixtures/linter/autofix`.\r\n  - Other.\r\n- Added appropriate documentation for the change.\r\n- Created GitHub issues for any relevant followup/future enhancements if appropriate.\r\n",
+    "pr_date": "2025-05-13T01:47:03Z",
+    "source_branch": "fix_lexer_test_rfs_tag",
+    "language": "en",
+    "keywords_detected": {
+        "branch": [
+            "fix"
+        ],
+        "requirement": [
+            "fix"
+        ],
+        "body": [
+            "feature",
+            "add",
+            "enhance",
+            "change",
+            "create",
+            "fix",
+            "merge"
+        ]
+    },
+    "number_of_links_in_pr": 0,
+    "base_sha": "08030b7d144ed1e3dffb894cf2684bfe9a8e4d74",
+    "last_commit_sha": "516dbac6c69c85df38c4db89d2eef627a309868c",
+    "diff_between_base_and_last": [
+        {
+            "sha": "fce1a32f539e57813cbf6f2b05e41e0fb2676e29",
+            "filename": "test/core/parser/lexer_test.py",
+            "status": "modified",
+            "additions": 8,
+            "deletions": 8,
+            "changes": 16,
+            "blob_url": "https://github.com/sqlfluff/sqlfluff/blob/516dbac6c69c85df38c4db89d2eef627a309868c/test%2Fcore%2Fparser%2Flexer_test.py",
+            "raw_url": "https://github.com/sqlfluff/sqlfluff/raw/516dbac6c69c85df38c4db89d2eef627a309868c/test%2Fcore%2Fparser%2Flexer_test.py",
+            "contents_url": "https://api.github.com/repos/sqlfluff/sqlfluff/contents/test%2Fcore%2Fparser%2Flexer_test.py?ref=516dbac6c69c85df38c4db89d2eef627a309868c",
+            "patch": "@@ -346,9 +346,9 @@ class _LexerSlicingTemplateFileCase(NamedTuple):\n                     ),\n                 ],\n                 raw_sliced=[\n-                    RawFileSlice(\"SELECT \", \"literal\", 0, None, 0),\n-                    RawFileSlice(\"{# comment #}\", \"comment\", 7, None, 0),\n-                    RawFileSlice(\"1;\", \"literal\", 20, None, 0),\n+                    RawFileSlice(\"SELECT \", \"literal\", 0, 0, None),\n+                    RawFileSlice(\"{# comment #}\", \"comment\", 7, 0, None),\n+                    RawFileSlice(\"1;\", \"literal\", 20, 0, None),\n                 ],\n             ),\n             expected_segments=[\n@@ -376,7 +376,7 @@ class _LexerSlicingTemplateFileCase(NamedTuple):\n                     TemplatedFileSlice(\"literal\", slice(7, 9, None), slice(7, 9, None)),\n                 ],\n                 raw_sliced=[\n-                    RawFileSlice(\"SELECT 1;\", \"literal\", 0, None, 0),\n+                    RawFileSlice(\"SELECT 1;\", \"literal\", 0, 0, None),\n                 ],\n             ),\n             expected_segments=[\n@@ -404,10 +404,10 @@ class _LexerSlicingTemplateFileCase(NamedTuple):\n                     ),\n                 ],\n                 raw_sliced=[\n-                    RawFileSlice(\"SELECT '\", \"literal\", 0, None, 0),\n-                    RawFileSlice(\"{{\", \"escaped\", 8, None, 0),\n-                    RawFileSlice(\"}}\", \"escaped\", 10, None, 0),\n-                    RawFileSlice(\"' FROM TAB;\", \"literal\", 12, None, 0),\n+                    RawFileSlice(\"SELECT '\", \"literal\", 0, 0, None),\n+                    RawFileSlice(\"{{\", \"escaped\", 8, 0, None),\n+                    RawFileSlice(\"}}\", \"escaped\", 10, 0, None),\n+                    RawFileSlice(\"' FROM TAB;\", \"literal\", 12, 0, None),\n                 ],\n             ),\n             expected_segments=["
+        }
+    ],
+    "commits": [
+        {
+            "sha": "516dbac6c69c85df38c4db89d2eef627a309868c",
+            "commit_date": "2025-05-13T01:42:41Z",
+            "message": "Fix RawFileSlice idx and tags in lexer_test",
+            "number_of_links_in_commit": 0,
+            "files_changed_count": 1,
+            "files": [
+                {
+                    "sha": "fce1a32f539e57813cbf6f2b05e41e0fb2676e29",
+                    "filename": "test/core/parser/lexer_test.py",
+                    "status": "modified",
+                    "additions": 8,
+                    "deletions": 8,
+                    "changes": 16,
+                    "blob_url": "https://github.com/sqlfluff/sqlfluff/blob/516dbac6c69c85df38c4db89d2eef627a309868c/test%2Fcore%2Fparser%2Flexer_test.py",
+                    "raw_url": "https://github.com/sqlfluff/sqlfluff/raw/516dbac6c69c85df38c4db89d2eef627a309868c/test%2Fcore%2Fparser%2Flexer_test.py",
+                    "contents_url": "https://api.github.com/repos/sqlfluff/sqlfluff/contents/test%2Fcore%2Fparser%2Flexer_test.py?ref=516dbac6c69c85df38c4db89d2eef627a309868c",
+                    "patch": "@@ -346,9 +346,9 @@ class _LexerSlicingTemplateFileCase(NamedTuple):\n                     ),\n                 ],\n                 raw_sliced=[\n-                    RawFileSlice(\"SELECT \", \"literal\", 0, None, 0),\n-                    RawFileSlice(\"{# comment #}\", \"comment\", 7, None, 0),\n-                    RawFileSlice(\"1;\", \"literal\", 20, None, 0),\n+                    RawFileSlice(\"SELECT \", \"literal\", 0, 0, None),\n+                    RawFileSlice(\"{# comment #}\", \"comment\", 7, 0, None),\n+                    RawFileSlice(\"1;\", \"literal\", 20, 0, None),\n                 ],\n             ),\n             expected_segments=[\n@@ -376,7 +376,7 @@ class _LexerSlicingTemplateFileCase(NamedTuple):\n                     TemplatedFileSlice(\"literal\", slice(7, 9, None), slice(7, 9, None)),\n                 ],\n                 raw_sliced=[\n-                    RawFileSlice(\"SELECT 1;\", \"literal\", 0, None, 0),\n+                    RawFileSlice(\"SELECT 1;\", \"literal\", 0, 0, None),\n                 ],\n             ),\n             expected_segments=[\n@@ -404,10 +404,10 @@ class _LexerSlicingTemplateFileCase(NamedTuple):\n                     ),\n                 ],\n                 raw_sliced=[\n-                    RawFileSlice(\"SELECT '\", \"literal\", 0, None, 0),\n-                    RawFileSlice(\"{{\", \"escaped\", 8, None, 0),\n-                    RawFileSlice(\"}}\", \"escaped\", 10, None, 0),\n-                    RawFileSlice(\"' FROM TAB;\", \"literal\", 12, None, 0),\n+                    RawFileSlice(\"SELECT '\", \"literal\", 0, 0, None),\n+                    RawFileSlice(\"{{\", \"escaped\", 8, 0, None),\n+                    RawFileSlice(\"}}\", \"escaped\", 10, 0, None),\n+                    RawFileSlice(\"' FROM TAB;\", \"literal\", 12, 0, None),\n                 ],\n             ),\n             expected_segments=["
+                }
+            ]
+        }
+    ],
+    "pull_request_url": "https://github.com/sqlfluff/sqlfluff/pull/6890",
+    "commits_url": "https://github.com/sqlfluff/sqlfluff/pull/6890/commits",
+    "files_url": "https://github.com/sqlfluff/sqlfluff/pull/6890/files"
+}

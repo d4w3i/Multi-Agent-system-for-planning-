@@ -1,0 +1,80 @@
+{
+  "pr_number": 17947,
+  "repository": "saleor/saleor",
+  "title": "Fix incorrect multipler for limit field",
+  "body": "I want to merge this change because we recently introduced the `values` field with input limit. By accident the query cost was added to incorrect place. This PR fixes this. \n\n> [!IMPORTANT]  \n> The changes on `SelectedAttribute` is expected. We don't have `limit` there, and it is not paginated.  (The query cost for this field will be handled separatly)\n\nImpact checklist: no migrations/api changes/etc marked.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T12:41:59.316412",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "saleor/graphql/query_cost_map.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "values entry)",
+          "class_name": "COST_MAP (Attribute",
+          "full_name": "COST_MAP (Attribute.values entry)",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "values entry)",
+          "class_name": "COST_MAP (SelectedAttribute",
+          "full_name": "COST_MAP (SelectedAttribute.values entry)",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "saleor/graphql/core/tests/test_query_cost_validation.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "values cost multiplier",
+          "class_name": "test(s) to add for Attribute",
+          "full_name": "test(s) to add for Attribute.values cost multiplier",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Fix GraphQL query complexity calculation by applying the `limit` multiplier to `Attribute.values(limit: Int)` and removing the incorrect multiplier from `SelectedAttribute.values`. Add regression tests to ensure query cost scales with `limit` only where the argument exists.",
+    "steps": [
+      {
+        "operation": "Move the query-cost multiplier to the correct GraphQL field by adding `multipliers: [\"limit\"]` to the `Attribute.values` COST_MAP entry (and ensuring its base cost remains unchanged).",
+        "file_to_modify": "saleor/graphql/query_cost_map.py",
+        "function_to_modify": "COST_MAP (Attribute.values entry)",
+        "reason": "`Attribute.values(limit: Int)` is the field that actually accepts the `limit` argument, so query complexity must scale with `limit` there; otherwise expensive queries can slip past the max complexity validation.",
+        "side_effects": "Queries using `Attribute.values(limit: N)` may be rejected more often under `GRAPHQL_QUERY_MAX_COMPLEXITY` because their computed cost will now correctly increase with `N`; no schema/resolver changes."
+      },
+      {
+        "operation": "Remove the incorrect `multipliers: [\"limit\"]` configuration from the `SelectedAttribute.values` COST_MAP entry so its cost is constant for now.",
+        "file_to_modify": "saleor/graphql/query_cost_map.py",
+        "function_to_modify": "COST_MAP (SelectedAttribute.values entry)",
+        "reason": "`SelectedAttribute.values` does not define a `limit` argument and is not paginated, so applying a `limit` multiplier is both incorrect and potentially breaks cost calculation/validation assumptions for that field (and can also mislead future maintenance).",
+        "side_effects": "Queries using `SelectedAttribute.values` will no longer have any cost scaling based on a non-existent argument; overall complexity may decrease for those queries; future work may add a different cost model for this field as noted in the PR body."
+      },
+      {
+        "operation": "Add/adjust query-cost validation tests to assert that `Attribute.values(limit: N)` increases computed query cost with `N`, and that `SelectedAttribute.values` does not apply a `limit` multiplier.",
+        "file_to_modify": "saleor/graphql/core/tests/test_query_cost_validation.py",
+        "function_to_modify": "test(s) to add for Attribute.values cost multiplier",
+        "reason": "Provides regression coverage for the bug (multiplier placed on the wrong type) and locks in the intended behavior: only the field that accepts `limit` should be multiplied by it.",
+        "side_effects": "May require updating expected complexity numbers/snapshots if existing tests implicitly relied on the previous (incorrect) cost map; tests should be written to compare relative costs (e.g., limit=1 vs limit=10) to reduce brittleness."
+      }
+    ]
+  }
+}

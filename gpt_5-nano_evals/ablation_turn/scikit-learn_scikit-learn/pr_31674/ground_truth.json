@@ -1,0 +1,35 @@
+{
+  "pr_number": 31674,
+  "repository": "scikit-learn/scikit-learn",
+  "title": "fix(docs): Fix glossary FIXME tags",
+  "body": "<!--\r\nThanks for contributing a pull request! Please ensure you have taken a look at\r\nthe contribution guidelines: https://github.com/scikit-learn/scikit-learn/blob/main/CONTRIBUTING.md\r\n-->\r\n\r\n#### Reference Issues/PRs\r\nFixes #31628 \r\n\r\n#### What does this implement/fix? Explain your changes.\r\n\r\n\r\n#### Any other comments?\r\nWhile working on [#31628](https://github.com/scikit-learn/scikit-learn/issues/31628), I encountered a `ModuleNotFoundError` due to a misnamed Sphinx extension (`sphinx-prompt` instead of `sphinx_prompt`). This PR also fixes that to ensure local doc builds (`make`) work correctly.\r\n\r\n#### Setup\r\n```\r\nPython 3.13.3\r\n\r\n   machine: macOS-15.5-arm64-arm-64bit-Mach-O\r\n\r\nPython dependencies:\r\n      sklearn: 1.8.dev0\r\n          pip: 25.0.1\r\n   setuptools: None\r\n        numpy: 2.3.1\r\n        scipy: 1.16.0\r\n       Cython: 3.1.2\r\n       pandas: 2.3.0\r\n   matplotlib: 3.10.3\r\n       joblib: 1.5.1\r\nthreadpoolctl: 3.6.0\r\n\r\nBuilt with OpenMP: False\r\n```\r\n\r\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T09:45:33.230824",
+    "extractor_version": "1.0.0",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "doc/conf.py",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "functions_modified": [],
+      "patch": "@@ -62,7 +62,7 @@\n     \"sphinx.ext.intersphinx\",\n     \"sphinx.ext.imgconverter\",\n     \"sphinx_gallery.gen_gallery\",\n-    \"sphinx-prompt\",\n+    \"sphinx_prompt\",\n     \"sphinx_copybutton\",\n     \"sphinxext.opengraph\",\n     \"matplotlib.sphinxext.plot_directive\","
+    }
+  ],
+  "functions_modified": [],
+  "step_plan": {
+    "steps": [
+      {
+        "operation": "Fix Sphinx extension module name in the documentation build configuration by replacing the invalid entry `sphinx-prompt` with the correct importable module `sphinx_prompt` in the `extensions` list.",
+        "file_to_modify": "doc/conf.py",
+        "function_to_modify": null,
+        "reason": "Sphinx loads extensions by importing the listed module names; using `sphinx-prompt` (with a hyphen) is not a valid Python module path and triggers `ModuleNotFoundError`, breaking local documentation builds (`make`).",
+        "side_effects": "Documentation builds will now successfully load the `sphinx_prompt` extension; if the dependency is missing in a given environment, the build will still fail but with the correct missing-module name. Any docs content relying on `sphinx-prompt` directives/roles will now resolve via the correct extension module."
+      }
+    ],
+    "summary": "Fixes local documentation builds by correcting the Sphinx extension name in `doc/conf.py` from `sphinx-prompt` to `sphinx_prompt`, preventing a `ModuleNotFoundError`."
+  }
+}

@@ -1,0 +1,61 @@
+{
+  "pr_number": 2778,
+  "repository": "eosphoros-ai/DB-GPT",
+  "title": "fix: Change plan manager prompt in order to avoid calling tools directly",
+  "body": "# Description\n\nRelated to #2777 \n在默认plan manager prompt中加入了对tool直接调用的严格限制\n\n# How Has This Been Tested?\n\n经过对话测试，plan manager 成功避免直接调用 Tools\n\n![final](https://github.com/user-attachments/assets/c7a3095f-1b34-4495-a597-15d6dfebda8d)\n\n# Snapshots:\n\n![en prompt](https://github.com/user-attachments/assets/3d8cac34-7764-4461-8ca8-964a0099b9ef)\n![cnprompt](https://github.com/user-attachments/assets/b6896063-382d-4203-b194-27e1f4ebc357)\n\n\n# Checklist:\n\n- [x] My code follows the style guidelines of this project\n- [x] I have already rebased the commits and make the commit message conform to the project standard.\n- [x] I have performed a self-review of my own code\n- [x] I have commented my code, particularly in hard-to-understand areas\n- [x] I have made corresponding changes to the documentation\n- [x] Any dependent changes have been merged and published in downstream modules\n\n\nExplore the source code to identify the files and functions to modify.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T12:39:14.109497",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "examples/agents/auto_plan_agent_dialogue_example.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    },
+    {
+      "filename": "packages/dbgpt-app/src/dbgpt_app/scene/chat_dashboard/prompt.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    },
+    {
+      "filename": "packages/dbgpt-app/src/dbgpt_app/scene/chat_normal/prompt.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    }
+  ],
+  "step_plan": {
+    "summary": "Tighten plan manager prompts to prohibit direct tool calls by the LLM and route tool usage through a dedicated ToolAssistantAgent, updating prompts and example usage to reflect the new delegation policy.",
+    "steps": [
+      {
+        "operation": "Augment default plan prompt with explicit delegation rule in dashboard prompt",
+        "file_to_modify": "packages/dbgpt-app/src/dbgpt_app/scene/chat_dashboard/prompt.py",
+        "function_to_modify": "build_plan_prompt",
+        "reason": "Introduce a strict policy in the plan prompt that if a tool is needed, the plan must delegate to ToolAssistantAgent rather than invoking the tool directly, ensuring separation of concerns and preventing leakage of internal tool-calling behavior into planning prompts.",
+        "side_effects": "Prompts and downstream planning behavior will now consistently emit delegation steps; existing tests that expect direct tool calls may fail and need updates; downstream components using the plan output may need to route tool usage through ToolAssistantAgent."
+      },
+      {
+        "operation": "Augment default plan prompt with explicit delegation rule in normal chat prompt",
+        "file_to_modify": "packages/dbgpt-app/src/dbgpt_app/scene/chat_normal/prompt.py",
+        "function_to_modify": "build_plan_prompt",
+        "reason": "Ensure consistent enforcement of the delegation policy across planning flows by updating the normal chat planning prompt to include the same delegation constraint as the dashboard prompt.",
+        "side_effects": "Consistency across plan generation flows improves, but may require updates to tests and documentation; potential changes in how plans are interpreted by UI or services that assume direct tool calls."
+      },
+      {
+        "operation": "Update example usage to align with new delegation policy and ensure prompt is used",
+        "file_to_modify": "examples/agents/auto_plan_agent_dialogue_example.py",
+        "function_to_modify": "AutoPlanChatManager.setup_plan_prompt",
+        "reason": "Make sure the AutoPlanChatManager initializes with the updated plan prompt that enforces delegation to ToolAssistantAgent, and adjust usage to reflect the new delegation pattern rather than direct tool invocation.",
+        "side_effects": "Integration tests referencing direct tool calls may need updates; user-facing demos should reflect the delegation workflow; potential changes in API surfaces for how prompts are passed to the manager."
+      }
+    ]
+  }
+}

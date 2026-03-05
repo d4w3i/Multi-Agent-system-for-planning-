@@ -1,0 +1,114 @@
+{
+  "pr_number": 2071,
+  "repository": "recommenders-team/recommenders",
+  "title": "Fixing TF to < 2.16",
+  "body": "### Description\r\n<!--- Describe your changes in detail -->\r\n<!--- Why is this change required? What problem does it solve? -->\r\n\r\n\r\n### Related Issues\r\n<!--- If it fixes an open issue, please link to the issue here. -->\r\n#2073\r\n\r\n### References\r\n<!--- References would be helpful to understand the changes. -->\r\n<!--- References can be books, links, etc. -->\r\n\r\n\r\n### Checklist:\r\n<!--- Go over all the following points, and put an `x` in all the boxes that apply. -->\r\n<!--- If you're unsure about any of these, don't hesitate to ask. We're here to help! -->\r\n- [ ] I have followed the [contribution guidelines](CONTRIBUTING.md) and code style for this project.\r\n- [ ] I have added tests covering my contributions.\r\n- [ ] I have updated the documentation accordingly.\r\n- [ ] I have [signed the commits](https://github.com/recommenders-team/recommenders/wiki/How-to-sign-commits), e.g. `git commit -s -m \"your commit message\"`. \r\n- [ ] This PR is being made to `staging branch` AND NOT TO `main branch`.\r\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T01:04:46.429518",
+    "extractor_version": "1.0.0",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "recommenders/models/fastai/fastai_utils.py",
+      "status": "modified",
+      "additions": 4,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "score",
+          "class_name": null,
+          "full_name": "score",
+          "start_line": 33,
+          "end_line": 81,
+          "lines_changed": [
+            65,
+            69,
+            75,
+            80
+          ]
+        }
+      ],
+      "patch": "@@ -62,18 +62,22 @@ def score(\n \n     # score the pytorch model\n     x = torch.column_stack((u, m))\n+\n     if torch.cuda.is_available():\n         x = x.to(\"cuda\")\n         learner.model = learner.model.to(\"cuda\")\n+\n     pred = learner.model.forward(x).detach().cpu().numpy()\n     scores = pd.DataFrame(\n         {user_col: test_df[user_col], item_col: test_df[item_col], prediction_col: pred}\n     )\n     scores = scores.sort_values([user_col, prediction_col], ascending=[True, False])\n+\n     if top_k is not None:\n         top_scores = scores.groupby(user_col).head(top_k).reset_index(drop=True)\n     else:\n         top_scores = scores\n+\n     return top_scores\n \n "
+    },
+    {
+      "filename": "setup.py",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "functions_modified": [],
+      "patch": "@@ -53,7 +53,7 @@\n     \"gpu\": [\n         \"fastai>=2.7.11,<3\",\n         \"nvidia-ml-py>=11.525.84\",\n-        \"tensorflow>=2.8.4,!=2.9.0.*,!=2.9.1,!=2.9.2,!=2.10.0.*,<=2.15.0\",\n+        \"tensorflow>=2.8.4,!=2.9.0.*,!=2.9.1,!=2.9.2,!=2.10.0.*,<2.16\",  # Fixed TF due to constant security problems and breaking changes #2073\n         \"tf-slim>=1.1.0\",  # No python_requires in its setup.py\n         \"torch>=2.0.1,<3\",\n     ],"
+    },
+    {
+      "filename": "tests/functional/examples/test_notebooks_gpu.py",
+      "status": "modified",
+      "additions": 5,
+      "deletions": 3,
+      "functions_modified": [
+        {
+          "function_name": "test_dkn_quickstart_functional",
+          "class_name": null,
+          "full_name": "test_dkn_quickstart_functional",
+          "start_line": 566,
+          "end_line": 579,
+          "lines_changed": [
+            572
+          ]
+        }
+      ],
+      "patch": "@@ -247,7 +247,9 @@ def test_wide_deep_functional(\n             os.path.join(\"tests\", \"resources\", \"deeprec\", \"slirec\"),\n             10,\n             400,\n-            {\"auc\": 0.7183},  # Don't do logloss check as SLi-Rec uses ranking loss, not a point-wise loss\n+            {\n+                \"auc\": 0.7183\n+            },  # Don't do logloss check as SLi-Rec uses ranking loss, not a point-wise loss\n             42,\n         )\n     ],\n@@ -278,7 +280,7 @@ def test_slirec_quickstart_functional(\n     results = read_notebook(output_notebook)\n \n     assert results[\"auc\"] == pytest.approx(expected_values[\"auc\"], rel=TOL, abs=ABS_TOL)\n-    \n+\n \n @pytest.mark.gpu\n @pytest.mark.notebooks\n@@ -567,7 +569,7 @@ def test_dkn_quickstart_functional(notebooks, output_notebook, kernel_name):\n         notebook_path,\n         output_notebook,\n         kernel_name=kernel_name,\n-        parameters=dict(EPOCHS=5, BATCH_SIZE=500),\n+        parameters=dict(EPOCHS=5, BATCH_SIZE=200),\n     )\n     results = read_notebook(output_notebook)\n "
+    }
+  ],
+  "functions_modified": [
+    {
+      "function_name": "score",
+      "class_name": null,
+      "full_name": "score",
+      "start_line": 33,
+      "end_line": 81,
+      "lines_changed": [
+        65,
+        69,
+        75,
+        80
+      ]
+    },
+    {
+      "function_name": "test_dkn_quickstart_functional",
+      "class_name": null,
+      "full_name": "test_dkn_quickstart_functional",
+      "start_line": 566,
+      "end_line": 579,
+      "lines_changed": [
+        572
+      ]
+    }
+  ],
+  "step_plan": {
+    "steps": [
+      {
+        "operation": "Update the FastAI scoring path to move both input tensors and the model onto CUDA when available before running the forward pass",
+        "file_to_modify": "recommenders/models/fastai/fastai_utils.py",
+        "function_to_modify": "score",
+        "reason": "Prevent device-mismatch runtime errors and ensure GPU-enabled environments actually execute inference on the GPU by aligning model and input tensor devices.",
+        "side_effects": "Inference will consume GPU memory when CUDA is available; this may change performance characteristics and can surface new CUDA-related issues (e.g., out-of-memory) in environments where the model previously ran on CPU."
+      },
+      {
+        "operation": "Pin TensorFlow GPU extra to a version range below 2.16 to avoid known breakages/security-driven changes",
+        "file_to_modify": "setup.py",
+        "function_to_modify": null,
+        "reason": "Stabilize dependency resolution for GPU installations by preventing installation of TensorFlow 2.16+ versions that introduce breaking changes and recurring security-related forced upgrades (per issue #2073).",
+        "side_effects": "Users attempting to install with newer TensorFlow versions will be constrained/downgraded; downstream packages requiring TF>=2.16 may become incompatible with this extra."
+      },
+      {
+        "operation": "Adjust GPU notebook functional test parameters (reduce DKN batch size; minor formatting cleanup) to improve reliability under constrained GPU memory",
+        "file_to_modify": "tests/functional/examples/test_notebooks_gpu.py",
+        "function_to_modify": "test_dkn_quickstart_functional",
+        "reason": "Reduce the likelihood of CUDA out-of-memory failures in CI/functional runs by lowering the DKN notebook batch size from 500 to 200 while keeping the test intent intact.",
+        "side_effects": "Notebook execution time may increase due to smaller batches; training dynamics can shift slightly, which could affect metric stability if future assertions are tightened."
+      }
+    ],
+    "summary": "This PR pins the TensorFlow GPU dependency to <2.16 for stability, improves FastAI GPU inference by moving both model and inputs to CUDA, and makes GPU notebook functional tests more reliable by reducing the DKN batch size."
+  }
+}

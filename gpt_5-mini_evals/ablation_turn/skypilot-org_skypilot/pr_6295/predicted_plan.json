@@ -1,0 +1,42 @@
+{
+  "pr_number": 6295,
+  "repository": "skypilot-org/skypilot",
+  "title": "Fix hyperbolic unit test",
+  "body": "The `1x-T4-4-17` instance type were missing in the latest catalog ([commit](https://github.com/skypilot-org/skypilot-catalog/commit/06cb4087855609446f3ce9739d863ffd92cdbcd6)), causing this unit test to fail, as it's explicitly looking for that type.\n\nThis PR fixes it by switching to a valid instance type which exist on the latest catalog.\n\nWe probably should still investigate though why `1x-T4-4-17` went missing.\n\nTested (run the relevant ones):\n\n- [x] Code formatting: install pre-commit (auto-check on commit) or `bash format.sh`\n- [x] Any manual or new tests for this PR (please specify below)\n- [ ] All smoke tests: `/smoke-test` (CI) or `pytest tests/test_smoke.py` (local)\n- [x] Relevant individual tests: `/smoke-test -k test_name` (CI) or `pytest tests/test_smoke.py::test_name` (local)\n- [ ] Backward compatibility: `/quicktest-core` (CI) or `pytest tests/smoke_tests/test_backward_compat.py` (local)\n\n<!-- CI commands (/-prefixed) can only be triggered by repo members -->",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T14:37:07.769424",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "tests/unit_tests/test_hyperbolic.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "test_hyperbolic_resource_feasibility",
+          "class_name": null,
+          "full_name": "test_hyperbolic_resource_feasibility",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Update the hyperbolic unit test to avoid depending on a hard-coded instance type removed from the catalog by specifying accelerators={'T4': 1} (no explicit instance_type), making the test resilient to catalog changes.",
+    "steps": [
+      {
+        "operation": "Change test to specify accelerators instead of a hard-coded instance_type",
+        "file_to_modify": "tests/unit_tests/test_hyperbolic.py",
+        "function_to_modify": "test_hyperbolic_resource_feasibility",
+        "reason": "The test currently depends on a specific instance_type string ('1x-T4-4-17') that was removed from the external hyperbolic catalog. Constructing Resources with accelerators={'T4': 1} (and no instance_type) exercises Hyperbolic._get_feasible_launchable_resources() in a catalog-robust way: the implementation will resolve an appropriate instance type from the catalog at runtime, avoiding brittle hard-coded dependencies.",
+        "side_effects": "Only a unit test change (no production code modified). The test will now exercise the code path that resolves instance types from accelerators; if the catalog ever lacks any instance types for the given accelerator (T4), the test could still fail. Downstream tests or CI expectations that relied on the precise instance_type string will be unaffected because this change is localized to this test. Maintainers should run the targeted test (pytest tests/unit_tests/test_hyperbolic.py::test_hyperbolic_resource_feasibility) and the test suite to confirm behavior; add a clarifying comment in the test explaining why accelerators are used to avoid future brittleness."
+      }
+    ]
+  }
+}

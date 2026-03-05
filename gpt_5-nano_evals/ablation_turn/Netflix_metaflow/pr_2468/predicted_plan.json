@@ -1,0 +1,42 @@
+{
+  "pr_number": 2468,
+  "repository": "Netflix/metaflow",
+  "title": "Fixup Runner API command stubs: generate accurate signatures for injected Runner CLI methods",
+  "body": "This change improves the accuracy of the programmatic Runner API stubs generated via dynamic injection of runner CLI commands. Currently the injected methods expose generic signatures (e.g., *args, **kwargs) which leads to poor IDE autocompletion and unclear usage. The fix focuses on deriving and applying the actual CLI parameter signature for the injected methods, while preserving docstrings and names. If deriving the signature is not possible for a given plugin, the code should gracefully fall back to a safe generic signature.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T12:03:20.820446",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "metaflow/runner/metaflow_runner.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "__new__",
+          "class_name": "RunnerMeta",
+          "full_name": "RunnerMeta.__new__",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Fix dynamic Runner CLI command stubs to expose accurate, analyzable signatures by deriving the actual CLI parameter signatures where possible, with a safe fallback if derivation fails.",
+    "steps": [
+      {
+        "operation": "Derive and apply accurate CLI signature to injected Runner CLI methods in RunnerMeta.__new__",
+        "file_to_modify": "metaflow/runner/metaflow_runner.py",
+        "function_to_modify": "RunnerMeta.__new__",
+        "reason": "To replace generic *args/**kwargs signatures with derived actual CLI parameter signatures for improved IDE autocompletion and static analysis when dynamic Runner CLI commands are injected.",
+        "side_effects": "Tests should verify that Runner().<cmd> introspection exposes a non-empty __signature__ resembling the actual CLI options; preserve __doc__ and __name__ to maintain backward compatibility; potential impact on plugins/metadata may require updates to downstream tooling that relies on __signature__ for introspection; runtime command behavior remains unchanged."
+      }
+    ]
+  }
+}

@@ -1,0 +1,141 @@
+{
+  "pr_number": 10335,
+  "repository": "pyg-team/pytorch_geometric",
+  "title": "Fixes to WebQSP Indexer and GRetriever so that unnecessary disk writes are reduced.",
+  "body": "Quick fix to webqsp and gretriever to help with unnecessary cruft on disk and out of date api in examples.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T14:15:47.093958",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "torch_geometric/data/large_graph_indexer.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "save",
+          "class_name": "LargeGraphIndexer",
+          "full_name": "LargeGraphIndexer.save",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "from_disk",
+          "class_name": "LargeGraphIndexer",
+          "full_name": "LargeGraphIndexer.from_disk",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "torch_geometric/utils/rag/backend_utils.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "create_remote_backend_from_graph_data",
+          "class_name": null,
+          "full_name": "create_remote_backend_from_graph_data",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "__del__",
+          "class_name": "RemoteGraphBackendLoader",
+          "full_name": "RemoteGraphBackendLoader.__del__",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "torch_geometric/datasets/web_qsp_dataset.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "_build_graph",
+          "class_name": "KGQABaseDataset",
+          "full_name": "KGQABaseDataset._build_graph",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "examples/llm/nvtx_examples/nvtx_webqsp_example.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "nvtx_webqsp_example (module top-level patches)",
+          "class_name": "examples",
+          "full_name": "examples.llm.nvtx_examples.nvtx_webqsp_example (module top-level patches)",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Reduce unnecessary disk writes and accidental deletions by making LargeGraphIndexer.save selective, hardening from_disk, preventing unconditional overwrites in remote backend creation, removing unconditional deletion in RemoteGraphBackendLoader.__del__ (provide explicit cleanup), and updating the WebQSP dataset and example to avoid forcing redundant saves and to patch the correct API locations.",
+    "steps": [
+      {
+        "operation": "Make LargeGraphIndexer.save selective (no unconditional rmtree; write only missing/changed files)",
+        "file_to_modify": "torch_geometric/data/large_graph_indexer.py",
+        "function_to_modify": "LargeGraphIndexer.save",
+        "reason": "Current implementation removes the entire index directory and rewrites all files, causing unnecessary disk churn. Implementing a selective-write strategy (create missing directories, write only files absent or with differing content) will prevent redundant writes when the same index is saved repeatedly.",
+        "side_effects": "Should reduce test flakiness due to file mtimes and reduce I/O. Must ensure callers that rely on full-directory recreation (e.g., an expectation that files are always re-written) are updated or provided a 'force' option. May require extra unit tests to verify equality checks (e.g., checksum/mtime/size) and atomic writes to avoid partial files. Downstream code that assumes deterministic mtimes may be affected."
+      },
+      {
+        "operation": "Harden LargeGraphIndexer.from_disk to tolerate missing/skipped files and remain compatible with selective save",
+        "file_to_modify": "torch_geometric/data/large_graph_indexer.py",
+        "function_to_modify": "LargeGraphIndexer.from_disk",
+        "reason": "If save stops writing unchanged files or changes layout slightly, from_disk should be robust to missing files and able to load indexes saved selectively. Add graceful handling of absent optional files, clearer error messages, and possibly fallback reconstruction when some components are absent.",
+        "side_effects": "Improves resilience when loading indexes created by older/newer versions. Tests that assumed strict file layouts may need updating. Avoids raising unexpected exceptions on partially present index directories. Small changes to behavior should be documented because callers may rely on strict existence checks."
+      },
+      {
+        "operation": "Avoid unconditional torch.save overwrite for single-part backends (add existence check / optional force flag)",
+        "file_to_modify": "torch_geometric/utils/rag/backend_utils.py",
+        "function_to_modify": "create_remote_backend_from_graph_data",
+        "reason": "When n_parts == 1 the function currently overwrites the target path unconditionally with torch.save, causing unnecessary writes if the backend already exists. Add logic to skip saving when the target file exists (unless a force argument is passed) and ensure the returned loader references the existing file.",
+        "side_effects": "Prevents redundant writes and reduces I/O. Introducing an optional 'force' parameter changes the function signature/behavior and requires updating any callers/tests that expect unconditional overwrite. Tests should be added to verify both existing-path skip and forced-overwrite behaviors. Returning a loader pointing to the existing file must not change ownership semantics (see __del__ change)."
+      },
+      {
+        "operation": "Remove unconditional deletion from RemoteGraphBackendLoader.__del__ and track ownership of created files (add explicit cleanup method)",
+        "file_to_modify": "torch_geometric/utils/rag/backend_utils.py",
+        "function_to_modify": "RemoteGraphBackendLoader.__del__",
+        "reason": "Current __del__ unconditionally removes the path, which can delete user-provided backends unexpectedly on object finalization. Replace the deletion with a safer pattern: track whether the loader created a temporary file (self._is_temp) and only delete in that case, and add an explicit close()/cleanup() method to allow deterministic removal.",
+        "side_effects": "Prevents accidental deletion of user files on interpreter shutdown or GC. Call sites that expect __del__ to clean up files will need to call cleanup() explicitly if they want the same behavior. Tests may need to be updated to call cleanup() or to check _is_temp semantics. Also reduces risk of file deletion during test teardown."
+      },
+      {
+        "operation": "Avoid unconditional indexer.save call in KGQABaseDataset._build_graph (skip save when processed index already exists or respect force_reload)",
+        "file_to_modify": "torch_geometric/datasets/web_qsp_dataset.py",
+        "function_to_modify": "KGQABaseDataset._build_graph",
+        "reason": "KGQABaseDataset._build_graph currently calls self.indexer.save(...) unconditionally, triggering the indexer's potentially heavy disk writes. Add pre-checks: if the processed index path exists and force_reload is not requested, skip calling save; optionally compare index metadata or rely on existence as a minimal optimization. This prevents redundant disk writes during dataset (re)initialization.",
+        "side_effects": "Reduces dataset-induced disk I/O. If callers expect save to always be called (for example to refresh a timestamp or to overwrite stale indexes), this behavior changes that assumption; provide a force_reload flag or parameter to explicitly request re-saving. Add tests to ensure skip logic doesn't break index creation when necessary. Downstream code that relies on side-effects of save (e.g., permissions, mtimes) may be affected."
+      },
+      {
+        "operation": "Update example to patch the correct retrieval function and make module-level patching robust",
+        "file_to_modify": "examples/llm/nvtx_examples/nvtx_webqsp_example.py",
+        "function_to_modify": "apply_nvtx_patches",
+        "reason": "The example currently patches retrieval_via_pcst via the dataset module, but the function lives in torch_geometric.utils.rag.backend_utils. Refactor top-level patching into a named helper (apply_nvtx_patches) and apply nvtxit/patch to backend_utils.retrieval_via_pcst; also make the WebQSPDataset.process patch robust (import or attribute-check before patching). This ensures the example runs with the current API layout and is more maintainable.",
+        "side_effects": "Fixes example runtime errors and reduces brittleness against API moves. Introduces a new helper function which may slightly change how the example module is executed (better for tests to call the helper explicitly). Examples/tests that relied on the old patch location must be updated. No production API changes; only example code is modified."
+      }
+    ]
+  }
+}

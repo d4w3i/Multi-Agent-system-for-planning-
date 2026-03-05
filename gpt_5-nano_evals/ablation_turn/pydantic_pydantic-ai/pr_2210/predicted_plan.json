@@ -1,0 +1,57 @@
+{
+  "pr_number": 2210,
+  "repository": "pydantic/pydantic-ai",
+  "title": "[openai] Remove incorrect tool call id from tool call delta",
+  "body": "Summary:\n- The OpenAI streaming responses pathway exposes a function_call_arguments.delta event where the item_id is documented as the tool_call's id, not the tool_call_id. Currently, the code passes this item_id as the tool_call_id to the parts manager, which can introduce mismatches (and generate ids longer than some models tolerate).\n- This patch removes passing tool_call_id from delta handling to avoid propagating the incorrect id. The rest of the delta processing will still carry the necessary information (vendor part, function name, and arguments) and the downstream logic can derive IDs correctly from the actual tool call flow.\n\nWhat and where to change:\n- In the OpenAI streaming path for Chat Completions:\n  - base_project/openai.py\n  - OpenAIStreamedResponse._get_event_iterator: stop passing tool_call_id when handling delta tool_calls.\n- In the OpenAI Responses streaming path:\n  - base_project/openai.py\n  - OpenAIResponsesStreamedResponse._get_event_iterator: stop passing tool_call_id when handling delta tool_calls.\n\nRationale:\n- The delta event’s item_id appears to be the tool_call id (fc_...) rather than the tool_call_id (call_...). Propagating this as tool_call_id caused downstream tooling to receive an incorrect, longer ID, which can break model constraints (e.g., gpt-4o-mini limits to 40 chars).\n- By omitting tool_call_id in these delta-handling calls, we avoid the incorrect mapping and allow the rest of the system to manage IDs more reliably.\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T13:34:03.028029",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "base_project/openai.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "_get_event_iterator",
+          "class_name": "OpenAIStreamedResponse",
+          "full_name": "OpenAIStreamedResponse._get_event_iterator",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_get_event_iterator",
+          "class_name": "OpenAIResponsesStreamedResponse",
+          "full_name": "OpenAIResponsesStreamedResponse._get_event_iterator",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Remove incorrect propagation of tool_call_id from function_call_arguments.delta in OpenAI streaming paths to prevent mismatches and overly long IDs, while preserving vendor part, function name, and arguments so downstream logic can derive IDs from the actual tool call flow.",
+    "steps": [
+      {
+        "operation": "Modify delta handling to stop passing tool_call_id in OpenAI streaming path",
+        "file_to_modify": "base_project/openai.py",
+        "function_to_modify": "OpenAIStreamedResponse._get_event_iterator",
+        "reason": "The delta event's item_id represents the tool_call id rather than tool_call_id; forwarding it to downstream tooling causes mismatches and can exceed model id length constraints.",
+        "side_effects": "Tests relying on tool_call_id in delta handling may need updates; downstream components may need to derive IDs differently; non-streaming paths are unaffected; potential minor adjustments to ID derivation logic in downstream handlers"
+      },
+      {
+        "operation": "Modify delta handling to stop passing tool_call_id in OpenAIResponses streaming path",
+        "file_to_modify": "base_project/openai.py",
+        "function_to_modify": "OpenAIResponsesStreamedResponse._get_event_iterator",
+        "reason": "Same as above for the responses streaming path; ensure delta processing does not pass an incorrect id.",
+        "side_effects": "Tests relying on tool_call_id in delta handling may need updates; downstream tooling may derive IDs differently; ensure downstream ID handling remains consistent with new delta processing"
+      }
+    ]
+  }
+}

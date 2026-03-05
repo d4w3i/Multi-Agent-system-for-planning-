@@ -1,0 +1,33 @@
+{
+  "pr_number": 11766,
+  "repository": "pydantic/pydantic",
+  "title": "Fix example in `populate_by_name` documentation",
+  "body": "## Change Summary\n\nfix the docstring of ConfigDict's populate_by_name.\n\n## Related issue number\n\nfix #11765\n\n- #11765",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T12:35:24.598934",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "pydantic/config.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    }
+  ],
+  "step_plan": {
+    "summary": "Correct the `ConfigDict.populate_by_name` docstring example so it accurately shows model initialization via alias and via field name (and references the preferred `validate_by_name`/`validate_by_alias` settings in v2.11+).",
+    "steps": [
+      {
+        "operation": "Fix the documentation example for `populate_by_name` to correctly demonstrate populating by alias vs by field name, and align wording with the v2.11+ guidance (`validate_by_name`/`validate_by_alias`).",
+        "file_to_modify": "pydantic/config.py",
+        "function_to_modify": null,
+        "reason": "The current inline docstring example under `ConfigDict.populate_by_name` is incorrect (it repeats the alias keyword in both instantiations), which misleads users reading the generated API docs. This PR is doc-only and should update the example text/code without affecting runtime behavior.",
+        "side_effects": "Docs rendering output (mkdocstrings / API reference pages) will change. If the repository runs doctest-like validation on doc examples, the corrected snippet must remain syntactically valid; no runtime or configuration behavior changes are expected."
+      }
+    ]
+  }
+}

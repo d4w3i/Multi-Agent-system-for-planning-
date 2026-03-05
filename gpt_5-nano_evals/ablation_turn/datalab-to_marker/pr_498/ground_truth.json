@@ -1,0 +1,61 @@
+{
+  "pr_number": 498,
+  "repository": "datalab-to/marker",
+  "title": "OCR Error Detection Hotfix",
+  "body": "Fix input handling of error detection model: \r\n- Segment length is automatically handled by tokenizer, and is by `#tokens`, not `#chars`, removing the splitting logic inside `marker`\r\n- Join lines using `\\n`",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T00:59:11.245433",
+    "extractor_version": "1.0.0",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "marker/builders/layout.py",
+      "status": "modified",
+      "additions": 3,
+      "deletions": 16,
+      "functions_modified": [
+        {
+          "function_name": "surya_ocr_error_detection",
+          "class_name": "LayoutBuilder",
+          "full_name": "LayoutBuilder.surya_ocr_error_detection",
+          "start_line": 103,
+          "end_line": 115,
+          "lines_changed": [
+            103,
+            108,
+            113
+          ]
+        }
+      ],
+      "patch": "@@ -42,10 +42,6 @@ class LayoutBuilder(BaseBuilder):\n         \"The minimum ratio of pages that must pass the layout coverage check\",\n         \"to avoid OCR.\",\n     ] = .8\n-    error_model_segment_length: Annotated[\n-        int,\n-        \"The maximum number of characters to send to the OCR error model.\",\n-    ] = 512\n     excluded_for_coverage: Annotated[\n         Tuple[BlockTypes],\n         \"A list of block types to exclude from the layout coverage check.\",\n@@ -104,26 +100,17 @@ def surya_layout(self, pages: List[PageGroup]) -> List[LayoutResult]:\n         )\n         return layout_results\n \n-    def surya_ocr_error_detection(self, pages: List[PageGroup], provider_page_lines: ProviderPageLines) -> OCRErrorDetectionResult:\n+    def surya_ocr_error_detection(self, pages:List[PageGroup], provider_page_lines: ProviderPageLines) -> OCRErrorDetectionResult:\n         page_texts = []\n         for document_page in pages:\n             page_text = ''\n             provider_lines = provider_page_lines.get(document_page.page_id, [])\n-            for line in provider_lines:\n-                page_text += ' '.join([s.text for s in line.spans])\n-\n-            # Sample text from the middle\n-            if len(page_text) > 0:\n-                page_text_middle = len(page_text) // 2\n-                page_text_start = max(0, page_text_middle - self.error_model_segment_length // 2)\n-                page_text_end = page_text_start + self.error_model_segment_length\n-                page_text = page_text[page_text_start:page_text_end]\n-\n+            page_text = '\\n'.join(' '.join(s.text for s in line.spans) for line in provider_lines)\n             page_texts.append(page_text)\n \n         ocr_error_detection_results = self.ocr_error_model(\n             page_texts,\n-            batch_size=int(self.get_batch_size())  # TODO Better Multiplier\n+            batch_size=int(self.get_batch_size())       #TODO Better Multiplier\n         )\n         return ocr_error_detection_results\n "
+    }
+  ],
+  "functions_modified": [
+    {
+      "function_name": "surya_ocr_error_detection",
+      "class_name": "LayoutBuilder",
+      "full_name": "LayoutBuilder.surya_ocr_error_detection",
+      "start_line": 103,
+      "end_line": 115,
+      "lines_changed": [
+        103,
+        108,
+        113
+      ]
+    }
+  ],
+  "step_plan": {
+    "steps": [
+      {
+        "operation": "Refactor OCR error detection input construction to join provider lines with newline separators and remove manual segment-length sampling (including deleting the `error_model_segment_length` config field) so the tokenizer handles token-based truncation.",
+        "file_to_modify": "marker/builders/layout.py",
+        "function_to_modify": "LayoutBuilder.surya_ocr_error_detection",
+        "reason": "The error detection model’s tokenizer already enforces maximum input length based on number of tokens (not characters), so pre-splitting/sampling by character count is both redundant and can degrade model accuracy by discarding useful context. Joining lines with `\\n` preserves natural OCR line boundaries and improves consistency of the text fed to the model.",
+        "side_effects": "Model inputs will change shape/content (full page text with newlines rather than a middle character slice), which can affect error detection scores and downstream thresholds/decisions. Removing `error_model_segment_length` may break callers/configs that previously set this option. Larger raw strings may increase CPU/memory pre-tokenization (though tokenizer truncation will cap tokens)."
+      }
+    ],
+    "summary": "Hotfix updates OCR error detection input handling by removing character-based segment slicing and joining OCR lines using newline separators, relying on tokenizer token limits for truncation."
+  }
+}

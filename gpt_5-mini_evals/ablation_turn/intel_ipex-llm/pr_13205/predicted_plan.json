@@ -1,0 +1,42 @@
+{
+  "pr_number": 13205,
+  "repository": "intel/ipex-llm",
+  "title": "Fix internvl fp16 error",
+  "body": "## Description\n\n<!-- For small changes (<=3 files and <=50 lines of codes in the source folder), -->\n<!-- you may remove Sections 1-4 below and just provide a simple description here -->\n\n### 1. Why the change?\n\n<!-- Provide the related github issue link if available -->\n\n### 2. User API changes\n\n<!-- Describe API changes (i.e., how users will use the feature) if any; -->\n<!-- alternatively, provide a link to the github issue for the design -->\n\n### 3. Summary of the change \n\n<!-- Provide the design for the implementation; -->\n<!-- alternatively, provide a link to the github issue for the design -->\n\n### 4. How to test?\n- [ ] N/A\n- [ ] Unit test: Please manually trigger the PR Validation [here](https://github.com/intel-analytics/ipex-llm-workflow/actions/workflows/llm-PR-validation.yml) by inputting the PR number (e.g., `1234`). And paste your action link here once it has been successfully finished.\n- [ ] Application test\n- [ ] Document test\n- [ ] ...\n\n### 5. New dependencies\n\n<!-- If no new dependency is introduced, remove this section -->\n\n- [ ] New Python dependencies\n       - Dependency1 \n       - Dependency2\n       - ...\n- [ ] New Java/Scala dependencies and their license\n       - Dependency1 and license1\n       - Dependency2 and license2\n       - ...",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T13:28:05.815520",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "python/llm/src/ipex_llm/transformers/models/internvl.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "intern_attention_forward",
+          "class_name": null,
+          "full_name": "intern_attention_forward",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Make the InternVL attention safe for fp16/XPU by ensuring the query tensor is contiguous before calling scaled_dot_product_attention and replacing direct torch.softmax usage with the project's attention_softmax helper (imported from common.py). This is a minimal internal fix with no public API changes.",
+    "steps": [
+      {
+        "operation": "Make query contiguous before SDP and use attention_softmax in non-SDP path (import helper)",
+        "file_to_modify": "python/llm/src/ipex_llm/transformers/models/internvl.py",
+        "function_to_modify": "intern_attention_forward",
+        "reason": "On fp16/XPU targets, non-contiguous query tensors can trigger low-level kernel/runtime errors when passed to scaled_dot_product_attention. The code already makes k and v contiguous but leaves q possibly non-contiguous. Also, direct use of torch.softmax on fp16/XPU tensors can be numerically or kernel-unsafe. The project provides attention_softmax in common.py which handles XPU/fp16 safely (including dtype promotion when needed). Passing q.contiguous() into the SDP path and replacing torch.softmax with attention_softmax in the non-SDP path applies the minimal, targeted fixes to avoid fp16 errors.",
+        "side_effects": "Behavioral/API: No public API changes. Implementation-level: q.contiguous() may introduce an additional memory copy if q was non-contiguous, causing a small runtime and memory overhead; could slightly change performance characteristics of attention (measurements recommended). Tests: Run fp16 and XPU-specific unit/smoke tests for InternVL and attention codepaths; existing tests that rely on specific memory layouts should still pass but may reveal assumptions about contiguity. Dependents: Any other code calling intern_attention_forward is unaffected functionally; however, if callers depended on q remaining non-contiguous for zero-copy semantics (unlikely), their performance profile could change. Deployment: No configuration changes required."
+      }
+    ]
+  }
+}

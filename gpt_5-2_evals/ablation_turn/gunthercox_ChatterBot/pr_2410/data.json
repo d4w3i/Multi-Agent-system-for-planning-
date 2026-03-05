@@ -1,0 +1,65 @@
+{
+    "repository": "gunthercox/ChatterBot",
+    "pull_request_number": 2410,
+    "title": "Fix file path resolution",
+    "body": "This pull request makes a few changes:\r\n\r\n1. It fixes the single file case where a `yield` should be used instead of a `return` - the difference seems to be that the former results in an empty generator evaluation when a single file is provided.\r\n2. Absolute path resolution has been added for easier identification of file locations if the specified file is not found.\r\n3. A more descriptive error message.",
+    "pr_date": "2025-04-01T22:32:54Z",
+    "source_branch": "fix",
+    "language": "en",
+    "keywords_detected": {
+        "branch": [
+            "fix"
+        ],
+        "requirement": [
+            "fix"
+        ],
+        "body": [
+            "add",
+            "change",
+            "fix"
+        ]
+    },
+    "number_of_links_in_pr": 0,
+    "base_sha": "73e1cdb8080276fda7a985571b7f100a51bbed1f",
+    "last_commit_sha": "cda31d2aecd8ae8f6d94ffb0acf9f48fa1194fa2",
+    "diff_between_base_and_last": [
+        {
+            "sha": "e262c9426d94370facfce6bfa02c786628bc9446",
+            "filename": "chatterbot/trainers.py",
+            "status": "modified",
+            "additions": 23,
+            "deletions": 14,
+            "changes": 37,
+            "blob_url": "https://github.com/gunthercox/ChatterBot/blob/cda31d2aecd8ae8f6d94ffb0acf9f48fa1194fa2/chatterbot%2Ftrainers.py",
+            "raw_url": "https://github.com/gunthercox/ChatterBot/raw/cda31d2aecd8ae8f6d94ffb0acf9f48fa1194fa2/chatterbot%2Ftrainers.py",
+            "contents_url": "https://api.github.com/repos/gunthercox/ChatterBot/contents/chatterbot%2Ftrainers.py?ref=cda31d2aecd8ae8f6d94ffb0acf9f48fa1194fa2",
+            "patch": "@@ -210,7 +210,7 @@ def _get_file_list(self, data_path, limit):\n         if self.file_extension is None:\n             raise self.TrainerInitializationException(\n                 'The file_extension attribute must be set before calling train().'\n-            ) \n+            )\n \n         # List all csv or json files in the specified directory\n         if os.path.isdir(data_path):\n@@ -226,7 +226,7 @@ def _get_file_list(self, data_path, limit):\n \n                 yield file_path\n         else:\n-            return [data_path]\n+            yield data_path\n \n     def train(self, data_path: str, limit=None):\n         \"\"\"\n@@ -254,7 +254,9 @@ def train(self, data_path: str, limit=None):\n \n             statements_to_create = []\n \n-            with open(data_file, 'r', encoding='utf-8') as file:\n+            file_abspath = os.path.abspath(data_file)\n+\n+            with open(file_abspath, 'r', encoding='utf-8') as file:\n \n                 if self.file_extension == 'json':\n                     data = json.load(file)\n@@ -281,17 +283,24 @@ def train(self, data_path: str, limit=None):\n \n                 text_row = self.field_map['text']\n \n-                documents = self.chatbot.tagger.as_nlp_pipeline([\n-                    (\n-                        row[text_row],\n-                        {\n-                            # Include any defined metadata columns\n-                            key: row[value]\n-                            for key, value in self.field_map.items()\n-                            if key != text_row\n-                        }\n-                    ) for row in data if len(row) > 0\n-                ])\n+                try:\n+                    documents = self.chatbot.tagger.as_nlp_pipeline([\n+                        (\n+                            row[text_row],\n+                            {\n+                                # Include any defined metadata columns\n+                                key: row[value]\n+                                for key, value in self.field_map.items()\n+                                if key != text_row\n+                            }\n+                        ) for row in data if len(row) > 0\n+                    ])\n+                except KeyError as e:\n+                    raise KeyError(\n+                        f'{e}. Please check the field_map parameter used to initialize '\n+                        f'the training class and remove this value if it is not needed. '\n+                        f'Current mapping: {self.field_map}'\n+                    )\n \n             for document, context in documents:\n                 statement = Statement("
+        }
+    ],
+    "commits": [
+        {
+            "sha": "cda31d2aecd8ae8f6d94ffb0acf9f48fa1194fa2",
+            "commit_date": "2025-04-01T22:28:31Z",
+            "message": "Fix file path resolution",
+            "number_of_links_in_commit": 0,
+            "files_changed_count": 1,
+            "files": [
+                {
+                    "sha": "e262c9426d94370facfce6bfa02c786628bc9446",
+                    "filename": "chatterbot/trainers.py",
+                    "status": "modified",
+                    "additions": 23,
+                    "deletions": 14,
+                    "changes": 37,
+                    "blob_url": "https://github.com/gunthercox/ChatterBot/blob/cda31d2aecd8ae8f6d94ffb0acf9f48fa1194fa2/chatterbot%2Ftrainers.py",
+                    "raw_url": "https://github.com/gunthercox/ChatterBot/raw/cda31d2aecd8ae8f6d94ffb0acf9f48fa1194fa2/chatterbot%2Ftrainers.py",
+                    "contents_url": "https://api.github.com/repos/gunthercox/ChatterBot/contents/chatterbot%2Ftrainers.py?ref=cda31d2aecd8ae8f6d94ffb0acf9f48fa1194fa2",
+                    "patch": "@@ -210,7 +210,7 @@ def _get_file_list(self, data_path, limit):\n         if self.file_extension is None:\n             raise self.TrainerInitializationException(\n                 'The file_extension attribute must be set before calling train().'\n-            ) \n+            )\n \n         # List all csv or json files in the specified directory\n         if os.path.isdir(data_path):\n@@ -226,7 +226,7 @@ def _get_file_list(self, data_path, limit):\n \n                 yield file_path\n         else:\n-            return [data_path]\n+            yield data_path\n \n     def train(self, data_path: str, limit=None):\n         \"\"\"\n@@ -254,7 +254,9 @@ def train(self, data_path: str, limit=None):\n \n             statements_to_create = []\n \n-            with open(data_file, 'r', encoding='utf-8') as file:\n+            file_abspath = os.path.abspath(data_file)\n+\n+            with open(file_abspath, 'r', encoding='utf-8') as file:\n \n                 if self.file_extension == 'json':\n                     data = json.load(file)\n@@ -281,17 +283,24 @@ def train(self, data_path: str, limit=None):\n \n                 text_row = self.field_map['text']\n \n-                documents = self.chatbot.tagger.as_nlp_pipeline([\n-                    (\n-                        row[text_row],\n-                        {\n-                            # Include any defined metadata columns\n-                            key: row[value]\n-                            for key, value in self.field_map.items()\n-                            if key != text_row\n-                        }\n-                    ) for row in data if len(row) > 0\n-                ])\n+                try:\n+                    documents = self.chatbot.tagger.as_nlp_pipeline([\n+                        (\n+                            row[text_row],\n+                            {\n+                                # Include any defined metadata columns\n+                                key: row[value]\n+                                for key, value in self.field_map.items()\n+                                if key != text_row\n+                            }\n+                        ) for row in data if len(row) > 0\n+                    ])\n+                except KeyError as e:\n+                    raise KeyError(\n+                        f'{e}. Please check the field_map parameter used to initialize '\n+                        f'the training class and remove this value if it is not needed. '\n+                        f'Current mapping: {self.field_map}'\n+                    )\n \n             for document, context in documents:\n                 statement = Statement("
+                }
+            ]
+        }
+    ],
+    "pull_request_url": "https://github.com/gunthercox/ChatterBot/pull/2410",
+    "commits_url": "https://github.com/gunthercox/ChatterBot/pull/2410/commits",
+    "files_url": "https://github.com/gunthercox/ChatterBot/pull/2410/files"
+}

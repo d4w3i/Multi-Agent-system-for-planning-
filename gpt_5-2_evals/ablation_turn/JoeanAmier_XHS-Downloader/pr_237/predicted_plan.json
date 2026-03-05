@@ -1,0 +1,88 @@
+{
+  "pr_number": 237,
+  "repository": "JoeanAmier/XHS-Downloader",
+  "title": "fix can't run by source code",
+  "body": "the error is:    fix NoMatches: No nodes match <class 'textual.widgets._rich_log.RichLog'> on XHSDownloader",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T11:46:37.122685",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "source/TUI/app.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "on_mount",
+          "class_name": "XHSDownloader",
+          "full_name": "XHSDownloader.on_mount",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "source/TUI/index.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "on_mount",
+          "class_name": "Index",
+          "full_name": "Index.on_mount",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "source/module/settings.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "check_keys",
+          "class_name": "Settings",
+          "full_name": "Settings.check_keys",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Fix the Textual TUI crash (`NoMatches` for `RichLog`) by removing early widget queries from `XHSDownloader.on_mount()` and performing settings validation/logging only after the Index screen has mounted its `RichLog`. Optionally make `Settings.check_keys()` UI-agnostic for robustness across entry points and Textual timing.",
+    "steps": [
+      {
+        "operation": "Refactor app startup to stop querying RichLog during App mount; only install/push screens and defer settings/UI warnings to the Index screen",
+        "file_to_modify": "source/TUI/app.py",
+        "function_to_modify": "XHSDownloader.on_mount",
+        "reason": "`self.screen.query_one(RichLog)` is timing-sensitive during `App.on_mount()`; depending on Textual scheduling, the active screen may not yet have composed/mounted `RichLog`, raising `NoMatches`. Removing the widget query from `App.on_mount()` eliminates the crash path when running from source.",
+        "side_effects": "Settings validation/warnings will no longer appear during the earliest app mount phase; ensure the Index screen performs the validation so users still see warnings. Any code relying on warnings being emitted before the first screen is shown may observe a slight delay (typically one frame)."
+      },
+      {
+        "operation": "Move settings key validation + user-facing warning log into Index mount, using the Index-owned RichLog instance (e.g., `self.tip`) after it is available",
+        "file_to_modify": "source/TUI/index.py",
+        "function_to_modify": "Index.on_mount",
+        "reason": "`Index.on_mount()` is the reliable lifecycle point where the Index widget tree exists; querying `RichLog` from within the screen (or using an already-initialized `self.tip`) avoids `NoMatches` and keeps the warning visible in the intended UI location.",
+        "side_effects": "The warning will appear when the Index screen mounts (after it becomes active) rather than during `App.on_mount()`. If Index can be revisited multiple times, ensure the validation/logging is idempotent or guarded to avoid duplicate warnings."
+      },
+      {
+        "operation": "Harden settings validation to be UI-optional: return missing/invalid key info (or accept nullable logger) instead of requiring an immediate UI node/callback target",
+        "file_to_modify": "source/module/settings.py",
+        "function_to_modify": "Settings.check_keys",
+        "reason": "Decoupling validation from UI prevents similar timing issues elsewhere and makes the API usable from both TUI and non-TUI entry points. Index can call `check_keys()` to get results and then write to `RichLog` when ready, instead of passing a widget-dependent callback.",
+        "side_effects": "This is an API behavior change: update all callers to handle the new return value / optional logger. Add or adjust tests or runtime checks to ensure missing-keys detection remains the same and warnings are still emitted in the TUI."
+      }
+    ]
+  }
+}

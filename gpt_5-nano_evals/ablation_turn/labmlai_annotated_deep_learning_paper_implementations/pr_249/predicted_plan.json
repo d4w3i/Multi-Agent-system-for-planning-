@@ -1,0 +1,42 @@
+{
+  "pr_number": 249,
+  "repository": "labmlai/annotated_deep_learning_paper_implementations",
+  "title": "fix dim error in rope",
+  "body": "Fix a RuntimeError in RoPE when the embedding dimension d is odd. The current RoPE cache construction creates cos/sin caches with length 2 * floor(d/2), which equals d-1 for odd d, causing a dimension mismatch with the input that has last-dimension size d. The patch pads the cache to length d so that the rotation can be applied consistently (rotating the first 2*floor(d/2) features and leaving any remaining feature(s) unaffected).",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T13:05:51.997639",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "labml_nn/transformers/rope/__init__.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "_build_cache",
+          "class_name": "RotaryPositionalEmbeddings",
+          "full_name": "RotaryPositionalEmbeddings._build_cache",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Fix a dimension mismatch in RoPE for odd embedding dimensions by padding the cos/sin caches to match the embedding dimension d and applying rotation to the appropriate subset, ensuring consistent broadcasting for both even and odd dimensions.",
+    "steps": [
+      {
+        "operation": "Patch RotaryPositionalEmbeddings._build_cache to pad cos/sin caches to length d when d is odd",
+        "file_to_modify": "labml_nn/transformers/rope/__init__.py",
+        "function_to_modify": "RotaryPositionalEmbeddings._build_cache",
+        "reason": "Current cache length is 2 * floor(d/2) which equals d-1 for odd d, causing a dimension mismatch with input x of shape [..., d]. Pad to length d and rotate only the first 2*floor(d/2) features, leaving the remaining features unrotated.",
+        "side_effects": "Ensures compatibility for odd d; preserves behavior for even d; adds regression test for odd d (e.g., d=3); may require minor updates to downstream code that relies on exact cache length, but broadcasting remains compatible; unit tests should verify shapes and outputs"
+      }
+    ]
+  }
+}

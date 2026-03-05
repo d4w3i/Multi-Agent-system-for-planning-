@@ -1,0 +1,64 @@
+{
+  "pr_number": 8500,
+  "repository": "stanfordnlp/dspy",
+  "title": "feat: add test for nested stream and check value has predict_id",
+  "body": "This PR is to add test for nested streaming where we have an agent streaming its response and its tools to run some dspy programs.\n\n- I added the test to validate the use case\n- I add check the predict_id before attempt to response to client\n\nRelated issue: https://github.com/stanfordnlp/dspy/issues/8454\n\ncc @chenmoneygithub, @okhat",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T12:47:05.234811",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "tests/streaming/test_streaming.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    },
+    {
+      "filename": "dspy/streaming/streamify.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "async_streamer",
+          "class_name": "streamify",
+          "full_name": "streamify.<locals>.async_streamer",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "streaming_response",
+          "class_name": null,
+          "full_name": "streaming_response",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Add a regression test for nested streaming (agent streams while invoking streaming sub-program/tools) and harden the streaming pipeline so chunks missing or lacking a mapped `predict_id` no longer crash streaming to clients.",
+    "steps": [
+      {
+        "operation": "Harden listener-routing logic to tolerate ModelResponseStream chunks without a routable predict_id",
+        "file_to_modify": "dspy/streaming/streamify.py",
+        "function_to_modify": "streamify.<locals>.async_streamer",
+        "reason": "Nested streaming can emit ModelResponseStream chunks where `predict_id` is missing/None or not present in `predict_id_to_listener`; directly indexing `predict_id_to_listener[value.predict_id]` risks KeyError/AttributeError and breaks the SSE stream.",
+        "side_effects": "May change behavior for “unroutable” chunks (they will be yielded directly or ignored per chosen fallback); downstream listeners may receive fewer callbacks in these edge cases; should not affect non-nested streaming but could alter ordering/visibility of some chunks if previously crashing."
+      },
+      {
+        "operation": "Add a defensive predict_id check when converting streamed chunks into client-facing streaming responses",
+        "file_to_modify": "dspy/streaming/streamify.py",
+        "function_to_modify": "streaming_response",
+        "reason": "The PR notes a need to “check the predict_id before attempt to response to client”; ensuring `streaming_response` can serialize/forward chunks even when upstream metadata like `predict_id` is missing prevents client-stream failure at the API boundary in nested streaming scenarios.",
+        "side_effects": "May alter SSE output for edge-case chunks (e.g., passing through raw deltas without routing metadata); could require updating/relaxing assertions in existing streaming tests if they assumed predict_id is always present."
+      }
+    ]
+  }
+}

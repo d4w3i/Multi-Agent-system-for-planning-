@@ -1,0 +1,57 @@
+{
+  "pr_number": 2127,
+  "repository": "DLR-RM/stable-baselines3",
+  "title": "Feature/batch norm",
+  "body": "Added a boolean use_batch_norm flag to the CNN and MLP feature extractors.\n- In NatureCNN, each convolutional block can insert an nn.BatchNorm2d layer (before the ReLU) when use_batch_norm=True.\n- In create_mlp, an initial nn.BatchNorm1d may be applied to the inputs, and batch-norm modules can wrap each linear layer.\nAll defaults remain unchanged (batch norm off), and existing behavior is preserved.\n\nMotivation:\nBatch normalization can improve training stability and convergence speed. Enabling use_batch_norm provides this benefit without breaking existing workflows.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T11:45:51.811361",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "stable_baselines3/common/torch_layers.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "__init__",
+          "class_name": "NatureCNN",
+          "full_name": "NatureCNN.__init__",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "create_mlp",
+          "class_name": null,
+          "full_name": "create_mlp",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Add an optional use_batch_norm flag to both CNN and MLP feature extractors. When enabled, NationCNN inserts BatchNorm2d layers before ReLU in CNN blocks and create_mlp can wrap inputs and each Linear with BatchNorm1d. Default behavior remains unchanged (batch norm off).",
+    "steps": [
+      {
+        "operation": "Add use_batch_norm parameter to NatureCNN.__init__ and integrate BatchNorm2d insertion before ReLU in each CNN block when enabled",
+        "file_to_modify": "stable_baselines3/common/torch_layers.py",
+        "function_to_modify": "NatureCNN.__init__",
+        "reason": "Introduce an optional use_batch_norm flag to control batch normalization within CNN blocks, inserting BatchNorm2d layers before ReLU activations when enabled; defaults remain off to preserve existing behavior",
+        "side_effects": "Adds a new parameter to the constructor; potential changes to initialization and forward paths; requires tests to verify BN placement and that default behavior (use_batch_norm=False) remains identical to current implementation; may require updates to docs and changelog; downstream modules constructing NatureCNN may need to pass the new flag"
+      },
+      {
+        "operation": "Extend create_mlp to accept use_batch_norm and implement optional BatchNorm1d wrapping of inputs and after each Linear layer",
+        "file_to_modify": "stable_baselines3/common/torch_layers.py",
+        "function_to_modify": "create_mlp",
+        "reason": "Provide optional BatchNorm1d support for MLP feature extractor: optionally apply BatchNorm1d to inputs and wrap each Linear layer with BatchNorm1d, while preserving current behavior when use_batch_norm is False",
+        "side_effects": "Adds BN modules to MLP path, increasing parameter count and changing training dynamics when enabled; tests must verify BN-enabled paths; default behavior unchanged; may affect loading/save compatibility if state_dict expectations shift; documentation and changelog updates required"
+      }
+    ]
+  }
+}

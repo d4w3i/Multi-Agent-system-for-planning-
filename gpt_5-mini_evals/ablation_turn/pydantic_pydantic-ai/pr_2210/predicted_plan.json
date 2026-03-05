@@ -1,0 +1,42 @@
+{
+  "pr_number": 2210,
+  "repository": "pydantic/pydantic-ai",
+  "title": "[openai] Remove incorrect tool call id from tool call delta",
+  "body": "For OpenAI responses API, the `response.function_call_arguments.delta` returns an `item_id` [(docs)](https://platform.openai.com/docs/api-reference/responses-streaming/response/function_call_arguments/delta) . This item_id is actually the `id` of the tool_call, rather than the `tool_call_id`. \n\nThe problem is that when using agent_stream or more generally the parts_manager, these deltas are accumulated and the `tool_call_id` for the ToolCallNode ends up being set to the incorrect `id`. This is particularly problematic because the `id` is a longer string than is supported by some gpt models (for example, an id is `fc_6876aca7db8c8192af95414c6cf92796035a7a219e794395`, whereas the tool call id for the same request is `call_YHzL9zYTlauY9bw9dEoE4uA4`. \n\n`gpt-4o-mini` only allows tool call ids that are 40 characters or less, so using the longer id breaks things (and is incorrect from a tool call id perspective).",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T14:10:56.071550",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "openai.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "_get_event_iterator",
+          "class_name": "OpenAIResponsesStreamedResponse",
+          "full_name": "OpenAIResponsesStreamedResponse._get_event_iterator",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Fix the streamed Responses handling so ResponseFunctionCallArgumentsDeltaEvent no longer passes chunk.item_id as tool_call_id; instead leave tool_call_id unset (None) so the parts_manager does not overwrite the correct, shorter tool_call call_id with the longer output item id.",
+    "steps": [
+      {
+        "operation": "Stop passing the output item id as tool_call_id for function-call argument delta events",
+        "file_to_modify": "openai.py",
+        "function_to_modify": "OpenAIResponsesStreamedResponse._get_event_iterator",
+        "reason": "ResponseFunctionCallArgumentsDeltaEvent.chunk.item_id is the output item id (the tool_call 'id', e.g. 'fc_...'), not the tool_call's call_id (the shorter 'call_...' identifier). Passing chunk.item_id as tool_call_id causes parts_manager to set ToolCallNode.tool_call_id incorrectly (too long), which can break models that limit tool_call_id length. The correct behavior is to leave tool_call_id unset (None) for deltas so accumulation is keyed by vendor_part_id and the proper call_id from the final tool call event (ResponseOutputItemAddedEvent with ResponseFunctionToolCall) will set the ToolCallNode.tool_call_id.",
+        "side_effects": "Low risk: affects only the streamed Responses event handling path. Tests that assert tool_call_id is set on intermediate delta events will need updates. Dependent code that expects tool_call_id present on deltas must tolerate None; parts_manager already accumulates by vendor_part_id so it should continue to work. No public API signature changes. Fixes compatibility with models that disallow long ids (e.g., gpt-4o-mini)."
+      }
+    ]
+  }
+}

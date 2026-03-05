@@ -1,0 +1,87 @@
+{
+  "pr_number": 2952,
+  "repository": "Mikubill/sd-webui-controlnet",
+  "title": "Fix issue with > in pip cmd causing file creation",
+  "body": "### Problem Summary\n\nWhen starting the Web UI, the `install.py` script reads `requirements.txt`. If a package version uses \">\", it is treated as a redirection in `pip install`, creating an unintended file.\n\n### Steps to Reproduce\n\nRunning `webui.bat` or `webui.sh` creates a file named \"=4.8.0\" due to \"opencv-python>=4.8.0\" in `requirements.txt` being misinterpreted.\n\n### Fix\n\nI enclosed the package and version specification in double quotes in `install.py`.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T11:55:57.469922",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "install.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "install_requirements",
+          "class_name": null,
+          "full_name": "install_requirements",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "install_onnxruntime",
+          "class_name": null,
+          "full_name": "install_onnxruntime",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "try_install_from_wheel",
+          "class_name": null,
+          "full_name": "try_install_from_wheel",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "try_install_insight_face",
+          "class_name": null,
+          "full_name": "try_install_insight_face",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Quote pip target arguments in all launch.run_pip calls within install.py to prevent shell interpretation of characters like '>' (which caused files like '=4.8.0' to be created). The change wraps package names and wheel URLs in double quotes across install_requirements, install_onnxruntime, try_install_from_wheel, and try_install_insight_face.",
+    "steps": [
+      {
+        "operation": "Quote wheel_url argument in pip invocation",
+        "file_to_modify": "install.py",
+        "function_to_modify": "try_install_from_wheel",
+        "reason": "This helper constructs pip commands using wheel URLs (e.g., f\"install -U {wheel_url}\"). Unquoted URLs containing characters interpreted by the shell (like '>') can be mis-parsed; wrapping the URL in double quotes (f'install -U \"{wheel_url}\"') prevents shell interpretation and ensures pip receives the entire argument.",
+        "side_effects": "No change to pip behavior; safer cross-shell handling. Tests that validate exact subprocess invocation strings may need updating. Downstream callers of try_install_from_wheel are unaffected except that their invoked pip subprocess receives a quoted argument string. No API changes."
+      },
+      {
+        "operation": "Quote wheel_url argument in pip invocation",
+        "file_to_modify": "install.py",
+        "function_to_modify": "try_install_insight_face",
+        "reason": "This function calls launch.run_pip with a wheel URL (e.g., f\"install {wheel_url}\"). Wrapping the wheel URL in double quotes (f'install \"{wheel_url}\"') prevents shells from interpreting special characters and matches the quoting used elsewhere.",
+        "side_effects": "No functional change to package installation. Tests that assert the exact command string passed to launch.run_pip might need to be updated to expect the quoted argument. Ensures consistent behavior across Windows and Unix shells."
+      },
+      {
+        "operation": "Quote package name in onnxruntime pip install command",
+        "file_to_modify": "install.py",
+        "function_to_modify": "install_onnxruntime",
+        "reason": "install_onnxruntime builds pip install commands for 'onnxruntime' or 'onnxruntime-gpu' (e.g., f\"install {onnx_pkg}\"). Quoting the package (f'install \"{onnx_pkg}\"') ensures that any accidental special characters are not interpreted by the shell and keeps behavior consistent with other fixes.",
+        "side_effects": "No semantic change; safer across shells. If tests parse the unquoted command string, update them to accept or expect the quoted form. No change to the public API; only affects the exact subprocess command string."
+      },
+      {
+        "operation": "Quote package/version specifiers in all pip invocations",
+        "file_to_modify": "install.py",
+        "function_to_modify": "install_requirements",
+        "reason": "install_requirements reads requirements.txt and builds pip commands for different spec forms (==, >=, <=, or plain installs). Changing interpolations from f\"install -U {package}\" to f'install -U \"{package}\"' (and same for other forms and wheel URLs) prevents shell redirection caused by unescaped '>' characters (e.g., 'opencv-python>=4.8.0'), eliminating unintended file creation.",
+        "side_effects": "Prevents accidental file creation from shell redirection on Windows and Unix. Pip accepts quoted arguments so installation behavior remains unchanged. Tests that validate exact subprocess strings should be updated. Ensure that any code that parses the pip command string still works with quotes; dependent tooling that expects unquoted tokens may require small adjustments."
+      }
+    ]
+  }
+}

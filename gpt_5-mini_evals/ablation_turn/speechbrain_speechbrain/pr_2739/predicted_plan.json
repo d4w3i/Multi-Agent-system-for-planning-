@@ -1,0 +1,42 @@
+{
+  "pr_number": 2739,
+  "repository": "speechbrain/speechbrain",
+  "title": "Allow importing model params with `convs_intermedite` typo in `PostNet`",
+  "body": "## What does this PR do?\n\nThis fixes importing some (older?) models that were failing to import otherwise.  \nPutting it as a PR to make it easier to find but not bothering with review since this is a very minor fix that shouldn't be functionally different (`convs_intermedite` no longer has any reference in codebase)",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T14:40:22.402195",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "speechbrain/lobes/models/Tacotron2.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "_load_from_state_dict",
+          "class_name": "Postnet",
+          "full_name": "Postnet._load_from_state_dict",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Implement a Postnet._load_from_state_dict that renames incoming state_dict keys from the legacy typo 'convs_intermedite' to the current 'convolutions' (handling optional prefix and avoiding overwrites), then delegates to the standard loader so older checkpoints can be imported without changing runtime behavior.",
+    "steps": [
+      {
+        "operation": "Add a custom _load_from_state_dict method to remap legacy keys and delegate to parent loader",
+        "file_to_modify": "speechbrain/lobes/models/Tacotron2.py",
+        "function_to_modify": "Postnet._load_from_state_dict",
+        "reason": "Older checkpoints saved the Postnet ModuleList under the misspelled name 'convs_intermedite'. When loading, PyTorch expects keys matching the current attribute name 'convolutions' and therefore can fail with missing/unexpected key errors. Intercepting module-level state loading in Postnet and renaming legacy keys to the current names is a minimal, localized backward-compatibility fix that preserves runtime behavior.",
+        "side_effects": "Modifies the incoming state_dict in-place (as PyTorch normally passes); this prevents unexpected-key errors when loading older checkpoints but must be careful not to unintentionally overwrite existing correct keys. Tests that verify strict state_dict loading should be checked/updated to include legacy-key scenarios. Downstream code behavior is unchanged at runtime; only model loading is affected. If both legacy and correct keys exist in the provided state_dict, the implementation will drop the legacy key (to avoid duplication) and keep the correct key, avoiding silent overwrites. Ensure the method signature matches PyTorch's _load_from_state_dict to maintain compatibility with the parent implementation."
+      }
+    ]
+  }
+}

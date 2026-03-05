@@ -1,0 +1,95 @@
+{
+  "pr_number": 2380,
+  "repository": "pyecharts/pyecharts",
+  "title": "fix and update",
+  "body": "* 修复 `timeline` 的 bug，关联：https://github.com/pyecharts/pyecharts/issues/2361\n* 更新一些配置的引用位置和方式\n    * `markline`, `markarea` 增加动画配置项：https://github.com/pyecharts/pyecharts/issues/2362 \n",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T14:13:26.274402",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "pyecharts/charts/composite_charts/timeline.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "add",
+          "class_name": "Timeline",
+          "full_name": "Timeline.add",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "add_schema",
+          "class_name": "Timeline",
+          "full_name": "Timeline.add_schema",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "pyecharts/options/series_options.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "__init__",
+          "class_name": "MarkLineOpts",
+          "full_name": "MarkLineOpts.__init__",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "__init__",
+          "class_name": "MarkAreaOpts",
+          "full_name": "MarkAreaOpts.__init__",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Fix Timeline.add to merge/accumulate series (prevent overwriting previous series) and make js dependency propagation more robust; add animation configuration options to MarkLineOpts and MarkAreaOpts so markLine/markArea can carry ECharts animation settings.",
+    "steps": [
+      {
+        "operation": "Fix baseOption.series merging and improve js_dependencies propagation",
+        "file_to_modify": "pyecharts/charts/composite_charts/timeline.py",
+        "function_to_modify": "Timeline.add",
+        "reason": "Currently Timeline.add overwrites baseOption.series with each added chart's series, losing previously added series. Replace the assignment with logic that merges/extends baseOption.series with the chart's series (safely handling None and non-list values). Also make propagation of child chart js_dependencies more robust/clear (use an update/extend call instead of iterating item-by-item) so the timeline container collects all required assets.",
+        "side_effects": "Changes serialization of Timeline options: baseOption.series will now contain the combined set of series from all added charts. Existing tests that expect overwritten behavior will need updating, but this is a correctness fix (should improve multi-page timeline behavior). Dependent code or custom patches that relied on the previous overwrite behavior will be affected. No external API signature change; internal data structure of options changes. Ensure unit tests for timeline (e.g., test/test_timeline.py) are run and updated if they asserted previous (incorrect) behavior."
+      },
+      {
+        "operation": "Review and ensure add_schema remains compatible with merged series behavior",
+        "file_to_modify": "pyecharts/charts/composite_charts/timeline.py",
+        "function_to_modify": "Timeline.add_schema",
+        "reason": "add_schema is part of Timeline's public API and interacts with baseOption/base schema values. Given the change to how series are merged in add, verify add_schema default values and merging logic remain correct and consistent with the new baseOption structure; make minimal adjustments if necessary to avoid regressions (e.g., ensure schema entries aren't duplicated or invalidated).",
+        "side_effects": "This is largely a compatibility/verification step; any small adjustments may impact how schema defaults are emitted but should keep backward compatibility. Tests covering schema defaults should be executed. No change to external API signature, but behavior of composed Timeline options may change slightly if schema merging is adjusted."
+      },
+      {
+        "operation": "Add animation parameters to MarkLineOpts and include them in emitted opts",
+        "file_to_modify": "pyecharts/options/series_options.py",
+        "function_to_modify": "MarkLineOpts.__init__",
+        "reason": "MarkLineOpts currently does not expose animation configuration options; to satisfy issue #2362 add parameters (animation, animationDuration, animationEasing, animationDelay, animationDurationUpdate, animationEasingUpdate, animationDelayUpdate) to the initializer and include the corresponding camelCase keys in self.opts so markLine configurations can carry ECharts animation settings. Use the same typing conventions and default values used across other option classes to preserve backward compatibility.",
+        "side_effects": "API surface of MarkLineOpts gains new optional keyword arguments. Existing callers are unaffected if they do not pass these parameters. Generated option dicts will include new keys when provided, which may affect rendering behavior and should be covered by tests or examples. Downstream consumers expecting the previous exact set of keys may need to accept the new fields."
+      },
+      {
+        "operation": "Add animation parameters to MarkAreaOpts and include them in emitted opts",
+        "file_to_modify": "pyecharts/options/series_options.py",
+        "function_to_modify": "MarkAreaOpts.__init__",
+        "reason": "MarkAreaOpts also lacks animation configuration. Add the same set of animation-related parameters (animation, animationDuration, animationEasing, animationDelay, animationDurationUpdate, animationEasingUpdate, animationDelayUpdate) and ensure they are serialized using camelCase keys in self.opts so markArea supports animations similarly to other series/option classes.",
+        "side_effects": "MarkAreaOpts gains optional parameters; callers that do not use them remain unaffected. New keys in the emitted options will change chart rendering when provided. Update or add tests/examples demonstrating markArea animation options. No breaking change to existing function signatures for callers that only use positional args, but the __init__ signature will include additional optional keywords."
+      }
+    ]
+  }
+}

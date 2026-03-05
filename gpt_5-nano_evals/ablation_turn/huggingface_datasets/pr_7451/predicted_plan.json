@@ -1,0 +1,136 @@
+{
+  "pr_number": 7451,
+  "repository": "huggingface/datasets",
+  "title": "Fix resuming after `ds.set_epoch(new_epoch)`",
+  "body": "This PR analyzes and outlines changes to support correct resuming behavior when calling ds.set_epoch(new_epoch) in IterableDataset-based workflows. The goal is to ensure RNG shuffling and multi-source cycling are properly re-seeded for a new epoch so resumed runs produce correct and non-duplicated data ordering. The changes focus on introducing epoch-aware hooks and propagating epoch information to nested iterables that control shuffling, so that resuming after an epoch boundary aligns with the new epoch's randomness state. This addresses the issue referenced (huggingface/datasets#7447).",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T12:54:44.503074",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "src/datasets/iterable_dataset.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "set_epoch",
+          "class_name": "_BaseExamplesIterable",
+          "full_name": "_BaseExamplesIterable.set_epoch",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "set_epoch",
+          "class_name": "ShuffledDataSourcesExamplesIterable",
+          "full_name": "ShuffledDataSourcesExamplesIterable.set_epoch",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "set_epoch",
+          "class_name": "RandomlyCyclingMultiSourcesExamplesIterable",
+          "full_name": "RandomlyCyclingMultiSourcesExamplesIterable.set_epoch",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "src/datasets/iterable_dataset.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "set_epoch",
+          "class_name": "_BaseExamplesIterable",
+          "full_name": "_BaseExamplesIterable.set_epoch",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "set_epoch",
+          "class_name": "ShuffledDataSourcesExamplesIterable",
+          "full_name": "ShuffledDataSourcesExamplesIterable.set_epoch",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "set_epoch",
+          "class_name": "RandomlyCyclingMultiSourcesExamplesIterable",
+          "full_name": "RandomlyCyclingMultiSourcesExamplesIterable.set_epoch",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "src/datasets/iterable_dataset.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "set_epoch",
+          "class_name": "_BaseExamplesIterable",
+          "full_name": "_BaseExamplesIterable.set_epoch",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "set_epoch",
+          "class_name": "ShuffledDataSourcesExamplesIterable",
+          "full_name": "ShuffledDataSourcesExamplesIterable.set_epoch",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "set_epoch",
+          "class_name": "RandomlyCyclingMultiSourcesExamplesIterable",
+          "full_name": "RandomlyCyclingMultiSourcesExamplesIterable.set_epoch",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Fix resuming after ds.set_epoch(new_epoch) by introducing epoch-aware hooks and propagating epoch to nested iterables to reseed RNG and ensure correct per-epoch ordering in IterableDataset-based workflows.",
+    "steps": [
+      {
+        "operation": "Add _BaseExamplesIterable.set_epoch epoch hook",
+        "file_to_modify": "src/datasets/iterable_dataset.py",
+        "function_to_modify": "_BaseExamplesIterable.set_epoch",
+        "reason": "Provide a generic mechanism to propagate epoch changes and reset internal RNG state for all derived iterables when ds.set_epoch is called",
+        "side_effects": "Low-level; may require updating derived iterables to implement their own set_epoch; tests needed to confirm propagation and no regression in non-epoch usage"
+      },
+      {
+        "operation": "Add ShuffledDataSourcesExamplesIterable.set_epoch to reseed shuffle RNG",
+        "file_to_modify": "src/datasets/iterable_dataset.py",
+        "function_to_modify": "ShuffledDataSourcesExamplesIterable.set_epoch",
+        "reason": "RNG used for shuffling should be reseeded with the new epoch to produce distinct order per epoch",
+        "side_effects": "Shuffle order changes across epochs; downstream components relying on RNG may need tests; ensure RNG state is properly advanced"
+      },
+      {
+        "operation": "Add RandomlyCyclingMultiSourcesExamplesIterable.set_epoch to reseed source RNG and propagate epoch to contained iterables",
+        "file_to_modify": "src/datasets/iterable_dataset.py",
+        "function_to_modify": "RandomlyCyclingMultiSourcesExamplesIterable.set_epoch",
+        "reason": "Reseed sampling RNG across sources for new epoch and propagate epoch to nested iterables to maintain epoch-consistent randomness",
+        "side_effects": "Cross-epoch behavior changes; tests to verify no cross-epoch contamination; ensure proper propagation to inner iterables"
+      }
+    ]
+  }
+}

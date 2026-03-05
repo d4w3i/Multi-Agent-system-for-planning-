@@ -1,0 +1,65 @@
+{
+  "pr_number": 40,
+  "repository": "langchain-ai/local-deep-researcher",
+  "title": "convert max_web_research_loops to int to make sure comparison works",
+  "body": "This PR fixes a bug introduced by my previous PR and the getting the max_web_research_loops from the environment variable. I'm not sure why it is a string value when doing the `if state.research_loop_count <= int(configurable.max_web_research_loops):` compare, I fixed it with just another `int()` around it.\n\nSorry for that!",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T12:21:05.943942",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "src/assistant/configuration.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "from_runnable_config",
+          "class_name": "Configuration",
+          "full_name": "Configuration.from_runnable_config",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "src/assistant/graph.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "route_research",
+          "class_name": null,
+          "full_name": "route_research",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Ensure `max_web_research_loops` is consistently treated as an integer when sourced from environment/UI configuration, preventing broken numeric comparisons in research-loop routing. The fix normalizes the type in configuration parsing and adds a defensive cast in the routing condition as a backstop.",
+    "steps": [
+      {
+        "operation": "Normalize `max_web_research_loops` to an `int` at the configuration boundary (and fall back safely on parse errors)",
+        "file_to_modify": "src/assistant/configuration.py",
+        "function_to_modify": "Configuration.from_runnable_config",
+        "reason": "`os.environ.get(...)` and many external config sources yield strings; coercing here guarantees `Configuration.max_web_research_loops` is an `int` everywhere downstream (including LangGraph Studio overrides), preventing type-mismatch bugs during numeric comparisons.",
+        "side_effects": "If a non-numeric value is provided (e.g., via env/UI), the code must choose a behavior (raise vs. default). Defaulting may hide misconfiguration; raising may break runtime earlier but is clearer. Any callers assuming the raw string will no longer receive it (expected to be correct given the type annotation)."
+      },
+      {
+        "operation": "Defensively cast `configurable.max_web_research_loops` to `int` at the comparison site in routing logic",
+        "file_to_modify": "src/assistant/graph.py",
+        "function_to_modify": "route_research",
+        "reason": "Even with boundary normalization, routing is a critical control point; a local defensive `int(...)` ensures `state.research_loop_count` (int) is always compared to an int, avoiding runtime errors or incorrect branching if configuration typing regresses or bypasses `from_runnable_config`.",
+        "side_effects": "If `max_web_research_loops` is not parseable, routing may raise at runtime unless handled; consider consistent handling with `from_runnable_config` (e.g., fallback/default) to avoid unexpected crashes. May slightly change behavior by making previously-invalid string values fail fast or be coerced."
+      }
+    ]
+  }
+}

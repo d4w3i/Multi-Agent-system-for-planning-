@@ -1,0 +1,63 @@
+{
+  "evaluated_at": "2026-03-04T14:47:10.760084",
+  "pr_dir": "/Users/davidecroatto/code/planningtest0/gpt_5-nano_evals/ablation_turn/huggingface_text-generation-inference/pr_3237",
+  "pr_number": 3237,
+  "repository": "huggingface/text-generation-inference",
+  "files": {
+    "precision": 0.3333,
+    "recall": 0.25,
+    "f1": 0.2857,
+    "predicted_count": 3,
+    "actual_count": 4,
+    "correct_count": 1
+  },
+  "functions": {
+    "precision": 0.0,
+    "recall": 0.0,
+    "f1": 0.0,
+    "predicted_count": 3,
+    "actual_count": 9,
+    "correct_count": 0
+  },
+  "steps": {
+    "predicted_steps": 3,
+    "actual_steps": 9,
+    "step_diff": -6,
+    "target_coverage": 0.3333,
+    "targets_matched": 1,
+    "targets_total": 3
+  },
+  "semantic": {
+    "summary_similarity": 0.7518,
+    "avg_step_similarity": 0.5977,
+    "step_matches": [
+      {
+        "pred_idx": 0,
+        "pred_text": "Operation: Move input_ids handling to the Habana Gaudi HPU by ensuring Seqlen initialization operate...",
+        "gt_idx": 8,
+        "gt_text": "Operation: Align other Gaudi model variants to stop copying `input_ids` and fix slots padding device...",
+        "similarity": 0.5513
+      },
+      {
+        "pred_idx": 1,
+        "pred_text": "Operation: Ensure attention input tensors (query, key, value) and derived inputs from input_ids are ...",
+        "gt_idx": 4,
+        "gt_text": "Operation: Fix slots padding tensor device placement to match the `slots` tensor during forward pass...",
+        "similarity": 0.6162
+      },
+      {
+        "pred_idx": 2,
+        "pred_text": "Operation: Preserve adapter metadata by changing AdapterBatchData.from_meta to retain adapter_meta i...",
+        "gt_idx": 1,
+        "gt_text": "Operation: Make adapter metadata handling optional when filtering a batch (avoid unconditional acces...",
+        "similarity": 0.6254
+      }
+    ],
+    "overall_semantic_score": 0.6439,
+    "computed": true,
+    "error": null
+  },
+  "has_prediction": true,
+  "has_ground_truth": true,
+  "error": null
+}

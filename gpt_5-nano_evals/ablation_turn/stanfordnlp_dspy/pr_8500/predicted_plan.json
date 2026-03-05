@@ -1,0 +1,42 @@
+{
+  "pr_number": 8500,
+  "repository": "stanfordnlp/dspy",
+  "title": "feat: add test for nested stream and check value has predict_id",
+  "body": "Adds coverage for nested streaming scenarios where an agent streams its own output along with tools that run DSPy programs. The test asserts that streaming works correctly in nested cases and explicitly checks for the presence of a predict_id before routing a ModelResponseStream chunk to listeners. This guards against edge cases where inner streams (e.g., from tools) may not expose a predict_id, which could previously cause attribute errors during streaming. The change is designed to be compatible with both ChatAdapter and JSONAdapter streaming paths and supports existing streaming listener behavior.\n\nRelated issue: https://github.com/stanfordnlp/dspy/issues/8454\n\ncc @chenmoneygithub, @okhat",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T13:59:46.065382",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "dspy/streaming/streamify.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "async_streamer",
+          "class_name": "streamify",
+          "full_name": "streamify.async_streamer",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Adds a guarded path in the streaming loop to handle nested ModelResponseStream chunks that may not expose a predict_id, preventing AttributeError and maintaining compatibility with nested streaming paths.",
+    "steps": [
+      {
+        "operation": "Guard ModelResponseStream handling by safely resolving predict_id and skipping routing when missing",
+        "file_to_modify": "dspy/streaming/streamify.py",
+        "function_to_modify": "async_streamer",
+        "reason": "Nested streams from tools may emit ModelResponseStream chunks without a predict_id; accessing value.predict_id directly can raise AttributeError. Using getattr(value, 'predict_id', None) ensures only chunks with a valid predictor_id are routed to listeners.",
+        "side_effects": "No API changes; some nested-stream chunks will be skipped instead of erroring. Tests for nested streaming should pass; ensure existing tests remain unaffected; downstream listeners may observe slightly fewer routed chunks when inner streams lack predict_id."
+      }
+    ]
+  }
+}

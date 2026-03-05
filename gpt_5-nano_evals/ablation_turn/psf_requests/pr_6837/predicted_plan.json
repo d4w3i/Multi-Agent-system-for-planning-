@@ -1,0 +1,64 @@
+{
+  "pr_number": 6837,
+  "repository": "psf/requests",
+  "title": "Fix handling of non-latin credentials in HTTPDigestAuth",
+  "body": "This patch fixes handling of non-Latin credentials in HTTP Digest Authentication.\n\nSummary of changes:\n- src/requests/auth.py\n  - _basic_auth_str: switch encoding from latin1 to utf-8 when converting username and password to bytes. This ensures non-Latin credentials are encoded correctly for Basic authentication header generation.\n  - HTTPDigestAuth.build_digest_header: adjust header construction to safely handle non-Latin characters by normalizing username/password to text (decode if bytes) and relying on utf-8 encoding when hashing and assembling the Digest header. This ensures the header string is formed correctly for non-Latin inputs.\n- tests/test_requests.py\n  - Add tests to verify non-Latin credentials are handled correctly for HTTPDigestAuth, ensuring a successful digest-auth flow with non-Latin usernames/passwords.\n\nRationale:\n- The existing implementation encoded username and password with latin1, which breaks non-Latin credentials and causes authentication failures for internationalized inputs (as reported in issue #6102).\n- By using utf-8 for encoding and ensuring the Digest header formatting respects utf-8 text, non-Latin credentials will be treated correctly across both encoding and header construction.\n\nImpact:\n- Backward-compatible for ASCII, but fixes correctness for non-Latin credentials.\n- Tests now cover non-Latin credentials for Digest authentication to prevent regressions.\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T13:28:13.353966",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "src/requests/auth.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "build_digest_header",
+          "class_name": "HTTPDigestAuth",
+          "full_name": "HTTPDigestAuth.build_digest_header",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_basic_auth_str",
+          "class_name": null,
+          "full_name": "_basic_auth_str",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "tests/test_requests.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    }
+  ],
+  "step_plan": {
+    "summary": "Fix handling of non-Latin credentials in HTTP Digest Auth by switching encoding to UTF-8 for Basic auth and normalizing/UTF-8 encoding in digest header construction; add tests to cover non-Latin credentials.",
+    "steps": [
+      {
+        "operation": "Switch encoding in _basic_auth_str to UTF-8",
+        "file_to_modify": "src/requests/auth.py",
+        "function_to_modify": "_basic_auth_str",
+        "reason": "Ensure non-Latin credentials are correctly encoded for Basic authentication by using UTF-8 instead of Latin-1, preventing encoding-related failures for international characters.",
+        "side_effects": "May affect tests relying on Latin-1 encoding semantics; ensure ASCII behavior preserved; downstream code using Basic auth string remains compatible; tests may need updates to cover non-Latin inputs."
+      },
+      {
+        "operation": "Update HTTPDigestAuth.build_digest_header to normalize credentials and use UTF-8 for hashing and header construction",
+        "file_to_modify": "src/requests/auth.py",
+        "function_to_modify": "HTTPDigestAuth.build_digest_header",
+        "reason": "Non-Latin credentials must be handled safely; normalization to text and UTF-8 hashing ensures correct digest for international characters; aligns with _basic_auth_str changes.",
+        "side_effects": "Digest header formatting changes; potential minor impact on tests; will require new tests for non-Latin credentials; ensure ASCII tests pass."
+      }
+    ]
+  }
+}

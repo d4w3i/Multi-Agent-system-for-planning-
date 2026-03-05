@@ -1,0 +1,67 @@
+{
+    "repository": "google-deepmind/alphafold",
+    "pull_request_number": 954,
+    "title": "Fix deprecation warning / error from BioPython",
+    "body": "Hi,\r\n\r\n   Here is a small PR to fix a deprecation issue related to BioPython. It would be great if y'all could run this through CI to make sure it doesn't have any side effects, but BioPython _seems_ to promise it's a safe change.\r\n\r\n## Description:\r\nThis PR swaps the BioPython.SCOPData module import in the mmcif_parsing module for BioPython.PDBData.\r\n\r\n## Related issue:\r\nSee https://github.com/biopython/biopython/blob/master/DEPRECATED.rst#biodatascopdata for information about the SCOPData deprecation.\r\n\r\n## Motivation:\r\nSCOPData was removed in version 1.82 of BioPython, so its usage throws an error when imported. This change allows upgrading BioPython beyond version 1.79, which brings improvements in security and stability. I had been trying to use AlphaFold2 with an updated BioPython but kept receiving deprecation warnings / errors depending on which version I was using.\r\n\r\n## Verification\r\n  [X] Package still installs after change\r\n  [X] `run_alphafold_test.py` returns `ok` after this change.",
+    "pr_date": "2024-06-27T04:19:32Z",
+    "source_branch": "fix-scop-deprecation",
+    "language": "en",
+    "keywords_detected": {
+        "branch": [
+            "fix"
+        ],
+        "requirement": [
+            "fix"
+        ],
+        "body": [
+            "remove",
+            "change",
+            "fix",
+            "update",
+            "improvement"
+        ]
+    },
+    "number_of_links_in_pr": 1,
+    "base_sha": "f251de6613cb478207c732bf9627b1e853c99c2f",
+    "last_commit_sha": "a73fd81a4368c17e8a226a3dcc0198234e6b4923",
+    "diff_between_base_and_last": [
+        {
+            "sha": "6636ce16cedd07bde16ba78108014e1053e07da2",
+            "filename": "alphafold/data/mmcif_parsing.py",
+            "status": "modified",
+            "additions": 1,
+            "deletions": 1,
+            "changes": 2,
+            "blob_url": "https://github.com/google-deepmind/alphafold/blob/a73fd81a4368c17e8a226a3dcc0198234e6b4923/alphafold%2Fdata%2Fmmcif_parsing.py",
+            "raw_url": "https://github.com/google-deepmind/alphafold/raw/a73fd81a4368c17e8a226a3dcc0198234e6b4923/alphafold%2Fdata%2Fmmcif_parsing.py",
+            "contents_url": "https://api.github.com/repos/google-deepmind/alphafold/contents/alphafold%2Fdata%2Fmmcif_parsing.py?ref=a73fd81a4368c17e8a226a3dcc0198234e6b4923",
+            "patch": "@@ -21,7 +21,7 @@\n \n from absl import logging\n from Bio import PDB\n-from Bio.Data import SCOPData\n+from Bio.Data import PDBData\n \n # Type aliases:\n ChainId = str"
+        }
+    ],
+    "commits": [
+        {
+            "sha": "a73fd81a4368c17e8a226a3dcc0198234e6b4923",
+            "commit_date": "2024-06-27T04:00:11Z",
+            "message": "[data.mmcif_parsing] Replace deprecated calls to biopython.SCOPData with calls to PDBData. Fixes a deprecation warning in biopython 1.80-~1.85 and an error from 1.85 onwards.",
+            "number_of_links_in_commit": 0,
+            "files_changed_count": 1,
+            "files": [
+                {
+                    "sha": "6636ce16cedd07bde16ba78108014e1053e07da2",
+                    "filename": "alphafold/data/mmcif_parsing.py",
+                    "status": "modified",
+                    "additions": 1,
+                    "deletions": 1,
+                    "changes": 2,
+                    "blob_url": "https://github.com/google-deepmind/alphafold/blob/a73fd81a4368c17e8a226a3dcc0198234e6b4923/alphafold%2Fdata%2Fmmcif_parsing.py",
+                    "raw_url": "https://github.com/google-deepmind/alphafold/raw/a73fd81a4368c17e8a226a3dcc0198234e6b4923/alphafold%2Fdata%2Fmmcif_parsing.py",
+                    "contents_url": "https://api.github.com/repos/google-deepmind/alphafold/contents/alphafold%2Fdata%2Fmmcif_parsing.py?ref=a73fd81a4368c17e8a226a3dcc0198234e6b4923",
+                    "patch": "@@ -21,7 +21,7 @@\n \n from absl import logging\n from Bio import PDB\n-from Bio.Data import SCOPData\n+from Bio.Data import PDBData\n \n # Type aliases:\n ChainId = str"
+                }
+            ]
+        }
+    ],
+    "pull_request_url": "https://github.com/google-deepmind/alphafold/pull/954",
+    "commits_url": "https://github.com/google-deepmind/alphafold/pull/954/commits",
+    "files_url": "https://github.com/google-deepmind/alphafold/pull/954/files"
+}

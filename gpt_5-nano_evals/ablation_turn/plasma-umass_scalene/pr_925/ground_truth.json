@@ -1,0 +1,61 @@
+{
+  "pr_number": 925,
+  "repository": "plasma-umass/scalene",
+  "title": "Fix for overwriting LD_PRELOAD if it contains libscalene.so and other values",
+  "body": "It looks like in some cases setup_preload gets called more than once, so it was adding `libscalene.so` to `LD_PRELOAD` the first time then later replacing `LD_PRELOAD`  with just `libscalene.so`, this fixes that case.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T08:18:12.872583",
+    "extractor_version": "1.0.0",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "scalene/scalene_preload.py",
+      "status": "modified",
+      "additions": 3,
+      "deletions": 4,
+      "functions_modified": [
+        {
+          "function_name": "get_preload_environ",
+          "class_name": "ScalenePreload",
+          "full_name": "ScalenePreload.get_preload_environ",
+          "start_line": 15,
+          "end_line": 89,
+          "lines_changed": [
+            71,
+            73,
+            74
+          ]
+        }
+      ],
+      "patch": "@@ -68,11 +68,10 @@ def get_preload_environ(args: argparse.Namespace) -> Dict[str, str]:\n                     env['LD_LIBRARY_PATH'] = f'{library_path}:{os.environ[\"LD_LIBRARY_PATH\"]}'\n \n                 new_ld_preload = 'libscalene.so'\n-                if \"LD_PRELOAD\" in os.environ and new_ld_preload not in os.environ[\"LD_PRELOAD\"]:\n-                    old_ld_preload = os.environ[\"LD_PRELOAD\"]\n-                    env[\"LD_PRELOAD\"] = new_ld_preload + \":\" + old_ld_preload\n-                else:\n+                if \"LD_PRELOAD\" not in os.environ:\n                     env[\"LD_PRELOAD\"] = new_ld_preload\n+                elif new_ld_preload not in os.environ[\"LD_PRELOAD\"].split(\":\"):\n+                    env[\"LD_PRELOAD\"] = f'{new_ld_preload}:{os.environ[\"LD_PRELOAD\"]}'\n                 # Disable command-line specified PYTHONMALLOC.\n                 if \"PYTHONMALLOC\" in os.environ:\n                     # Since the environment dict is updated"
+    }
+  ],
+  "functions_modified": [
+    {
+      "function_name": "get_preload_environ",
+      "class_name": "ScalenePreload",
+      "full_name": "ScalenePreload.get_preload_environ",
+      "start_line": 15,
+      "end_line": 89,
+      "lines_changed": [
+        71,
+        73,
+        74
+      ]
+    }
+  ],
+  "step_plan": {
+    "steps": [
+      {
+        "operation": "Refactor LD_PRELOAD update logic to be idempotent by splitting the existing value on ':' and only prepending libscalene.so when it is not already present as a distinct entry",
+        "file_to_modify": "scalene/scalene_preload.py",
+        "function_to_modify": "get_preload_environ",
+        "reason": "setup_preload / get_preload_environ can be invoked multiple times; the previous substring-based check could treat an LD_PRELOAD containing libscalene.so plus other values as already satisfied and later overwrite/lose the additional entries. Splitting on ':' ensures membership is checked per-token and preserves other preloads while preventing duplicates.",
+        "side_effects": "Changes how LD_PRELOAD is constructed for launched processes: it will now reliably preserve any existing preload libraries and avoid duplicate libscalene.so entries. Any downstream logic/tests that asserted the exact LD_PRELOAD string (or relied on substring behavior rather than token matching) may need updating."
+      }
+    ],
+    "summary": "Fixes LD_PRELOAD handling so libscalene.so is prepended only when not already present as a distinct ':'-separated entry, preserving any other existing preload libraries across repeated setup calls."
+  }
+}

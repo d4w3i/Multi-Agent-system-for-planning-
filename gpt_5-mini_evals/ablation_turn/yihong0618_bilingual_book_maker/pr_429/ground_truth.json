@@ -1,0 +1,59 @@
+{
+  "pr_number": 429,
+  "repository": "yihong0618/bilingual_book_maker",
+  "title": "fix: Fix parameter mismatch in EPUBBookLoaderHelper.translate_with_ba…",
+  "body": "## Problem\r\nThe `translate_with_backoff` method in `EPUBBookLoaderHelper` class was raising TypeError because of parameter mismatch between the method signature and actual calls through the backoff decorator.\r\n\r\nError message:\r\nTypeError: EPUBBookLoaderHelper.translate_with_backoff() takes 1 positional argument but 3 were given\r\n\r\n## Solution\r\n1. Modified the method signature to properly handle parameters:\r\n   - Added explicit parameters for text and context_flag\r\n   - Added jitter=None to backoff decorator\r\n   \r\n2. Improved error handling and logging\r\n#bug",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T01:05:59.178569",
+    "extractor_version": "1.0.0",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "book_maker/loader/helper.py",
+      "status": "modified",
+      "additions": 4,
+      "deletions": 3,
+      "functions_modified": [
+        {
+          "function_name": "translate_with_backoff",
+          "class_name": "EPUBBookLoaderHelper",
+          "full_name": "EPUBBookLoaderHelper.translate_with_backoff",
+          "start_line": 42,
+          "end_line": 43,
+          "lines_changed": [
+            42,
+            43
+          ]
+        }
+      ],
+      "patch": "@@ -1,7 +1,7 @@\n import re\n-from copy import copy\n import backoff\n import logging\n+from copy import copy\n \n logging.basicConfig(level=logging.WARNING)\n logger = logging.getLogger(__name__)\n@@ -37,9 +37,10 @@ def insert_trans(self, p, text, translation_style=\"\", single_translate=False):\n         Exception,\n         on_backoff=lambda details: logger.warning(f\"retry backoff: {details}\"),\n         on_giveup=lambda details: logger.warning(f\"retry abort: {details}\"),\n+        jitter=None,\n     )\n-    def translate_with_backoff(self, **kwargs):\n-        return self.translate_model.translate(**kwargs)\n+    def translate_with_backoff(self, text, context_flag=False):\n+        return self.translate_model.translate(text, context_flag)\n \n     def deal_new(self, p, wait_p_list, single_translate=False):\n         self.deal_old(wait_p_list, single_translate, self.context_flag)"
+    }
+  ],
+  "functions_modified": [
+    {
+      "function_name": "translate_with_backoff",
+      "class_name": "EPUBBookLoaderHelper",
+      "full_name": "EPUBBookLoaderHelper.translate_with_backoff",
+      "start_line": 42,
+      "end_line": 43,
+      "lines_changed": [
+        42,
+        43
+      ]
+    }
+  ],
+  "step_plan": {
+    "steps": [
+      {
+        "operation": "Fix the backoff-decorated wrapper to accept the positional arguments actually passed through the decorator by updating the method signature (add `text` and `context_flag=False`), forwarding them to `translate_model.translate`, and explicitly disabling backoff jitter (`jitter=None`) to stabilize retry timing; also apply import ordering consistent with Black formatting.",
+        "file_to_modify": "book_maker/loader/helper.py",
+        "function_to_modify": "EPUBBookLoaderHelper.translate_with_backoff",
+        "reason": "The `backoff.on_exception` decorator was invoking `translate_with_backoff` with positional arguments, but the wrapper only accepted `**kwargs`, causing `TypeError: ... takes 1 positional argument but 3 were given`. Aligning the wrapper signature with the call site and underlying `translate_model.translate(text, context_flag)` fixes the mismatch; adding `jitter=None` makes retry delays deterministic and avoids unexpected timing behavior.",
+        "side_effects": "Any callers previously relying on passing arbitrary keyword arguments into `translate_with_backoff` will no longer work and must pass `(text, context_flag)` instead. Retry timing behavior changes due to `jitter=None`, potentially affecting throughput and rate-limiting interactions with the translation backend. Logging behavior on backoff/giveup remains, but error surfaces may change if the underlying translate method signature differs elsewhere."
+      }
+    ],
+    "summary": "Fixes a TypeError in `EPUBBookLoaderHelper.translate_with_backoff` by aligning the wrapper’s parameters with the arguments passed through the backoff decorator and forwarded to the translation model, and makes retry behavior deterministic by disabling jitter."
+  }
+}

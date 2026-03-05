@@ -1,0 +1,57 @@
+{
+  "pr_number": 235,
+  "repository": "facebookresearch/AnimatedDrawings",
+  "title": "fix: repair window size in macOS",
+  "body": "This change addresses an issue on macOS where, with an external monitor connected, glfw.get_framebuffer_size(win) returns a size larger than the window's logical size. The PR proposes using the window's logical size (glfw.get_window_size(win)) for calculations that depend on the window's size, such as projection setup, while keeping the framebuffer size used for actual rendering. The update aims to ensure the rendered content aligns with the window's logical dimensions on macOS without affecting the actual high-DPI framebuffer rendering.\n\nKey ideas:\n- Compute the projection matrix using the window (logical) size rather than the framebuffer size to better reflect the window's actual content area on macOS when multiple displays are involved.\n- Preserve the existing framebuffer-based size for viewport operations to maintain proper rendering resolution and quality.\n- Introduce a small, explicit helper (WindowView.get_window_size) to query the logical size and modify the projection initialization accordingly.\n\nImpact:\n- Affects the initial projection setup in WindowView.__init__ where the projection matrix is generated.\n- Keeps render-time viewport sizing unchanged (still based on framebuffer size), avoiding unintended consequences to the actual rendering resolution.\n- Minimal risk; should improve consistency of aspect and projection on macOS with external monitors.\n\nNo public API changes are exposed; changes are localized to the window/view logic.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T12:41:35.423337",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "animated_drawings/view/window_view.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "__init__",
+          "class_name": "WindowView",
+          "full_name": "WindowView.__init__",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "get_window_size",
+          "class_name": "WindowView",
+          "full_name": "WindowView.get_window_size",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Add a new helper WindowView.get_window_size to query the logical window size and switch WindowView.__init__ projection calculations to use this logical size, while keeping the framebuffer-based viewport unchanged to fix macOS sizing inconsistencies.",
+    "steps": [
+      {
+        "operation": "Add WindowView.get_window_size helper to fetch logical window size",
+        "file_to_modify": "animated_drawings/view/window_view.py",
+        "function_to_modify": "WindowView.get_window_size",
+        "reason": "Introduce a dedicated helper to query glfw.get_window_size for the logical content size, separating projection logic from viewport sizing.",
+        "side_effects": "Adds a new helper method; downstream code may reference this method; tests may verify its return type and behavior; minor API surface change within the class"
+      },
+      {
+        "operation": "Update WindowView.__init__ projection setup to use logical window size for projection calculations",
+        "file_to_modify": "animated_drawings/view/window_view.py",
+        "function_to_modify": "WindowView.__init__",
+        "reason": "Projection matrix should be computed from the window's logical size to align with visible content on macOS with external displays; viewport sizing remains based on framebuffer size to preserve rendering resolution",
+        "side_effects": "Projection may differ from previous behavior on macOS with external monitors; potential need to adjust tests or assertions about projection sizing; no public API changes"
+      }
+    ]
+  }
+}

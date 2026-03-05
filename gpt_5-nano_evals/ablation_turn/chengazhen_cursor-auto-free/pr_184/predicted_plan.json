@@ -1,0 +1,42 @@
+{
+  "pr_number": 184,
+  "repository": "chengazhen/cursor-auto-free",
+  "title": "update build.py as to use env prioritized",
+  "body": "The PR requests to adjust the build process so that local developers can build CursorPro using their own environment settings. Specifically, when packaging, the build should prefer a local .env file if it exists (copy it into the build output as .env); if not, fall back to using .env.example. Previously, the script always copied .env.example to the output. This change enables local, env-driven builds without requiring changes to the repository, while preserving a fallback to env.example for new developers.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T12:27:08.362498",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "build.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "build",
+          "class_name": null,
+          "full_name": "build",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "This PR updates build.py to prefer a local .env during packaging, falling back to .env.example if none is present. This enables env-driven local builds while preserving existing config.ini handling.",
+    "steps": [
+      {
+        "operation": "Modify env copy logic in build() to prioritize local .env over .env.example during packaging",
+        "file_to_modify": "build.py",
+        "function_to_modify": "build",
+        "reason": "To allow local environment settings to drive the build output by embedding a local .env when present; if not, fall back to copying .env.example. This preserves existing config.ini behavior and enables env-driven local builds without requiring repository changes.",
+        "side_effects": "Potential exposure of secrets if a real .env is copied into the dist; add safeguards or opt-in gating (e.g., BUILD_USE_LOCAL_ENV) to prevent accidental leakage. Tests should cover three scenarios: (1) .env present -> dist contains .env; (2) only .env.example present -> dist contains .env copied from .env.example; (3) neither present -> env copy is skipped. Downstream packaging and CI workflows may need updates to reflect the new behavior and to ensure dist artifacts are treated appropriately."
+      }
+    ]
+  }
+}

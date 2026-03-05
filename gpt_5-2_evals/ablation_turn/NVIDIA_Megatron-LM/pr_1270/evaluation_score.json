@@ -1,0 +1,98 @@
+{
+  "evaluated_at": "2026-03-04T14:44:24.534003",
+  "pr_dir": "/Users/davidecroatto/code/planningtest0/gpt_5-2_evals/ablation_turn/NVIDIA_Megatron-LM/pr_1270",
+  "pr_number": 1270,
+  "repository": "NVIDIA/Megatron-LM",
+  "files": {
+    "precision": 0.6,
+    "recall": 0.6,
+    "f1": 0.6,
+    "predicted_count": 5,
+    "actual_count": 5,
+    "correct_count": 3
+  },
+  "functions": {
+    "precision": 0.4286,
+    "recall": 0.4286,
+    "f1": 0.4286,
+    "predicted_count": 7,
+    "actual_count": 7,
+    "correct_count": 3
+  },
+  "steps": {
+    "predicted_steps": 9,
+    "actual_steps": 8,
+    "step_diff": 1,
+    "target_coverage": 0.8889,
+    "targets_matched": 8,
+    "targets_total": 9
+  },
+  "semantic": {
+    "summary_similarity": 0.8353,
+    "avg_step_similarity": 0.636,
+    "step_matches": [
+      {
+        "pred_idx": 0,
+        "pred_text": "Operation: Add CLI flag plumbing for z-loss (coefficient, default disabled) | Function: _add_regular...",
+        "gt_idx": 6,
+        "gt_text": "Operation: Add CLI regularization argument to control z-loss strength from the command line | Functi...",
+        "similarity": 0.8122
+      },
+      {
+        "pred_idx": 2,
+        "pred_text": "Operation: Validate z-loss configuration and guard against invalid values/interactions | Function: v...",
+        "gt_idx": 4,
+        "gt_text": "Operation: Add transformer configuration field for z-loss weighting (as implemented in this PR, dupl...",
+        "similarity": 0.524
+      },
+      {
+        "pred_idx": 3,
+        "pred_text": "Operation: Compute a tensor-parallel-correct z-loss term alongside cross entropy in the unfused voca...",
+        "gt_idx": 3,
+        "gt_text": "Operation: Expose a public API parameter for z-loss weight in the vocab-parallel cross entropy wrapp...",
+        "similarity": 0.6574
+      },
+      {
+        "pred_idx": 4,
+        "pred_text": "Operation: Extend unfused autograd forward to return or stash z-loss-related values needed for loggi...",
+        "gt_idx": 1,
+        "gt_text": "Operation: Extend the tensor-parallel cross entropy autograd forward pass to compute z-loss, clone d...",
+        "similarity": 0.8097
+      },
+      {
+        "pred_idx": 5,
+        "pred_text": "Operation: Add z-loss support to the fused cross-entropy calculation path (feature parity with unfus...",
+        "gt_idx": 0,
+        "gt_text": "Operation: Wire z-loss support into the language model loss computation and change return signature ...",
+        "similarity": 0.7469
+      },
+      {
+        "pred_idx": 6,
+        "pred_text": "Operation: Extend fused autograd forward to surface z-loss metrics while preserving backward compati...",
+        "gt_idx": 2,
+        "gt_text": "Operation: Update the tensor-parallel cross entropy backward pass to incorporate the z-loss gradient...",
+        "similarity": 0.7439
+      },
+      {
+        "pred_idx": 7,
+        "pred_text": "Operation: Augment GPT pretraining loss_func to form total_loss = CE + z-loss and log CE vs z-loss s...",
+        "gt_idx": 7,
+        "gt_text": "Operation: Update GPT pretraining loss function to consume `(total_loss, extra_logs)` output and opt...",
+        "similarity": 0.7594
+      },
+      {
+        "pred_idx": 8,
+        "pred_text": "Operation: Add optional z-loss regularization + separate CE/z-loss logging to inference/KD GPT loss ...",
+        "gt_idx": 5,
+        "gt_text": "Operation: Add CLI logging flag to optionally emit CE and z-loss metrics alongside total loss | Func...",
+        "similarity": 0.6702
+      }
+    ],
+    "overall_semantic_score": 0.6958,
+    "computed": true,
+    "error": null
+  },
+  "has_prediction": true,
+  "has_ground_truth": true,
+  "error": null
+}

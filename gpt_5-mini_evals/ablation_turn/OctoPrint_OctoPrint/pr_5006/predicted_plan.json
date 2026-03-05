@@ -1,0 +1,42 @@
+{
+  "pr_number": 5006,
+  "repository": "OctoPrint/OctoPrint",
+  "title": "fix netmask",
+  "body": "* [x] Your changes are not possible to do through a plugin and relevant\n  to a large audience (ideally all users of OctoPrint)\n  * [x] If your changes are large or otherwise disruptive: You have\n    made sure your changes don't interfere with current development by\n    talking it through with the maintainers, e.g. through a\n    Brainstorming ticket\n  * [ ] Your PR targets OctoPrint's `devel` branch if it's a completely\n    new feature, or `maintenance` if it's a bug fix or improvement of\n    existing functionality for the current stable version (no PRs\n    against `master` or anything else please)\n  * [ ] Your PR was opened from a custom branch on your repository\n    (no PRs from your version of `master`, `maintenance`, or `devel`\n    please), e.g. `dev/my_new_feature` or `fix/my_bugfix`\n  * [x] Your PR only contains relevant changes: no unrelated files,\n    no dead code, ideally only one commit - rebase and squash your PR\n    if necessary!\n  * [x] Your changes follow the existing coding style\n  * [ ] If your changes include style sheets: You have modified the\n    `.less` source files, not the `.css` files (those are generated\n    with `lessc`)\n  * [x] You have tested your changes (please state how!) - ideally you\n    have added unit tests\n  * [ ] You have run the existing unit tests against your changes and\n    nothing broke\n  * [x] You have added yourself to the `AUTHORS.md` file :)\n\n\n#### What does this PR do and why is it necessary?\nin netifaces2 netmask was replaced with mask\n#### How was it tested? How can it be tested by the reviewer?\nmanually modified in local deployment and ran OctoPrint\n#### Any background context you want to provide?\n\n#### What are the relevant tickets if any?\n#5005\n#### Screenshots (if appropriate)\n\n#### Further notes",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T12:02:27.809380",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "src/octoprint/util/net.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "get_lan_ranges",
+          "class_name": null,
+          "full_name": "get_lan_ranges",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Make get_lan_ranges robust to netifaces v2 by reading the prefix from either 'netmask' or 'mask', preserving IPv6 notation handling and adding defensive error reporting and unit tests to verify both code paths.",
+    "steps": [
+      {
+        "operation": "Update netifaces handling in get_lan_ranges (inner to_ipnetwork) to accept both 'netmask' and 'mask', keep IPv6 handling, and add defensive error handling and tests",
+        "file_to_modify": "src/octoprint/util/net.py",
+        "function_to_modify": "get_lan_ranges",
+        "reason": "netifaces v2 (netifaces2) changed the address dict key name from 'netmask' to 'mask'. The inner helper (to_ipnetwork) currently reads address['netmask'] and fails when the key is 'mask'. Update the helper to prefer the historical 'netmask' but fall back to 'mask' (e.g. prefix = address.get('netmask') or address.get('mask')), preserve existing IPv6 handling when the addr string contains a '/', continue stripping interface tags (e.g. '%eth0'), and raise a clear, descriptive ValueError when neither key is present so upstream try/excepts can log the problem without crashing the UI. Also add unit tests that exercise dictionaries with 'netmask' and with 'mask' for IPv4 and IPv6 inputs to ensure compatibility across netifaces versions.",
+        "side_effects": "Low-risk localized change. Tests: add unit tests to cover both 'netmask' and 'mask' code paths (IPv4 and IPv6) and update any existing tests that assumed the previous behavior. Dependents: callers of get_lan_ranges won't change behavior (backwards compatible); error messages when neither key exists will be clearer and may alter logs. API: no external API change. Potentially reveals misconfigured interfaces earlier by causing the helper to raise a ValueError that existing callers should already catch; if any external plugin relied on exact exception text, logs may differ. Overall, minimal risk but run the full test suite to ensure no regressions."
+      }
+    ]
+  }
+}

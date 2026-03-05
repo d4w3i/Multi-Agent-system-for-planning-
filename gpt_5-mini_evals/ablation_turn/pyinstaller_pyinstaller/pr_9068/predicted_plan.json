@@ -1,0 +1,42 @@
+{
+  "pr_number": 9068,
+  "repository": "pyinstaller/pyinstaller",
+  "title": "Fix for failing test_site_module_disabled on macOS and python 3.9",
+  "body": "Over the last few days, the `test_site_module_disabled` started to fail on macOS python 3.9 runner (e.g., [here](https://github.com/pyinstaller/pyinstaller/actions/runs/14001775971/job/39212391324?pr=9067)).\n\nThe failure is caused by `site` module being already imported at the start of the test, which is explicitly checking that this is not the case (as `site` module should be disabled in the interpreter config, and thus not imported during its initialization). \n\nIt turns out that this is caused by import of `setuptools` in the run-time hook for `setuptools`, but only with `setuptools` v77.0.3 that was released on Mar 20. The import chain is `pyi_rth_setuptools.py` -> `setuptools` -> `setuptools.dist` -> `setuptools.command` -> `setuptools._distutils.command` -> `setuptools._distutils.command.build_ext` -> `site`,\nand was likely brought about by https://github.com/pypa/setuptools/commit/1d120d919bd6d5cb8ba1b179c2099bd947d2c466.\n\nIt also turns out that the failing test under python 3.9 on macOS is collecting `setuptools`, while the (succeeding) tests under other versions (and OSes) are not. The offending import chain turns out to be: `pyi_site_module_disabled.py` -> `site` -> `_sitebuiltins` -> `pydoc` -> `sysconfig` -> `_osx_support` -> `distutils` (-> `setuptools`).\n\nThis is caused by a [conditional import in `_osx_support.compiler_fixup`](https://github.com/python/cpython/blob/f3994ade31a563d49806cf6a681d1b1115fccaa3/Lib/_osx_support.py#L430-L434), which itself seems to be intended to be used by `distutils`.\n\nThis explains why we are seeing this only on macOS, and only with python 3.9 - latest `setuptools` do not  support python 3.8 anymore, and the use of `distutils.log` in `_osx_support.compiler_fixup` was removed in python >= 3.10.\n\nTherefore, add a hook for `_osx_support` that excludes `distutils`. In addition to fixing the failing test, this should also ensure that `distutils` / `setuptools` do no end up pulled into basic applications that import either `site` or `sysconfig` (or a module that imports either of these) when building with python 3.8 or 3.9 on macOs.\n\nExplore the source code to identify the files and functions to modify.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T14:17:57.245304",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "PyInstaller/hooks/rthooks/pyi_rth__osx_support.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "_pyi_rthook",
+          "class_name": null,
+          "full_name": "_pyi_rthook",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Add a runtime hook PyInstaller/hooks/rthooks/pyi_rth__osx_support.py defining _pyi_rthook that, on macOS and Python < 3.10 when distutils is absent, injects a minimal dummy 'distutils' (with distutils.log no-op functions) into sys.modules to prevent _osx_support from importing real distutils and thereby avoid bringing 'site' in early. This fixes the failing test on macOS + Python 3.9 and prevents inadvertent distutils/setuptools pulls in basic apps.",
+    "steps": [
+      {
+        "operation": "Add runtime hook implementing conditional dummy 'distutils' injection",
+        "file_to_modify": "PyInstaller/hooks/rthooks/pyi_rth__osx_support.py",
+        "function_to_modify": "_pyi_rthook",
+        "reason": "Prevent CPython's _osx_support from importing the real 'distutils' (which can pull in setuptools and indirectly import 'site') on macOS for Python versions that still reference distutils in _osx_support (Python < 3.10). The runtime hook will insert a minimal dummy 'distutils' module (and a distutils.log submodule with no-op logging functions) into sys.modules early at application runtime, but only when running on darwin and when 'distutils' is not already present. This stops the import chain that causes 'site' to be present too early and fixes test_site_module_disabled on macOS + Python 3.9.",
+        "side_effects": "Behavioral scope is intentionally limited (platform and Python-version guarded): it should only affect macOS (sys.platform == 'darwin') and Python < 3.10, and only when 'distutils' is not already provided. Potential impacts include: \n- Tests: Should fix test_site_module_disabled on macOS+py3.9; add/update unit tests to cover the new rthook behavior. \n- Dependents: Applications that rely on the real distutils being available very early may observe that distutils is a minimal dummy until the real package is explicitly imported (the hook only creates a minimal stub). This mitigates unintended transitive imports (setuptools). \n- API/Behavior: The dummy distutils.log provides only no-op functions (e.g., warn/info/error) to satisfy callers in _osx_support; it does not replace full distutils functionality. If an application actually needs distutils functionality at runtime, importing the real 'distutils' after interpreter initialization will still succeed if available (the hook only inserts a stub if none exists). \n- Packaging: No change to collection-time hooks; runtime-only. \n- Maintenance: May require revisiting if CPython or setuptools behavior changes; include comment in the hook explaining the targeted versions/why the hook exists."
+      }
+    ]
+  }
+}

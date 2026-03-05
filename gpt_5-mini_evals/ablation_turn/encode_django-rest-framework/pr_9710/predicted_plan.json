@@ -1,0 +1,42 @@
+{
+  "pr_number": 9710,
+  "repository": "encode/django-rest-framework",
+  "title": "Fix serializer method field hidden unique together (#9700)",
+  "body": "Fix: SerializerMethodField as HiddenField in unique_together\n\nCorrects an issue where a `SerializerMethodField` that shares its name\nwith a model field involved in a `unique_together` constraint (or\n`UniqueConstraint`) could be incorrectly treated as a `HiddenField`.\n\nThis typically occurred if the underlying model field was nullable or had\na default value, and the `SerializerMethodField` was not being correctly\nprioritized during the uniqueness metadata processing.\n\nThe `ModelSerializer.get_uniqueness_extra_kwargs` method has been updated\nto ensure that if a field name corresponding to a model field in a\nuniqueness constraint is explicitly declared as a `SerializerMethodField`\non the serializer, it is not converted into a `HiddenField`.\n\nA test case has been added to `tests/test_model_serializer.py`\n(`TestSerializerMethodFieldInUniqueTogether`) to verify this behavior.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T12:57:30.309194",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "rest_framework/serializers.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "get_uniqueness_extra_kwargs",
+          "class_name": "ModelSerializer",
+          "full_name": "ModelSerializer.get_uniqueness_extra_kwargs",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Modify ModelSerializer.get_uniqueness_extra_kwargs to recognize when a field name participating in a unique constraint is explicitly declared as a SerializerMethodField on the serializer, and treat it as present so it is not converted into a HiddenField. Add a test to verify the behavior.",
+    "steps": [
+      {
+        "operation": "Update uniqueness handling so declared SerializerMethodField instances are treated as present",
+        "file_to_modify": "rest_framework/serializers.py",
+        "function_to_modify": "ModelSerializer.get_uniqueness_extra_kwargs",
+        "reason": "When computing uniqueness_extra_kwargs and deciding whether to add a HiddenField for a field name participating in a unique_together / UniqueConstraint, the method currently only checks model_fields. If the serializer explicitly declares a SerializerMethodField with the same name, model_fields may not include it and the code will incorrectly add a HiddenField, hiding the declared field. Modify the logic so that when checking presence for each unique constraint name, the code also checks declared_fields and treats declared SerializerMethodField instances as 'present' (e.g., by using: name in declared_fields and isinstance(declared_fields[name], SerializerMethodField)). This ensures the declared SerializerMethodField is preserved and uniqueness_extra_kwargs are set appropriately instead of creating a HiddenField.",
+        "side_effects": "Tests: Existing tests related to uniqueness handling and HiddenField behavior may need to be updated or will fail until they reflect the new behavior; add the TestSerializerMethodFieldInUniqueTogether unit test to tests/test_model_serializer.py to assert the fix. Dependents: Serializers that previously relied on an implicit HiddenField being inserted for model-backed fields that are nullable/have defaults (and share a name with a declared SerializerMethodField) will now preserve the explicitly declared SerializerMethodField, which is the intended behavior but could change runtime behavior in rare cases where code expected the HiddenField. API: No public API change; behavior is more consistent with explicit declarations. Implementation note: ensure SerializerMethodField is imported or referenced correctly in the module and that the check is implemented in a minimal, well-tested way. Run full test suite to validate no regressions."
+      }
+    ]
+  }
+}

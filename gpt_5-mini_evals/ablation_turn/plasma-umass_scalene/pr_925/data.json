@@ -1,0 +1,85 @@
+{
+    "repository": "plasma-umass/scalene",
+    "pull_request_number": 925,
+    "title": "Fix for overwriting LD_PRELOAD if it contains libscalene.so and other values",
+    "body": "It looks like in some cases setup_preload gets called more than once, so it was adding `libscalene.so` to `LD_PRELOAD` the first time then later replacing `LD_PRELOAD`  with just `libscalene.so`, this fixes that case.",
+    "pr_date": "2025-06-09T16:33:43Z",
+    "source_branch": "fix-ld_preload",
+    "language": "en",
+    "keywords_detected": {
+        "branch": [
+            "fix"
+        ],
+        "requirement": [
+            "fix"
+        ],
+        "body": [
+            "add",
+            "fix"
+        ]
+    },
+    "number_of_links_in_pr": 0,
+    "base_sha": "167609636f019aa480add9bce226441de5697ddc",
+    "last_commit_sha": "977ba2f0c2e69e5ead62aeeb99217e3ba9a1bd24",
+    "diff_between_base_and_last": [
+        {
+            "sha": "dd63b98d60011aa71cdf575751df0f4a0e19cfa7",
+            "filename": "scalene/scalene_preload.py",
+            "status": "modified",
+            "additions": 3,
+            "deletions": 4,
+            "changes": 7,
+            "blob_url": "https://github.com/plasma-umass/scalene/blob/977ba2f0c2e69e5ead62aeeb99217e3ba9a1bd24/scalene%2Fscalene_preload.py",
+            "raw_url": "https://github.com/plasma-umass/scalene/raw/977ba2f0c2e69e5ead62aeeb99217e3ba9a1bd24/scalene%2Fscalene_preload.py",
+            "contents_url": "https://api.github.com/repos/plasma-umass/scalene/contents/scalene%2Fscalene_preload.py?ref=977ba2f0c2e69e5ead62aeeb99217e3ba9a1bd24",
+            "patch": "@@ -68,11 +68,10 @@ def get_preload_environ(args: argparse.Namespace) -> Dict[str, str]:\n                     env['LD_LIBRARY_PATH'] = f'{library_path}:{os.environ[\"LD_LIBRARY_PATH\"]}'\n \n                 new_ld_preload = 'libscalene.so'\n-                if \"LD_PRELOAD\" in os.environ and new_ld_preload not in os.environ[\"LD_PRELOAD\"]:\n-                    old_ld_preload = os.environ[\"LD_PRELOAD\"]\n-                    env[\"LD_PRELOAD\"] = new_ld_preload + \":\" + old_ld_preload\n-                else:\n+                if \"LD_PRELOAD\" not in os.environ:\n                     env[\"LD_PRELOAD\"] = new_ld_preload\n+                elif new_ld_preload not in os.environ[\"LD_PRELOAD\"].split(\":\"):\n+                    env[\"LD_PRELOAD\"] = f'{new_ld_preload}:{os.environ[\"LD_PRELOAD\"]}'\n                 # Disable command-line specified PYTHONMALLOC.\n                 if \"PYTHONMALLOC\" in os.environ:\n                     # Since the environment dict is updated"
+        }
+    ],
+    "commits": [
+        {
+            "sha": "b38c3a33939d878a83c5ec1ddcc542a5e20bbb93",
+            "commit_date": "2025-06-09T16:24:50Z",
+            "message": "Fix for overwriting LD_PRELOAD if it contains libscalene.so and other values",
+            "number_of_links_in_commit": 0,
+            "files_changed_count": 1,
+            "files": [
+                {
+                    "sha": "060c614564a13ec683cc851ebbd5b4ef951e26fc",
+                    "filename": "scalene/scalene_preload.py",
+                    "status": "modified",
+                    "additions": 2,
+                    "deletions": 0,
+                    "changes": 2,
+                    "blob_url": "https://github.com/plasma-umass/scalene/blob/b38c3a33939d878a83c5ec1ddcc542a5e20bbb93/scalene%2Fscalene_preload.py",
+                    "raw_url": "https://github.com/plasma-umass/scalene/raw/b38c3a33939d878a83c5ec1ddcc542a5e20bbb93/scalene%2Fscalene_preload.py",
+                    "contents_url": "https://api.github.com/repos/plasma-umass/scalene/contents/scalene%2Fscalene_preload.py?ref=b38c3a33939d878a83c5ec1ddcc542a5e20bbb93",
+                    "patch": "@@ -71,6 +71,8 @@ def get_preload_environ(args: argparse.Namespace) -> Dict[str, str]:\n                 if \"LD_PRELOAD\" in os.environ and new_ld_preload not in os.environ[\"LD_PRELOAD\"]:\n                     old_ld_preload = os.environ[\"LD_PRELOAD\"]\n                     env[\"LD_PRELOAD\"] = new_ld_preload + \":\" + old_ld_preload\n+                elif \"LD_PRELOAD\" in os.environ and new_ld_preload in os.environ[\"LD_PRELOAD\"]:\n+                    env[\"LD_PRELOAD\"] = os.environ[\"LD_PRELOAD\"]\n                 else:\n                     env[\"LD_PRELOAD\"] = new_ld_preload\n                 # Disable command-line specified PYTHONMALLOC."
+                }
+            ]
+        },
+        {
+            "sha": "977ba2f0c2e69e5ead62aeeb99217e3ba9a1bd24",
+            "commit_date": "2025-06-09T19:49:40Z",
+            "message": "Improve logic for setting LD_PRELOAD\n\n- split on : as per https://github.com/plasma-umass/scalene/pull/925#discussion_r2136075173\n- simplify conditions",
+            "number_of_links_in_commit": 1,
+            "files_changed_count": 1,
+            "files": [
+                {
+                    "sha": "dd63b98d60011aa71cdf575751df0f4a0e19cfa7",
+                    "filename": "scalene/scalene_preload.py",
+                    "status": "modified",
+                    "additions": 3,
+                    "deletions": 6,
+                    "changes": 9,
+                    "blob_url": "https://github.com/plasma-umass/scalene/blob/977ba2f0c2e69e5ead62aeeb99217e3ba9a1bd24/scalene%2Fscalene_preload.py",
+                    "raw_url": "https://github.com/plasma-umass/scalene/raw/977ba2f0c2e69e5ead62aeeb99217e3ba9a1bd24/scalene%2Fscalene_preload.py",
+                    "contents_url": "https://api.github.com/repos/plasma-umass/scalene/contents/scalene%2Fscalene_preload.py?ref=977ba2f0c2e69e5ead62aeeb99217e3ba9a1bd24",
+                    "patch": "@@ -68,13 +68,10 @@ def get_preload_environ(args: argparse.Namespace) -> Dict[str, str]:\n                     env['LD_LIBRARY_PATH'] = f'{library_path}:{os.environ[\"LD_LIBRARY_PATH\"]}'\n \n                 new_ld_preload = 'libscalene.so'\n-                if \"LD_PRELOAD\" in os.environ and new_ld_preload not in os.environ[\"LD_PRELOAD\"]:\n-                    old_ld_preload = os.environ[\"LD_PRELOAD\"]\n-                    env[\"LD_PRELOAD\"] = new_ld_preload + \":\" + old_ld_preload\n-                elif \"LD_PRELOAD\" in os.environ and new_ld_preload in os.environ[\"LD_PRELOAD\"]:\n-                    env[\"LD_PRELOAD\"] = os.environ[\"LD_PRELOAD\"]\n-                else:\n+                if \"LD_PRELOAD\" not in os.environ:\n                     env[\"LD_PRELOAD\"] = new_ld_preload\n+                elif new_ld_preload not in os.environ[\"LD_PRELOAD\"].split(\":\"):\n+                    env[\"LD_PRELOAD\"] = f'{new_ld_preload}:{os.environ[\"LD_PRELOAD\"]}'\n                 # Disable command-line specified PYTHONMALLOC.\n                 if \"PYTHONMALLOC\" in os.environ:\n                     # Since the environment dict is updated"
+                }
+            ]
+        }
+    ],
+    "pull_request_url": "https://github.com/plasma-umass/scalene/pull/925",
+    "commits_url": "https://github.com/plasma-umass/scalene/pull/925/commits",
+    "files_url": "https://github.com/plasma-umass/scalene/pull/925/files"
+}

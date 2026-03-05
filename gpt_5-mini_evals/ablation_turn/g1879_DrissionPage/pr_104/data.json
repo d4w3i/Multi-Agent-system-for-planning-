@@ -1,0 +1,63 @@
+{
+    "repository": "g1879/DrissionPage",
+    "pull_request_number": 104,
+    "title": "fixed json decoding bug in daemon thread",
+    "body": "fixed bug in daemon thread that is triggered when trying to convert an empty message_json to dict. Still raising the JSONDecodeError in case decoding fails for any other reason",
+    "pr_date": "2024-01-06T15:21:52Z",
+    "source_branch": "fix-jsondecode-bug",
+    "language": "en",
+    "keywords_detected": {
+        "branch": [
+            "fix"
+        ],
+        "requirement": [
+            "fix"
+        ],
+        "body": [
+            "fix"
+        ]
+    },
+    "number_of_links_in_pr": 0,
+    "base_sha": "6f7c07b0523cb8bd86dc2f2be04aa1a44725baa9",
+    "last_commit_sha": "3ff01bf169f1febc29c4c2479a9ee520a90ebe89",
+    "diff_between_base_and_last": [
+        {
+            "sha": "dd67c4e9fa8db924ae81dfc84038f5fb76081446",
+            "filename": "DrissionPage/chromium_driver.py",
+            "status": "modified",
+            "additions": 4,
+            "deletions": 1,
+            "changes": 5,
+            "blob_url": "https://github.com/g1879/DrissionPage/blob/3ff01bf169f1febc29c4c2479a9ee520a90ebe89/DrissionPage%2Fchromium_driver.py",
+            "raw_url": "https://github.com/g1879/DrissionPage/raw/3ff01bf169f1febc29c4c2479a9ee520a90ebe89/DrissionPage%2Fchromium_driver.py",
+            "contents_url": "https://api.github.com/repos/g1879/DrissionPage/contents/DrissionPage%2Fchromium_driver.py?ref=3ff01bf169f1febc29c4c2479a9ee520a90ebe89",
+            "patch": "@@ -4,7 +4,7 @@\n @Contact :   g1879@qq.com\r\n \"\"\"\r\n from functools import partial\r\n-from json import dumps, loads\r\n+from json import dumps, loads, JSONDecodeError\r\n from queue import Queue, Empty\r\n from threading import Thread, Event\r\n \r\n@@ -120,6 +120,9 @@ def _recv_loop(self):\n                 message = loads(message_json)\r\n             except WebSocketTimeoutException:\r\n                 continue\r\n+            except JSONDecodeError as exc:\r\n+                if message_json:\r\n+                    raise exc\r\n             except (WebSocketException, OSError, WebSocketConnectionClosedException):\r\n                 self.stop()\r\n                 return\r"
+        }
+    ],
+    "commits": [
+        {
+            "sha": "3ff01bf169f1febc29c4c2479a9ee520a90ebe89",
+            "commit_date": "2024-01-06T15:00:00Z",
+            "message": "fixed bug in daemon thread that is triggered when trying to convert an empty message_json to dict. Still raising the JSONDecodeError in case decoding fails for any other reason",
+            "number_of_links_in_commit": 0,
+            "files_changed_count": 1,
+            "files": [
+                {
+                    "sha": "dd67c4e9fa8db924ae81dfc84038f5fb76081446",
+                    "filename": "DrissionPage/chromium_driver.py",
+                    "status": "modified",
+                    "additions": 4,
+                    "deletions": 1,
+                    "changes": 5,
+                    "blob_url": "https://github.com/g1879/DrissionPage/blob/3ff01bf169f1febc29c4c2479a9ee520a90ebe89/DrissionPage%2Fchromium_driver.py",
+                    "raw_url": "https://github.com/g1879/DrissionPage/raw/3ff01bf169f1febc29c4c2479a9ee520a90ebe89/DrissionPage%2Fchromium_driver.py",
+                    "contents_url": "https://api.github.com/repos/g1879/DrissionPage/contents/DrissionPage%2Fchromium_driver.py?ref=3ff01bf169f1febc29c4c2479a9ee520a90ebe89",
+                    "patch": "@@ -4,7 +4,7 @@\n @Contact :   g1879@qq.com\r\n \"\"\"\r\n from functools import partial\r\n-from json import dumps, loads\r\n+from json import dumps, loads, JSONDecodeError\r\n from queue import Queue, Empty\r\n from threading import Thread, Event\r\n \r\n@@ -120,6 +120,9 @@ def _recv_loop(self):\n                 message = loads(message_json)\r\n             except WebSocketTimeoutException:\r\n                 continue\r\n+            except JSONDecodeError as exc:\r\n+                if message_json:\r\n+                    raise exc\r\n             except (WebSocketException, OSError, WebSocketConnectionClosedException):\r\n                 self.stop()\r\n                 return\r"
+                }
+            ]
+        }
+    ],
+    "pull_request_url": "https://github.com/g1879/DrissionPage/pull/104",
+    "commits_url": "https://github.com/g1879/DrissionPage/pull/104/commits",
+    "files_url": "https://github.com/g1879/DrissionPage/pull/104/files"
+}

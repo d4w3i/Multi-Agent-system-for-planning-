@@ -1,0 +1,42 @@
+{
+  "pr_number": 2468,
+  "repository": "Netflix/metaflow",
+  "title": "Fixup how commands show up as part of the Runner API",
+  "body": "When injecting commands to the runner, the stubs generated were not accurate or complete. This addresses this issue",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T12:01:20.478950",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "metaflow/runner/metaflow_runner.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "__new__",
+          "class_name": "RunnerMeta",
+          "full_name": "RunnerMeta.__new__",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Modify RunnerMeta.__new__ to attach accurate function signatures, annotations, defaults, and docstrings to injected runner command methods by reusing extract_all_params from the click-based API, improving IDE and introspection support without changing runtime behavior.",
+    "steps": [
+      {
+        "operation": "Enhance injected runner command wrappers to carry accurate introspection metadata (signature, annotations, defaults, docstring) by reusing click parameter extraction",
+        "file_to_modify": "metaflow/runner/metaflow_runner.py",
+        "function_to_modify": "RunnerMeta.__new__",
+        "reason": "RunnerMeta currently injects CLI commands as simple wrapper functions that forward to plugin-provided click Command/Group callables but do not populate rich introspection metadata. Reusing the existing extract_all_params utility from metaflow.runner.click_api allows constructing an inspect.Signature, annotations mapping, and defaults tuple so the injected methods present accurate signatures, annotations, and defaults to IDEs, help(), and programmatic inspection while preserving runtime forwarding behavior.",
+        "side_effects": "Adds an import dependency on metaflow.runner.click_api.extract_all_params and uses the inspect module. API runtime behavior remains unchanged (wrappers still forward calls). Tooling/IDE behavior and tests that assert on function signatures, annotations, or defaults will now see different values and may need updates. If extract_all_params changes shape/contract, this code will need to be adjusted. Minor lint/static-analysis changes possible; no server or runtime compatibility changes expected. Ensure unit tests that check Runner API introspection are updated or added; existing runtime tests should continue to pass."
+      }
+    ]
+  }
+}

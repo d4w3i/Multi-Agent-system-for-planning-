@@ -1,0 +1,77 @@
+{
+  "evaluated_at": "2026-03-04T14:44:45.568637",
+  "pr_dir": "/Users/davidecroatto/code/planningtest0/gpt_5-nano_evals/ablation_turn/Acly_krita-ai-diffusion/pr_1895",
+  "pr_number": 1895,
+  "repository": "Acly/krita-ai-diffusion",
+  "files": {
+    "precision": 0.5,
+    "recall": 0.6667,
+    "f1": 0.5714,
+    "predicted_count": 4,
+    "actual_count": 3,
+    "correct_count": 2
+  },
+  "functions": {
+    "precision": 0.2,
+    "recall": 0.0909,
+    "f1": 0.125,
+    "predicted_count": 5,
+    "actual_count": 11,
+    "correct_count": 1
+  },
+  "steps": {
+    "predicted_steps": 5,
+    "actual_steps": 11,
+    "step_diff": -6,
+    "target_coverage": 0.4,
+    "targets_matched": 2,
+    "targets_total": 5
+  },
+  "semantic": {
+    "summary_similarity": 0.7381,
+    "avg_step_similarity": 0.6995,
+    "step_matches": [
+      {
+        "pred_idx": 0,
+        "pred_text": "Operation: Add QueueMode enum and migrate Settings.load to map legacy queue_front to new enum and pe...",
+        "gt_idx": 0,
+        "gt_text": "Operation: Introduce an enum representing queue insertion behavior (back/front/replace) | Reason: Re...",
+        "similarity": 0.7842
+      },
+      {
+        "pred_idx": 1,
+        "pred_text": "Operation: Update JobQueue.add_job to carry per-batch queue_mode and derive from first job; propagat...",
+        "gt_idx": 6,
+        "gt_text": "Operation: Update job enqueue helper to accept a computed 'front' boolean and pass it to the client ...",
+        "similarity": 0.5926
+      },
+      {
+        "pred_idx": 2,
+        "pred_text": "Operation: Extend JobQueue.clear to support replacement semantics and provide mechanism to clear pen...",
+        "gt_idx": 7,
+        "gt_text": "Operation: Refactor queued-cancel path to reuse a shared local queued-job clearing routine | Functio...",
+        "similarity": 0.6405
+      },
+      {
+        "pred_idx": 3,
+        "pred_text": "Operation: Modify Model.enqueue_jobs to respect queue_mode: when Replace, clear queue before enqueui...",
+        "gt_idx": 5,
+        "gt_text": "Operation: Extend enqueue_jobs to support replace semantics by clearing server/client queues and the...",
+        "similarity": 0.7892
+      },
+      {
+        "pred_idx": 4,
+        "pred_text": "Operation: Update UI QueueButton._update to present 3-way QueueMode (Front, Back, Replace) and bind ...",
+        "gt_idx": 1,
+        "gt_text": "Operation: Replace the persisted model property/signal from boolean queue_front to enum queue_mode |...",
+        "similarity": 0.6907
+      }
+    ],
+    "overall_semantic_score": 0.7111,
+    "computed": true,
+    "error": null
+  },
+  "has_prediction": true,
+  "has_ground_truth": true,
+  "error": null
+}

@@ -1,0 +1,139 @@
+{
+  "pr_number": 1944,
+  "repository": "prompt-toolkit/python-prompt-toolkit",
+  "title": "Fixes bug whereby read_only bool is called as a function",
+  "body": "This is a simple bug fix to remedy the following issue:\n\n```python\n  File \".../site-packages/prompt_toolkit/filters/app.py\", line 374, in emacs_insert_mode\n    or app.current_buffer.read_only()\n       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n\nException 'bool' object is not callable\n```\n\nIt would appear to be a simple typo, calling the boolean `read_only` property as if it were a function.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T12:33:14.716347",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "src/prompt_toolkit/filters/app.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "emacs_insert_mode",
+          "class_name": null,
+          "full_name": "emacs_insert_mode",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "is_read_only",
+          "class_name": null,
+          "full_name": "is_read_only",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "vi_navigation_mode",
+          "class_name": null,
+          "full_name": "vi_navigation_mode",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "vi_insert_mode",
+          "class_name": null,
+          "full_name": "vi_insert_mode",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "vi_insert_multiple_mode",
+          "class_name": null,
+          "full_name": "vi_insert_multiple_mode",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "vi_replace_mode",
+          "class_name": null,
+          "full_name": "vi_replace_mode",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "vi_replace_single_mode",
+          "class_name": null,
+          "full_name": "vi_replace_single_mode",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "tests/ (add or update a relevant test module)",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    }
+  ],
+  "step_plan": {
+    "summary": "Fixes a crash in application-level filter conditions by making checks of `current_buffer.read_only` resilient when it is a plain boolean rather than a callable Filter. Updates all identified mode/condition functions in `filters/app.py` that currently call `read_only()` so they work with both representations.",
+    "steps": [
+      {
+        "operation": "Harden read-only evaluation in emacs_insert_mode by safely handling both callable Filter and plain bool",
+        "file_to_modify": "src/prompt_toolkit/filters/app.py",
+        "function_to_modify": "emacs_insert_mode",
+        "reason": "The reported crash occurs when `app.current_buffer.read_only` is a bool and the code unconditionally calls it as `read_only()`. This condition must evaluate read-only status without assuming callability.",
+        "side_effects": "Changes behavior only in environments where `read_only` is not a Filter; should preserve existing behavior when it is callable. Add/adjust tests to ensure no exception and correct boolean result."
+      },
+      {
+        "operation": "Make is_read_only robust to bool-backed read_only by using the same callable-vs-bool evaluation pattern",
+        "file_to_modify": "src/prompt_toolkit/filters/app.py",
+        "function_to_modify": "is_read_only",
+        "reason": "`is_read_only` is a shared condition used by other filters/key bindings; if it assumes `read_only()` it can trigger the same TypeError elsewhere. Centralizing the robust evaluation here also provides a reusable pattern.",
+        "side_effects": "May affect any code path relying on `is_read_only` by preventing crashes; expected behavior should remain identical for Filter-backed `read_only`."
+      },
+      {
+        "operation": "Update vi_navigation_mode to avoid unconditionally calling current_buffer.read_only()",
+        "file_to_modify": "src/prompt_toolkit/filters/app.py",
+        "function_to_modify": "vi_navigation_mode",
+        "reason": "This condition is another direct caller of `app.current_buffer.read_only()` and is therefore another potential crash site in the same environments that produce the reported stack trace.",
+        "side_effects": "Ensures vi navigation mode condition evaluation never raises due to read_only shape; should not change semantics when `read_only` is callable."
+      },
+      {
+        "operation": "Update vi_insert_mode to evaluate buffer read-only status safely (callable Filter vs bool)",
+        "file_to_modify": "src/prompt_toolkit/filters/app.py",
+        "function_to_modify": "vi_insert_mode",
+        "reason": "Like other vi mode conditions, it guards on `current_buffer.read_only()` and can fail when `read_only` is a boolean. Keeping all vi-related conditions consistent avoids fragmented behavior.",
+        "side_effects": "Prevents TypeError during vi insert mode condition checks; may require updating/adding tests around vi mode conditions if they exist and assert exact call patterns."
+      },
+      {
+        "operation": "Update vi_insert_multiple_mode to handle bool-backed read_only without calling it",
+        "file_to_modify": "src/prompt_toolkit/filters/app.py",
+        "function_to_modify": "vi_insert_multiple_mode",
+        "reason": "This condition is also a direct call site of `read_only()`; applying the same robust evaluation reduces the chance of similar crashes in alternate vi submodes.",
+        "side_effects": "No behavioral change expected for standard Filter-backed buffers; improves compatibility with older/alternate Buffer implementations."
+      },
+      {
+        "operation": "Update vi_replace_mode to evaluate read-only safely (do not assume callable)",
+        "file_to_modify": "src/prompt_toolkit/filters/app.py",
+        "function_to_modify": "vi_replace_mode",
+        "reason": "Another direct call site; ensuring all vi replace-related checks are robust prevents intermittent failures depending on buffer configuration.",
+        "side_effects": "May slightly change internal evaluation order if refactored, but resulting boolean should match prior behavior in the callable case."
+      },
+      {
+        "operation": "Update vi_replace_single_mode to evaluate read-only safely (call when callable, else bool)",
+        "file_to_modify": "src/prompt_toolkit/filters/app.py",
+        "function_to_modify": "vi_replace_single_mode",
+        "reason": "Final vi mode condition identified as calling `read_only()`; updating it completes the audit so all known app-level filters are tolerant of bool `read_only`.",
+        "side_effects": "Prevents TypeError when switching into single-replace mode with bool-backed buffers; should not impact other filters except by avoiding exceptions."
+      }
+    ]
+  }
+}

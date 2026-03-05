@@ -1,0 +1,79 @@
+{
+  "pr_number": 277,
+  "repository": "vikhyat/moondream",
+  "title": "finetune_region.py fixed. Added waste_detection eval",
+  "body": "Summary of intent:\n- Fix a bug introduced when log2-based size bin labeling was added to finetune_region.py.\n- Add (or prepare for) an evaluation workflow for the Waste Detection fine-tuning dataset to monitor improvements (F1 score reported in description).\n\nWhat I found:\n- The finetune_region.py file implements a WasteDetection dataset finetuning loop and maps size labels using a log2-based mapping. The current implementation builds cs_emb (coordinate+size embeddings) and corresponding labels, including a log2-based sizing bin mapping for s_log2_bins.\n- There is a potential risk of label/index alignment issues when multiple boxes are processed (the c_idx/s_idx indexing and the way cs_labels are assembled may become misaligned with the logits/labels used for cross-entropy loss, especially after the log2-based mapping was added).\n- The PR description mentions a bug fix related to log2 and an added waste_detection eval script. The code currently contains the WasteDetection dataset loader and the finetuning loop, but no dedicated evaluation script is present in this repo snapshot.\n\nProposed changes (high level):\n- Apply a robust fix to ensure the region_loss inputs/labels stay properly aligned when log2-based size bins are included, especially across multiple boxes per image. This includes validating the construction of c_labels and s_labels against c_logits and s_logits.\n- Introduce or wire up an evaluation script/module for Waste Detection to compute F1 (as noted in the PR description). This will help verify the stated improvement after finetuning.\n- Add small guards/tests around label construction and tensor shapes to prevent silent misalignments during training.\n\nImpact:\n- Minimal runtime impact during training once fixed; improved correctness and reproducibility of the waste detection finetuning branch; provides a path to reproduce the reported F1 improvement.\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T14:06:01.389525",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "moondream/finetune/finetune_region.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "__getitem__",
+          "class_name": "WasteDetection",
+          "full_name": "WasteDetection.__getitem__",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "region_loss",
+          "class_name": null,
+          "full_name": "region_loss",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "main",
+          "class_name": null,
+          "full_name": "main",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "moondream/finetune/eval_waste_detection.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    }
+  ],
+  "step_plan": {
+    "summary": "Fix log2-based region labeling alignment in finetune_region.py, harden dataset item construction for Waste Detection, and scaffold a lightweight Waste Detection evaluation workflow to compute F1 after finetuning.",
+    "steps": [
+      {
+        "operation": "Harden alignment between region predictions and labels in region_loss by deriving the number of predictions from logits and validating label lengths; remove reliance on modulo-based indexing that could misalign multi-box supervision when log2 bins are used",
+        "file_to_modify": "moondream/finetune/finetune_region.py",
+        "function_to_modify": "region_loss",
+        "reason": "To ensure the number of region predictions matches the corresponding labels (c_logits/s_logits with c_labels/s_labels) when log2-based size bins are present and multiple boxes per image are processed, preventing silent misalignments that could degrade training correctness.",
+        "side_effects": "Adds runtime shape checks and potential assertion errors for mismatches; may require corresponding test updates and minor performance overhead due to additional validations; could necessitate minor dataset wrapping adjustments to ensure consistent batch shapes."
+      },
+      {
+        "operation": "Harden WasteDetection.__getitem__ to consistently return correctly shaped and typed tensors for images, boxes, and labels; ensure compatibility with multi-box inputs and log2 bin mappings",
+        "file_to_modify": "moondream/finetune/finetune_region.py",
+        "function_to_modify": "WasteDetection.__getitem__",
+        "reason": "To prevent shape/typing issues during batch construction when log2-based labeling is involved and multiple boxes per image are present, ensuring downstream training receives well-formatted tensors.",
+        "side_effects": "May require updates to unit tests and data loading code to align with the new return shapes; could slightly affect data loading performance due to stricter validation."
+      },
+      {
+        "operation": "Add a new evaluation module for Waste Detection and wire it into the finetuning workflow by implementing evaluate_waste_detection in a new file and integrating its invocation in main; provide a lightweight F1 evaluator",
+        "file_to_modify": "moondream/finetune/eval_waste_detection.py",
+        "function_to_modify": "evaluate_waste_detection",
+        "reason": "To establish a reproducible evaluation path that reports F1 on the Waste Detection dataset after finetuning, aligning with the PR description of an added waste_detection eval script and enabling quick feedback after training.",
+        "side_effects": "Introduces a new evaluation dependency and potential runtime overhead during evaluation runs; requires dataset availability and may require minor CLI or orchestration adjustments; adds tests or test hooks to validate evaluator behavior."
+      }
+    ]
+  }
+}

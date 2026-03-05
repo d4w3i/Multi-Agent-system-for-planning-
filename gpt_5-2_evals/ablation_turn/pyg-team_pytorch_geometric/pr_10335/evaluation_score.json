@@ -1,0 +1,70 @@
+{
+  "evaluated_at": "2026-03-04T14:47:55.120444",
+  "pr_dir": "/Users/davidecroatto/code/planningtest0/gpt_5-2_evals/ablation_turn/pyg-team_pytorch_geometric/pr_10335",
+  "pr_number": 10335,
+  "repository": "pyg-team/pytorch_geometric",
+  "files": {
+    "precision": 0.5,
+    "recall": 1.0,
+    "f1": 0.6667,
+    "predicted_count": 4,
+    "actual_count": 2,
+    "correct_count": 2
+  },
+  "functions": {
+    "precision": 0.4286,
+    "recall": 0.75,
+    "f1": 0.5455,
+    "predicted_count": 7,
+    "actual_count": 4,
+    "correct_count": 3
+  },
+  "steps": {
+    "predicted_steps": 7,
+    "actual_steps": 4,
+    "step_diff": 3,
+    "target_coverage": 0.7143,
+    "targets_matched": 5,
+    "targets_total": 7
+  },
+  "semantic": {
+    "summary_similarity": 0.6924,
+    "avg_step_similarity": 0.3465,
+    "step_matches": [
+      {
+        "pred_idx": 1,
+        "pred_text": "Operation: Guard graph indexer building/saving: if on-disk indexer already exists and we are not for...",
+        "gt_idx": 2,
+        "gt_text": "Operation: Change graph indexer save location to a dedicated `indexer_path` instead of relying on `p...",
+        "similarity": 0.6474
+      },
+      {
+        "pred_idx": 2,
+        "pred_text": "Operation: Skip per-split save() when processed split artifacts already exist and not force_reload; ...",
+        "gt_idx": 1,
+        "gt_text": "Operation: Remove the internal split-file-name helper property and stop including the indexer artifa...",
+        "similarity": 0.5489
+      },
+      {
+        "pred_idx": 3,
+        "pred_text": "Operation: Tighten overall process() caching logic: load existing processed artifacts (indexer + spl...",
+        "gt_idx": 3,
+        "gt_text": "Operation: Introduce and use an explicit `self.indexer_path` for existence checks and loading the in...",
+        "similarity": 0.6767
+      },
+      {
+        "pred_idx": 4,
+        "pred_text": "Operation: Make saving of model/eval artifacts opt-in (CLI flag / argument), and avoid writing to CW...",
+        "gt_idx": 0,
+        "gt_text": "Operation: Update GRetriever instantiation to match the new/default interface by removing the explic...",
+        "similarity": 0.5528
+      }
+    ],
+    "overall_semantic_score": 0.4503,
+    "computed": true,
+    "error": null
+  },
+  "has_prediction": true,
+  "has_ground_truth": true,
+  "error": null
+}

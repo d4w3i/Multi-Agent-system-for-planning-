@@ -1,0 +1,65 @@
+{
+  "pr_number": 563,
+  "repository": "netease-youdao/QAnything",
+  "title": "修复错误将chunk_size更新为chunks_number的问题",
+  "body": "KnowledgeBaseManager类中，更新File表的chunk_number字段使用的方法update_chunks_number存在sql语句错误。\r\n实际为\"UPDATE File SET chunk_size = %s WHERE file_id = %s\"。这会错误地修改chunk_size，导致chunk_size和chunks_number值相同。\r\n\r\n同时，在文件插入向量数据库结束后，原代码会有针对chunks_number等信息的统一修改。\r\n\r\n所以可以将insert_files_server.py中，process_data中对chunks_number做的更新语句：mysql_client.update_chunks_number(local_file.file_id, chunks_number)进行删除。\r\n修改后，文件上传成功后chunks_number和chunk_size的值完全正确。",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T12:27:33.172772",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "qanything_kernel/connector/database/mysql/mysql_client.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "update_chunks_number",
+          "class_name": "KnowledgeBaseManager",
+          "full_name": "KnowledgeBaseManager.update_chunks_number",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "qanything_kernel/dependent_server/insert_files_serve/insert_files_server.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "process_data",
+          "class_name": null,
+          "full_name": "process_data",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "修复 KnowledgeBaseManager.update_chunks_number 的 SQL 字段错误，避免把 chunks_number 写到 chunk_size 上；同时移除入库流程中对 chunks_number 的重复更新，统一由后续的集中 UPDATE 写入，保证上传后 chunk_size 与 chunks_number 元数据正确。",
+    "steps": [
+      {
+        "operation": "Fix UPDATE statement to write to the correct column (chunks_number) instead of chunk_size",
+        "file_to_modify": "qanything_kernel/connector/database/mysql/mysql_client.py",
+        "function_to_modify": "KnowledgeBaseManager.update_chunks_number",
+        "reason": "The current SQL mistakenly updates `File.chunk_size`, causing `chunk_size` and `chunks_number` to become identical and corrupting metadata. Correcting the column to `chunks_number` fixes the root data bug.",
+        "side_effects": "Any code path calling `update_chunks_number` will now correctly modify `chunks_number` (behavior change vs. previous buggy behavior). If any downstream logic accidentally relied on the wrong overwrite of `chunk_size`, it will no longer occur; verify UI/metadata displays and any reporting that uses `chunk_size`."
+      },
+      {
+        "operation": "Remove redundant chunks_number update call after vector DB insertion; rely on the existing unified MySQL update later in the pipeline",
+        "file_to_modify": "qanything_kernel/dependent_server/insert_files_serve/insert_files_server.py",
+        "function_to_modify": "process_data",
+        "reason": "`process_data()` currently calls `mysql_client.update_chunks_number(local_file.file_id, chunks_number)` even though the surrounding flow later performs a unified UPDATE that includes `chunks_number`. Removing this avoids duplicate writes and potential race/overwrite issues, and ensures `chunk_size` is not accidentally impacted by the buggy method in older versions.",
+        "side_effects": "`chunks_number` will be persisted only at the unified update point; if any intermediate consumer expected `chunks_number` to be available in MySQL immediately after Milvus insertion (before the unified update), that timing changes. Fewer MySQL writes per file may slightly improve throughput; ensure any status/progress logic doesn’t depend on early `chunks_number` persistence."
+      }
+    ]
+  }
+}

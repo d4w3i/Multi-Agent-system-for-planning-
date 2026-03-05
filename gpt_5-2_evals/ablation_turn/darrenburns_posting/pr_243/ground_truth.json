@@ -1,0 +1,57 @@
+{
+  "pr_number": 243,
+  "repository": "darrenburns/posting",
+  "title": "fix(collection): prevent markup parsing",
+  "body": "Prevent the request description trying to parse the content with markup.\r\n\r\nFixes #241.",
+  "extraction_metadata": {
+    "extracted_at": "2026-02-26T01:06:39.123313",
+    "extractor_version": "1.0.0",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "src/posting/widgets/collection/browser.py",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "functions_modified": [
+        {
+          "function_name": "compose",
+          "class_name": "RequestPreview",
+          "full_name": "RequestPreview.compose",
+          "start_line": 575,
+          "end_line": 577,
+          "lines_changed": [
+            577
+          ]
+        }
+      ],
+      "patch": "@@ -574,7 +574,7 @@ class RequestPreview(VerticalScroll):\n \n     def compose(self) -> ComposeResult:\n         self.can_focus = False\n-        yield Static(\"\", id=\"description\")\n+        yield Static(\"\", markup=False, id=\"description\")\n \n     def watch_request(self, request: RequestModel | None) -> None:\n         self.set_class(request is None or not request.description, \"hidden\")"
+    }
+  ],
+  "functions_modified": [
+    {
+      "function_name": "compose",
+      "class_name": "RequestPreview",
+      "full_name": "RequestPreview.compose",
+      "start_line": 575,
+      "end_line": 577,
+      "lines_changed": [
+        577
+      ]
+    }
+  ],
+  "step_plan": {
+    "steps": [
+      {
+        "operation": "Disable markup parsing for the request description widget by setting `markup=False` on the `Static` instance created in the preview UI.",
+        "file_to_modify": "src/posting/widgets/collection/browser.py",
+        "function_to_modify": "RequestPreview.compose",
+        "reason": "`Static` defaults to parsing markup; request descriptions containing markup-like content were being interpreted and rendered (or mis-rendered) instead of shown verbatim. Explicitly disabling markup ensures raw description text is displayed safely and consistently (fixes #241).",
+        "side_effects": "Any formatting previously achieved via markup in request descriptions will no longer render (it will display as literal characters). This may change how descriptions appear in the preview and could affect users relying on markup-based styling."
+      }
+    ],
+    "summary": "Prevents request descriptions in the collection browser preview from being parsed as markup by disabling markup rendering on the description `Static` widget."
+  }
+}

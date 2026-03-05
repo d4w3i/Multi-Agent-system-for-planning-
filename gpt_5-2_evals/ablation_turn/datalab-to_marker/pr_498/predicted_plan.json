@@ -1,0 +1,57 @@
+{
+  "pr_number": 498,
+  "repository": "datalab-to/marker",
+  "title": "OCR Error Detection Hotfix",
+  "body": "Fix input handling of error detection model: \n- Segment length is automatically handled by tokenizer, and is by `#tokens`, not `#chars`, removing the splitting logic inside `marker`\n- Join lines using `\\n`",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T12:08:40.290329",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "marker/builders/layout.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "surya_ocr_error_detection",
+          "class_name": "LayoutBuilder",
+          "full_name": "LayoutBuilder.surya_ocr_error_detection",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "merge_blocks",
+          "class_name": "LayoutBuilder",
+          "full_name": "LayoutBuilder.merge_blocks",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Fix OCR error detection input preparation by joining lines with newlines and removing Marker-side character-length cropping, relying on the tokenizer/model to handle segmenting by token count. Validate downstream layout-merge behavior continues to correctly consume model labels for OCR fallback decisions.",
+    "steps": [
+      {
+        "operation": "Update OCR error detection text construction to preserve line boundaries and remove character-based segment cropping",
+        "file_to_modify": "marker/builders/layout.py",
+        "function_to_modify": "LayoutBuilder.surya_ocr_error_detection",
+        "reason": "The Surya `OCRErrorPredictor`/tokenizer handles segmentation by token count; Marker-side sampling by character length can truncate important context and contradicts the model’s expected input handling. Joining extracted line texts with `\\n` preserves layout/line breaks, which is important OCR-signal for error detection.",
+        "side_effects": "Longer strings will be sent to the predictor (potentially higher compute), but truncation should be handled by the tokenizer/model. Any behavior previously influenced by `error_model_segment_length` (character cropping) will change; review logs/metrics for OCR fallback rate shifts. Ensure batching still aligns 1:1 with pages."
+      },
+      {
+        "operation": "Verify merge flow remains consistent with the updated OCR error detection inputs (labels alignment, batching assumptions, and decision thresholds) and adjust only if necessary",
+        "file_to_modify": "marker/builders/layout.py",
+        "function_to_modify": "LayoutBuilder.merge_blocks",
+        "reason": "`merge_blocks` consumes labels produced by `surya_ocr_error_detection` to decide pdftext-vs-OCR behavior. Even if no code change is required, it must be validated that removing segment-length cropping doesn’t break assumptions about label counts/order or downstream decision logic.",
+        "side_effects": "If any implicit assumptions exist (e.g., fixed-size segments or predictable truncation), they may surface as misalignment bugs. May require updating or adding a regression test to ensure the same pages map to the same label indices after the input preparation change."
+      }
+    ]
+  }
+}

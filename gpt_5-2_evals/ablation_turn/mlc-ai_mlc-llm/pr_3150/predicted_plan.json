@@ -1,0 +1,110 @@
+{
+  "pr_number": 3150,
+  "repository": "mlc-ai/mlc-llm",
+  "title": "Fixed log prob result generation",
+  "body": "Fixes the merging logic of logprobs of different tokens  for the same choice.\n\nEarlier response \n\n```{\n    \"id\": \"cmpl-0e79013e278c497a8926be59641d0381\",\n    \"choices\": [\n        {\n            \"finish_reason\": \"length\",\n            \"index\": 0,\n            \"logprobs\": {\n                \"text_offset\": null,\n                \"token_logprobs\": [\n                    0.0\n                ],\n                \"tokens\": [\n                    \"\"\n                ],\n                \"top_logprobs\": [\n                    {\n                        \"\": -23.0259,\n                        \"<unk>\": -23.0259,\n                        \"<s>\": -23.0259,\n                        \"</s>\": -23.0259\n                    }\n                ]\n            },\n            \"text\": \"2, and \"\n        }\n    ],\n    \"created\": 1741063066,\n    \"model\": \"/home/annanyac/mlc-llm/dist/Llama-2-7b-chat-hf-q0f16-MLC/\",\n    \"object\": \"text_completion\",\n    \"usage\": {\n        \"prompt_tokens\": 6,\n        \"completion_tokens\": 5,\n        \"total_tokens\": 11,\n        \"extra\": null\n    }\n}\n```\n\nNew response \n\n```{\n    \"id\": \"cmpl-d6b2bc3820f8441fbfbe9d5d0be3d9ce\",\n    \"choices\": [\n        {\n            \"finish_reason\": \"length\",\n            \"index\": 0,\n            \"logprobs\": {\n                \"text_offset\": null,\n                \"token_logprobs\": [\n                    0.0,\n                    -0.912338,\n                    -0.47704,\n                    -0.111992\n                ],\n                \"tokens\": [\n                    \"2\",\n                    \".\",\n                    \"\",\n                    \"\"\n                ],\n                \"top_logprobs\": [\n                    {\n                        \"2\": 0.0,\n                        \"<unk>\": -23.0259,\n                        \"<s>\": -23.0259,\n                        \"</s>\": -23.0259,\n                        \"\": -23.0259\n                    },\n                    {\n                        \".\": -0.912338,\n                        \",\": -1.07249,\n                        \"\": -1.36156,\n                        \"<unk>\": -23.0259,\n                        \"<s>\": -23.0259\n                    },\n                    {\n                        \"\": -1.39891,\n                        \"So\": -2.54735,\n                        \"In\": -2.91454,\n                        \"<unk>\": -23.0259\n                    },\n                    {\n                        \"\": -0.111992,\n                        \"So\": -2.2448,\n                        \"<unk>\": -23.0259,\n                        \"<s>\": -23.0259,\n                        \"</s>\": -23.0259\n                    }\n                ]\n            },\n            \"text\": \"2.\\n\\n\"\n        }\n    ],\n    \"created\": 1741064363,\n    \"model\": \"/mnt/data/ehdd1/home/models/mlc/Llama-2-7b-chat-hf-q0f16-MLC/\",\n    \"object\": \"text_completion\",\n    \"usage\": {\n        \"prompt_tokens\": 6,\n        \"completion_tokens\": 5,\n        \"total_tokens\": 11,\n        \"extra\": null\n    }\n}```",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T12:25:29.207244",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "python/mlc_llm/serve/entrypoints/openai_entrypoints.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "request_completion",
+          "class_name": null,
+          "full_name": "request_completion",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "python/mlc_llm/serve/engine.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "_completion",
+          "class_name": "AsyncMLCEngine",
+          "full_name": "AsyncMLCEngine._completion",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_completion",
+          "class_name": "MLCEngine",
+          "full_name": "MLCEngine._completion",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "python/mlc_llm/serve/engine_base.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "merge_completion_logprobs (new helper)",
+          "class_name": null,
+          "full_name": "merge_completion_logprobs (new helper)",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "tests/python/serve/server/test_server.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    }
+  ],
+  "step_plan": {
+    "summary": "Fix non-streaming `/v1/completions` and Python engine completion aggregation so `CompletionLogProbs` is appended/merged across streamed chunks per choice, rather than overwritten, producing token-aligned logprob arrays for the full generated text.",
+    "steps": [
+      {
+        "operation": "Add a shared helper to merge/append per-token completion logprob arrays across streamed chunks",
+        "file_to_modify": "python/mlc_llm/serve/engine_base.py",
+        "function_to_modify": "merge_completion_logprobs",
+        "reason": "Centralize the correct semantics for accumulating `CompletionLogProbs` for the same `choice.index` across multiple chunks (append `tokens`, `token_logprobs`, `top_logprobs` instead of overwriting), so REST and Python engine paths can share identical behavior.",
+        "side_effects": "Any caller that starts using this helper will change behavior from “last chunk wins” to “append across chunks”; ensure it handles `None`/missing logprobs gracefully and preserves current `text_offset` behavior (likely stays `None`). May require updating/adding unit tests for multi-chunk completions with logprobs."
+      },
+      {
+        "operation": "Use the shared merge helper in the async non-streaming completion aggregation loop",
+        "file_to_modify": "python/mlc_llm/serve/engine.py",
+        "function_to_modify": "AsyncMLCEngine._completion",
+        "reason": "The async non-streaming completion path currently overwrites `logprob_results[choice.index]` per chunk; it must instead accumulate token-level arrays so the final response contains logprobs for all generated tokens.",
+        "side_effects": "Async Python client non-streaming completions will return longer `choices[i].logprobs.*` arrays matching the completion text length; downstream code/tests that assumed a single entry (buggy behavior) may need adjustment."
+      },
+      {
+        "operation": "Use the same merge helper in the sync non-streaming completion aggregation loop",
+        "file_to_modify": "python/mlc_llm/serve/engine.py",
+        "function_to_modify": "MLCEngine._completion",
+        "reason": "Keep sync engine behavior consistent with async engine and REST server: non-streaming completion responses should preserve logprobs across all chunks rather than only the last chunk’s token.",
+        "side_effects": "Synchronous Python API non-streaming completions will now include full-length logprobs arrays; may affect any consumers relying on the previous incorrect truncation."
+      },
+      {
+        "operation": "Fix REST /v1/completions non-streaming aggregation to merge logprobs per choice instead of overwriting",
+        "file_to_modify": "python/mlc_llm/serve/entrypoints/openai_entrypoints.py",
+        "function_to_modify": "request_completion",
+        "reason": "The REST server builds a non-streaming response by consuming streamed chunks; it concatenates text correctly but currently overwrites `logprobs` per chunk. It must merge/append token-level logprobs for the same `choice.index` to match OpenAI schema expectations.",
+        "side_effects": "REST clients will observe correct multi-token `logprobs` output; ensure behavior when a chunk lacks logprobs (don’t break alignment, don’t raise). May require updating any golden snapshots/contract tests for `/v1/completions`."
+      }
+    ]
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "pr_number": 2739,
+  "repository": "speechbrain/speechbrain",
+  "title": "Allow importing model params with `convs_intermedite` typo in `PostNet`",
+  "body": "## What does this PR do?\r\n\r\nThis fixes importing some (older?) models that were failing to import otherwise.  \r\nPutting it as a PR to make it easier to find but not bothering with review since this is a very minor fix that shouldn't be functionally different (`convs_intermedite` no longer has any reference in codebase)",
+  "extraction_metadata": {
+    "extracted_at": "2026-02-26T01:11:27.658401",
+    "extractor_version": "1.0.0",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "speechbrain/utils/checkpoints.py",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 0,
+      "functions_modified": [],
+      "patch": "@@ -81,6 +81,7 @@\n # some keys have been renamed in the new version of the code\n KEYS_MAPPING: Dict[str, str] = {\n     \".mutihead_attn\": \".multihead_attn\",  # see PR #2489\n+    \".convs_intermedite\": \".convs_intermediate\",  # fix for PostNet blame #2463\n }\n \n "
+    }
+  ],
+  "functions_modified": [],
+  "step_plan": {
+    "steps": [
+      {
+        "operation": "Add a legacy checkpoint key rename mapping for the PostNet typo so older model parameter dicts can be imported without error",
+        "file_to_modify": "speechbrain/utils/checkpoints.py",
+        "function_to_modify": null,
+        "reason": "Older checkpoints may contain the misspelled parameter key fragment `.convs_intermedite`; adding it to `KEYS_MAPPING` ensures the loader rewrites it to the current `.convs_intermediate` name during import, preventing failures while keeping runtime behavior unchanged.",
+        "side_effects": "Any checkpoint-loading path that applies `KEYS_MAPPING` will now also rewrite `.convs_intermedite` occurrences, potentially masking the typo in third-party checkpoints; otherwise minimal impact since it only affects import-time key translation."
+      }
+    ],
+    "summary": "Adds a checkpoint key-translation entry so models saved with the historical `convs_intermedite` typo in PostNet parameters can still be imported by remapping to `convs_intermediate`."
+  }
+}

@@ -1,0 +1,42 @@
+{
+  "pr_number": 1304,
+  "repository": "TransformerOptimus/SuperAGI",
+  "title": "Fix Recruitment Workflow",
+  "body": "Fixing the existing recruitment workflow.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T12:25:56.726158",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "workflow_seed.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "build_recruitment_workflow",
+          "class_name": "AgentWorkflowSeed",
+          "full_name": "AgentWorkflowSeed.build_recruitment_workflow",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Adjust the Recruitment Workflow builder to (a) explicitly pass the matching-check as a named completion_prompt, (b) clarify the TASK_QUEUE prompt to require a JSON array and to exclude the job_description file, and (c) insert a WAIT_FOR_PERMISSION (human confirmation) step between match and sending email, updating next-step links accordingly while preserving idempotent creation and final session.commit().",
+    "steps": [
+      {
+        "operation": "Modify recruitment workflow builder to fix prompts, parameter usage, add human confirmation step, and update branching",
+        "file_to_modify": "workflow_seed.py",
+        "function_to_modify": "AgentWorkflowSeed.build_recruitment_workflow",
+        "reason": "Fix correctness and safety issues in the Recruitment Workflow: (1) ensure the job-description matching check is passed as an explicit completion_prompt keyword when creating step4 (avoid positional-argument fragile usage), (2) make TASK_QUEUE completion_prompt unambiguous and JSON-oriented so downstream parsing is reliable and callers know to filter out the job_description file, and (3) introduce an explicit WAIT_FOR_PERMISSION step between a positive match and sending an email so candidates are not contacted automatically without human review. Also update branching to be explicit and keep idempotent find_or_create_* usage and session.commit().",
+        "side_effects": "Behavioral change: the workflow will require a human approval step before sending emails which changes automation semantics (may be considered breaking for automated pipelines). Tests that assume automatic emailing must be updated. Workflow consumers that rely on the previous YES/NO branches or automatic send behavior may need adjustments. DB/schema or API contracts are unchanged (still using find_or_create helpers and same step linking functions), but new branch labels or new step name must be recognized by any orchestration/UI that displays workflow steps. Existing data remains idempotent due to find_or_create usage; ensure integration tests cover step linking and human-approval transition."
+      }
+    ]
+  }
+}

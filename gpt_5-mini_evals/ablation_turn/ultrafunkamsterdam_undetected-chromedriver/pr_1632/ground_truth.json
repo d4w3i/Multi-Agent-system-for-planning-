@@ -1,0 +1,63 @@
+{
+  "pr_number": 1632,
+  "repository": "ultrafunkamsterdam/undetected-chromedriver",
+  "title": "fixed options not having headless attribute",
+  "body": "Fixes errors:\r\n\r\nline 398, in __init__\r\n    if headless or options.headless:\r\n                   ^^^^^^^^^^^^^^^^\r\nAttributeError: 'ChromeOptions' object has no attribute 'headless'\r\n\r\n\r\nline 488, in __init__\r\n    if options.headless:\r\n       ^^^^^^^^^^^^^^^^\r\nAttributeError: 'ChromeOptions' object has no attribute 'headless'\r\n\r\n\r\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T01:05:47.317385",
+    "extractor_version": "1.0.0",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "undetected_chromedriver/__init__.py",
+      "status": "modified",
+      "additions": 4,
+      "deletions": 2,
+      "functions_modified": [
+        {
+          "function_name": "__init__",
+          "class_name": "Chrome",
+          "full_name": "Chrome.__init__",
+          "start_line": 105,
+          "end_line": 491,
+          "lines_changed": [
+            398,
+            409,
+            410,
+            411
+          ]
+        }
+      ],
+      "patch": "@@ -395,7 +395,7 @@ def __init__(\n         if no_sandbox:\n             options.arguments.extend([\"--no-sandbox\", \"--test-type\"])\n \n-        if headless or options.headless:\n+        if headless or (hasattr(options, 'headless') and options.headless):\n             #workaround until a better checking is found\n             try:\n                 if self.patcher.version_main < 108:\n@@ -406,7 +406,9 @@ def __init__(\n                 logger.warning(\"could not detect version_main.\"\n                                \"therefore, we are assuming it is chrome 108 or higher\")\n                 options.add_argument(\"--headless=new\")\n-\n+        else:\n+            options.headless = False\n+            \n         options.add_argument(\"--window-size=1920,1080\")\n         options.add_argument(\"--start-maximized\")\n         options.add_argument(\"--no-sandbox\")"
+    }
+  ],
+  "functions_modified": [
+    {
+      "function_name": "__init__",
+      "class_name": "Chrome",
+      "full_name": "Chrome.__init__",
+      "start_line": 105,
+      "end_line": 491,
+      "lines_changed": [
+        398,
+        409,
+        410,
+        411
+      ]
+    }
+  ],
+  "step_plan": {
+    "steps": [
+      {
+        "operation": "Guard access to the ChromeOptions.headless attribute and initialize it when absent to prevent AttributeError during driver initialization",
+        "file_to_modify": "undetected_chromedriver/__init__.py",
+        "function_to_modify": "__init__",
+        "reason": "Some Selenium/ChromeOptions implementations do not expose a `headless` attribute, causing `AttributeError` when the constructor checks `options.headless`. Using `hasattr()` avoids the crash, and explicitly setting `options.headless = False` ensures subsequent logic that expects the attribute (later in the constructor) has a consistent value.",
+        "side_effects": "Sets a new attribute on the options object, which could subtly change behavior for callers that pass a custom options type or rely on the absence of `headless`. Any later checks of `options.headless` in this module (and potentially downstream code that inspects the options instance) will now see `False` instead of raising or being unset."
+      }
+    ],
+    "summary": "Fixes initialization crashes when the provided ChromeOptions object lacks a `headless` attribute by guarding the access and defaulting the attribute to False."
+  }
+}

@@ -1,0 +1,42 @@
+{
+  "pr_number": 558,
+  "repository": "mvt-project/mvt",
+  "title": "Fix crash when handling empty adb key list",
+  "body": "This commit fixes a crash in the ADB module when no keys were parsed. We should return an empty list by default.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T13:53:53.435881",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "src/mvt/android/artifacts/dumpsys_adb.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "parse",
+          "class_name": "DumpsysADBArtifact",
+          "full_name": "DumpsysADBArtifact.parse",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Replace iteration over parsed.get('user_keys') with parsed.get('user_keys', []) in DumpsysADBArtifact.parse so the parser treats missing/None user_keys as an empty list and no longer crashes.",
+    "steps": [
+      {
+        "operation": "Guard iteration over parsed user_keys with a default empty list",
+        "file_to_modify": "src/mvt/android/artifacts/dumpsys_adb.py",
+        "function_to_modify": "DumpsysADBArtifact.parse",
+        "reason": "The parser currently does `for user_key in parsed.get('user_keys'):` which raises a TypeError when parsed.get('user_keys') returns None. Using parsed.get('user_keys', []) ensures the loop safely iterates zero times when no keys are present and aligns with the intended behavior of returning an empty list by default.",
+        "side_effects": "This is a minimal, backward-compatible change. Unit tests for DumpsysADBArtifact should be run — existing tests parsing normal dumpsys output should be unaffected. Code that previously relied on parsed['user_keys'] being None (instead of an empty list) will now see an empty list; if any callers distinguish between None and [] this may change behavior and should be reviewed. No external API changes are expected, but add/update tests to assert that when no user_keys are present the parser returns user_keys: [] or equivalent in results to prevent regressions."
+      }
+    ]
+  }
+}

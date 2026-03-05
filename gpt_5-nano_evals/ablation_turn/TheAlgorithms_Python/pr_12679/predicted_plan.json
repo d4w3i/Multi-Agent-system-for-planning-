@@ -1,0 +1,42 @@
+{
+  "pr_number": 12679,
+  "repository": "TheAlgorithms/Python",
+  "title": "Fix: Correct time-and-a-half pay calculation logic",
+  "body": "This change fixes the time-and-a-half pay calculation in financial/time_and_half_pay.py. The overtime should be paid at 1.5x the pay rate for hours beyond the threshold, and normal pay should cover only up to the threshold hours.\n\nProposed calculation:\n- normal_pay = min(hours_worked, hours) * pay_rate\n- over_time = max(0, hours_worked - hours)\n- over_time_pay = over_time * pay_rate * 1.5\n- total = normal_pay + over_time_pay\n\nThis aligns with the conventional time-and-a-half formula and improves readability by making the distinction between regular hours and overtime explicit. The existing doctests continue to pass with the updated logic. Consider adding a doctest for a boundary case like pay(45, 10) == 475 to enhance coverage.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T12:14:28.163927",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "financial/time_and_half_pay.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "pay",
+          "class_name": null,
+          "full_name": "pay",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Refactor time-and-a-half pay calculation to clearly separate normal and overtime and strengthen tests for boundary cases.",
+    "steps": [
+      {
+        "operation": "Refactor pay calculation in financial/time_and_half_pay.py to compute normal_pay using min(hours_worked, hours) and overtime_pay using 1.5x rate for hours beyond threshold",
+        "file_to_modify": "financial/time_and_half_pay.py",
+        "function_to_modify": "pay",
+        "reason": "Clarify and correct time-and-a-half formula; aligns with conventional payroll definitions and improves readability while preserving existing doctest coverage.",
+        "side_effects": "No external API changes; doctests will be updated to add a boundary case (e.g., pay(45, 10) == 475). Existing tests should pass; downstream code remains unaffected; ensure test suite is run after changes."
+      }
+    ]
+  }
+}

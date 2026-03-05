@@ -1,0 +1,87 @@
+{
+    "repository": "scrapy/scrapy",
+    "pull_request_number": 6899,
+    "title": "Fix typing of dynamic `request` attribute on `Failure` with a cast subclass",
+    "body": "This PR addresses a longstanding `TODO` in the `call_spider_async` method regarding the typing of the dynamically added `request` attribute on `twisted.python.failure.Failure` objects.\r\n\r\nSince `Failure` does not originally define the `request` attribute, adding it dynamically causes static type checkers (e.g., mypy) to raise errors.\r\n\r\nTo resolve this without changing runtime behavior or introducing new `Failure` instances, this PR introduces a lightweight subclass `FailureWithRequest` used solely for static typing purposes via `cast()`. This approach:\r\n\r\n- Provides type safety and clarity for static analysis tools  \r\n- Avoids creating new `Failure` instances, preserving error context and traceback  \r\n- Keeps runtime behavior unchanged  \r\n- Offers a balanced solution (middle ground) between ignoring type checks and a full refactor of `Failure` usage\r\n",
+    "pr_date": "2025-06-21T01:51:04Z",
+    "source_branch": "fix/failure-request-typing",
+    "language": "en",
+    "keywords_detected": {
+        "branch": [
+            "fix"
+        ],
+        "requirement": [
+            "fix"
+        ],
+        "body": [
+            "add",
+            "change",
+            "resolve",
+            "refactor"
+        ]
+    },
+    "number_of_links_in_pr": 0,
+    "base_sha": "85aeda365db01939f70d0888593e7808380c8514",
+    "last_commit_sha": "31b6fda5fda4c108ee7d054b3167cc3eed33e3c8",
+    "diff_between_base_and_last": [
+        {
+            "sha": "d62690a8cc1f3d8c3b89861e0f689c9388229eda",
+            "filename": "scrapy/core/scraper.py",
+            "status": "modified",
+            "additions": 9,
+            "deletions": 3,
+            "changes": 12,
+            "blob_url": "https://github.com/scrapy/scrapy/blob/31b6fda5fda4c108ee7d054b3167cc3eed33e3c8/scrapy%2Fcore%2Fscraper.py",
+            "raw_url": "https://github.com/scrapy/scrapy/raw/31b6fda5fda4c108ee7d054b3167cc3eed33e3c8/scrapy%2Fcore%2Fscraper.py",
+            "contents_url": "https://api.github.com/repos/scrapy/scrapy/contents/scrapy%2Fcore%2Fscraper.py?ref=31b6fda5fda4c108ee7d054b3167cc3eed33e3c8",
+            "patch": "@@ -7,7 +7,7 @@\n import warnings\n from collections import deque\n from collections.abc import AsyncIterator\n-from typing import TYPE_CHECKING, Any, TypeVar, Union\n+from typing import TYPE_CHECKING, Any, TypeVar, Union, cast\n \n from twisted.internet.defer import Deferred, inlineCallbacks, maybeDeferred\n from twisted.python.failure import Failure\n@@ -52,6 +52,10 @@\n QueueTuple = tuple[Union[Response, Failure], Request, Deferred[None]]\n \n \n+class FailureWithRequest(Failure):\n+    request: Request\n+\n+\n class Slot:\n     \"\"\"Scraper slot (one per running spider)\"\"\"\n \n@@ -247,8 +251,10 @@ async def call_spider_async(\n             warn_on_generator_with_return_value(self.crawler.spider, callback)\n             output = callback(result, **result.request.cb_kwargs)\n         else:  # result is a Failure\n-            # TODO: properly type adding this attribute to a Failure\n-            result.request = request  # type: ignore[attr-defined]\n+            # this cast allows static type checkers to recognize the dynamically\n+            # added `request` attribute without altering the runtime behavior.\n+            result = cast(FailureWithRequest, result)\n+            result.request = request\n             if not request.errback:\n                 result.raiseException()\n             warn_on_generator_with_return_value(self.crawler.spider, request.errback)"
+        }
+    ],
+    "commits": [
+        {
+            "sha": "77aa07ced3440a7ff436542e28ab20b70be362df",
+            "commit_date": "2025-06-21T01:47:24Z",
+            "message": "Add cast for Failure.request attribute",
+            "number_of_links_in_commit": 0,
+            "files_changed_count": 1,
+            "files": [
+                {
+                    "sha": "f5c7d669f9cdd33c7a6f57ec833178a31032e3df",
+                    "filename": "scrapy/core/scraper.py",
+                    "status": "modified",
+                    "additions": 7,
+                    "deletions": 3,
+                    "changes": 10,
+                    "blob_url": "https://github.com/scrapy/scrapy/blob/77aa07ced3440a7ff436542e28ab20b70be362df/scrapy%2Fcore%2Fscraper.py",
+                    "raw_url": "https://github.com/scrapy/scrapy/raw/77aa07ced3440a7ff436542e28ab20b70be362df/scrapy%2Fcore%2Fscraper.py",
+                    "contents_url": "https://api.github.com/repos/scrapy/scrapy/contents/scrapy%2Fcore%2Fscraper.py?ref=77aa07ced3440a7ff436542e28ab20b70be362df",
+                    "patch": "@@ -7,7 +7,7 @@\n import warnings\n from collections import deque\n from collections.abc import AsyncIterator\n-from typing import TYPE_CHECKING, Any, TypeVar, Union\n+from typing import TYPE_CHECKING, Any, TypeVar, Union, cast\n \n from twisted.internet.defer import Deferred, inlineCallbacks, maybeDeferred\n from twisted.python.failure import Failure\n@@ -52,6 +52,10 @@\n QueueTuple = tuple[Union[Response, Failure], Request, Deferred[None]]\n \n \n+class FailureWithRequest(Failure):\n+    request: Request\n+\n+\n class Slot:\n     \"\"\"Scraper slot (one per running spider)\"\"\"\n \n@@ -247,8 +251,8 @@ async def call_spider_async(\n             warn_on_generator_with_return_value(self.crawler.spider, callback)\n             output = callback(result, **result.request.cb_kwargs)\n         else:  # result is a Failure\n-            # TODO: properly type adding this attribute to a Failure\n-            result.request = request  # type: ignore[attr-defined]\n+            result = cast(FailureWithRequest, result)\n+            result.request = request\n             if not request.errback:\n                 result.raiseException()\n             warn_on_generator_with_return_value(self.crawler.spider, request.errback)"
+                }
+            ]
+        },
+        {
+            "sha": "31b6fda5fda4c108ee7d054b3167cc3eed33e3c8",
+            "commit_date": "2025-06-21T01:50:54Z",
+            "message": "Add comment about casting in scraper.py file",
+            "number_of_links_in_commit": 0,
+            "files_changed_count": 1,
+            "files": [
+                {
+                    "sha": "d62690a8cc1f3d8c3b89861e0f689c9388229eda",
+                    "filename": "scrapy/core/scraper.py",
+                    "status": "modified",
+                    "additions": 2,
+                    "deletions": 0,
+                    "changes": 2,
+                    "blob_url": "https://github.com/scrapy/scrapy/blob/31b6fda5fda4c108ee7d054b3167cc3eed33e3c8/scrapy%2Fcore%2Fscraper.py",
+                    "raw_url": "https://github.com/scrapy/scrapy/raw/31b6fda5fda4c108ee7d054b3167cc3eed33e3c8/scrapy%2Fcore%2Fscraper.py",
+                    "contents_url": "https://api.github.com/repos/scrapy/scrapy/contents/scrapy%2Fcore%2Fscraper.py?ref=31b6fda5fda4c108ee7d054b3167cc3eed33e3c8",
+                    "patch": "@@ -251,6 +251,8 @@ async def call_spider_async(\n             warn_on_generator_with_return_value(self.crawler.spider, callback)\n             output = callback(result, **result.request.cb_kwargs)\n         else:  # result is a Failure\n+            # this cast allows static type checkers to recognize the dynamically\n+            # added `request` attribute without altering the runtime behavior.\n             result = cast(FailureWithRequest, result)\n             result.request = request\n             if not request.errback:"
+                }
+            ]
+        }
+    ],
+    "pull_request_url": "https://github.com/scrapy/scrapy/pull/6899",
+    "commits_url": "https://github.com/scrapy/scrapy/pull/6899/commits",
+    "files_url": "https://github.com/scrapy/scrapy/pull/6899/files"
+}

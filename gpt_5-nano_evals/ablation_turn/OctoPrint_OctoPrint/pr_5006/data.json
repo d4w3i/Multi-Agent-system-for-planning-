@@ -1,0 +1,68 @@
+{
+    "repository": "OctoPrint/OctoPrint",
+    "pull_request_number": 5006,
+    "title": "fix netmask",
+    "body": "  * [x] Your changes are not possible to do through a plugin and relevant\r\n    to a large audience (ideally all users of OctoPrint)\r\n  * [x] If your changes are large or otherwise disruptive: You have\r\n    made sure your changes don't interfere with current development by\r\n    talking it through with the maintainers, e.g. through a\r\n    Brainstorming ticket\r\n  * [ ] Your PR targets OctoPrint's `devel` branch if it's a completely\r\n    new feature, or `maintenance` if it's a bug fix or improvement of\r\n    existing functionality for the current stable version (no PRs\r\n    against `master` or anything else please)\r\n  * [ ] Your PR was opened from a custom branch on your repository\r\n    (no PRs from your version of `master`, `maintenance`, or `devel`\r\n    please), e.g. `dev/my_new_feature` or `fix/my_bugfix`\r\n  * [x] Your PR only contains relevant changes: no unrelated files,\r\n    no dead code, ideally only one commit - rebase and squash your PR\r\n    if necessary!\r\n  * [x] Your changes follow the existing coding style\r\n  * [ ] If your changes include style sheets: You have modified the\r\n    `.less` source files, not the `.css` files (those are generated\r\n    with `lessc`)\r\n  * [x] You have tested your changes (please state how!) - ideally you\r\n    have added unit tests\r\n  * [ ] You have run the existing unit tests against your changes and\r\n    nothing broke\r\n  * [x] You have added yourself to the `AUTHORS.md` file :)\r\n\r\n\r\n#### What does this PR do and why is it necessary?\r\nin netifaces2 netmask was replaced with mask\r\n#### How was it tested? How can it be tested by the reviewer?\r\nmanually modified in local deployment and ran OctoPrint\r\n#### Any background context you want to provide?\r\n\r\n#### What are the relevant tickets if any?\r\n#5005\r\n#### Screenshots (if appropriate)\r\n\r\n#### Further notes\r\n",
+    "pr_date": "2024-05-01T15:29:29Z",
+    "source_branch": "netmask-fix",
+    "language": "en",
+    "keywords_detected": {
+        "branch": [
+            "fix"
+        ],
+        "requirement": [
+            "fix"
+        ],
+        "body": [
+            "feature",
+            "add",
+            "change",
+            "develop",
+            "fix",
+            "improvement"
+        ]
+    },
+    "number_of_links_in_pr": 0,
+    "base_sha": "6933906d77dc384a2097cdcf58ce46f91c28f33a",
+    "last_commit_sha": "88a7273c188ed98b5203c773be409d415f435f48",
+    "diff_between_base_and_last": [
+        {
+            "sha": "6f48534f7f1edc92901df6701bfb04abe10f02e7",
+            "filename": "src/octoprint/util/net.py",
+            "status": "modified",
+            "additions": 1,
+            "deletions": 1,
+            "changes": 2,
+            "blob_url": "https://github.com/OctoPrint/OctoPrint/blob/88a7273c188ed98b5203c773be409d415f435f48/src%2Foctoprint%2Futil%2Fnet.py",
+            "raw_url": "https://github.com/OctoPrint/OctoPrint/raw/88a7273c188ed98b5203c773be409d415f435f48/src%2Foctoprint%2Futil%2Fnet.py",
+            "contents_url": "https://api.github.com/repos/OctoPrint/OctoPrint/contents/src%2Foctoprint%2Futil%2Fnet.py?ref=88a7273c188ed98b5203c773be409d415f435f48",
+            "patch": "@@ -57,7 +57,7 @@ def get_lan_ranges(additional_private=None):\n         additional_private = []\n \n     def to_ipnetwork(address):\n-        prefix = address[\"netmask\"]\n+        prefix = address[\"mask\"]\n         if \"/\" in prefix:\n             # v6 notation in netifaces output, e.g. \"ffff:ffff:ffff:ffff::/64\"\n             _, prefix = prefix.split(\"/\")"
+        }
+    ],
+    "commits": [
+        {
+            "sha": "88a7273c188ed98b5203c773be409d415f435f48",
+            "commit_date": "2024-05-01T15:26:49Z",
+            "message": "fix netmask\n\nin netifaces2 netmask was replaced with mask, #5005",
+            "number_of_links_in_commit": 0,
+            "files_changed_count": 1,
+            "files": [
+                {
+                    "sha": "6f48534f7f1edc92901df6701bfb04abe10f02e7",
+                    "filename": "src/octoprint/util/net.py",
+                    "status": "modified",
+                    "additions": 1,
+                    "deletions": 1,
+                    "changes": 2,
+                    "blob_url": "https://github.com/OctoPrint/OctoPrint/blob/88a7273c188ed98b5203c773be409d415f435f48/src%2Foctoprint%2Futil%2Fnet.py",
+                    "raw_url": "https://github.com/OctoPrint/OctoPrint/raw/88a7273c188ed98b5203c773be409d415f435f48/src%2Foctoprint%2Futil%2Fnet.py",
+                    "contents_url": "https://api.github.com/repos/OctoPrint/OctoPrint/contents/src%2Foctoprint%2Futil%2Fnet.py?ref=88a7273c188ed98b5203c773be409d415f435f48",
+                    "patch": "@@ -57,7 +57,7 @@ def get_lan_ranges(additional_private=None):\n         additional_private = []\n \n     def to_ipnetwork(address):\n-        prefix = address[\"netmask\"]\n+        prefix = address[\"mask\"]\n         if \"/\" in prefix:\n             # v6 notation in netifaces output, e.g. \"ffff:ffff:ffff:ffff::/64\"\n             _, prefix = prefix.split(\"/\")"
+                }
+            ]
+        }
+    ],
+    "pull_request_url": "https://github.com/OctoPrint/OctoPrint/pull/5006",
+    "commits_url": "https://github.com/OctoPrint/OctoPrint/pull/5006/commits",
+    "files_url": "https://github.com/OctoPrint/OctoPrint/pull/5006/files"
+}

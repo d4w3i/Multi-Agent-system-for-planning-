@@ -1,0 +1,42 @@
+{
+  "pr_number": 31,
+  "repository": "KwaiVGI/LivePortrait",
+  "title": "Fix: add sound in generated video",
+  "body": "Amazing project!!!\nI found a small bug where the generated video does not have the sound of the original video.\n\nExplore the source code to identify the files and functions to modify.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T11:52:57.628201",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "src/live_portrait_pipeline.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "execute",
+          "class_name": "LivePortraitPipeline",
+          "full_name": "LivePortraitPipeline.execute",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "After producing MP4s from frames, update LivePortraitPipeline.execute to call merge_audio_video (ffmpeg-based) to merge the original driving video's audio into the generated video(s), and return the audio-containing file paths (with safe fallback to the silent files if merging fails).",
+    "steps": [
+      {
+        "operation": "Modify LivePortraitPipeline.execute to merge the driving video's audio into the generated mp4(s)",
+        "file_to_modify": "src/live_portrait_pipeline.py",
+        "function_to_modify": "LivePortraitPipeline.execute",
+        "reason": "images2video currently writes silent MP4s from frames. To preserve the driving video's audio, call the existing merge_audio_video helper (which uses ffmpeg) after images2video produces the silent files. This ensures the final returned/served outputs contain the original audio track.",
+        "side_effects": "Behavioral/API: The method will return paths to audio-merged files (new filenames), which downstream callers (e.g., the Gradio UI) will start serving instead of the original silent files — confirm callers expect updated paths. Tests: Add/modify tests to assert that when driving input is a video with audio, the returned path points to a file containing audio; also test fallback behavior when merging fails. Dependencies: Requires ffmpeg to be available at runtime; if ffmpeg is missing or merge_audio_video fails, ensure code falls back to the original silent MP4s and logs the failure rather than raising unhandled exceptions. File-system: merged files will be additional outputs (or replacements) — ensure temporary/cleanup policy is handled. Performance: merging is an extra subprocess step that will increase processing time. Backwards compatibility: If other code expects the original filenames (without _audio suffix), they may be impacted — keep naming predictable and document change."
+      }
+    ]
+  }
+}

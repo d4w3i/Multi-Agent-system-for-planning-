@@ -1,0 +1,132 @@
+{
+  "pr_number": 1944,
+  "repository": "prompt-toolkit/python-prompt-toolkit",
+  "title": "Fixes bug whereby read_only bool is called as a function",
+  "body": "This is a simple bug fix to remedy the following issue:\n\n```python\n  File \".../site-packages/prompt_toolkit/filters/app.py\", line 374, in emacs_insert_mode\n    or app.current_buffer.read_only()\n       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n\nException 'bool' object is not callable\n```\n\nIt would appear to be a simple typo, calling the boolean `read_only` property as if it were a function.\n\nExplore the source code to identify the files and functions to modify.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T13:27:05.810443",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "src/prompt_toolkit/filters/app.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "is_read_only",
+          "class_name": null,
+          "full_name": "is_read_only",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "vi_navigation_mode",
+          "class_name": null,
+          "full_name": "vi_navigation_mode",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "vi_insert_mode",
+          "class_name": null,
+          "full_name": "vi_insert_mode",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "vi_insert_multiple_mode",
+          "class_name": null,
+          "full_name": "vi_insert_multiple_mode",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "vi_replace_mode",
+          "class_name": null,
+          "full_name": "vi_replace_mode",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "vi_replace_single_mode",
+          "class_name": null,
+          "full_name": "vi_replace_single_mode",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "emacs_insert_mode",
+          "class_name": null,
+          "full_name": "emacs_insert_mode",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Fix a bug where read_only was invoked as a function across multiple mode checks in prompt_toolkit.filters.app by switching to boolean property access. This prevents TypeError and aligns with the Buffer API, with tests updated to cover read-only True/False scenarios across Emacs and Vi modes.",
+    "steps": [
+      {
+        "operation": "Replace read_only() with read_only in is_read_only boolean check",
+        "file_to_modify": "src/prompt_toolkit/filters/app.py",
+        "function_to_modify": "is_read_only",
+        "reason": "read_only is a boolean property; calling it as a function (read_only()) raises a TypeError. Updating to property access ensures correct evaluation in all mode checks.",
+        "side_effects": "Fixes runtime error in read-only guards; may require updating unit tests to ensure read_only True/False cases are handled without regression."
+      },
+      {
+        "operation": "Replace read_only() with read_only in vi_navigation_mode condition",
+        "file_to_modify": "src/prompt_toolkit/filters/app.py",
+        "function_to_modify": "vi_navigation_mode",
+        "reason": "read_only is a boolean property; calling it as a function would raise TypeError in navigation mode checks.",
+        "side_effects": "Ensures Vi navigation mode respects buffer read-only state without TypeError; update tests to cover True/False scenarios."
+      },
+      {
+        "operation": "Replace read_only() with read_only in vi_insert_mode condition",
+        "file_to_modify": "src/prompt_toolkit/filters/app.py",
+        "function_to_modify": "vi_insert_mode",
+        "reason": "Switch from function call to property access for read_only to avoid TypeError in insert mode checks.",
+        "side_effects": "Ensures Vi insert mode honors read-only state; add/adjust tests for read_only True/False."
+      },
+      {
+        "operation": "Replace read_only() with read_only in vi_insert_multiple_mode condition",
+        "file_to_modify": "src/prompt_toolkit/filters/app.py",
+        "function_to_modify": "vi_insert_multiple_mode",
+        "reason": "read_only is a boolean property; avoid treating it as a callable in multi-insert mode checks.",
+        "side_effects": "Prevents runtime errors in multi-insert mode when buffer is read-only; test coverage for both states recommended."
+      },
+      {
+        "operation": "Replace read_only() with read_only in vi_replace_mode condition",
+        "file_to_modify": "src/prompt_toolkit/filters/app.py",
+        "function_to_modify": "vi_replace_mode",
+        "reason": "Avoid calling a boolean read_only as a function in replace mode checks.",
+        "side_effects": "Preserves correct behavior of replace mode with respect to buffer writability; update tests accordingly."
+      },
+      {
+        "operation": "Replace read_only() with read_only in vi_replace_single_mode condition",
+        "file_to_modify": "src/prompt_toolkit/filters/app.py",
+        "function_to_modify": "vi_replace_single_mode",
+        "reason": "Ensure read_only is accessed as a boolean property, not invoked, in single-cell replace mode checks.",
+        "side_effects": "Reduces risk of TypeError and aligns with API expectations; expand tests to include read_only True/False cases."
+      },
+      {
+        "operation": "Replace read_only() with read_only in emacs_insert_mode condition",
+        "file_to_modify": "src/prompt_toolkit/filters/app.py",
+        "function_to_modify": "emacs_insert_mode",
+        "reason": "Emacs insert mode guard should evaluate the buffer's read-only state as a boolean property rather than calling it.",
+        "side_effects": "Prevents runtime errors in Emacs insert mode; add tests for both read_only states to ensure correct behavior."
+      }
+    ]
+  }
+}

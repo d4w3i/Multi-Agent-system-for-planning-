@@ -1,0 +1,42 @@
+{
+  "pr_number": 6899,
+  "repository": "scrapy/scrapy",
+  "title": "Fix typing of dynamic `request` attribute on `Failure` with a cast subclass",
+  "body": "Typing fix for dynamically added `request` attribute on twisted.python.failure.Failure within Scraper. Introduces a lightweight typing aid (FailureWithRequest) and uses cast() to satisfy static type checkers without altering runtime behavior. Runtime behavior remains unchanged since the attribute is still assigned on the actual Failure instance, but static analysis will recognize the presence of `request` on the Failure object.\n\nSummary of change:\n- Add a typing helper subclass FailureWithRequest to represent a Failure that has a `request` attribute for typing purposes.\n- In Scraper.call_spider_async, cast the Failure to FailureWithRequest and set its `request` attribute to the current request.\n- This avoids runtime side effects and preserves the existing behavior while enabling mypy and similar tools to reason about the attribute.\n\nNo runtime behavior changes beyond enabling proper static typing; the dynamically added attribute remains, and the rest of the flow is unchanged.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T13:50:08.728882",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "scrapy/core/scraper.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "call_spider_async",
+          "class_name": "Scraper",
+          "full_name": "Scraper.call_spider_async",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "This PR adds a typing aid for a dynamically added attribute on a Failure and uses cast() in Scraper.call_spider_async so static analyzers recognize the attribute without altering runtime behavior.",
+    "steps": [
+      {
+        "operation": "Modify Scraper.call_spider_async to cast the Failure to a typing helper and assign the dynamic 'request' attribute; introduce a lightweight typing helper FailureWithRequest for static typing without runtime changes",
+        "file_to_modify": "scrapy/core/scraper.py",
+        "function_to_modify": "Scraper.call_spider_async",
+        "reason": "Static type checkers require the 'request' attribute on a Failure; casting to a typing helper avoids runtime changes while enabling proper typing",
+        "side_effects": "No runtime behavior changes; may require updating typing checks (mypy) and related tests; downstream code that accesses result.request remains compatible; may necessitate adding a small typing test or updating import section"
+      }
+    ]
+  }
+}

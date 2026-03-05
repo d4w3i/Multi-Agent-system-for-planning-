@@ -1,0 +1,72 @@
+{
+  "pr_number": 10335,
+  "repository": "pyg-team/pytorch_geometric",
+  "title": "Fixes to WebQSP Indexer and GRetriever so that unnecessary disk writes are reduced.",
+  "body": "Summary of change:\n- Introduce optional flags to reduce disk I/O in WebQSP dataset processing:\n  - save_large_indexer: controls whether the large graph indexer is persisted to disk.\n  - save_subgraphs: controls whether per-split subgraphs are written to disk.\n- By default these flags preserve current behavior (True), so existing workflows remain unchanged.\n- When users want to minimize disk writes (e.g., during rapid experimentation or limited I/O environments), they can set save_large_indexer=False and/or save_subgraphs=False to avoid writing large artifacts to disk during processing.\n\nWhy this helps:\n- The WebQSP indexer and the retriever pipeline can generate large intermediate artifacts. Writing these to disk on every run can be costly and slow down experiments, especially in CI or constrained environments.\n- Providing a toggle keeps the API backward-compatible while giving practitioners the option to reduce disk I/O when appropriate.\n\nNotes and implications:\n- If save_large_indexer is set to False, the large graph indexer will not be persisted on disk in the current run. This means future runs will need to rebuild or rely on in-memory state, which is fine for short-lived experiments but may impact reproducibility across runs.\n- If save_subgraphs is set to False, generated subgraphs for each split will not be cached to disk. This reduces write load but may increase runtime if subgraphs need to be recomputed on subsequent usage within the same session.\n- The default values remain True to ensure full compatibility with existing workflows.\n\nProposed changes target files and functions:\n- Focus: torch_geometric/datasets/web_qsp_dataset.py\n  - KGQABaseDataset.__init__: add new keyword args save_large_indexer and save_subgraphs with defaults to preserve current behavior.\n  - KGQABaseDataset._build_graph: guard indexer.save(...) with the new save_large_indexer flag.\n  - KGQABaseDataset._retrieve_subgraphs: guard self.save(results_graphs, path) calls with the new save_subgraphs flag.\n\nAffect on tests and usage:\n- Existing calls that do not pass the new flags will preserve current behavior.\n- Users can opt into reduced disk I/O by passing save_large_indexer=False and/or save_subgraphs=False when instantiating WebQSPDataset or its base class.\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T13:37:22.773688",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "torch_geometric/datasets/web_qsp_dataset.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "__init__",
+          "class_name": "KGQABaseDataset",
+          "full_name": "KGQABaseDataset.__init__",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_build_graph",
+          "class_name": "KGQABaseDataset",
+          "full_name": "KGQABaseDataset._build_graph",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_retrieve_subgraphs",
+          "class_name": "KGQABaseDataset",
+          "full_name": "KGQABaseDataset._retrieve_subgraphs",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Introduce two optional flags (save_large_indexer and save_subgraphs) to reduce disk I/O in WebQSP dataset processing while preserving current behavior by default. Implement guards in the key persistence points to allow opt-in efficiency for IO-constrained environments or rapid experimentation.",
+    "steps": [
+      {
+        "operation": "Add new keyword arguments to KGQABaseDataset.__init__",
+        "file_to_modify": "torch_geometric/datasets/web_qsp_dataset.py",
+        "function_to_modify": "KGQABaseDataset.__init__",
+        "reason": "Introduce configurable persistence controls save_large_indexer and save_subgraphs with defaults True to preserve current behavior",
+        "side_effects": "Backward compatibility preserved; existing calls without the new flags continue to behave as before. Tests may need to pass the two new arguments if explicitly exercised."
+      },
+      {
+        "operation": "Guard indexer persistence with save_large_indexer in _build_graph",
+        "file_to_modify": "torch_geometric/datasets/web_qsp_dataset.py",
+        "function_to_modify": "KGQABaseDataset._build_graph",
+        "reason": "Only persist the large graph indexer when save_large_indexer is True to reduce unnecessary disk writes",
+        "side_effects": "When disabled, large indexer artifacts are not written to disk; may impact reproducibility across runs if relying on cached artifacts. Runtime in-memory graph processing remains unaffected."
+      },
+      {
+        "operation": "Guard subgraph persistence with save_subgraphs in _retrieve_subgraphs",
+        "file_to_modify": "torch_geometric/datasets/web_qsp_dataset.py",
+        "function_to_modify": "KGQABaseDataset._retrieve_subgraphs",
+        "reason": "Only persist per-split subgraphs when save_subgraphs is True to reduce disk I/O",
+        "side_effects": "When disabled, subgraphs are not cached to disk; potential recomputation if subgraphs are needed again in a new session. Default behavior remains unchanged when flags are omitted."
+      }
+    ]
+  }
+}

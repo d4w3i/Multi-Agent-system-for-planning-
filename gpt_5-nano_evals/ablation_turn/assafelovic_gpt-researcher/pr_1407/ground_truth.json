@@ -1,0 +1,61 @@
+{
+  "pr_number": 1407,
+  "repository": "assafelovic/gpt-researcher",
+  "title": "Fix return statements in PyMuPDFScraper",
+  "body": "Hi, just a quick fix for two bugs in `PyMuPDFScraper`:\r\n\r\n1. In case of problems, there were no `return` statements in the except blocks, that caused the function to implicitly return `None`, and that errors out [in here](https://github.com/assafelovic/gpt-researcher/blob/master/gpt_researcher/scraper/scraper.py#L103C1-L113C22), because `None` can not be unpacked to three variables. I added returning of empty strings/lists, as is done in other scraper classes as well.\r\n\r\n2. It was typed to return `str`, but actually it returns `tuple[str, list[str], str]`",
+  "extraction_metadata": {
+    "extracted_at": "2026-02-25T15:50:54.021086",
+    "extractor_version": "1.0.0",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "gpt_researcher/scraper/pymupdf/pymupdf.py",
+      "status": "modified",
+      "additions": 3,
+      "deletions": 1,
+      "functions_modified": [
+        {
+          "function_name": "scrape",
+          "class_name": "PyMuPDFScraper",
+          "full_name": "PyMuPDFScraper.scrape",
+          "start_line": 34,
+          "end_line": 70,
+          "lines_changed": [
+            34,
+            67,
+            70
+          ]
+        }
+      ],
+      "patch": "@@ -31,7 +31,7 @@ def is_url(self) -> bool:\n         except Exception:\n             return False\n \n-    def scrape(self) -> str:\n+    def scrape(self) -> tuple[str, list[str], str]:\n         \"\"\"\n         The `scrape` function uses PyMuPDFLoader to load a document from the provided link (either URL or local file)\n         and returns the document as a string.\n@@ -64,5 +64,7 @@ def scrape(self) -> str:\n \n         except requests.exceptions.Timeout:\n             print(f\"Download timed out. Please check the link : {self.link}\")\n+            return \"\", [], \"\"\n         except Exception as e:\n             print(f\"Error loading PDF : {self.link} {e}\")\n+            return \"\", [], \"\""
+    }
+  ],
+  "functions_modified": [
+    {
+      "function_name": "scrape",
+      "class_name": "PyMuPDFScraper",
+      "full_name": "PyMuPDFScraper.scrape",
+      "start_line": 34,
+      "end_line": 70,
+      "lines_changed": [
+        34,
+        67,
+        70
+      ]
+    }
+  ],
+  "step_plan": {
+    "steps": [
+      {
+        "operation": "Fix `scrape` to always return a 3-tuple and correct its return type annotation",
+        "file_to_modify": "gpt_researcher/scraper/pymupdf/pymupdf.py",
+        "function_to_modify": "PyMuPDFScraper.scrape",
+        "reason": "The scraper framework expects `scrape()` to return three values (text, list of links, title/metadata). Previously, the `except` blocks had no explicit return, causing an implicit `None` return and a runtime unpacking error in the caller. The function was also incorrectly annotated as returning `str` despite returning a tuple in normal operation.",
+        "side_effects": "Callers relying on the (incorrect) `str` type hint will now type-check correctly; error paths will no longer raise unpacking exceptions and will instead propagate empty values, which may change downstream behavior (e.g., components may treat an empty result as a successful scrape with no content unless they separately inspect logs/exceptions)."
+      }
+    ],
+    "summary": "Ensures `PyMuPDFScraper.scrape()` consistently returns a `(str, list[str], str)` tuple by adding explicit empty-value returns in exception paths and correcting the function’s return type annotation."
+  }
+}

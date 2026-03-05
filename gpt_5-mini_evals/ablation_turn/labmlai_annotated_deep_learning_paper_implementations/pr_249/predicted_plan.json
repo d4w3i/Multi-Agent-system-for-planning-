@@ -1,0 +1,42 @@
+{
+  "pr_number": 249,
+  "repository": "labmlai/annotated_deep_learning_paper_implementations",
+  "title": "fix dim error in rope",
+  "body": "fix the following error when running _test_rotary():\n\n\"\"\"\n...\n    x_rope = (x_rope * self.cos_cached[:x.shape[0]]) + (neg_half_x * self.sin_cached[:x.shape[0]])\nRuntimeError: The size of tensor a (3) must match the size of tensor b (4) at non-singleton dimension 3\n\"\"\"\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T13:31:56.182863",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "labml_nn/transformers/rope/__init__.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "_build_cache",
+          "class_name": "RotaryPositionalEmbeddings",
+          "full_name": "RotaryPositionalEmbeddings._build_cache",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Ensure the cosine/sine cache built by RotaryPositionalEmbeddings._build_cache has last-dimension equal to the embedding dimension (self.d) by trimming the concatenated idx_theta2 when it is larger than self.d, preventing broadcasting size mismatch errors for odd d.",
+    "steps": [
+      {
+        "operation": "Trim concatenated positional angles so cached cos/sin match embedding dimension",
+        "file_to_modify": "labml_nn/transformers/rope/__init__.py",
+        "function_to_modify": "RotaryPositionalEmbeddings._build_cache",
+        "reason": "When d is odd, idx_theta = arange(0, d, 2) has length ceil(d/2); concatenating idx_theta with itself yields 2*ceil(d/2) which can exceed self.d, causing cos_cached/sin_cached last-dimension != self.d and leading to broadcasting errors during the rotary transform. After concatenation, slice idx_theta2 to have exactly self.d columns (idx_theta2 = idx_theta2[:, :self.d] when needed) so cos_cached and sin_cached align with the embedding dimension. This preserves current behavior for even d and makes odd-d usage robust.",
+        "side_effects": "Fixes the RuntimeError in _test_rotary() and any runtime errors when using odd embedding dimensions. No API change; behavior for even d is unchanged. For odd d, cos_cached/sin_cached will be trimmed to length d (previously they could be longer), which may change the values used for the trailing element compared to the untrimmed cache—this is intended to avoid broadcasting mismatches and is consistent with downstream code that expects last-dim == d. Run unit tests (including _test_rotary) and any tests relying on RoPE caching; verify other modules that may have assumed the wider cached shape continue to work. Performance impact is negligible (simple slicing)."
+      }
+    ]
+  }
+}

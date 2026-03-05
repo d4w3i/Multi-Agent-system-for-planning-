@@ -1,0 +1,42 @@
+{
+  "pr_number": 5006,
+  "repository": "OctoPrint/OctoPrint",
+  "title": "fix netmask",
+  "body": "  * [x] Your changes are not possible to do through a plugin and relevant\r\n    to a large audience (ideally all users of OctoPrint)\r\n  * [x] If your changes are large or otherwise disruptive: You have\r\n    made sure your changes don't interfere with current development by\r\n    talking it through with the maintainers, e.g. through a\r\n    Brainstorming ticket\r\n  * [ ] Your PR targets OctoPrint's `devel` branch if it's a completely\r\n    new feature, or `maintenance` if it's a bug fix or improvement of\r\n    existing functionality for the current stable version (no PRs\r\n    against `master` or anything else please)\r\n  * [ ] Your PR was opened from a custom branch on your repository\r\n    (no PRs from your version of `master`, `maintenance`, or `devel`\r\n    please), e.g. `dev/my_new_feature` or `fix/my_bugfix`\r\n  * [x] Your PR only contains relevant changes: no unrelated files,\r\n    no dead code, ideally only one commit - rebase and squash your PR\r\n    if necessary!\r\n  * [x] Your changes follow the existing coding style\r\n  * [ ] If your changes include style sheets: You have modified the\r\n    `.less` source files, not the `.css` files (those are generated\r\n    with `lessc`)\r\n  * [x] You have tested your changes (please state how!) - ideally you\r\n    have added unit tests\r\n  * [ ] You have run the existing unit tests against your changes and\r\n    nothing broke\r\n  * [x] You have added yourself to the `AUTHORS.md` file :)\r\n\r\n\r\n#### What does this PR do and why is it necessary?\r\nin netifaces2 netmask was replaced with mask\r\n#### How was it tested? How can it be tested by the reviewer?\r\nmanually modified in local deployment and ran OctoPrint\r\n#### Any background context you want to provide?\r\n\r\n#### What are the relevant tickets if any?\r\n#5005\r\n#### Screenshots (if appropriate)\r\n\r\n#### Further notes\r\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T11:54:02.609578",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "src/octoprint/util/net.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "get_lan_ranges",
+          "class_name": null,
+          "full_name": "get_lan_ranges",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Fix OctoPrint’s LAN range detection to remain compatible with `netifaces2` by accepting `mask` as a fallback for the historical `netmask` field when building interface subnets.",
+    "steps": [
+      {
+        "operation": "Update LAN range subnet extraction to accept netifaces2 address dictionaries (use `netmask` or fallback to `mask`) and handle missing mask values without raising KeyError",
+        "file_to_modify": "src/octoprint/util/net.py",
+        "function_to_modify": "get_lan_ranges",
+        "reason": "`netifaces2` reportedly renamed the per-address key from `netmask` to `mask`; `get_lan_ranges()` currently assumes `address[\"netmask\"]`, which can break LAN range detection and any downstream LAN/non-LAN classification logic. Using safe lookup (`get`) preserves compatibility with both libraries and avoids hard failures when mask data is absent.",
+        "side_effects": "May slightly change which interfaces/addresses contribute to computed LAN ranges (e.g., previously-crashing entries will now be skipped or handled). Any callers relying on `get_lan_ranges()` (and any logic built on top of it) will behave correctly under netifaces2; add/adjust unit tests that mock netifaces outputs to cover both `netmask` and `mask` keys, plus a missing-mask case."
+      }
+    ]
+  }
+}

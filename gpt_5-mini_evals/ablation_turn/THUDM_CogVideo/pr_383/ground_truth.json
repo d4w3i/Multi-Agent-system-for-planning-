@@ -1,0 +1,57 @@
+{
+  "pr_number": 383,
+  "repository": "THUDM/CogVideo",
+  "title": "fix deprecation of clear_objs_and_retain_memory",
+  "body": "The API of diffusers `clear_objs_and_retain_memory` has been deprecated in [huggingface/diffusers#9543](https://github.com/huggingface/diffusers/pull/9543/files#diff-5c07adf115dbb937f26dbfedff2aef0d31b4e8e3a58ba9cfb4a0c9f64672a8c5L263) and is replaced with `free_memory`. Therefore, the corresponding parts in the LoRA training script need to be adjusted to adapt to the latest version of diffusers.",
+  "extraction_metadata": {
+    "extracted_at": "2026-02-25T15:50:41.771436",
+    "extractor_version": "1.0.0",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "finetune/train_cogvideox_lora.py",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 2,
+      "functions_modified": [
+        {
+          "function_name": "log_validation",
+          "class_name": null,
+          "full_name": "log_validation",
+          "start_line": 669,
+          "end_line": 731,
+          "lines_changed": [
+            729
+          ]
+        }
+      ],
+      "patch": "@@ -40,7 +40,7 @@\n from diffusers.pipelines.cogvideo.pipeline_cogvideox import get_resize_crop_region_for_grid\n from diffusers.training_utils import (\n     cast_training_params,\n-    clear_objs_and_retain_memory,\n+    free_memory,\n )\n from diffusers.utils import check_min_version, convert_unet_state_dict_to_peft, export_to_video, is_wandb_available\n from diffusers.utils.hub_utils import load_or_create_model_card, populate_model_card\n@@ -726,7 +726,7 @@ def log_validation(\n                 }\n             )\n \n-    clear_objs_and_retain_memory([pipe])\n+    free_memory()\n \n     return videos\n "
+    }
+  ],
+  "functions_modified": [
+    {
+      "function_name": "log_validation",
+      "class_name": null,
+      "full_name": "log_validation",
+      "start_line": 669,
+      "end_line": 731,
+      "lines_changed": [
+        729
+      ]
+    }
+  ],
+  "step_plan": {
+    "steps": [
+      {
+        "operation": "Replace deprecated diffusers memory-cleanup API usage by importing `free_memory` and calling it after validation instead of `clear_objs_and_retain_memory([pipe])`.",
+        "file_to_modify": "finetune/train_cogvideox_lora.py",
+        "function_to_modify": "log_validation",
+        "reason": "`diffusers.training_utils.clear_objs_and_retain_memory` was deprecated and replaced by `free_memory`, so the training script must be updated to remain compatible with newer diffusers versions and avoid deprecation warnings/errors.",
+        "side_effects": "Memory reclamation behavior may differ (e.g., `free_memory()` no longer explicitly receives `pipe`), which could slightly affect VRAM/CPU RAM usage patterns after validation; if any other code relied on the old object-retention semantics, validation-time memory footprint and object lifetimes could change."
+      }
+    ],
+    "summary": "Updates the CogVideoX LoRA training script to use diffusers' new `free_memory` helper in place of the deprecated `clear_objs_and_retain_memory` API."
+  }
+}

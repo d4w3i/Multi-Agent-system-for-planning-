@@ -1,0 +1,513 @@
+{
+  "pr_number": 277,
+  "repository": "vikhyat/moondream",
+  "title": "finetune_region.py fixed. Added waste_detection eval",
+  "body": "Fixed bug in finetune_region.py that was introduced when log2 was added. Bug pointed out here: https://github.com/vikhyat/moondream/issues/267\r\n\r\nIncluded an eval script for waste detection. The F1 score improves from 65.67 ->  66.23 after 1 epoch of finetuning.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T09:45:55.708834",
+    "extractor_version": "1.0.0",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": ".gitignore",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 0,
+      "functions_modified": [],
+      "patch": "@@ -6,3 +6,5 @@ data\n poetry.lock\n dist\n clients/python/moondream/torch\n+wandb/\n+moondream_finetune.safetensors"
+    },
+    {
+      "filename": "moondream/eval/waste_detection.py",
+      "status": "added",
+      "additions": 152,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "iou",
+          "class_name": null,
+          "full_name": "iou",
+          "start_line": 18,
+          "end_line": 25,
+          "lines_changed": [
+            18,
+            19,
+            20,
+            21,
+            22,
+            23,
+            24,
+            25
+          ]
+        },
+        {
+          "function_name": "match",
+          "class_name": null,
+          "full_name": "match",
+          "start_line": 28,
+          "end_line": 51,
+          "lines_changed": [
+            28,
+            29,
+            30,
+            31,
+            32,
+            33,
+            34,
+            35,
+            36,
+            37,
+            38,
+            39,
+            40,
+            41,
+            42,
+            43,
+            44,
+            45,
+            46,
+            47,
+            48,
+            49,
+            50,
+            51
+          ]
+        },
+        {
+          "function_name": "__init__",
+          "class_name": "WasteDetection",
+          "full_name": "WasteDetection.__init__",
+          "start_line": 55,
+          "end_line": 56,
+          "lines_changed": [
+            55,
+            56
+          ]
+        },
+        {
+          "function_name": "__len__",
+          "class_name": "WasteDetection",
+          "full_name": "WasteDetection.__len__",
+          "start_line": 58,
+          "end_line": 59,
+          "lines_changed": [
+            58,
+            59
+          ]
+        },
+        {
+          "function_name": "__getitem__",
+          "class_name": "WasteDetection",
+          "full_name": "WasteDetection.__getitem__",
+          "start_line": 61,
+          "end_line": 78,
+          "lines_changed": [
+            61,
+            62,
+            63,
+            64,
+            65,
+            66,
+            67,
+            68,
+            69,
+            70,
+            71,
+            72,
+            73,
+            74,
+            75,
+            76,
+            77,
+            78
+          ]
+        },
+        {
+          "function_name": "evaluate",
+          "class_name": null,
+          "full_name": "evaluate",
+          "start_line": 81,
+          "end_line": 111,
+          "lines_changed": [
+            81,
+            82,
+            83,
+            84,
+            85,
+            86,
+            87,
+            88,
+            89,
+            90,
+            91,
+            92,
+            93,
+            94,
+            95,
+            96,
+            97,
+            98,
+            99,
+            100,
+            101,
+            102,
+            103,
+            104,
+            105,
+            106,
+            107,
+            108,
+            109,
+            110,
+            111
+          ]
+        },
+        {
+          "function_name": "load_model",
+          "class_name": null,
+          "full_name": "load_model",
+          "start_line": 114,
+          "end_line": 120,
+          "lines_changed": [
+            114,
+            115,
+            116,
+            117,
+            118,
+            119,
+            120
+          ]
+        },
+        {
+          "function_name": "main",
+          "class_name": null,
+          "full_name": "main",
+          "start_line": 123,
+          "end_line": 145,
+          "lines_changed": [
+            123,
+            124,
+            125,
+            126,
+            127,
+            128,
+            129,
+            130,
+            131,
+            132,
+            133,
+            134,
+            135,
+            136,
+            137,
+            138,
+            139,
+            140,
+            141,
+            142,
+            143,
+            144,
+            145
+          ]
+        }
+      ],
+      "patch": "@@ -0,0 +1,152 @@\n+import argparse\n+from collections import defaultdict\n+from typing import Dict, List, Tuple\n+\n+import torch\n+from PIL import Image\n+from tqdm import tqdm\n+from datasets import load_dataset\n+\n+from ..torch.config import MoondreamConfig\n+from ..torch.moondream import MoondreamModel\n+from ..torch.weights import load_weights_into_model\n+\n+\n+Box = Tuple[float, float, float, float]  # (x1, y1, x2, y2) – in proportion form\n+\n+\n+def iou(a: Box, b: Box) -> float:\n+    \"\"\"Corner-format IoU. Returns 0 when either box has zero area.\"\"\"\n+    x1, y1 = max(a[0], b[0]), max(a[1], b[1])\n+    x2, y2 = min(a[2], b[2]), min(a[3], b[3])\n+    inter = max(0.0, x2 - x1) * max(0.0, y2 - y1)\n+\n+    union = (a[2] - a[0]) * (a[3] - a[1]) + (b[2] - b[0]) * (b[3] - b[1]) - inter\n+    return inter / union if union else 0.0\n+\n+\n+def match(gt: List[Box], pr: List[Box], iou_thr: float) -> Tuple[int, int, int]:\n+    \"\"\"\n+    Greedy one-to-one matching with no confidences.\n+    Predictions are taken in the order produced by the model.\n+    \"\"\"\n+    tp = fp = 0\n+    seen = [False] * len(gt)\n+\n+    for p in pr:\n+        best, best_i = 0.0, -1\n+        for i, g in enumerate(gt):\n+            if seen[i]:\n+                continue\n+            iou_ = iou(p, g)\n+            if iou_ > best:\n+                best, best_i = iou_, i\n+        if best >= iou_thr:\n+            tp += 1\n+            seen[best_i] = True\n+        else:\n+            fp += 1\n+\n+    fn = len(gt) - tp\n+    return tp, fp, fn\n+\n+\n+class WasteDetection(torch.utils.data.Dataset):\n+    def __init__(self, name: str = \"moondream/waste_detection\", split: str = \"test\"):\n+        self.ds = load_dataset(name, split=split)\n+\n+    def __len__(self):\n+        return len(self.ds)\n+\n+    def __getitem__(self, idx: int) -> Dict:\n+        s = self.ds[idx]\n+        img = (\n+            s[\"image\"]\n+            if isinstance(s[\"image\"], Image.Image)\n+            else Image.fromarray(s[\"image\"])\n+        )\n+        W, H = float(s.get(\"width\", img.width)), float(s.get(\"height\", img.height))\n+\n+        lbl_to_boxes = defaultdict(list)\n+        for (xc, yc, bw, bh), lbl in zip(s[\"boxes\"], s[\"labels\"]):\n+            x1 = xc - bw / 2\n+            y1 = yc - bh / 2\n+            x2 = xc + bw / 2\n+            y2 = yc + bh / 2\n+            lbl_to_boxes[lbl].append((x1, y1, x2, y2))\n+\n+        return {\"image\": img, \"gt\": lbl_to_boxes, \"W\": W, \"H\": H}\n+\n+\n+def evaluate(\n+    model: MoondreamModel,\n+    iou_thr: float,\n+    debug: bool,\n+):\n+    ds = WasteDetection(split=\"test\")\n+    TP = FP = FN = 0\n+\n+    for s in tqdm(ds, disable=debug, desc=\"Waste\"):\n+        img, gts = s[\"image\"], s[\"gt\"]\n+        enc = model.encode_image(img)\n+\n+        for lbl, gt_boxes in gts.items():\n+            preds: List[Box] = [\n+                (\n+                    o[\"x_min\"],\n+                    o[\"y_min\"],\n+                    o[\"x_max\"],\n+                    o[\"y_max\"],\n+                )\n+                for o in model.detect(enc, lbl)[\"objects\"]\n+            ]\n+            tp, fp, fn = match(gt_boxes, preds, iou_thr)\n+            TP += tp\n+            FP += fp\n+            FN += fn\n+\n+    prec = TP / (TP + FP) if TP + FP else 0.0\n+    rec = TP / (TP + FN) if TP + FN else 0.0\n+    f1 = 2 * prec * rec / (prec + rec) if prec + rec else 0.0\n+    return dict(precision=prec, recall=rec, f1=f1, tp=TP, fp=FP, fn=FN)\n+\n+\n+def load_model(path: str, device: torch.device) -> MoondreamModel:\n+    cfg = MoondreamConfig()\n+    model = MoondreamModel(cfg)\n+    load_weights_into_model(path, model)\n+    model.compile()\n+    model.to(device)\n+    return model\n+\n+\n+def main():\n+    p = argparse.ArgumentParser()\n+    p.add_argument(\"--model\", required=True)\n+    p.add_argument(\"--iou_thr\", type=float, default=0.5)\n+    p.add_argument(\"--gpu\", type=int, default=0)\n+    p.add_argument(\"--debug\", action=\"store_true\")\n+    args = p.parse_args()\n+\n+    if torch.cuda.is_available():\n+        torch.cuda.set_device(args.gpu)\n+        device = torch.device(f\"cuda:{args.gpu}\")\n+    elif torch.backends.mps.is_available():\n+        device = torch.device(\"mps\")\n+    else:\n+        device = torch.device(\"cpu\")\n+\n+    model = load_model(args.model, device)\n+    res = evaluate(model, args.iou_thr, args.debug)\n+\n+    print(f\"Precision: {res['precision']*100:.2f}%\")\n+    print(f\"Recall: {res['recall']*100:.2f}%\")\n+    print(f\"F1 Score:  {res['f1']*100:.2f}%\")\n+    print(f\"TP: {res['tp']}  FP: {res['fp']}  FN: {res['fn']}\")\n+\n+\n+if __name__ == \"__main__\":\n+    \"\"\"\n+    Eval to accompany finetune_region.py.\n+    \"\"\"\n+    main()"
+    },
+    {
+      "filename": "moondream/finetune/finetune_region.py",
+      "status": "modified",
+      "additions": 4,
+      "deletions": 13,
+      "functions_modified": [
+        {
+          "function_name": "main",
+          "class_name": null,
+          "full_name": "main",
+          "start_line": 105,
+          "end_line": 256,
+          "lines_changed": [
+            187,
+            189
+          ]
+        }
+      ],
+      "patch": "@@ -22,9 +22,9 @@\n \n # This is a intended to be a basic starting point. Your optimal hyperparams and data may be different.\n MODEL_PATH = \"\"\n-LR = 3e-5\n+LR = 1e-5\n EPOCHS = 1\n-GRAD_ACCUM_STEPS = 64\n+GRAD_ACCUM_STEPS = 128\n \n \n def lr_schedule(step, max_steps):\n@@ -184,9 +184,9 @@ def main():\n                     c_idx.extend([l_cs, l_cs + 1])\n                     s_idx.append(l_cs + 2)\n \n-                    # Create coordinate bin labels - unchanged\n+                    # Create coordinate bin labels\n                     coord_labels = [\n-                        min(max(torch.round(p * 1023), 0), 1023) for p in bb[:2]\n+                        min(max(torch.round(p * 1023), 0), 1023).item() for p in bb[:2]\n                     ]\n \n                     # Create size bin labels using log-scale mapping\n@@ -202,12 +202,6 @@ def main():\n \n                     # Combine coordinate and size bin labels\n                     cs_labels.extend(coord_labels + s_log2_bins)\n-                    cs_labels.extend(\n-                        [\n-                            int(torch.clamp(torch.round(p * 1023), 0, 1023).item())\n-                            for p in bb\n-                        ]\n-                    )\n \n                 if len(cs_emb) == 0:\n                     continue\n@@ -266,8 +260,5 @@ def main():\n     \"\"\"\n     Replace paths with your appropriate paths.\n     To run: python -m moondream.finetune.finetune_region\n-\n-    1 epoch of fine-tuning on the example 'Waste Detection' dataset results in an\n-    increase in mAP from 61.82 to 69.82.\n     \"\"\"\n     main()"
+    }
+  ],
+  "functions_modified": [
+    {
+      "function_name": "iou",
+      "class_name": null,
+      "full_name": "iou",
+      "start_line": 18,
+      "end_line": 25,
+      "lines_changed": [
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25
+      ]
+    },
+    {
+      "function_name": "match",
+      "class_name": null,
+      "full_name": "match",
+      "start_line": 28,
+      "end_line": 51,
+      "lines_changed": [
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        49,
+        50,
+        51
+      ]
+    },
+    {
+      "function_name": "__init__",
+      "class_name": "WasteDetection",
+      "full_name": "WasteDetection.__init__",
+      "start_line": 55,
+      "end_line": 56,
+      "lines_changed": [
+        55,
+        56
+      ]
+    },
+    {
+      "function_name": "__len__",
+      "class_name": "WasteDetection",
+      "full_name": "WasteDetection.__len__",
+      "start_line": 58,
+      "end_line": 59,
+      "lines_changed": [
+        58,
+        59
+      ]
+    },
+    {
+      "function_name": "__getitem__",
+      "class_name": "WasteDetection",
+      "full_name": "WasteDetection.__getitem__",
+      "start_line": 61,
+      "end_line": 78,
+      "lines_changed": [
+        61,
+        62,
+        63,
+        64,
+        65,
+        66,
+        67,
+        68,
+        69,
+        70,
+        71,
+        72,
+        73,
+        74,
+        75,
+        76,
+        77,
+        78
+      ]
+    },
+    {
+      "function_name": "evaluate",
+      "class_name": null,
+      "full_name": "evaluate",
+      "start_line": 81,
+      "end_line": 111,
+      "lines_changed": [
+        81,
+        82,
+        83,
+        84,
+        85,
+        86,
+        87,
+        88,
+        89,
+        90,
+        91,
+        92,
+        93,
+        94,
+        95,
+        96,
+        97,
+        98,
+        99,
+        100,
+        101,
+        102,
+        103,
+        104,
+        105,
+        106,
+        107,
+        108,
+        109,
+        110,
+        111
+      ]
+    },
+    {
+      "function_name": "load_model",
+      "class_name": null,
+      "full_name": "load_model",
+      "start_line": 114,
+      "end_line": 120,
+      "lines_changed": [
+        114,
+        115,
+        116,
+        117,
+        118,
+        119,
+        120
+      ]
+    },
+    {
+      "function_name": "main",
+      "class_name": null,
+      "full_name": "main",
+      "start_line": 123,
+      "end_line": 145,
+      "lines_changed": [
+        123,
+        124,
+        125,
+        126,
+        127,
+        128,
+        129,
+        130,
+        131,
+        132,
+        133,
+        134,
+        135,
+        136,
+        137,
+        138,
+        139,
+        140,
+        141,
+        142,
+        143,
+        144,
+        145
+      ]
+    },
+    {
+      "function_name": "main",
+      "class_name": null,
+      "full_name": "main",
+      "start_line": 105,
+      "end_line": 256,
+      "lines_changed": [
+        187,
+        189
+      ]
+    }
+  ],
+  "step_plan": {
+    "steps": [
+      {
+        "operation": "Update gitignore rules to exclude experiment artifacts (Weights & Biases runs and produced safetensors checkpoints)",
+        "file_to_modify": ".gitignore",
+        "function_to_modify": null,
+        "reason": "Prevent committing large, frequently-changing training outputs (wandb logs and finetune checkpoints) that are generated by running the finetune/eval scripts.",
+        "side_effects": "Developers may need to explicitly override ignore rules if they intend to commit a specific checkpoint/log; reduces repo noise and accidental large-file commits."
+      },
+      {
+        "operation": "Add IoU utility for corner-format bounding boxes",
+        "file_to_modify": "moondream/eval/waste_detection.py",
+        "function_to_modify": "iou",
+        "reason": "Evaluation requires an overlap metric to decide whether a predicted box matches a ground-truth box; implementing IoU is foundational for TP/FP/FN computation.",
+        "side_effects": "Any future eval code may reuse this helper; incorrect IoU math would skew all reported metrics."
+      },
+      {
+        "operation": "Implement greedy one-to-one matching between predicted and ground-truth boxes",
+        "file_to_modify": "moondream/eval/waste_detection.py",
+        "function_to_modify": "match",
+        "reason": "To compute precision/recall/F1 without confidence scores, the eval needs deterministic assignment of predictions to GT boxes at a given IoU threshold.",
+        "side_effects": "Matching strategy (greedy, prediction order) can affect scores and comparability with other evaluation frameworks; changes here will change reported metrics."
+      },
+      {
+        "operation": "Add HuggingFace dataset wrapper to normalize samples into images + per-label GT box lists",
+        "file_to_modify": "moondream/eval/waste_detection.py",
+        "function_to_modify": "WasteDetection.__getitem__",
+        "reason": "The model eval expects PIL images and GT boxes in a consistent corner-format grouped by label; the dataset provides center-format boxes that must be converted.",
+        "side_effects": "Assumptions about dataset schema (fields like image/boxes/labels/width/height) must remain valid; label grouping affects per-class matching aggregation."
+      },
+      {
+        "operation": "Add evaluation loop to run detection per label and aggregate TP/FP/FN into precision/recall/F1",
+        "file_to_modify": "moondream/eval/waste_detection.py",
+        "function_to_modify": "evaluate",
+        "reason": "Provide a concrete metric for the finetune example (“waste detection”) and quantify improvements after fine-tuning; uses model.encode_image + model.detect output format.",
+        "side_effects": "Evaluation runtime depends on dataset size and device; relies on model.detect returning objects with x_min/y_min/x_max/y_max—API changes will break eval."
+      },
+      {
+        "operation": "Add model loader helper that builds config/model, loads weights, compiles, and moves to device",
+        "file_to_modify": "moondream/eval/waste_detection.py",
+        "function_to_modify": "load_model",
+        "reason": "Encapsulate the standard steps needed to instantiate Moondream, load a safetensors checkpoint, and prepare it for fast inference on CPU/CUDA/MPS.",
+        "side_effects": "If compile()/device placement behavior changes in MoondreamModel, this helper may need updates; compile can alter performance characteristics and debugging."
+      },
+      {
+        "operation": "Add CLI entrypoint to select model path, IoU threshold, GPU index, and debug mode and print formatted metrics",
+        "file_to_modify": "moondream/eval/waste_detection.py",
+        "function_to_modify": "main",
+        "reason": "Make the evaluation runnable as a script to accompany finetune_region.py, enabling quick verification of training effects and reproducible reporting.",
+        "side_effects": "Command-line interface becomes part of user workflow; environment/device selection logic (CUDA/MPS/CPU) impacts where the model runs and potential OOMs."
+      },
+      {
+        "operation": "Adjust finetuning hyperparameters (learning rate and gradient accumulation) for region fine-tuning",
+        "file_to_modify": "moondream/finetune/finetune_region.py",
+        "function_to_modify": "lr_schedule",
+        "reason": "The PR updates LR and GRAD_ACCUM_STEPS constants; while lr_schedule logic may be unchanged, the schedule behavior depends on LR/max steps and effective batch size, impacting training stability after the region-loss changes.",
+        "side_effects": "Training convergence, speed, and final metrics may change; different effective batch size can affect optimizer dynamics and memory usage."
+      },
+      {
+        "operation": "Fix coordinate bin label generation to use Python ints (avoid tensor objects) when building labels",
+        "file_to_modify": "moondream/finetune/finetune_region.py",
+        "function_to_modify": "main",
+        "reason": "A bug introduced with log2-related changes left coordinate labels as tensors (from torch.round/clamp), which can break downstream list concatenation, serialization, or loss computation expecting ints; adding .item() ensures scalar Python ints.",
+        "side_effects": "Label dtype/structure changes can affect training determinism and any code that inspects labels; fixing this may change loss values compared to the buggy version (but in the correct direction)."
+      },
+      {
+        "operation": "Remove duplicated/incorrect extra bounding-box label appending and update the script’s trailing documentation comment accordingly",
+        "file_to_modify": "moondream/finetune/finetune_region.py",
+        "function_to_modify": "main",
+        "reason": "The previous code appended an extra set of 4 quantized bbox labels in addition to the intended coord+size(log2) labels, inflating/duplicating targets and causing training/eval bugs; removing the block aligns targets with the new log-scale size labeling and avoids mismatched label sequences.",
+        "side_effects": "Changes the target token layout expected by the training loop; any checkpoints trained with the buggy target format may not be directly comparable, and any evaluation assumptions tied to the old docstring claim (mAP numbers) are no longer presented in-script."
+      }
+    ],
+    "summary": "Fixes a region fine-tuning labeling bug introduced alongside log2-based size binning, and adds a standalone waste detection evaluation script that reports precision/recall/F1 for finetuned checkpoints."
+  }
+}

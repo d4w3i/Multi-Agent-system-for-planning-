@@ -1,0 +1,239 @@
+{
+  "pr_number": 2940,
+  "repository": "EleutherAI/lm-evaluation-harness",
+  "title": "Fix import error for eval_logger in score utils",
+  "body": "## 🛠 Description of the Issue\n\nSome tasks (e.g., `score` and others under `lm_eval/tasks/`) attempt to import `eval_logger` using:\n\n```python\nfrom lm_eval.utils import eval_logger\n```\n\nor:\n\n```python\nfrom lm_eval.loggers import eval_logger\n```\n\nHowever, `eval_logger` is no longer defined in those modules, resulting in the following runtime error:\n\n```\nImportError: cannot import name 'eval_logger' from 'lm_eval.utils'\n```\n\nThis prevents tasks from running correctly, including `score_robustness_agieval` and potentially others relying on similar logging mechanisms.\n\n## ✅ Fix\n\nTo resolve the issue across all affected tasks, the following replacement was made:\n\n```python\nimport logging\neval_logger = logging.getLogger(\"lm_eval.score\")\n```\n\nThis change restores proper logger usage by leveraging Python's standard logging infrastructure and avoids relying on deprecated or non-existent imports.\n\nThe fix has been applied consistently across all tasks that were impacted by this issue.\n\nExplore the source code to identify the files and functions to modify.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T11:45:05.054666",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "utils.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "process_docs_add_prompts",
+          "class_name": null,
+          "full_name": "process_docs_add_prompts",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "option_order_robustness_process_docs",
+          "class_name": null,
+          "full_name": "option_order_robustness_process_docs",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "non_greedy_robustness_process_docs",
+          "class_name": null,
+          "full_name": "non_greedy_robustness_process_docs",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "metric.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "toxicity_perspective_api",
+          "class_name": null,
+          "full_name": "toxicity_perspective_api",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "utils_agieval.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "per_prompt_accuracy",
+          "class_name": null,
+          "full_name": "per_prompt_accuracy",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "per_option_accuracy",
+          "class_name": null,
+          "full_name": "per_option_accuracy",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "non_greedy_accuracy",
+          "class_name": null,
+          "full_name": "non_greedy_accuracy",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "utils_mmlu_pro.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "per_prompt_macro_accuracy",
+          "class_name": null,
+          "full_name": "per_prompt_macro_accuracy",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "per_option_macro_accuracy",
+          "class_name": null,
+          "full_name": "per_option_macro_accuracy",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "non_greedy_macro_accuracy",
+          "class_name": null,
+          "full_name": "non_greedy_macro_accuracy",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "utils_math.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "per_prompt_accuracy",
+          "class_name": null,
+          "full_name": "per_prompt_accuracy",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "non_greedy_accuracy",
+          "class_name": null,
+          "full_name": "non_greedy_accuracy",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Fixes runtime ImportErrors caused by deprecated `eval_logger` imports by defining `eval_logger` using Python’s standard logging (`logging.getLogger(\"lm_eval.score\")`) in all affected score/metric utility modules. This preserves existing log calls without changing scoring or aggregation logic.",
+    "steps": [
+      {
+        "operation": "Replace deprecated eval_logger import with stdlib logger initialization (and ensure the function uses the module-level logger)",
+        "file_to_modify": "utils.py",
+        "function_to_modify": "process_docs_add_prompts",
+        "reason": "`process_docs_add_prompts` calls `eval_logger.error(...)` on missing template files; importing `eval_logger` from `lm_eval.utils` can raise ImportError and prevent any downstream task (e.g., math robustness) from importing this module.",
+        "side_effects": "Purely affects logging/import-time behavior; no change to dataset mapping logic. Verify module imports cleanly and that callers like `utils_math.prompt_robustness_process_docs` still work. May slightly change logger name/format depending on logging configuration."
+      },
+      {
+        "operation": "Replace deprecated eval_logger import with stdlib logger initialization (and keep error handling unchanged)",
+        "file_to_modify": "utils.py",
+        "function_to_modify": "option_order_robustness_process_docs",
+        "reason": "This function logs an error and exits when prompt templates are missing; it must not rely on a removed `lm_eval.utils.eval_logger` symbol so tasks importing/using option-order robustness processing don’t fail at import time.",
+        "side_effects": "No behavioral change except logger source/name; sys.exit path remains the same. Ensure no duplicate logger definitions or import-order issues in `utils.py` after adding `import logging` and `eval_logger = logging.getLogger(\"lm_eval.score\")`."
+      },
+      {
+        "operation": "Replace deprecated eval_logger import with stdlib logger initialization (and keep error handling unchanged)",
+        "file_to_modify": "utils.py",
+        "function_to_modify": "non_greedy_robustness_process_docs",
+        "reason": "This function also logs on FileNotFoundError; without a valid module-level `eval_logger`, importing this module fails and breaks callers such as `utils_math.non_greedy_robustness_process_docs`.",
+        "side_effects": "Only changes logging initialization; data augmentation/map logic remains unchanged. Confirm that `options_format` handling and `doc.map(...)` behavior are unaffected."
+      },
+      {
+        "operation": "Replace deprecated eval_logger import with stdlib logger initialization for Perspective API metric logging",
+        "file_to_modify": "metric.py",
+        "function_to_modify": "toxicity_perspective_api",
+        "reason": "`toxicity_perspective_api` uses `eval_logger.warning/error(...)` in multiple branches (missing env vars, unexpected API responses, retry failures). If the module imports `eval_logger` from a non-existent location, this metric cannot be imported or executed.",
+        "side_effects": "Logging category/name changes to `lm_eval.score` (per PR intent). Ensure any tests or tasks that assert on logger names/messages are updated if they exist. Runtime behavior of API calls and error raising remains the same."
+      },
+      {
+        "operation": "Replace deprecated eval_logger import with stdlib logger initialization; keep per-prompt accuracy reporting intact",
+        "file_to_modify": "utils_agieval.py",
+        "function_to_modify": "per_prompt_accuracy",
+        "reason": "This aggregation helper logs informational accuracy; fixing logger initialization prevents ImportError when `utils_agieval.py` is imported by AGIEval-related tasks/utilities.",
+        "side_effects": "No metric logic changes; only logger binding changes. Ensure the module-level `eval_logger` exists before function use and that logging does not introduce circular imports."
+      },
+      {
+        "operation": "Replace deprecated eval_logger import with stdlib logger initialization; keep per-option accuracy reporting intact",
+        "file_to_modify": "utils_agieval.py",
+        "function_to_modify": "per_option_accuracy",
+        "reason": "This function depends on `eval_logger.info(...)`; switching to `logging.getLogger(\"lm_eval.score\")` removes dependency on deprecated imports and keeps logging calls valid.",
+        "side_effects": "No change to accuracy computation; only affects where logs are emitted. If log filters are configured by logger name, they may need to include `lm_eval.score`."
+      },
+      {
+        "operation": "Replace deprecated eval_logger import with stdlib logger initialization; keep non-greedy accuracy reporting intact",
+        "file_to_modify": "utils_agieval.py",
+        "function_to_modify": "non_greedy_accuracy",
+        "reason": "Ensures `eval_logger` is defined in-module so that non-greedy aggregation functions don’t fail due to missing/removed `eval_logger` import.",
+        "side_effects": "No functional changes to aggregation; only logging initialization changes. Validate importability and basic execution via a lightweight unit/integration run of an AGIEval task."
+      },
+      {
+        "operation": "Replace deprecated eval_logger import with stdlib logger initialization; keep category-wise prompt macro accuracy logs intact",
+        "file_to_modify": "utils_mmlu_pro.py",
+        "function_to_modify": "per_prompt_macro_accuracy",
+        "reason": "This function logs per-category accuracy per prompt; resolving logger initialization prevents ImportError when MMLU-Pro utilities are imported.",
+        "side_effects": "No changes to macro-averaging; only logger source/name changes. Ensure any consuming code that configures loggers still captures these info logs."
+      },
+      {
+        "operation": "Replace deprecated eval_logger import with stdlib logger initialization; keep category-wise option macro accuracy logs intact",
+        "file_to_modify": "utils_mmlu_pro.py",
+        "function_to_modify": "per_option_macro_accuracy",
+        "reason": "Like other utilities, this uses `eval_logger.info(...)` and must not depend on removed `lm_eval.utils.eval_logger`/`lm_eval.loggers.eval_logger` symbols.",
+        "side_effects": "No changes to calculations; only logging initialization changes. Confirm that `always_opt` filtering behavior is unchanged."
+      },
+      {
+        "operation": "Replace deprecated eval_logger import with stdlib logger initialization; keep non-greedy category macro accuracy logs intact",
+        "file_to_modify": "utils_mmlu_pro.py",
+        "function_to_modify": "non_greedy_macro_accuracy",
+        "reason": "Prevents import-time failures in MMLU-Pro utils by defining `eval_logger` via Python logging while keeping existing informational logging statements working.",
+        "side_effects": "Only impacts logging. Validate that downstream result processors that import this module load successfully."
+      },
+      {
+        "operation": "Replace deprecated eval_logger import with stdlib logger initialization; keep per-prompt math accuracy logging intact",
+        "file_to_modify": "utils_math.py",
+        "function_to_modify": "per_prompt_accuracy",
+        "reason": "This function logs per-prompt accuracy and will error if `eval_logger` import is broken; fixing logger initialization ensures math task utilities import successfully.",
+        "side_effects": "No changes to computed accuracy; only logger binding changes. Confirm no namespace collisions with other `utils` modules."
+      },
+      {
+        "operation": "Replace deprecated eval_logger import with stdlib logger initialization; keep non-greedy math accuracy logging intact",
+        "file_to_modify": "utils_math.py",
+        "function_to_modify": "non_greedy_accuracy",
+        "reason": "Ensures `eval_logger.info(...)` remains valid and the module is importable; this is critical for tasks that use math non-greedy scoring/aggregation.",
+        "side_effects": "No changes to `math_equal` usage or scoring; only logging changes. Run a smoke test importing `utils_math` and executing a representative aggregation to ensure no NameError/ImportError."
+      }
+    ]
+  }
+}

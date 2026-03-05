@@ -1,0 +1,33 @@
+{
+  "pr_number": 1496,
+  "repository": "openinterpreter/open-interpreter",
+  "title": "Fix: Change date format string for Windows compatibility",
+  "body": "# Fix date format string for Windows compatibility\n\n## Problem\nWhen running `interpreter --os` on Windows, the program crashes with a ValueError due to an incompatible date format string (`%-d`).\n\n## Solution\nChanged the date format string from `%-d` to `%d` to ensure compatibility with Windows systems.\n\n## Changes\n- Modified `interpreter/computer_use/loop.py` to use Windows-compatible date format\n- Replaced `%-d` with `%d` in `strftime()` call\n\n## Testing\nTested on:\n- Windows 11\n- Python 3.11\n- open-interpreter 0.4.1\n\nThe fix allows the program to start normally with the `--os` flag on Windows.\n\nFixes #1495",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T13:56:22.090234",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "interpreter/computer_use/loop.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    }
+  ],
+  "step_plan": {
+    "summary": "Fixes Windows crash by replacing the non-portable '%-d' token with '%d' in the module-level SYSTEM_PROMPT date format in interpreter/computer_use/loop.py, ensuring datetime.strftime works on Windows.",
+    "steps": [
+      {
+        "operation": "Replace non-portable day-of-month format token in module-level prompt strings",
+        "file_to_modify": "interpreter/computer_use/loop.py",
+        "function_to_modify": "SYSTEM_PROMPT",
+        "reason": "datetime.strftime with '%-d' is a GNU extension and raises ValueError on Windows' MSVCRT. Replacing '%-d' with '%d' makes the format portable and avoids an import/runtime crash when running with --os on Windows.",
+        "side_effects": "The visible date formatting will include a leading zero for days 1-9 (e.g., 'March 05' instead of 'March 5'); this is a presentation-only change. No API or function signatures are changed. Import-time errors on Windows are resolved, so tests and runtime flows that previously crashed should now run; update any tests or snapshots that asserted the exact date string format. Search-and-replace for other occurrences of '%-d' should be performed to ensure no remaining Windows-incompatible uses."
+      }
+    ]
+  }
+}

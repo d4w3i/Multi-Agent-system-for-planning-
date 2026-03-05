@@ -1,0 +1,42 @@
+{
+  "pr_number": 8861,
+  "repository": "borgbackup/borg",
+  "title": "tests: fix diff cmd test on macOS HFS+, fixes #8860",
+  "body": "This patch tightens the macOS-specific timing in the diff command tests. On macOS with HFS+ timestamp granularity, timestamp updates can be delayed when a file is touched shortly after creation. The test_time_diffs in the diff_cmd_test.py file currently accounts for a 1-second granularity but can still race if operations happen too quickly. The change adds more robust sleep durations for macOS (Darwin) to ensure mtime/ctime updates are observed, reducing flaky test failures on macOS HFS+.\n\nNo production code changes are required; the change is isolated to the test suite to stabilize behavior across platforms.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T12:26:37.492081",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "src/borg/testsuite/archiver/diff_cmd_test.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "test_time_diffs",
+          "class_name": "diff_cmd_test",
+          "full_name": "diff_cmd_test.test_time_diffs",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "This change tightens macOS-specific timing in the diff command tests to stabilize test_time_diffs on HFS+ by extending sleep durations. No production code changes are introduced.",
+    "steps": [
+      {
+        "operation": "Extend Darwin-specific sleep durations in test_time_diffs to account for macOS HFS+ timestamp granularity",
+        "file_to_modify": "src/borg/testsuite/archiver/diff_cmd_test.py",
+        "function_to_modify": "diff_cmd_test.test_time_diffs",
+        "reason": "macOS HFS+ timestamp granularity can delay mtime/ctime updates; longer sleeps ensure file modifications are observed and reduce flaky behavior on macOS",
+        "side_effects": "Increases test runtime modestly on macOS; no production code changes; limits changes to Darwin-specific path in the test; unrelated platforms remain unaffected"
+      }
+    ]
+  }
+}

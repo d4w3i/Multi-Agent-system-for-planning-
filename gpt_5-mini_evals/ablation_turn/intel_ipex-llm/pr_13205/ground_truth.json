@@ -1,0 +1,100 @@
+{
+  "pr_number": 13205,
+  "repository": "intel/ipex-llm",
+  "title": "Fix internvl fp16 error",
+  "body": "## Description\r\n\r\n<!-- For small changes (<=3 files and <=50 lines of codes in the source folder), -->\r\n<!-- you may remove Sections 1-4 below and just provide a simple description here -->\r\n\r\n### 1. Why the change?\r\n\r\n<!-- Provide the related github issue link if available -->\r\n\r\n### 2. User API changes\r\n\r\n<!-- Describe API changes (i.e., how users will use the feature) if any; -->\r\n<!-- alternatively, provide a link to the github issue for the design -->\r\n\r\n### 3. Summary of the change \r\n\r\n<!-- Provide the design for the implementation; -->\r\n<!-- alternatively, provide a link to the github issue for the design -->\r\n\r\n### 4. How to test?\r\n- [ ] N/A\r\n- [ ] Unit test: Please manually trigger the PR Validation [here](https://github.com/intel-analytics/ipex-llm-workflow/actions/workflows/llm-PR-validation.yml) by inputting the PR number (e.g., `1234`). And paste your action link here once it has been successfully finished.\r\n- [ ] Application test\r\n- [ ] Document test\r\n- [ ] ...\r\n\r\n### 5. New dependencies\r\n\r\n<!-- If no new dependency is introduced, remove this section -->\r\n\r\n- [ ] New Python dependencies\r\n       - Dependency1 \r\n       - Dependency2\r\n       - ...\r\n- [ ] New Java/Scala dependencies and their license\r\n       - Dependency1 and license1\r\n       - Dependency2 and license2\r\n       - ...\r\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T01:01:30.958428",
+    "extractor_version": "1.0.0",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "python/llm/src/ipex_llm/vllm/xpu/model_convert.py",
+      "status": "modified",
+      "additions": 5,
+      "deletions": 1,
+      "functions_modified": [
+        {
+          "function_name": "get_load_function",
+          "class_name": null,
+          "full_name": "get_load_function",
+          "start_line": 81,
+          "end_line": 163,
+          "lines_changed": [
+            136,
+            137,
+            138,
+            139,
+            140
+          ]
+        },
+        {
+          "function_name": "_ipex_llm_load_model",
+          "class_name": null,
+          "full_name": "_ipex_llm_load_model",
+          "start_line": 82,
+          "end_line": 161,
+          "lines_changed": [
+            136,
+            137,
+            138,
+            139,
+            140
+          ]
+        }
+      ],
+      "patch": "@@ -133,7 +133,11 @@ def _ipex_llm_load_model(self) -> None:\n                     modules = [\"vision_encoder\", \"embed_tokens_extend\"]\n                 if low_bit == \"fp16\":\n                     # to fix qwen2.5-vl and glm-4v\n-                    modules = [\"vision\", \"visual\"]\n+                    if modules is None:\n+                        modules = [\"vision\", \"visual\"]\n+                    else:\n+                        modules.append(\"vision\")\n+                        modules.append(\"visual\")\n                 optimize_model(self.model,\n                                low_bit=low_bit,\n                                torch_dtype=self.vllm_config.model_config.dtype,"
+    }
+  ],
+  "functions_modified": [
+    {
+      "function_name": "get_load_function",
+      "class_name": null,
+      "full_name": "get_load_function",
+      "start_line": 81,
+      "end_line": 163,
+      "lines_changed": [
+        136,
+        137,
+        138,
+        139,
+        140
+      ]
+    },
+    {
+      "function_name": "_ipex_llm_load_model",
+      "class_name": null,
+      "full_name": "_ipex_llm_load_model",
+      "start_line": 82,
+      "end_line": 161,
+      "lines_changed": [
+        136,
+        137,
+        138,
+        139,
+        140
+      ]
+    }
+  ],
+  "step_plan": {
+    "steps": [
+      {
+        "operation": "Fix FP16 module selection logic by preserving any previously-determined module list and appending InternVL vision modules when needed",
+        "file_to_modify": "python/llm/src/ipex_llm/vllm/xpu/model_convert.py",
+        "function_to_modify": "_ipex_llm_load_model",
+        "reason": "The prior implementation overwrote `modules` with `[\"vision\", \"visual\"]` whenever `low_bit == \"fp16\"`, which could discard earlier module selections (e.g., model-specific lists) and lead to incorrect optimization coverage or failures for InternVL/Qwen2.5-VL/GLM-4V in FP16. The new logic only initializes the list if empty, otherwise extends it to include the required vision submodules.",
+        "side_effects": "FP16 optimization may now apply to a broader set of submodules (union of earlier selections plus `vision`/`visual`), potentially increasing optimization time or memory use; any downstream logic in `optimize_model(...)` that assumes `modules` is exclusive may behave differently due to the expanded list."
+      },
+      {
+        "operation": "Adjust the arguments passed into `optimize_model(...)` by ensuring the `modules` list is correctly constructed before the call (no longer implicitly replaced for FP16)",
+        "file_to_modify": "python/llm/src/ipex_llm/vllm/xpu/model_convert.py",
+        "function_to_modify": "_ipex_llm_load_model",
+        "reason": "`optimize_model(self.model, ...)` depends on the `modules` selection to decide which submodules to optimize/convert. By changing the FP16 branch to append rather than overwrite, the call receives the intended module set, preventing FP16 conversion errors for InternVL-related vision components while retaining other required modules.",
+        "side_effects": "Behavior of model conversion/optimization for FP16 may change for models that previously relied (intentionally or accidentally) on the overwrite; regression risk exists if some models should only optimize `vision`/`visual` in FP16, so model-specific validation may be required."
+      }
+    ],
+    "summary": "Fixes an FP16 conversion/optimization error for InternVL-family vision models by preventing the FP16 branch from overwriting the existing module selection and instead appending required vision submodules before optimization."
+  }
+}

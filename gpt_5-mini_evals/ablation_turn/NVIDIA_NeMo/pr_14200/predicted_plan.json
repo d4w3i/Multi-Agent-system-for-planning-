@@ -1,0 +1,57 @@
+{
+  "pr_number": 14200,
+  "repository": "NVIDIA/NeMo",
+  "title": "Change RerankerSpecter Dataset question key",
+  "body": "> [!IMPORTANT]  \n> The `Update branch` button must only be pressed in very rare occassions.\n> An outdated branch is never blocking the merge of a PR.\n> Please reach out to the automation team before pressing that button.\n\n# What does this PR do ?\n\nAdd a one line overview of what this PR aims to accomplish.\n\n**Collection**: [Note which collection this PR will affect]\n\n# Changelog\n\n- Add specific line by line info of high level changes in this PR.\n\n# Usage\n\n- You can potentially add a usage example below\n\n```python\n# Add a code snippet demonstrating how to use this \n```\n\n# GitHub Actions CI\n\nThe Jenkins CI system has been replaced by GitHub Actions self-hosted runners.\n\nThe GitHub Actions CI will run automatically when the \"Run CICD\" label is added to the PR.\nTo re-run CI remove and add the label again.\nTo run CI on an untrusted fork, a NeMo user with write access must first click \"Approve and run\".\n\n# Before your PR is \"Ready for review\"\n\n**Pre checks**:\n\n- [ ] Make sure you read and followed [Contributor guidelines](https://github.com/NVIDIA/NeMo/blob/main/CONTRIBUTING.md)\n- [ ] Did you write any new necessary tests?\n- [ ] Did you add or update any necessary documentation?\n- [ ] Does the PR affect components that are optional to install? (Ex: Numba, Pynini, Apex etc)\n  - [ ] Reviewer: Does the PR have correct import guards for all optional libraries?\n  \n**PR Type**:\n\n- [ ] New Feature\n- [ ] Bugfix\n- [ ] Documentation\n\nIf you haven't finished some of the above items you can still open \"Draft\" PR.\n\n## Who can review?\n\nAnyone in the community is free to review the PR once the checks have passed.\n[Contributor guidelines](https://github.com/NVIDIA/NeMo/blob/main/CONTRIBUTING.md) contains specific people who can review PRs to various areas.\n\n# Additional Information\n\n- Related to # (issue)",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T12:00:02.505114",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "nemo/collections/llm/gpt/data/reranker.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "create_reranker_dataset",
+          "class_name": null,
+          "full_name": "create_reranker_dataset",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_preprocess_and_split_data",
+          "class_name": "SpecterReRankerDataModule",
+          "full_name": "SpecterReRankerDataModule._preprocess_and_split_data",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Fix a mismatch between the Specter reranker preprocessing and the ReRankerDataset loader by writing the question field as 'question' (not 'query') and updating create_reranker_dataset's default question_key to 'question' for consistency.",
+    "steps": [
+      {
+        "operation": "Change output JSON key for question from 'query' to 'question' when writing split JSONL files",
+        "file_to_modify": "nemo/collections/llm/gpt/data/reranker.py",
+        "function_to_modify": "SpecterReRankerDataModule._preprocess_and_split_data",
+        "reason": "ReRankerDataset and most call sites expect the question field to be under the key 'question'. The Specter preprocessor currently writes 'query', causing dataset loading failures. Update the serializer so produced training/validation/test JSONL files use 'question' to match the dataset loader.",
+        "side_effects": "Files produced by SpecterReRankerDataModule will change schema from 'query' to 'question'. Any external tooling, saved files, or downstream scripts that currently expect 'query' will break and must be updated. Run/adjust unit and integration tests that read the generated JSONL files (SpecterReRankerDataModule.prepare_data(), create_reranker_dataset/ReRankerDataset loading). Minimal runtime/API impact inside the repo because ReRankerDataset already expects 'question'."
+      },
+      {
+        "operation": "Align create_reranker_dataset default question_key parameter to 'question'",
+        "file_to_modify": "nemo/collections/llm/gpt/data/reranker.py",
+        "function_to_modify": "create_reranker_dataset",
+        "reason": "create_reranker_dataset currently defaults question_key to 'query', which is inconsistent with ReRankerDataset's default and with the updated Specter preprocessor. Changing the default to 'question' prevents accidental propagation of 'query' and keeps the API consistent.",
+        "side_effects": "Callers that rely on the previous default ('query') will now get 'question' instead; if any external code intentionally relied on 'query', it must be updated. This is a minor API default change (not a signature change) so most internal call sites that pass question_key explicitly will be unaffected. Update/add tests that construct datasets without passing question_key to confirm the new default works. Document the default change in changelog or release notes to avoid surprises for downstream users."
+      }
+    ]
+  }
+}

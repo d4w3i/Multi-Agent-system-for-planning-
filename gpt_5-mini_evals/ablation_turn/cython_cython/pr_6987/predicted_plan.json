@@ -1,0 +1,42 @@
+{
+  "pr_number": 6987,
+  "repository": "cython/cython",
+  "title": "Fix return type of bytes.join()",
+  "body": "This was already tested in `tests/run/bytesmethods.pyx`, but there were apparently (non-trivial?) cases where the return type wasn't correctly inferred.\n\nExplore the source code to identify the files and functions to modify.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T12:47:38.254415",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "Cython/Compiler/Builtin.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "builtin_types_table (module-level entry for 'bytes')",
+          "class_name": null,
+          "full_name": "builtin_types_table (module-level entry for 'bytes')",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Update the builtin declaration for bytes.join in Cython/Compiler/Builtin.py to return 'T' (the receiver type) instead of 'O', so the compiler correctly infers that bytes.join returns a bytes object. Validate by running the bytes-related tests (e.g., tests/run/bytesmethods.pyx) and the full test suite.",
+    "steps": [
+      {
+        "operation": "Change bytes.join builtin return type from generic object to receiver type",
+        "file_to_modify": "Cython/Compiler/Builtin.py",
+        "function_to_modify": "builtin_types_table",
+        "reason": "The builtin_types_table currently declares bytes.join with return type 'O' (generic PyObject), preventing the compiler from inferring a bytes return in some call sites. Aligning bytes.join with str.join by declaring its return type as 'T' (the same type as the receiver) enables the type inferencer to produce a 'bytes' type for bytes.join results.",
+        "side_effects": "Type inference will now treat bytes.join(...) as returning bytes across the codebase, which should fix tests expecting a bytes return (notably tests/run/bytesmethods.pyx). Downstream code that relied on the previous generic PyObject return type shouldn't be affected at runtime (no public API change), but some internal compiler codepaths and generated C may differ; this could expose other places where bytearray.join inference is lacking (bytearray currently has no explicit builtin entry). Run full test suite; if any tests or downstream modules depended on the prior generic typing (unlikely), they may need minor adjustments. No server/runtime compatibility impact, but CI and users rebuilding Cython modules may produce different, but semantically equivalent, generated C."
+      }
+    ]
+  }
+}

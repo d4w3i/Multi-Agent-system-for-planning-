@@ -1,0 +1,77 @@
+{
+  "evaluated_at": "2026-03-04T14:45:30.795504",
+  "pr_dir": "/Users/davidecroatto/code/planningtest0/gpt_5-2_evals/ablation_turn/huggingface_text-generation-inference/pr_3237",
+  "pr_number": 3237,
+  "repository": "huggingface/text-generation-inference",
+  "files": {
+    "precision": 0.0,
+    "recall": 0.0,
+    "f1": 0.0,
+    "predicted_count": 3,
+    "actual_count": 4,
+    "correct_count": 0
+  },
+  "functions": {
+    "precision": 0.2,
+    "recall": 0.1111,
+    "f1": 0.1429,
+    "predicted_count": 5,
+    "actual_count": 9,
+    "correct_count": 1
+  },
+  "steps": {
+    "predicted_steps": 5,
+    "actual_steps": 9,
+    "step_diff": -4,
+    "target_coverage": 0.2,
+    "targets_matched": 1,
+    "targets_total": 5
+  },
+  "semantic": {
+    "summary_similarity": 0.7649,
+    "avg_step_similarity": 0.602,
+    "step_matches": [
+      {
+        "pred_idx": 0,
+        "pred_text": "Operation: Move input_ids/attention_mask to HPU before building derived per-request buffers and ensu...",
+        "gt_idx": 3,
+        "gt_text": "Operation: Ensure prefill padding creates `input_ids` on the same device as existing batch tensors a...",
+        "similarity": 0.7421
+      },
+      {
+        "pred_idx": 1,
+        "pred_text": "Operation: Align decode/append logic with new device placement for per-request token buffers (all_in...",
+        "gt_idx": 6,
+        "gt_text": "Operation: Refactor token generation state updates to avoid unnecessary CPU transfers and make adapt...",
+        "similarity": 0.7264
+      },
+      {
+        "pred_idx": 2,
+        "pred_text": "Operation: Remove explicit disposal/freeing of adapter_meta and keep adapter metadata alive for as l...",
+        "gt_idx": 1,
+        "gt_text": "Operation: Make adapter metadata handling optional when filtering a batch (avoid unconditional acces...",
+        "similarity": 0.584
+      },
+      {
+        "pred_idx": 3,
+        "pred_text": "Operation: Stop disposing adapter_meta during adapter load/merge and ensure returned objects preserv...",
+        "gt_idx": 2,
+        "gt_text": "Operation: Gate concatenation-time adapter index aggregation behind adapter availability and adjust ...",
+        "similarity": 0.4502
+      },
+      {
+        "pred_idx": 4,
+        "pred_text": "Operation: Remove any adapter_meta disposal in the cached merge path and ensure the cache does not s...",
+        "gt_idx": 7,
+        "gt_text": "Operation: Only build adapter batch data when adapter metadata exists (and handle speculative expans...",
+        "similarity": 0.5071
+      }
+    ],
+    "overall_semantic_score": 0.6509,
+    "computed": true,
+    "error": null
+  },
+  "has_prediction": true,
+  "has_ground_truth": true,
+  "error": null
+}

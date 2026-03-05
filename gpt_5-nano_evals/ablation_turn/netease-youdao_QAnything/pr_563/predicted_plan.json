@@ -1,0 +1,49 @@
+{
+  "pr_number": 563,
+  "repository": "netease-youdao/QAnything",
+  "title": "修复 KnowledgeBaseManager.update_chunks_number 的字段错误并移除插入后无效更新",
+  "body": "问题描述\n- KnowledgeBaseManager.update_chunks_number 方法的 SQL 写错了字段名，实际执行的是将 chunk_size 更新为给定的 chunks_number，导致 chunk_size 与 chunks_number 的值错误地相同。\n- 同时，在 insert 文件并写入向量数据库 Milvus 后，原代码对 chunks_number 进行统一更新。这一步在实际场景中会覆盖正确的 chunks_number 值，且在本 PR 目标中应当删除该更新逻辑，以避免干扰正确的 chunks_number 值。\n\n修改目标\n1) 修复 update_chunks_number 的 SQL 字段\n- 将更新目标从 chunk_size 改为 chunks_number，确保两者独立维护，避免相互污染。\n2) 删除 insert_files_server.py 中对 chunks_number 的更新\n- 将 process_data 流程中在 Milvus 插入完成后对 chunks_number 的更新调用删除，避免覆盖正确的 chunks_number 值。\n\n期望效果\n- 上传文件后，chunk_size 与 chunks_number 彼此独立维护，且更新的 chunks_number 为实际的分块数量。\n- 避免因为错误的字段更新导致 chunk_size 与 chunks_number 同步为同一数值的问题。\n\n影响范围\n- 影响 MySQL 层的字段更新逻辑，以及文件上传流程中的更新行为。不会改变向量化、分块逻辑以及 Milvus 写入本身的实现。\n\n验证要点\n- 新增或执行现有测试，确认 File 表的 chunk_size 和 chunks_number 分别更新到正确的值。\n- 通过上传一个大文件，检查上传完成后的文件记录，chunk_size 与 chunks_number 的值是否符合实际分块情况。",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T13:21:17.571860",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "qanything_kernel/connector/database/mysql/mysql_client.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "update_chunks_number",
+          "class_name": "KnowledgeBaseManager",
+          "full_name": "KnowledgeBaseManager.update_chunks_number",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "qanything_kernel/dependent_server/insert_files_serve/insert_files_server.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    }
+  ],
+  "step_plan": {
+    "summary": "Fix the update_chunks_number SQL to target chunks_number and ensure the post-insert chunks_number update in the Milvus insertion flow is removed in a separate change to prevent overwriting the correct value.",
+    "steps": [
+      {
+        "operation": "Modify KnowledgeBaseManager.update_chunks_number to update the chunks_number field",
+        "file_to_modify": "qanything_kernel/connector/database/mysql/mysql_client.py",
+        "function_to_modify": "KnowledgeBaseManager.update_chunks_number",
+        "reason": "Current SQL updates the chunk_size field, causing chunk_size and chunks_number to become the same value and corrupt data integrity. Updating the correct field preserves independence between chunk_size and chunks_number and records the actual number of chunks.",
+        "side_effects": "Tests that cover file metadata updates may rely on chunk_size updates and could fail; downstream code that depends on the old behavior should be reviewed. This change does not alter Milvus insertion logic. A separate change will remove the post-insert chunks_number update in insert_files_server.py. Ensure existing tests for update_chunks_number pass with the corrected field."
+      }
+    ]
+  }
+}

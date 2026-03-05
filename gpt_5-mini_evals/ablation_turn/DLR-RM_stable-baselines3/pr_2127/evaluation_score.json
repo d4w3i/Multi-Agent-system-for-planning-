@@ -1,0 +1,84 @@
+{
+  "evaluated_at": "2026-03-04T16:49:06.529498",
+  "pr_dir": "/Users/davidecroatto/code/planningtest0/gpt_5-mini_evals/ablation_turn/DLR-RM_stable-baselines3/pr_2127",
+  "pr_number": 2127,
+  "repository": "DLR-RM/stable-baselines3",
+  "files": {
+    "precision": 0.5,
+    "recall": 0.3333,
+    "f1": 0.4,
+    "predicted_count": 2,
+    "actual_count": 3,
+    "correct_count": 1
+  },
+  "functions": {
+    "precision": 0.3333,
+    "recall": 0.4,
+    "f1": 0.3636,
+    "predicted_count": 6,
+    "actual_count": 5,
+    "correct_count": 2
+  },
+  "steps": {
+    "predicted_steps": 6,
+    "actual_steps": 6,
+    "step_diff": 0,
+    "target_coverage": 0.8333,
+    "targets_matched": 5,
+    "targets_total": 6
+  },
+  "semantic": {
+    "summary_similarity": 0.7322,
+    "avg_step_similarity": 0.6014,
+    "step_matches": [
+      {
+        "pred_idx": 0,
+        "pred_text": "Operation: Add use_batch_norm flag and optional BatchNorm2d into CNN blocks | Function: NatureCNN.__...",
+        "gt_idx": 0,
+        "gt_text": "Operation: Add a new `use_batch_norm` constructor flag and refactor the CNN block assembly to condit...",
+        "similarity": 0.9109
+      },
+      {
+        "pred_idx": 1,
+        "pred_text": "Operation: Add use_batch_norm flag and optional BatchNorm1d layers in MLP builder | Function: create...",
+        "gt_idx": 1,
+        "gt_text": "Operation: Extend `create_mlp` with a `use_batch_norm` flag to optionally prepend BatchNorm1d on inp...",
+        "similarity": 0.8501
+      },
+      {
+        "pred_idx": 2,
+        "pred_text": "Operation: Make MlpExtractor accept and use use_batch_norm when constructing internal policy and val...",
+        "gt_idx": 4,
+        "gt_text": "Operation: Add a unit test for `create_mlp(..., use_batch_norm=True)` that checks the initial BatchN...",
+        "similarity": 0.5631
+      },
+      {
+        "pred_idx": 3,
+        "pred_text": "Operation: Propagate use_batch_norm into CombinedExtractor and forward to per-input NatureCNNs | Fun...",
+        "gt_idx": 3,
+        "gt_text": "Operation: Add a targeted unit test that constructs `NatureCNN` with `use_batch_norm=True`, asserts ...",
+        "similarity": 0.5361
+      },
+      {
+        "pred_idx": 4,
+        "pred_text": "Operation: Add use_batch_norm parameter to ActorCriticPolicy constructor and store the flag | Functi...",
+        "gt_idx": 5,
+        "gt_text": "Operation: Add an example training script for PPO on Atari Breakout using a CNN policy, including en...",
+        "similarity": 0.3214
+      },
+      {
+        "pred_idx": 5,
+        "pred_text": "Operation: Forward the stored use_batch_norm flag into MlpExtractor construction | Function: ActorCr...",
+        "gt_idx": 2,
+        "gt_text": "Operation: Add a forward-pass regression test that instantiates `ActorCriticCnnPolicy` for both disc...",
+        "similarity": 0.4265
+      }
+    ],
+    "overall_semantic_score": 0.6406,
+    "computed": true,
+    "error": null
+  },
+  "has_prediction": true,
+  "has_ground_truth": true,
+  "error": null
+}

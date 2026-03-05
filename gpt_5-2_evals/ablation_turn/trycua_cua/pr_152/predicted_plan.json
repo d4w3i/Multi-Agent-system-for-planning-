@@ -1,0 +1,187 @@
+{
+  "pr_number": 152,
+  "repository": "trycua/cua",
+  "title": "[Agent] Improved drag tool and standardized UITARS response",
+  "body": "This PR standardizes the UITARS loop responses to use the AgentResponse format. The Gradio UI now displays AgentResponse objects more clearly to reflect the standardized output.\r\n\r\nAlso includes some bugfixes for the drag tool, and allows for dragging along a path with more than two points to support upcoming agent features",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T12:49:00.071111",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "libs/agent/agent/providers/uitars/loop.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "run",
+          "class_name": "UITARSLoop",
+          "full_name": "UITARSLoop.run",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_handle_response",
+          "class_name": "UITARSLoop",
+          "full_name": "UITARSLoop._handle_response",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "libs/agent/agent/ui/gradio/app.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "process_agent_result",
+          "class_name": null,
+          "full_name": "process_agent_result",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "extract_synthesized_text",
+          "class_name": null,
+          "full_name": "extract_synthesized_text",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "libs/agent/agent/providers/uitars/utils.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "parse_action_parameters",
+          "class_name": null,
+          "full_name": "parse_action_parameters",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "libs/agent/agent/providers/uitars/tools/computer.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "__call__",
+          "class_name": "ComputerTool",
+          "full_name": "ComputerTool.__call__",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "libs/computer/computer/interface/base.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "drag_to",
+          "class_name": "BaseComputerInterface",
+          "full_name": "BaseComputerInterface.drag_to",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "libs/computer/computer/interface/macos.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "drag_to",
+          "class_name": "MacOSComputerInterface",
+          "full_name": "MacOSComputerInterface.drag_to",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Standardize the UITARS provider loop to stream consistent AgentResponse objects and update the Gradio UI to render those outputs clearly. Fix and extend the computer drag tool to support multi-point (polyline) dragging while keeping existing 2-point drag behavior compatible.",
+    "steps": [
+      {
+        "operation": "Refactor UITARS streaming loop to yield standardized AgentResponse objects (instead of ad-hoc dicts) and map UITARS “thought/action/tool” events into AgentResponse.output blocks + metadata.",
+        "file_to_modify": "libs/agent/agent/providers/uitars/loop.py",
+        "function_to_modify": "UITARSLoop.run",
+        "reason": "This is the primary emission point for the UITARS provider; standardizing here ensures downstream UI and any consumers see a consistent AgentResponse shape across providers.",
+        "side_effects": "Changes the yielded object schema for UITARS; any callers assuming `{role, content, metadata}` dicts may break. Requires updating UI rendering and potentially tests that snapshot/compare loop yields."
+      },
+      {
+        "operation": "Adjust response handling to return structured data needed by run() (e.g., parsed tool calls, arguments, tool results, and any model text blocks) so run() can construct AgentResponse output blocks deterministically.",
+        "file_to_modify": "libs/agent/agent/providers/uitars/loop.py",
+        "function_to_modify": "UITARSLoop._handle_response",
+        "reason": "run() can only build correct AgentResponse outputs if _handle_response provides normalized, typed/structured details instead of loosely-shaped intermediate dicts; this also reduces duplicated parsing logic.",
+        "side_effects": "May change internal return types/contract between _handle_response and run; ensure any other internal callers are updated. Tool execution timing/streaming granularity may shift (e.g., when results are yielded)."
+      },
+      {
+        "operation": "Update Gradio chat item formatting to detect AgentResponse (including UITARS) and prefer rendering from standardized fields/output blocks rather than provider-specific dict fallbacks.",
+        "file_to_modify": "libs/agent/agent/ui/gradio/app.py",
+        "function_to_modify": "process_agent_result",
+        "reason": "With UITARS emitting AgentResponse, the UI must recognize and display it consistently; this function is the main formatting/dispatch layer for chat rendering.",
+        "side_effects": "UI display may change for UITARS and possibly other providers if shared logic is generalized; verify no regressions in how non-UITARS results are rendered. May require updating golden UI expectations/manual QA."
+      },
+      {
+        "operation": "Enhance synthesized text extraction to render AgentResponse.output blocks clearly (e.g., show `message` to user, optionally collapse/label `reasoning`, and summarize `computer_call`/tool events) with correct prioritization for UITARS.",
+        "file_to_modify": "libs/agent/agent/ui/gradio/app.py",
+        "function_to_modify": "extract_synthesized_text",
+        "reason": "Standardized AgentResponse often carries multiple output blocks; the UI needs a deterministic policy for turning those blocks into readable chat content, especially for UITARS reasoning vs. action/tool traces.",
+        "side_effects": "May alter what is shown/hidden (reasoning visibility, tool call summaries) and ordering of displayed text; ensure this aligns with product expectations and any “show reasoning” toggles if present."
+      },
+      {
+        "operation": "Extend action parameter parsing to support multi-point drag paths (>2 points) while remaining backward compatible with existing 2-point drag syntax; normalize into a single tool_input shape (e.g., `path: [p1,p2,...]`).",
+        "file_to_modify": "libs/agent/agent/providers/uitars/utils.py",
+        "function_to_modify": "parse_action_parameters",
+        "reason": "The drag tool can only execute polyline drags if inputs can represent a path. Centralizing normalization here also fixes parsing edge cases that likely caused current drag bugs.",
+        "side_effects": "Alters the parsed structure for drag actions; downstream code (ComputerTool) must accept both legacy and normalized forms. Add/adjust unit tests for parsing ambiguity and backward compatibility."
+      },
+      {
+        "operation": "Fix drag execution and implement polyline dragging by iterating through consecutive path segments using existing primitives (e.g., move + drag_to), while removing/repairing any unreachable/suspicious code paths in the drag branch.",
+        "file_to_modify": "libs/agent/agent/providers/uitars/tools/computer.py",
+        "function_to_modify": "ComputerTool.__call__",
+        "reason": "This is the execution layer for UITARS computer actions; supporting `path` enables N-point drags, and cleaning up the drag branch addresses current bug/unreachable logic.",
+        "side_effects": "Behavioral change in how drag is performed (multiple drags vs single); may affect timing/smoothness. Requires validating against real interfaces (macOS, etc.) and ensuring legacy 2-point drag still works. Potential need to tweak delays or mouse-down semantics depending on the interface implementation."
+      },
+      {
+        "operation": "Keep the interface contract stable by ensuring drag_to remains sufficient for polyline drag (document/confirm expected semantics for segment-by-segment dragging without adding a new primitive).",
+        "file_to_modify": "libs/computer/computer/interface/base.py",
+        "function_to_modify": "BaseComputerInterface.drag_to",
+        "reason": "The PR scope prefers implementing multi-point drag at the tool layer; verifying/documenting drag_to semantics prevents subtle bugs (e.g., whether drag_to assumes prior mouse-down or performs press+move+release).",
+        "side_effects": "If drag_to semantics are clarified/adjusted, all platforms implementing the interface may need review. Even documentation-only tweaks can reveal mismatches requiring follow-up changes."
+      },
+      {
+        "operation": "Validate macOS drag behavior under the clarified/expected drag_to semantics to ensure sequential segment drags work reliably (or adjust implementation to match base contract).",
+        "file_to_modify": "libs/computer/computer/interface/macos.py",
+        "function_to_modify": "MacOSComputerInterface.drag_to",
+        "reason": "Polyline drag will stress the correctness of drag_to across multiple segments; macOS implementation must align with the base interface contract for consistent tool behavior.",
+        "side_effects": "May change real mouse interaction behavior on macOS; requires manual testing on macOS and could affect any existing flows that rely on current drag timing/press-release behavior."
+      }
+    ]
+  }
+}

@@ -1,0 +1,42 @@
+{
+  "pr_number": 235,
+  "repository": "facebookresearch/AnimatedDrawings",
+  "title": "fix: repair window size in macOS",
+  "body": "When a program is running on macOS with an external monitor connected, the values obtained through \n`glfw.get_framebuffer_size(self.win)`\nwill be larger. \nIt is more appropriate to use \n`glfw.get_window_size(self.win)`\nto retrieve the logical size.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T13:02:30.321553",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "animated_drawings/view/window_view.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "get_framebuffer_size",
+          "class_name": "WindowView",
+          "full_name": "WindowView.get_framebuffer_size",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Change WindowView.get_framebuffer_size to return the logical window size (glfw.get_window_size) instead of the framebuffer pixel size (glfw.get_framebuffer_size) so macOS with external monitors reports the intended logical dimensions.",
+    "steps": [
+      {
+        "operation": "Replace call to get_framebuffer_size with get_window_size",
+        "file_to_modify": "animated_drawings/view/window_view.py",
+        "function_to_modify": "WindowView.get_framebuffer_size",
+        "reason": "On macOS with external HiDPI/Retina monitors, glfw.get_framebuffer_size returns pixel dimensions larger than logical window size; callers of View.get_framebuffer_size in the codebase (viewport setup, projection matrix calculation, background blitting) expect logical window coordinates for layout. Using glfw.get_window_size(self.win) returns the logical window size (in screen coordinates/points) as requested by the PR and centralizes this behavior for all codepaths that call this method.",
+        "side_effects": "Changes the size reported by WindowView.get_framebuffer_size across the codebase, which will affect viewport/projection setup and any rendering code that consumes this value. Potential visual differences may occur because GL.glViewport expects pixel sizes; if the code previously used the framebuffer pixel size to set the viewport, using logical size could make rendered content scale incorrectly on HiDPI displays. Tests and examples that assert pixel-perfect dimensions or previously relied on framebuffer size should be reviewed and possibly updated. MesaView (offscreen) remains unchanged. No public API signature changes, but dependent modules that assume pixel-accurate viewport must be validated. Recommend running rendering tests on macOS with and without external monitors and adding a note or follow-up PR if platform-aware handling (separate pixel vs logical sizes) is required."
+      }
+    ]
+  }
+}

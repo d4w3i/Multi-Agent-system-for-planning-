@@ -1,0 +1,78 @@
+{
+  "pr_number": 165,
+  "repository": "allenai/olmocr",
+  "title": "fix jsonl_to_markdown",
+  "body": "Fixes #162\n\nChanges proposed in this pull request:\n- Add `jsonl_to_markdown.py` utility script to convert JSONL files to Markdown format\n- Script extracts the 'text' field from each line in a JSONL file and saves it as a separate Markdown file\n- Include proper error handling for JSON decoding and file operations\n- Add example usage and documentation\n\nChecklist:\n- Read CONTRIBUTING\n- Updated/added docstrings\n- Added tests",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T12:02:44.052715",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "scripts/jsonl_to_markdown.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "jsonl_to_markdown",
+          "class_name": null,
+          "full_name": "jsonl_to_markdown",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "__main__ block (CLI entrypoint)",
+          "class_name": null,
+          "full_name": "__main__ block (CLI entrypoint)",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "tests/test_jsonl_to_markdown.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    },
+    {
+      "filename": "README.md",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    },
+    {
+      "filename": "docs/source/index.md",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    }
+  ],
+  "step_plan": {
+    "summary": "Upgrade the existing `scripts/jsonl_to_markdown.py` utility to a robust, testable JSONL→Markdown converter with argparse-based CLI and hardened error handling, then document example usage and add coverage for malformed input and missing fields.",
+    "steps": [
+      {
+        "operation": "Refactor the core converter into a callable `jsonl_to_markdown(...)` function that streams the JSONL file, extracts `text`, writes per-record Markdown files, and continues on malformed lines with line-numbered warnings",
+        "file_to_modify": "scripts/jsonl_to_markdown.py",
+        "function_to_modify": "jsonl_to_markdown",
+        "reason": "Centralizing conversion logic in a pure-ish function (parameters in, files out) makes behavior deterministic, improves error handling (JSON decode, missing/empty `text`, I/O issues), and enables unit/integration testing without duplicating CLI parsing logic.",
+        "side_effects": "May change default output naming/content if current behavior is underspecified; ensure backward-compatible defaults (e.g., `line_{i}.md`). Streaming behavior should reduce memory but may alter logging/progress output; tests must be updated/added to match the new, documented behavior."
+      },
+      {
+        "operation": "Replace the ad-hoc `sys.argv` CLI with an `argparse`-based `main()` entrypoint that preserves positional usage (`in.jsonl out_dir`) while adding flags (e.g., naming strategy/template, overwrite, skip-empty, encoding, quiet) and calls `jsonl_to_markdown(...)`",
+        "file_to_modify": "scripts/jsonl_to_markdown.py",
+        "function_to_modify": "main",
+        "reason": "A robust CLI (consistent with other repo scripts) improves UX, provides self-documenting `--help`, and cleanly separates parsing/validation from conversion logic; it also makes it easier to run the script under tests via `subprocess` with stable flags.",
+        "side_effects": "CLI interface changes could affect users relying on undocumented arguments or stdout format; mitigate by keeping the original positional arguments working and by making verbose progress optional (e.g., `--quiet`). Exit codes should be well-defined (non-zero only for fatal conditions like unreadable input)."
+      }
+    ]
+  }
+}

@@ -1,0 +1,188 @@
+{
+    "repository": "redis/redis-py",
+    "pull_request_number": 3534,
+    "title": "fix(lock): Fix LockError message when releasing a lock.",
+    "body": "Fix #3535 \r\n\r\n### Pull Request check-list\r\n\r\n_Please make sure to review and check all of these items:_\r\n\r\n- [ ] Do tests and lints pass with this change?\r\n- [ ] Do the CI tests pass with this change (enable it first in your forked repo and wait for the github action build to finish)?\r\n- [ ] Is the new or changed code fully tested?\r\n- [ ] Is a documentation update included (if this change modifies existing APIs, or introduces new ones)?\r\n- [ ] Is there an example added to the examples folder (if applicable)?\r\n- [ ] Was the change added to CHANGES file?\r\n\r\n_NOTE: these things are not required to open a PR and can be done\r\nafterwards / while the PR is open._\r\n\r\n### Description of change\r\n\r\nWe can get expect result for the test code in #3535  with this implementation:\r\n```\r\nThread 2: Lock error: Cannot release a lock that's no longer owned\r\n```",
+    "pr_date": "2025-02-27T09:27:33Z",
+    "source_branch": "fix/release_nonowned_lock_exception",
+    "language": "en",
+    "keywords_detected": {
+        "branch": [
+            "fix"
+        ],
+        "requirement": [
+            "fix"
+        ],
+        "body": [
+            "add",
+            "implement",
+            "change",
+            "fix",
+            "update",
+            "build"
+        ]
+    },
+    "number_of_links_in_pr": 0,
+    "base_sha": "577b4acb3b9a599e079151b086818f1e5acd69e9",
+    "last_commit_sha": "1468b1359c4509c2269166b6b02922d4675f2bf6",
+    "diff_between_base_and_last": [
+        {
+            "sha": "bb2cccab5251819ac1ebb746b8af9acadb016045",
+            "filename": "redis/asyncio/lock.py",
+            "status": "modified",
+            "additions": 4,
+            "deletions": 1,
+            "changes": 5,
+            "blob_url": "https://github.com/redis/redis-py/blob/1468b1359c4509c2269166b6b02922d4675f2bf6/redis%2Fasyncio%2Flock.py",
+            "raw_url": "https://github.com/redis/redis-py/raw/1468b1359c4509c2269166b6b02922d4675f2bf6/redis%2Fasyncio%2Flock.py",
+            "contents_url": "https://api.github.com/repos/redis/redis-py/contents/redis%2Fasyncio%2Flock.py?ref=1468b1359c4509c2269166b6b02922d4675f2bf6",
+            "patch": "@@ -249,7 +249,10 @@ def release(self) -> Awaitable[None]:\n         \"\"\"Releases the already acquired lock\"\"\"\n         expected_token = self.local.token\n         if expected_token is None:\n-            raise LockError(\"Cannot release an unlocked lock\")\n+            raise LockError(\n+                \"Cannot release a lock that's not owned or is already unlocked.\",\n+                lock_name=self.name,\n+            )\n         self.local.token = None\n         return self.do_release(expected_token)\n "
+        },
+        {
+            "sha": "7a1becb30ada188b053c1f2a84634607e7e6eb00",
+            "filename": "redis/lock.py",
+            "status": "modified",
+            "additions": 4,
+            "deletions": 1,
+            "changes": 5,
+            "blob_url": "https://github.com/redis/redis-py/blob/1468b1359c4509c2269166b6b02922d4675f2bf6/redis%2Flock.py",
+            "raw_url": "https://github.com/redis/redis-py/raw/1468b1359c4509c2269166b6b02922d4675f2bf6/redis%2Flock.py",
+            "contents_url": "https://api.github.com/repos/redis/redis-py/contents/redis%2Flock.py?ref=1468b1359c4509c2269166b6b02922d4675f2bf6",
+            "patch": "@@ -251,7 +251,10 @@ def release(self) -> None:\n         \"\"\"\n         expected_token = self.local.token\n         if expected_token is None:\n-            raise LockError(\"Cannot release an unlocked lock\", lock_name=self.name)\n+            raise LockError(\n+                \"Cannot release a lock that's not owned or is already unlocked.\",\n+                lock_name=self.name,\n+            )\n         self.local.token = None\n         self.do_release(expected_token)\n "
+        }
+    ],
+    "commits": [
+        {
+            "sha": "a8a1ce71534ced9727609624928b510acb51f0e1",
+            "commit_date": "2025-02-27T09:27:21Z",
+            "message": "fix(lock): raise LockNotOwnedError when release a lock from non-owned thread",
+            "number_of_links_in_commit": 0,
+            "files_changed_count": 1,
+            "files": [
+                {
+                    "sha": "7d77bafb95f37090b3a391c5b801ff1302472de0",
+                    "filename": "redis/lock.py",
+                    "status": "modified",
+                    "additions": 7,
+                    "deletions": 1,
+                    "changes": 8,
+                    "blob_url": "https://github.com/redis/redis-py/blob/a8a1ce71534ced9727609624928b510acb51f0e1/redis%2Flock.py",
+                    "raw_url": "https://github.com/redis/redis-py/raw/a8a1ce71534ced9727609624928b510acb51f0e1/redis%2Flock.py",
+                    "contents_url": "https://api.github.com/repos/redis/redis-py/contents/redis%2Flock.py?ref=a8a1ce71534ced9727609624928b510acb51f0e1",
+                    "patch": "@@ -251,7 +251,13 @@ def release(self) -> None:\n         \"\"\"\n         expected_token = self.local.token\n         if expected_token is None:\n-            raise LockError(\"Cannot release an unlocked lock\", lock_name=self.name)\n+            if self.owned():\n+                raise LockError(\"Cannot release an unlocked lock\", lock_name=self.name)\n+            else:\n+                raise LockNotOwnedError(\n+                    \"Cannot release a lock that's no longer owned\",\n+                    lock_name=self.name,\n+                )\n         self.local.token = None\n         self.do_release(expected_token)\n "
+                }
+            ]
+        },
+        {
+            "sha": "3b64e66df2958a080c5c657b92af0b1fd05cc58a",
+            "commit_date": "2025-03-01T00:29:17Z",
+            "message": "change: error raise",
+            "number_of_links_in_commit": 0,
+            "files_changed_count": 1,
+            "files": [
+                {
+                    "sha": "29c361482267c32222a00e4c5d36ed19f89ce6ef",
+                    "filename": "redis/lock.py",
+                    "status": "modified",
+                    "additions": 1,
+                    "deletions": 7,
+                    "changes": 8,
+                    "blob_url": "https://github.com/redis/redis-py/blob/3b64e66df2958a080c5c657b92af0b1fd05cc58a/redis%2Flock.py",
+                    "raw_url": "https://github.com/redis/redis-py/raw/3b64e66df2958a080c5c657b92af0b1fd05cc58a/redis%2Flock.py",
+                    "contents_url": "https://api.github.com/repos/redis/redis-py/contents/redis%2Flock.py?ref=3b64e66df2958a080c5c657b92af0b1fd05cc58a",
+                    "patch": "@@ -251,13 +251,7 @@ def release(self) -> None:\n         \"\"\"\n         expected_token = self.local.token\n         if expected_token is None:\n-            if self.owned():\n-                raise LockError(\"Cannot release an unlocked lock\", lock_name=self.name)\n-            else:\n-                raise LockNotOwnedError(\n-                    \"Cannot release a lock that's no longer owned\",\n-                    lock_name=self.name,\n-                )\n+            raise LockError(\"Cannot release a lock that's not owned or is already unlocked.\", lock_name=self.name)\n         self.local.token = None\n         self.do_release(expected_token)\n "
+                }
+            ]
+        },
+        {
+            "sha": "6c3bf02115c27660b298d8492c85ea896347d7b7",
+            "commit_date": "2025-03-03T13:06:02Z",
+            "message": "Merge branch 'master' into fix/release_nonowned_lock_exception",
+            "number_of_links_in_commit": 0,
+            "files_changed_count": 3,
+            "files": [
+                {
+                    "sha": "0389539fcf31e8ae310b503760bb64047bd1e911",
+                    "filename": "redis/asyncio/sentinel.py",
+                    "status": "modified",
+                    "additions": 9,
+                    "deletions": 1,
+                    "changes": 10,
+                    "blob_url": "https://github.com/redis/redis-py/blob/6c3bf02115c27660b298d8492c85ea896347d7b7/redis%2Fasyncio%2Fsentinel.py",
+                    "raw_url": "https://github.com/redis/redis-py/raw/6c3bf02115c27660b298d8492c85ea896347d7b7/redis%2Fasyncio%2Fsentinel.py",
+                    "contents_url": "https://api.github.com/repos/redis/redis-py/contents/redis%2Fasyncio%2Fsentinel.py?ref=6c3bf02115c27660b298d8492c85ea896347d7b7",
+                    "patch": "@@ -198,6 +198,7 @@ def __init__(\n         sentinels,\n         min_other_sentinels=0,\n         sentinel_kwargs=None,\n+        force_master_ip=None,\n         **connection_kwargs,\n     ):\n         # if sentinel_kwargs isn't defined, use the socket_* options from\n@@ -214,6 +215,7 @@ def __init__(\n         ]\n         self.min_other_sentinels = min_other_sentinels\n         self.connection_kwargs = connection_kwargs\n+        self._force_master_ip = force_master_ip\n \n     async def execute_command(self, *args, **kwargs):\n         \"\"\"\n@@ -277,7 +279,13 @@ async def discover_master(self, service_name: str):\n                     sentinel,\n                     self.sentinels[0],\n                 )\n-                return state[\"ip\"], state[\"port\"]\n+\n+                ip = (\n+                    self._force_master_ip\n+                    if self._force_master_ip is not None\n+                    else state[\"ip\"]\n+                )\n+                return ip, state[\"port\"]\n \n         error_info = \"\"\n         if len(collected_errors) > 0:"
+                },
+                {
+                    "sha": "880d0fda41c56e0efee83712f60643afa5250ede",
+                    "filename": "redis/commands/core.py",
+                    "status": "modified",
+                    "additions": 4,
+                    "deletions": 3,
+                    "changes": 7,
+                    "blob_url": "https://github.com/redis/redis-py/blob/6c3bf02115c27660b298d8492c85ea896347d7b7/redis%2Fcommands%2Fcore.py",
+                    "raw_url": "https://github.com/redis/redis-py/raw/6c3bf02115c27660b298d8492c85ea896347d7b7/redis%2Fcommands%2Fcore.py",
+                    "contents_url": "https://api.github.com/repos/redis/redis-py/contents/redis%2Fcommands%2Fcore.py?ref=6c3bf02115c27660b298d8492c85ea896347d7b7",
+                    "patch": "@@ -5,6 +5,7 @@\n import warnings\n from typing import (\n     TYPE_CHECKING,\n+    Any,\n     AsyncIterator,\n     Awaitable,\n     Callable,\n@@ -6397,12 +6398,12 @@ def function_list(\n         return self.execute_command(\"FUNCTION LIST\", *args)\n \n     def _fcall(\n-        self, command: str, function, numkeys: int, *keys_and_args: Optional[List]\n+        self, command: str, function, numkeys: int, *keys_and_args: Any\n     ) -> Union[Awaitable[str], str]:\n         return self.execute_command(command, function, numkeys, *keys_and_args)\n \n     def fcall(\n-        self, function, numkeys: int, *keys_and_args: Optional[List]\n+        self, function, numkeys: int, *keys_and_args: Any\n     ) -> Union[Awaitable[str], str]:\n         \"\"\"\n         Invoke a function.\n@@ -6412,7 +6413,7 @@ def fcall(\n         return self._fcall(\"FCALL\", function, numkeys, *keys_and_args)\n \n     def fcall_ro(\n-        self, function, numkeys: int, *keys_and_args: Optional[List]\n+        self, function, numkeys: int, *keys_and_args: Any\n     ) -> Union[Awaitable[str], str]:\n         \"\"\"\n         This is a read-only variant of the FCALL command that cannot"
+                },
+                {
+                    "sha": "d9cccf1b92e62e9a8c673db8359dae73c954a6cf",
+                    "filename": "tests/test_asyncio/conftest.py",
+                    "status": "modified",
+                    "additions": 2,
+                    "deletions": 0,
+                    "changes": 2,
+                    "blob_url": "https://github.com/redis/redis-py/blob/6c3bf02115c27660b298d8492c85ea896347d7b7/tests%2Ftest_asyncio%2Fconftest.py",
+                    "raw_url": "https://github.com/redis/redis-py/raw/6c3bf02115c27660b298d8492c85ea896347d7b7/tests%2Ftest_asyncio%2Fconftest.py",
+                    "contents_url": "https://api.github.com/repos/redis/redis-py/contents/tests%2Ftest_asyncio%2Fconftest.py?ref=6c3bf02115c27660b298d8492c85ea896347d7b7",
+                    "patch": "@@ -151,8 +151,10 @@ async def sentinel_setup(local_cache, request):\n         for ip, port in (endpoint.split(\":\") for endpoint in sentinel_ips.split(\",\"))\n     ]\n     kwargs = request.param.get(\"kwargs\", {}) if hasattr(request, \"param\") else {}\n+    force_master_ip = request.param.get(\"force_master_ip\", None)\n     sentinel = Sentinel(\n         sentinel_endpoints,\n+        force_master_ip=force_master_ip,\n         socket_timeout=0.1,\n         client_cache=local_cache,\n         protocol=3,"
+                }
+            ]
+        },
+        {
+            "sha": "6e782ac47388acef38db8d83b22ec9cb5c370a55",
+            "commit_date": "2025-03-03T14:25:52Z",
+            "message": "fix: linter",
+            "number_of_links_in_commit": 0,
+            "files_changed_count": 1,
+            "files": [
+                {
+                    "sha": "7a1becb30ada188b053c1f2a84634607e7e6eb00",
+                    "filename": "redis/lock.py",
+                    "status": "modified",
+                    "additions": 4,
+                    "deletions": 1,
+                    "changes": 5,
+                    "blob_url": "https://github.com/redis/redis-py/blob/6e782ac47388acef38db8d83b22ec9cb5c370a55/redis%2Flock.py",
+                    "raw_url": "https://github.com/redis/redis-py/raw/6e782ac47388acef38db8d83b22ec9cb5c370a55/redis%2Flock.py",
+                    "contents_url": "https://api.github.com/repos/redis/redis-py/contents/redis%2Flock.py?ref=6e782ac47388acef38db8d83b22ec9cb5c370a55",
+                    "patch": "@@ -251,7 +251,10 @@ def release(self) -> None:\n         \"\"\"\n         expected_token = self.local.token\n         if expected_token is None:\n-            raise LockError(\"Cannot release a lock that's not owned or is already unlocked.\", lock_name=self.name)\n+            raise LockError(\n+                \"Cannot release a lock that's not owned or is already unlocked.\",\n+                lock_name=self.name,\n+            )\n         self.local.token = None\n         self.do_release(expected_token)\n "
+                }
+            ]
+        },
+        {
+            "sha": "1468b1359c4509c2269166b6b02922d4675f2bf6",
+            "commit_date": "2025-03-04T02:05:43Z",
+            "message": "fix(lock): async release",
+            "number_of_links_in_commit": 0,
+            "files_changed_count": 1,
+            "files": [
+                {
+                    "sha": "bb2cccab5251819ac1ebb746b8af9acadb016045",
+                    "filename": "redis/asyncio/lock.py",
+                    "status": "modified",
+                    "additions": 4,
+                    "deletions": 1,
+                    "changes": 5,
+                    "blob_url": "https://github.com/redis/redis-py/blob/1468b1359c4509c2269166b6b02922d4675f2bf6/redis%2Fasyncio%2Flock.py",
+                    "raw_url": "https://github.com/redis/redis-py/raw/1468b1359c4509c2269166b6b02922d4675f2bf6/redis%2Fasyncio%2Flock.py",
+                    "contents_url": "https://api.github.com/repos/redis/redis-py/contents/redis%2Fasyncio%2Flock.py?ref=1468b1359c4509c2269166b6b02922d4675f2bf6",
+                    "patch": "@@ -249,7 +249,10 @@ def release(self) -> Awaitable[None]:\n         \"\"\"Releases the already acquired lock\"\"\"\n         expected_token = self.local.token\n         if expected_token is None:\n-            raise LockError(\"Cannot release an unlocked lock\")\n+            raise LockError(\n+                \"Cannot release a lock that's not owned or is already unlocked.\",\n+                lock_name=self.name,\n+            )\n         self.local.token = None\n         return self.do_release(expected_token)\n "
+                }
+            ]
+        }
+    ],
+    "pull_request_url": "https://github.com/redis/redis-py/pull/3534",
+    "commits_url": "https://github.com/redis/redis-py/pull/3534/commits",
+    "files_url": "https://github.com/redis/redis-py/pull/3534/files"
+}

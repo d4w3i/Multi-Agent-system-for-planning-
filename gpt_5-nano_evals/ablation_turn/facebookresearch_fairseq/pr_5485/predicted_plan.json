@@ -1,0 +1,33 @@
+{
+  "pr_number": 5485,
+  "repository": "facebookresearch/fairseq",
+  "title": "The cause of the error has been fixed: \"NameError: name 'help' is not… defined\"",
+  "body": "Fix a typo in EMAConfig metadata causing a NameError at import time. The metadata for store_ema used an unquoted key 'help' instead of the string 'help'. This change updates EMAConfig in fairseq/dataclass/configs.py to use metadata={\"help\": ...}.\n\nFiles touched should be minimal and do not alter external APIs. After the fix, importing the module and creating EMAConfig should no longer raise NameError.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T12:43:30.031296",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "fairseq/dataclass/configs.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    }
+  ],
+  "step_plan": {
+    "summary": "The PR fixes a NameError during import by correcting EMAConfig metadata from an unquoted bare key to the proper string key 'help' in fairseq/dataclass/configs.py. This is a minimal, low-risk change with no API impact.",
+    "steps": [
+      {
+        "operation": "Fix EMAConfig metadata key to use a string in the store_ema field",
+        "file_to_modify": "fairseq/dataclass/configs.py",
+        "function_to_modify": "EMAConfig.__init__",
+        "reason": "Unquoted 'help' caused a NameError during import by being treated as an undefined variable. Changing it to metadata={\"help\": ...} preserves the intended metadata contract and fixes import-time error.",
+        "side_effects": "No public API changes. Import-time stability is restored. Downstream code that introspects EMAConfig.metadata should see the correct 'help' key. May require running existing tests to ensure no unintended breakage and to re-import the module in dependent environments."
+      }
+    ]
+  }
+}

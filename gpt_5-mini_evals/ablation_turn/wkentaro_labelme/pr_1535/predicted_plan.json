@@ -1,0 +1,65 @@
+{
+  "pr_number": 1535,
+  "repository": "wkentaro/labelme",
+  "title": "feat: support AI-generated masks in shape_to_mask",
+  "body": "Updated the export functionality to support AI-generated masks. The function now handles mask data from JSON files, including AI-generated mask formats (list/array and base64 encoded images).",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T15:03:46.085889",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "labelme/label_file.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "load",
+          "class_name": "LabelFile",
+          "full_name": "LabelFile.load",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "labelme/utils/shape.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "shapes_to_label",
+          "class_name": null,
+          "full_name": "shapes_to_label",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Normalize AI-generated masks (base64 images and JSON arrays) during JSON load into 2D boolean numpy arrays and update shapes_to_label to use provided masks directly instead of rasterizing polygon points, preserving AI-generated segmentation masks during export.",
+    "steps": [
+      {
+        "operation": "Normalize and robustly parse shape['mask'] when loading JSON",
+        "file_to_modify": "labelme/label_file.py",
+        "function_to_modify": "LabelFile.load",
+        "reason": "LabelFile.load must accept AI-generated masks stored in JSON in multiple formats (base64-encoded images as strings, and nested lists/arrays) and normalize them into a 2D boolean numpy array so downstream code (shapes_to_label) can use masks directly instead of rasterizing polygons.",
+        "side_effects": "Changes how JSON shape masks are interpreted: existing workflows that relied on previous decoding behavior may see different boolean masks if inputs were non-standard; unit tests for LabelFile.load and JSON import/export must be updated. If decoded/provided masks have dimensions that don't match the expected image size, downstream consumers (export_json, shapes_to_label) may raise or produce incorrect outputs; include clear logging/warnings on mismatch. Importing numpy (np) in labelme/label_file.py may be necessary; no public API signature changes but serialized JSON semantics change."
+      },
+      {
+        "operation": "Prefer supplied boolean masks in shapes_to_label instead of always rasterizing points",
+        "file_to_modify": "labelme/utils/shape.py",
+        "function_to_modify": "shapes_to_label",
+        "reason": "shapes_to_label currently always rasterizes shapes via shape_to_mask. For AI-generated masks that are provided in the shape dict (normalized to a 2D boolean numpy array by LabelFile.load), shapes_to_label must use that mask directly so exports preserve AI-generated segmentations rather than re-rasterizing possibly-inaccurate polygons.",
+        "side_effects": "Behavioral change in label image generation and export: exported label and instance images will reflect provided masks. Tests covering shapes_to_label and export_json should be updated/extended to include mask-containing shapes. If supplied masks have mismatched dtype or dimensions, shapes_to_label must coerce via np.asarray(...).astype(bool) and should log/warn on shape mismatch; mismatched shapes can cause indexing errors or incorrect label maps. No external API signature changes, but downstream consumers that expect masks to be generated from points may observe different outputs."
+      }
+    ]
+  }
+}

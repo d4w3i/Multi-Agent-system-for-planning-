@@ -1,0 +1,85 @@
+{
+    "repository": "mlc-ai/mlc-llm",
+    "pull_request_number": 3150,
+    "title": "Fixed log prob result generation",
+    "body": "Fixes the merging logic of logprobs of different tokens  for the same choice.\r\n\r\n\r\nEarlier response \r\n\r\n```{\r\n    \"id\": \"cmpl-0e79013e278c497a8926be59641d0381\",\r\n    \"choices\": [\r\n        {\r\n            \"finish_reason\": \"length\",\r\n            \"index\": 0,\r\n            \"logprobs\": {\r\n                \"text_offset\": null,\r\n                \"token_logprobs\": [\r\n                    0.0\r\n                ],\r\n                \"tokens\": [\r\n                    \"\"\r\n                ],\r\n                \"top_logprobs\": [\r\n                    {\r\n                        \"\": -23.0259,\r\n                        \"<unk>\": -23.0259,\r\n                        \"<s>\": -23.0259,\r\n                        \"</s>\": -23.0259\r\n                    }\r\n                ]\r\n            },\r\n            \"text\": \"2, and \"\r\n        }\r\n    ],\r\n    \"created\": 1741063066,\r\n    \"model\": \"/home/annanyac/mlc-llm/dist/Llama-2-7b-chat-hf-q0f16-MLC/\",\r\n    \"object\": \"text_completion\",\r\n    \"usage\": {\r\n        \"prompt_tokens\": 6,\r\n        \"completion_tokens\": 5,\r\n        \"total_tokens\": 11,\r\n        \"extra\": null\r\n    }\r\n}\r\n```\r\n\r\n\r\nNew response \r\n\r\n```{\r\n    \"id\": \"cmpl-d6b2bc3820f8441fbfbe9d5d0be3d9ce\",\r\n    \"choices\": [\r\n        {\r\n            \"finish_reason\": \"length\",\r\n            \"index\": 0,\r\n            \"logprobs\": {\r\n                \"text_offset\": null,\r\n                \"token_logprobs\": [\r\n                    0.0,\r\n                    -0.912338,\r\n                    -0.47704,\r\n                    -0.111992\r\n                ],\r\n                \"tokens\": [\r\n                    \"2\",\r\n                    \".\",\r\n                    \"\",\r\n                    \"\"\r\n                ],\r\n                \"top_logprobs\": [\r\n                    {\r\n                        \"2\": 0.0,\r\n                        \"<unk>\": -23.0259,\r\n                        \"<s>\": -23.0259,\r\n                        \"</s>\": -23.0259,\r\n                        \"\": -23.0259\r\n                    },\r\n                    {\r\n                        \".\": -0.912338,\r\n                        \",\": -1.07249,\r\n                        \"\": -1.36156,\r\n                        \"<unk>\": -23.0259,\r\n                        \"<s>\": -23.0259\r\n                    },\r\n                    {\r\n                        \"\": -1.39891,\r\n                        \"So\": -2.54735,\r\n                        \"In\": -2.91454,\r\n                        \"<unk>\": -23.0259\r\n                    },\r\n                    {\r\n                        \"\": -0.111992,\r\n                        \"So\": -2.2448,\r\n                        \"<unk>\": -23.0259,\r\n                        \"<s>\": -23.0259,\r\n                        \"</s>\": -23.0259\r\n                    }\r\n                ]\r\n            },\r\n            \"text\": \"2.\\n\\n\"\r\n        }\r\n    ],\r\n    \"created\": 1741064363,\r\n    \"model\": \"/mnt/data/ehdd1/home/models/mlc/Llama-2-7b-chat-hf-q0f16-MLC/\",\r\n    \"object\": \"text_completion\",\r\n    \"usage\": {\r\n        \"prompt_tokens\": 6,\r\n        \"completion_tokens\": 5,\r\n        \"total_tokens\": 11,\r\n        \"extra\": null\r\n    }\r\n}```",
+    "pr_date": "2025-03-04T05:06:38Z",
+    "source_branch": "fix-log-prob-output",
+    "language": "en",
+    "keywords_detected": {
+        "branch": [
+            "fix"
+        ],
+        "requirement": [
+            "fix"
+        ],
+        "body": [
+            "create",
+            "fix"
+        ]
+    },
+    "number_of_links_in_pr": 0,
+    "base_sha": "1cc317f964cf015af655b60990b8b297528cf7e3",
+    "last_commit_sha": "977998579ef0d87508dae9e480319c1c24779aa8",
+    "diff_between_base_and_last": [
+        {
+            "sha": "18a415e4136b1bc98a50606db7399bfb4738771b",
+            "filename": "python/mlc_llm/serve/entrypoints/openai_entrypoints.py",
+            "status": "modified",
+            "additions": 8,
+            "deletions": 1,
+            "changes": 9,
+            "blob_url": "https://github.com/mlc-ai/mlc-llm/blob/977998579ef0d87508dae9e480319c1c24779aa8/python%2Fmlc_llm%2Fserve%2Fentrypoints%2Fopenai_entrypoints.py",
+            "raw_url": "https://github.com/mlc-ai/mlc-llm/raw/977998579ef0d87508dae9e480319c1c24779aa8/python%2Fmlc_llm%2Fserve%2Fentrypoints%2Fopenai_entrypoints.py",
+            "contents_url": "https://api.github.com/repos/mlc-ai/mlc-llm/contents/python%2Fmlc_llm%2Fserve%2Fentrypoints%2Fopenai_entrypoints.py?ref=977998579ef0d87508dae9e480319c1c24779aa8",
+            "patch": "@@ -111,7 +111,14 @@ async def completion_stream_generator() -> AsyncGenerator[str, None]:\n             if choice.finish_reason is not None and finish_reasons[choice.index] is None:\n                 finish_reasons[choice.index] = choice.finish_reason\n             if choice.logprobs is not None:\n-                logprob_results[choice.index] = choice.logprobs\n+                if logprob_results[choice.index] is None:\n+                    logprob_results[choice.index] = choice.logprobs\n+                else:\n+                    logprob_results[choice.index].token_logprobs.extend(\n+                        choice.logprobs.token_logprobs\n+                    )\n+                    logprob_results[choice.index].tokens.extend(choice.logprobs.tokens)\n+                    logprob_results[choice.index].top_logprobs.extend(choice.logprobs.top_logprobs)\n \n     return engine_base.wrap_completion_response(\n         request_id=request_id,"
+        }
+    ],
+    "commits": [
+        {
+            "sha": "a03e619f106f572947880cca2521360b7121cf22",
+            "commit_date": "2025-03-04T05:03:13Z",
+            "message": "Fixed log prob result generation",
+            "number_of_links_in_commit": 0,
+            "files_changed_count": 1,
+            "files": [
+                {
+                    "sha": "a5bf99ef8c9993cf7070157ce4d3a74c245799ed",
+                    "filename": "python/mlc_llm/serve/entrypoints/openai_entrypoints.py",
+                    "status": "modified",
+                    "additions": 6,
+                    "deletions": 1,
+                    "changes": 7,
+                    "blob_url": "https://github.com/mlc-ai/mlc-llm/blob/a03e619f106f572947880cca2521360b7121cf22/python%2Fmlc_llm%2Fserve%2Fentrypoints%2Fopenai_entrypoints.py",
+                    "raw_url": "https://github.com/mlc-ai/mlc-llm/raw/a03e619f106f572947880cca2521360b7121cf22/python%2Fmlc_llm%2Fserve%2Fentrypoints%2Fopenai_entrypoints.py",
+                    "contents_url": "https://api.github.com/repos/mlc-ai/mlc-llm/contents/python%2Fmlc_llm%2Fserve%2Fentrypoints%2Fopenai_entrypoints.py?ref=a03e619f106f572947880cca2521360b7121cf22",
+                    "patch": "@@ -111,7 +111,12 @@ async def completion_stream_generator() -> AsyncGenerator[str, None]:\n             if choice.finish_reason is not None and finish_reasons[choice.index] is None:\n                 finish_reasons[choice.index] = choice.finish_reason\n             if choice.logprobs is not None:\n-                logprob_results[choice.index] = choice.logprobs\n+                if logprob_results[choice.index] is None:\n+                    logprob_results[choice.index] = choice.logprobs\n+                else:\n+                    logprob_results[choice.index].token_logprobs.extend(choice.logprobs.token_logprobs)\n+                    logprob_results[choice.index].tokens.extend(choice.logprobs.tokens)\n+                    logprob_results[choice.index].top_logprobs.extend(choice.logprobs.top_logprobs)\n \n     return engine_base.wrap_completion_response(\n         request_id=request_id,"
+                }
+            ]
+        },
+        {
+            "sha": "977998579ef0d87508dae9e480319c1c24779aa8",
+            "commit_date": "2025-03-05T05:35:50Z",
+            "message": "hook changes",
+            "number_of_links_in_commit": 0,
+            "files_changed_count": 1,
+            "files": [
+                {
+                    "sha": "18a415e4136b1bc98a50606db7399bfb4738771b",
+                    "filename": "python/mlc_llm/serve/entrypoints/openai_entrypoints.py",
+                    "status": "modified",
+                    "additions": 3,
+                    "deletions": 1,
+                    "changes": 4,
+                    "blob_url": "https://github.com/mlc-ai/mlc-llm/blob/977998579ef0d87508dae9e480319c1c24779aa8/python%2Fmlc_llm%2Fserve%2Fentrypoints%2Fopenai_entrypoints.py",
+                    "raw_url": "https://github.com/mlc-ai/mlc-llm/raw/977998579ef0d87508dae9e480319c1c24779aa8/python%2Fmlc_llm%2Fserve%2Fentrypoints%2Fopenai_entrypoints.py",
+                    "contents_url": "https://api.github.com/repos/mlc-ai/mlc-llm/contents/python%2Fmlc_llm%2Fserve%2Fentrypoints%2Fopenai_entrypoints.py?ref=977998579ef0d87508dae9e480319c1c24779aa8",
+                    "patch": "@@ -114,7 +114,9 @@ async def completion_stream_generator() -> AsyncGenerator[str, None]:\n                 if logprob_results[choice.index] is None:\n                     logprob_results[choice.index] = choice.logprobs\n                 else:\n-                    logprob_results[choice.index].token_logprobs.extend(choice.logprobs.token_logprobs)\n+                    logprob_results[choice.index].token_logprobs.extend(\n+                        choice.logprobs.token_logprobs\n+                    )\n                     logprob_results[choice.index].tokens.extend(choice.logprobs.tokens)\n                     logprob_results[choice.index].top_logprobs.extend(choice.logprobs.top_logprobs)\n "
+                }
+            ]
+        }
+    ],
+    "pull_request_url": "https://github.com/mlc-ai/mlc-llm/pull/3150",
+    "commits_url": "https://github.com/mlc-ai/mlc-llm/pull/3150/commits",
+    "files_url": "https://github.com/mlc-ai/mlc-llm/pull/3150/files"
+}

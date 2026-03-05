@@ -1,0 +1,57 @@
+{
+  "pr_number": 15574,
+  "repository": "goauthentik/authentik",
+  "title": "enterprise/audit: fix diff with update_fields",
+  "body": "Fixes the enterprise audit diff computation when update_fields is provided. The current implementation can produce diffs for fields that were not actually updated, or even include irrelevant prior values due to mismatched prev/new state handling. This change:\n- Ensures diff is calculated only against fields that were updated (when update_fields is provided).\n- Corrects a bug in serialize_simple where a File field check mistakenly referenced the wrong variable, potentially skipping proper file-name handling.\n\nImpact:\n- test_serialize_fields with update_fields should continue to pass (and accurately reflect only the updated fields).\n- test_update should produce a diff containing only the updated field(s) (e.g., name).\n\nNo API surface changes beyond correcting internal behavior of the audit middleware.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T12:50:12.729736",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "middleware.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "serialize_simple",
+          "class_name": "EnterpriseAuditMiddleware",
+          "full_name": "EnterpriseAuditMiddleware.serialize_simple",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "post_save_handler",
+          "class_name": "EnterpriseAuditMiddleware",
+          "full_name": "EnterpriseAuditMiddleware.post_save_handler",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "This PR fixes enterprise audit diff computation when update_fields is provided by correcting File-field handling during serialization and by narrowing the previous state to only the updated fields before diffing.",
+    "steps": [
+      {
+        "operation": "Fix File field handling in serialize_simple by checking field_value for File type",
+        "file_to_modify": "base_project/middleware.py",
+        "function_to_modify": "EnterpriseAuditMiddleware.serialize_simple",
+        "reason": "Currently the code checks isinstance(value, File) where 'value' is always None in this context. It should inspect the actual field value (field_value) to correctly handle File fields by using field_value.name when appropriate.",
+        "side_effects": "No API surface changes; may affect serialization of File fields in tests that assert serialized output (e.g., test_serialize_fields). Ensure test coverage accounts for correct file-name handling."
+      },
+      {
+        "operation": "Narrow the previous state to only updated fields in post_save_handler when update_fields is provided",
+        "file_to_modify": "base_project/middleware.py",
+        "function_to_modify": "EnterpriseAuditMiddleware.post_save_handler",
+        "reason": "Diff calculation currently uses the full previous state even when update_fields is provided, leading to diffs for non-updated fields. Restrict prev_state to keys present in update_fields before computing diff so diffs reflect only updated fields (e.g., name).",
+        "side_effects": "Tests like test_update should see diffs limited to updated fields. Potential minor impact on any downstream logic that consumes full previous state; align with updated_fields semantics."
+      }
+    ]
+  }
+}

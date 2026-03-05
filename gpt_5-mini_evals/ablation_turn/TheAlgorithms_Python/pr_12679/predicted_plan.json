@@ -1,0 +1,49 @@
+{
+  "pr_number": 12679,
+  "repository": "TheAlgorithms/Python",
+  "title": "Fix: Correct time-and-a-half pay calculation logic",
+  "body": "### Describe your change:\n\n- [x] Fix a bug or typo in an existing algorithm  \n\nThis pull request fixes the logic for calculating time-and-a-half pay in the `financial/time_and_half_pay.py` file.\n\nPreviously, the overtime calculation was incorrect. The fix correctly applies the time-and-a-half formula:\n```python\novertime_pay = overtime_hours * pay_rate * 1.5\n```\n\n\n### Checklist:\n* [x] I have read [CONTRIBUTING.md](https://github.com/TheAlgorithms/Python/blob/master/CONTRIBUTING.md).\n* [x] This pull request is all my own work -- I have not plagiarized.\n* [x] I know that pull requests will not be merged if they fail the automated tests.\n* [x] This PR only changes one algorithm file.  To ease review, please open separate PRs for separate algorithms.\n* [x] All new Python files are placed inside an existing directory.\n* [x] All filenames are in all lowercase characters with no spaces or dashes.\n* [x] All functions and variable names follow Python naming conventions.\n* [x] All function parameters and return values are annotated with Python [type hints](https://docs.python.org/3/library/typing.html).\n* [x] All functions have [doctests](https://docs.python.org/3/library/doctest.html) that pass the automated testing.\n* [ ] All new algorithms include at least one URL that points to Wikipedia or another similar explanation.\n* [ ] If this pull request resolves one or more open issues then the description above includes the issue number(s) with a [closing keyword](https://docs.github.com/en/issues/tracking-your-work-with-issues/linking-a-pull-request-to-an-issue): \"Fixes #ISSUE-NUMBER\".",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T12:20:50.398924",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "financial/time_and_half_pay.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "pay",
+          "class_name": null,
+          "full_name": "pay",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "financial/__init__.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    }
+  ],
+  "step_plan": {
+    "summary": "Fix the pay() function in financial/time_and_half_pay.py to compute normal pay for base hours and apply 1.5x rate to overtime hours, avoiding double-counting and making the time-and-a-half logic explicit.",
+    "steps": [
+      {
+        "operation": "Replace the overtime calculation with explicit time-and-a-half logic",
+        "file_to_modify": "financial/time_and_half_pay.py",
+        "function_to_modify": "pay",
+        "reason": "The existing implementation computed normal_pay = hours_worked * pay_rate and then added only the extra half-pay for overtime (over_time_pay = over_time * pay_rate / 2). This is less clear and fragile: if overtime pay were computed as over_time * pay_rate * 1.5 while keeping normal_pay as-is, overtime would be double-counted. The correct, explicit approach is to compute normal pay only for base hours (base_hours = min(hours_worked, hours)) and compute overtime pay as overtime_hours * pay_rate * 1.5, then return their sum.",
+        "side_effects": "Numeric outputs for existing doctests remain the same, so tests should continue to pass (e.g., pay(41, 1) -> 41.5). API (function signature) does not change. Downstream code that inspects intermediate values (e.g., expects normal_pay to equal pay for all hours) may observe a different internal split (normal_pay now only covers base hours). If added, input validation (e.g., enforcing non-negative inputs) would affect callers that pass negative values. After the change, run doctests and the repository's test suite; ensure linting/formatting (PEP8) and type hints remain intact."
+      }
+    ]
+  }
+}

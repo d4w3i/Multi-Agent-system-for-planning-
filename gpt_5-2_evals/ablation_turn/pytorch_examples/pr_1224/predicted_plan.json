@@ -1,0 +1,57 @@
+{
+  "pr_number": 1224,
+  "repository": "pytorch/examples",
+  "title": "Fixes in Imagenet training script",
+  "body": "* ngpus_per_node variable count fix\r\n* dist_backend assertion added for nccl issue",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T12:40:13.578465",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "imagenet/main.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "main",
+          "class_name": null,
+          "full_name": "main",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "main_worker",
+          "class_name": null,
+          "full_name": "main_worker",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Fixes distributed ImageNet training startup by correcting the per-node GPU count used for spawning/scaling and by adding a fail-fast assertion to prevent invalid NCCL backend usage (e.g., NCCL without CUDA), reducing distributed initialization failures.",
+    "steps": [
+      {
+        "operation": "Fix `ngpus_per_node` computation and ensure it is used consistently for world-size scaling and process spawning",
+        "file_to_modify": "imagenet/main.py",
+        "function_to_modify": "main",
+        "reason": "`ngpus_per_node` drives `mp.spawn(..., nprocs=ngpus_per_node)`, rank calculation in workers, and `world_size` scaling in multiprocessing-distributed mode. If it is computed incorrectly (or from the wrong source), it causes incorrect number of spawned processes, wrong `args.world_size`, and downstream batch/workers scaling errors.",
+        "side_effects": "Changes behavior of distributed startup: number of processes spawned per node and computed `world_size` may differ from current buggy behavior. May expose misconfigurations (e.g., expecting CPU-only distributed with GPU count logic). Ensure distributed launch commands that previously “worked by accident” are updated/validated."
+      },
+      {
+        "operation": "Add a fail-fast assertion/validation for `dist_backend` vs device availability (NCCL guard) before initializing process groups",
+        "file_to_modify": "imagenet/main.py",
+        "function_to_modify": "main_worker",
+        "reason": "NCCL requires CUDA and is the expected backend for multi-GPU multiprocessing distributed training. Adding an explicit assertion before `dist.init_process_group(...)` prevents hard-to-debug NCCL initialization failures when CUDA is unavailable or when an invalid backend/device combination is selected.",
+        "side_effects": "Introduces stricter runtime checks that will raise errors earlier for invalid configurations (e.g., `--dist-backend nccl` on CPU-only nodes). This may require users to switch to `gloo` for CPU distributed runs or enable CUDA properly; also may affect CI environments that lack GPUs."
+      }
+    ]
+  }
+}

@@ -1,0 +1,42 @@
+{
+  "pr_number": 104,
+  "repository": "g1879/DrissionPage",
+  "title": "fixed json decoding bug in daemon thread",
+  "body": "fixed bug in daemon thread that is triggered when trying to convert an empty message_json to dict. Still raising the JSONDecodeError in case decoding fails for any other reason",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T13:05:47.187381",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "DrissionPage/chromium_driver.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "_recv_loop",
+          "class_name": "ChromiumDriver",
+          "full_name": "ChromiumDriver._recv_loop",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Fix the daemon receiver loop so empty or whitespace-only websocket messages are ignored instead of causing json.loads to raise JSONDecodeError and terminate the thread; still allow JSONDecodeError to propagate for non-empty malformed JSON. Also add the JSONDecodeError import to the module.",
+    "steps": [
+      {
+        "operation": "Guard against empty websocket messages and handle JSONDecodeError appropriately; add JSONDecodeError import",
+        "file_to_modify": "DrissionPage/chromium_driver.py",
+        "function_to_modify": "ChromiumDriver._recv_loop",
+        "reason": "websocket.recv() can return an empty string or whitespace which causes json.loads('') to raise JSONDecodeError and crash the daemon receiver thread. The receiver should ignore empty/whitespace messages and only allow JSONDecodeError to propagate for genuinely malformed (non-empty) JSON. Also ensure JSONDecodeError is imported so it can be caught explicitly.",
+        "side_effects": "Prevents the receiver daemon thread from terminating on spurious empty messages, improving stability. Malformed non-empty JSON will still raise JSONDecodeError and surface as before (no silent suppression), so callers/tests that expect that exception will continue to see it. Adding the import has no runtime side effects. Update/add unit/integration tests for the recv loop to cover empty/whitespace messages (should be ignored) and invalid non-empty JSON (should raise). Downstream consumers that relied on the thread crashing for certain error conditions will observe different behavior (thread stays alive), so verify any monitoring or error-handling logic that assumed the previous crash behavior."
+      }
+    ]
+  }
+}

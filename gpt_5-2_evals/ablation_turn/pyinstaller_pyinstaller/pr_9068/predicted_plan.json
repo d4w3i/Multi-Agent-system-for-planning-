@@ -1,0 +1,88 @@
+{
+  "pr_number": 9068,
+  "repository": "pyinstaller/pyinstaller",
+  "title": "Fix for failing test_site_module_disabled on macOS and python 3.9",
+  "body": "Over the last few days, the `test_site_module_disabled` started to fail on macOS python 3.9 runner (e.g., https://github.com/pyinstaller/pyinstaller/actions/runs/14001775971/job/39212391324?pr=9067).\n\nThe failure is caused by `site` module being already imported at the start of the test, which is explicitly checking that this is not the case (as `site` module should be disabled in the interpreter config, and thus not imported during its initialization).\n\nIt turns out that this is caused by import of `setuptools` in the run-time hook for `setuptools`, but only with `setuptools` v77.0.3 that was released on Mar 20. The import chain is `pyi_rth_setuptools.py` -> `setuptools` -> `setuptools.dist` -> `setuptools.command` -> `setuptools._distutils.command` -> `setuptools._distutils.command.build_ext` -> `site`,\nand was likely brought about by https://github.com/pypa/setuptools/commit/1d120d919bd6d5cb8ba1b179c2099bd947d2c466.\n\nIt also turns out that the failing test under python 3.9 on macOS is collecting `setuptools`, while the (succeeding) tests under other versions (and OSes) are not. The offending import chain turns out to be: `pyi_site_module_disabled.py` -> `site` -> `_sitebuiltins` -> `pydoc` -> `sysconfig` -> `_osx_support` -> `distutils` (-> `setuptools`).\n\nThis is caused by a conditional import in `_osx_support.compiler_fixup` (https://github.com/python/cpython/blob/f3994ade31a563d49806cf6a681d1b1115fccaa3/Lib/_osx_support.py#L430-L434), which itself seems to be intended to be used by `distutils`.\n\nThis explains why we are seeing this only on macOS, and only with python 3.9 - latest `setuptools` do not support python 3.8 anymore, and the use of `distutils.log` in `_osx_support.compiler_fixup` was removed in python >= 3.10.\n\nTherefore, add a hook for `_osx_support` that excludes `distutils`. In addition to fixing the failing test, this should also ensure that `distutils` / `setuptools` do no end up pulled into basic applications that import either `site` or `sysconfig` (or a module that imports either of these) when building with python 3.8 or 3.9 on macOs.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T12:38:33.778659",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "PyInstaller/hooks/hook-_osx_support.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "(module-level) excludedimports configuration",
+          "class_name": null,
+          "full_name": "(module-level) excludedimports configuration",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "PyInstaller/hooks/hook-distutils.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "(module-level) hiddenimports initialization logic",
+          "class_name": null,
+          "full_name": "(module-level) hiddenimports initialization logic",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "PyInstaller/hooks/rthooks/pyi_rth_setuptools.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "_install_setuptools_distutils_hack",
+          "class_name": "_pyi_rthook",
+          "full_name": "_pyi_rthook._install_setuptools_distutils_hack",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Add a PyInstaller hook for macOS stdlib module `_osx_support` to prevent it from pulling in `distutils` during analysis, which indirectly triggers setuptools behavior that causes `site` to be imported too early on macOS Python 3.9. Review related distutils and setuptools runtime-hook logic to ensure the fix does not reintroduce the dependency chain or cause regressions for explicit distutils usage.",
+    "steps": [
+      {
+        "operation": "Add a dedicated hook for stdlib module `_osx_support` that excludes `distutils` from modulegraph collection (and, if needed, `distutils.log` as well)",
+        "file_to_modify": "PyInstaller/hooks/hook-_osx_support.py",
+        "function_to_modify": null,
+        "reason": "On macOS with Python 3.8/3.9, importing `sysconfig`/`site` can import `_osx_support`, whose `compiler_fixup()` conditionally imports `distutils` for logging. PyInstaller then collects `distutils` (and potentially triggers setuptools-related hooks/rthooks), which can indirectly cause `site` to be imported early and fail `test_site_module_disabled`. A module-scoped `excludedimports` for `_osx_support` prevents this incidental dependency chain without impacting explicit `distutils` usage elsewhere.",
+        "side_effects": "May reduce incidental inclusion of `distutils`/`setuptools` in macOS py3.8/3.9 builds that only import `site`/`sysconfig`. If some code relies on `_osx_support` to implicitly bring in `distutils` (unlikely/undesired), it would stop working; explicit `import distutils` should remain unaffected. Might require adjusting exclusions to cover both `distutils` and `distutils.log` depending on how the import is represented during analysis."
+      },
+      {
+        "operation": "Review and adjust distutils hook hidden-import behavior so it remains correct when `distutils` is no longer accidentally pulled in via `_osx_support` (keep behavior for explicit `distutils` imports)",
+        "file_to_modify": "PyInstaller/hooks/hook-distutils.py",
+        "function_to_modify": null,
+        "reason": "Existing `hook-distutils.py` may add `setuptools._distutils` to `hiddenimports` (for setuptools>=60) whenever `distutils` is collected. With the new `_osx_support` exclusion, `distutils` should not be collected in the failing scenario, and the hook should not reintroduce setuptools-related dependencies indirectly. Confirm the hook triggers only when `distutils` is truly required, and does not cause unintended imports/collections that would resurrect the original failure mode.",
+        "side_effects": "Changes here can affect any build that uses `distutils` explicitly, particularly around setuptools vendored distutils. Risk of regressions in packaging/build tooling inside frozen apps; should be validated with existing functional tests and any distutils/setuptools-specific tests."
+      },
+      {
+        "operation": "Validate (and if necessary, modify) `_pyi_rthook._install_setuptools_distutils_hack` to avoid importing `setuptools` in scenarios where it is not required, and ensure the new `_osx_support` hook prevents this rthook from being activated in the failing test case",
+        "file_to_modify": "PyInstaller/hooks/rthooks/pyi_rth_setuptools.py",
+        "function_to_modify": "_pyi_rthook._install_setuptools_distutils_hack",
+        "reason": "The macOS py3.9 failure is exacerbated by setuptools v77.0.3 importing `site` via its internal import chain when PyInstaller’s runtime hook imports `setuptools`. Even if the preferred fix is to stop collecting `distutils` (and therefore avoid collecting setuptools/rthook activation) via `_osx_support`, we should confirm the runtime hook does not eagerly import `setuptools` in a way that can still happen unexpectedly. If activation conditions are too broad, tighten them (e.g., gate on explicit inclusion/need) so `test_site_module_disabled` cannot end up importing `site` before the test expects it.",
+        "side_effects": "Any change to the rthook can impact frozen apps that rely on setuptools/distutils behavior at runtime (e.g., plugins or dynamic build steps). Tightening conditions might break edge cases where the hack is needed; should be accompanied by running functional tests, especially those involving setuptools/distutils, and by verifying the macOS py3.9 `test_site_module_disabled` scenario specifically."
+      }
+    ]
+  }
+}

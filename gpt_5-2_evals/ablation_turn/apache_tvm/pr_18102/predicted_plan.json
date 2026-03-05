@@ -1,0 +1,64 @@
+{
+  "pr_number": 18102,
+  "repository": "apache/tvm",
+  "title": "[RELAX] Fix rotary embedding buffer size calculation",
+  "body": "- Change head_dim//2 to rotary_dim//2 in LongRope scaling\r\n- Fixes buffer size when rotary_dim differs from head_dim when partial_rotary_factor < 1.0",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T12:04:17.742773",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "python/tvm/relax/frontend/nn/llm/position_embedding.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "fused_rope_longrope_scaling",
+          "class_name": "llama_rope_with_position_map",
+          "full_name": "llama_rope_with_position_map.fused_rope_longrope_scaling",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "rope_freq_longrope",
+          "class_name": null,
+          "full_name": "rope_freq_longrope",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "tests (new/updated) - likely under tests/python/relax or tests/python/relax/frontend/nn/llm",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    }
+  ],
+  "step_plan": {
+    "summary": "Fix Relax LongRoPE rotary embedding scaling to size the ext_factors buffer by rotary_dim//2 (not head_dim//2), ensuring correct buffer contracts when partial rotary embeddings are used (rotary_dim != head_dim). Also aligns/document assumptions in LongRoPE frequency computation to prevent future mismatches.",
+    "steps": [
+      {
+        "operation": "Fix LongRoPE ext_factors buffer shape to use rotary_dim instead of head_dim in the LongRoPE fused TIR primfunc signature",
+        "file_to_modify": "python/tvm/relax/frontend/nn/llm/position_embedding.py",
+        "function_to_modify": "llama_rope_with_position_map.fused_rope_longrope_scaling",
+        "reason": "In the LongRoPE path, ext_factors is indexed by the rotary frequency dimension (d_range == rotary_dim), so the buffer contract must be sized as rotary_dim//2. Using head_dim//2 breaks partial rotary (partial_rotary_factor < 1.0) where rotary_dim != head_dim, leading to shape mismatches and potential incorrect memory access assumptions.",
+        "side_effects": "Changes the generated TIR function signature/buffer map for LongRoPE scaling; any caller that constructs/provides rope_ext_factors must match the new expected length (rotary_dim//2). May require updating downstream code or tests that hardcode ext_factors size to head_dim//2."
+      },
+      {
+        "operation": "Audit and document/align ext_factors indexing assumptions in LongRoPE frequency computation to ensure consistency with rotary_dim-sized ext_factors",
+        "file_to_modify": "python/tvm/relax/frontend/nn/llm/position_embedding.py",
+        "function_to_modify": "rope_freq_longrope",
+        "reason": "rope_freq_longrope uses ext_factors[d % (d_range // 2)] with d_range passed as rotary_dim. While the math is likely correct, adding an explicit expectation (and ensuring no hidden dependence on head_dim) prevents regressions and clarifies that ext_factors length must be rotary_dim//2.",
+        "side_effects": "No intended runtime behavior change beyond clarifying/enforcing invariants; if additional checks/assertions are added, they could fail earlier for incorrectly sized ext_factors and may require test updates."
+      }
+    ]
+  }
+}

@@ -1,0 +1,42 @@
+{
+  "pr_number": 988,
+  "repository": "babysor/MockingBird",
+  "title": "fix-issues-963:preprocess_audio.py--The .npy file failed to save",
+  "body": "https://github.com/babysor/MockingBird/issues/963\n![image](https://github.com/babysor/MockingBird/assets/55903432/a7544cd3-8242-4008-9dbd-3b7badeaed1d)\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T12:43:31.368149",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "models/synthesizer/preprocess_audio.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "preprocess_general",
+          "class_name": null,
+          "full_name": "preprocess_general",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Fix preprocess_general in models/synthesizer/preprocess_audio.py by stopping input-path shadowing and by passing correctly ordered Path arguments to _split_on_silences and _process_utterance so np.save receives valid file paths and .npy files are written.",
+    "steps": [
+      {
+        "operation": "Fix variable shadowing and correct argument order when calling silence-splitting and utterance processing",
+        "file_to_modify": "models/synthesizer/preprocess_audio.py",
+        "function_to_modify": "preprocess_general",
+        "reason": "preprocess_general currently overwrites the input wav Path (from the speaker_dir glob) with an output path and then passes incorrect positional arguments to _split_on_silences and _process_utterance. As a result, mel_fpath (or the wav path passed downstream) can become a bool or otherwise invalid value and np.save fails to write .npy files. The function should preserve the original source wav path (use a distinct name such as src_wav_fpath), construct separate output paths (mel_fpath, out_wav_fpath), call _split_on_silences with the source wav path, and call _process_utterance with the correct parameter order so mel_fpath is a Path and not a boolean.",
+        "side_effects": "Low risk localized change. Tests to run: preprocessing on a small dataset to verify mels/, audio/ and embeds .npy files are created; verify train.txt metadata entries reference the produced filenames; run downstream embedding/emo creation pipelines to ensure np.load/np.save succeed. Potential impacts: any code that (incorrectly) relied on the previous in-place mutation/shadowing of the wav variable will no longer see that side effect—this is unlikely but worth checking callers. No public API changes; only internal variable names and call ordering inside preprocess_general are changed. Logging output may change slightly if variable names are used in debug messages."
+      }
+    ]
+  }
+}

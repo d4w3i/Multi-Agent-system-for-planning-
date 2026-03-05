@@ -1,0 +1,42 @@
+{
+  "pr_number": 2463,
+  "repository": "simonw/datasette",
+  "title": "Use the event_loop fixture",
+  "body": "Refs:\n- https://github.com/simonw/datasette/issues/2461#issuecomment-2634920351\n\n<!-- readthedocs-preview datasette start -->\n----\n📚 Documentation preview 📚: https://datasette--2463.org.readthedocs.build/en/2463/\n\n<!-- readthedocs-preview datasette end -->",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T14:35:20.095220",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "tests/conftest.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "event_loop",
+          "class_name": null,
+          "full_name": "event_loop",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Add a session-scoped pytest event_loop fixture to tests/conftest.py so pytest-asyncio and async fixtures/tests use a consistent asyncio event loop, avoiding platform-specific differences and warnings.",
+    "steps": [
+      {
+        "operation": "Add a session-scoped pytest event_loop fixture",
+        "file_to_modify": "tests/conftest.py",
+        "function_to_modify": "event_loop",
+        "reason": "pytest-asyncio looks for an event_loop fixture to provide a consistent asyncio event loop to async tests and fixtures. Adding a session-scoped event_loop that creates a new loop, sets it as the current loop, yields it for tests, then closes and clears it at teardown ensures deterministic behavior across platforms (avoids Proactor/Selector differences on Windows), removes runtime warnings, and makes async fixtures (e.g. ds_client) reliable.",
+        "side_effects": "Tests will run against a single session-scoped event loop which improves determinism and removes platform-specific warnings. Some tests or fixtures that previously relied on implicit global loop lifetimes or on creating/closing loops per-function may need adjustments. No public API changes; only test behavior changes. Downstream dependent test utilities that assume different loop scope may require updates. Ensure pytest-asyncio remains installed/configured; running tests may reveal fixtures that need function-scoped loops instead of session-scoped ones."
+      }
+    ]
+  }
+}

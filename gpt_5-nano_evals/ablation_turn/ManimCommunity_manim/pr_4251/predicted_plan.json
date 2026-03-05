@@ -1,0 +1,136 @@
+{
+  "pr_number": 4251,
+  "repository": "ManimCommunity/manim",
+  "title": "Fix(graph): Allow any Line subclass as edge_type in Graph/DiGraph",
+  "body": "Overview:\n- Extend support so that Graph and DiGraph can accept any subclass of Line as edge_type, not just Line. This enables using subclasses like LabeledLine as edge_type without breaking edge construction.\n\nRationale:\n- Previously, edges were instantiated as edge_type(self[u].get_center(), self[v].get_center(), z_index=-1, **edge_config). This relies on positional arguments, which breaks for Line subclasses that expect named parameters (e.g., LabeledLine which can take label=start/end via kwargs).\n- The fix uses keyword arguments start=..., end=... (and passes through edge_config), allowing edge_type to be any Line subclass that accepts start/end as keyword parameters. For LabeledLine, providing a label via edge_config remains possible.\n\nChanges:\n- Update edge instantiation paths to use keyword arguments so any Line subclass can be used as edge_type.\n- Specifically modify edge creation in Graph._populate_edge_dict, Graph._add_edge, and DiGraph._populate_edge_dict to construct edges with start=... and end=... keywords (instead of positional arguments).\n\nTesting:\n- Tests updated to cover LabeledLine as edge_type in test_graph.py, ensuring edge creation works when edge_type is a subclass of Line and when per-edge labeling is provided via edge_config.\n\nImpact:\n- Backwards-compatible for typical Line usage (Line as edge_type continues to work).\n- Enables broader customization with edge_type subclasses, including labeled or otherwise augmented edges.\n\n",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T11:56:45.101523",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "manim/mobject/graph.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "_populate_edge_dict",
+          "class_name": "Graph",
+          "full_name": "Graph._populate_edge_dict",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_add_edge",
+          "class_name": "Graph",
+          "full_name": "Graph._add_edge",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_populate_edge_dict",
+          "class_name": "DiGraph",
+          "full_name": "DiGraph._populate_edge_dict",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "manim/mobject/graph.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "_populate_edge_dict",
+          "class_name": "Graph",
+          "full_name": "Graph._populate_edge_dict",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_add_edge",
+          "class_name": "Graph",
+          "full_name": "Graph._add_edge",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_populate_edge_dict",
+          "class_name": "DiGraph",
+          "full_name": "DiGraph._populate_edge_dict",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "manim/mobject/graph.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "_populate_edge_dict",
+          "class_name": "Graph",
+          "full_name": "Graph._populate_edge_dict",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_add_edge",
+          "class_name": "Graph",
+          "full_name": "Graph._add_edge",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_populate_edge_dict",
+          "class_name": "DiGraph",
+          "full_name": "DiGraph._populate_edge_dict",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Extend Graph and DiGraph to accept any Line subclass as edge_type by constructing edges with start and end as keyword arguments, enabling LabeledLine and other subclasses to be used as edge_type without breaking edge creation.",
+    "steps": [
+      {
+        "operation": "Modify Graph._populate_edge_dict to instantiate edges using keyword arguments (start=..., end=...)",
+        "file_to_modify": "manim/mobject/graph.py",
+        "function_to_modify": "Graph._populate_edge_dict",
+        "reason": "To support any Line subclass as edge_type by passing endpoints as keyword arguments instead of positional, enabling subclasses like LabeledLine to be constructed with edge_config parameters via keywords.",
+        "side_effects": "Requires updating tests to cover new keyword-based edge creation; preserves backward compatibility for standard Line usages; downstream code relying on positional edge construction may need review; ensures edge_type subclasses can receive extra kwargs (like label) via edge_config."
+      },
+      {
+        "operation": "Modify Graph._add_edge to construct edge via keyword arguments start=..., end=..., and pass edge_config",
+        "file_to_modify": "manim/mobject/graph.py",
+        "function_to_modify": "Graph._add_edge",
+        "reason": "Ensures all edge creation sites pass proper keyword arguments to edge_type across standard graph operations and remains compatible with edge_config.",
+        "side_effects": "Potential impacts on edge_type constructor expectations; may require adjustments in tests that rely on positional argument packing; ensures edge_config is correctly forwarded to edge_type."
+      },
+      {
+        "operation": "Modify DiGraph._populate_edge_dict to instantiate edges using keyword arguments (start=..., end=...)",
+        "file_to_modify": "manim/mobject/graph.py",
+        "function_to_modify": "DiGraph._populate_edge_dict",
+        "reason": "Extend DiGraph edge creation to support any Line subclass as edge_type by using keyword arguments, aligning with Graph changes and preserving behavior for directed graphs.",
+        "side_effects": "Tests and downstream code using DiGraph edge_type with kwargs should pass; ensure edge_config forwarding remains correct; minor performance/compatibility considerations are negligible."
+      }
+    ]
+  }
+}

@@ -1,0 +1,61 @@
+{
+    "repository": "langchain-ai/local-deep-researcher",
+    "pull_request_number": 40,
+    "title": "convert max_web_research_loops to int to make sure comparison works",
+    "body": "This PR fixes a bug introduced by my previous PR and the getting the max_web_research_loops from the environment variable. I'm not sure why it is a string value when doing the `if state.research_loop_count <= int(configurable.max_web_research_loops):` compare, I fixed it with just another `int()` around it.\r\n\r\nSorry for that!",
+    "pr_date": "2025-02-25T20:17:10Z",
+    "source_branch": "bugfix-int-comparision-error",
+    "language": "en",
+    "keywords_detected": {
+        "branch": [
+            "fix"
+        ],
+        "requirement": [],
+        "body": [
+            "fix"
+        ]
+    },
+    "number_of_links_in_pr": 0,
+    "base_sha": "ae891eeaabb3cf17b9465358c42e8f28120e148f",
+    "last_commit_sha": "08be5cf19c6a8b9cda60aabd6eb944d5c942d6de",
+    "diff_between_base_and_last": [
+        {
+            "sha": "820a62f0072f38c00b2891affe59d12866b2634d",
+            "filename": "src/assistant/graph.py",
+            "status": "modified",
+            "additions": 1,
+            "deletions": 1,
+            "changes": 2,
+            "blob_url": "https://github.com/langchain-ai/local-deep-researcher/blob/08be5cf19c6a8b9cda60aabd6eb944d5c942d6de/src%2Fassistant%2Fgraph.py",
+            "raw_url": "https://github.com/langchain-ai/local-deep-researcher/raw/08be5cf19c6a8b9cda60aabd6eb944d5c942d6de/src%2Fassistant%2Fgraph.py",
+            "contents_url": "https://api.github.com/repos/langchain-ai/local-deep-researcher/contents/src%2Fassistant%2Fgraph.py?ref=08be5cf19c6a8b9cda60aabd6eb944d5c942d6de",
+            "patch": "@@ -136,7 +136,7 @@ def route_research(state: SummaryState, config: RunnableConfig) -> Literal[\"fina\n     \"\"\" Route the research based on the follow-up query \"\"\"\n \n     configurable = Configuration.from_runnable_config(config)\n-    if state.research_loop_count <= configurable.max_web_research_loops:\n+    if state.research_loop_count <= int(configurable.max_web_research_loops):\n         return \"web_research\"\n     else:\n         return \"finalize_summary\""
+        }
+    ],
+    "commits": [
+        {
+            "sha": "08be5cf19c6a8b9cda60aabd6eb944d5c942d6de",
+            "commit_date": "2025-02-25T20:10:47Z",
+            "message": "convert max_web_research_loops to int to make sure comparison works",
+            "number_of_links_in_commit": 0,
+            "files_changed_count": 1,
+            "files": [
+                {
+                    "sha": "820a62f0072f38c00b2891affe59d12866b2634d",
+                    "filename": "src/assistant/graph.py",
+                    "status": "modified",
+                    "additions": 1,
+                    "deletions": 1,
+                    "changes": 2,
+                    "blob_url": "https://github.com/langchain-ai/local-deep-researcher/blob/08be5cf19c6a8b9cda60aabd6eb944d5c942d6de/src%2Fassistant%2Fgraph.py",
+                    "raw_url": "https://github.com/langchain-ai/local-deep-researcher/raw/08be5cf19c6a8b9cda60aabd6eb944d5c942d6de/src%2Fassistant%2Fgraph.py",
+                    "contents_url": "https://api.github.com/repos/langchain-ai/local-deep-researcher/contents/src%2Fassistant%2Fgraph.py?ref=08be5cf19c6a8b9cda60aabd6eb944d5c942d6de",
+                    "patch": "@@ -136,7 +136,7 @@ def route_research(state: SummaryState, config: RunnableConfig) -> Literal[\"fina\n     \"\"\" Route the research based on the follow-up query \"\"\"\n \n     configurable = Configuration.from_runnable_config(config)\n-    if state.research_loop_count <= configurable.max_web_research_loops:\n+    if state.research_loop_count <= int(configurable.max_web_research_loops):\n         return \"web_research\"\n     else:\n         return \"finalize_summary\""
+                }
+            ]
+        }
+    ],
+    "pull_request_url": "https://github.com/langchain-ai/local-deep-researcher/pull/40",
+    "commits_url": "https://github.com/langchain-ai/local-deep-researcher/pull/40/commits",
+    "files_url": "https://github.com/langchain-ai/local-deep-researcher/pull/40/files"
+}

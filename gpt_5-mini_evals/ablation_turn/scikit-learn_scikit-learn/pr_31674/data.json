@@ -1,0 +1,66 @@
+{
+    "repository": "scikit-learn/scikit-learn",
+    "pull_request_number": 31674,
+    "title": "fix(docs): Fix glossary FIXME tags",
+    "body": "<!--\r\nThanks for contributing a pull request! Please ensure you have taken a look at\r\nthe contribution guidelines: https://github.com/scikit-learn/scikit-learn/blob/main/CONTRIBUTING.md\r\n-->\r\n\r\n#### Reference Issues/PRs\r\nFixes #31628 \r\n\r\n#### What does this implement/fix? Explain your changes.\r\n\r\n\r\n#### Any other comments?\r\nWhile working on [#31628](https://github.com/scikit-learn/scikit-learn/issues/31628), I encountered a `ModuleNotFoundError` due to a misnamed Sphinx extension (`sphinx-prompt` instead of `sphinx_prompt`). This PR also fixes that to ensure local doc builds (`make`) work correctly.\r\n\r\n#### Setup\r\n```\r\nPython 3.13.3\r\n\r\n   machine: macOS-15.5-arm64-arm-64bit-Mach-O\r\n\r\nPython dependencies:\r\n      sklearn: 1.8.dev0\r\n          pip: 25.0.1\r\n   setuptools: None\r\n        numpy: 2.3.1\r\n        scipy: 1.16.0\r\n       Cython: 3.1.2\r\n       pandas: 2.3.0\r\n   matplotlib: 3.10.3\r\n       joblib: 1.5.1\r\nthreadpoolctl: 3.6.0\r\n\r\nBuilt with OpenMP: False\r\n```\r\n\r\n",
+    "pr_date": "2025-06-28T15:07:32Z",
+    "source_branch": "fix/glossary-fixme-tags",
+    "language": "en",
+    "keywords_detected": {
+        "branch": [
+            "fix"
+        ],
+        "requirement": [
+            "fix"
+        ],
+        "body": [
+            "implement",
+            "change",
+            "fix",
+            "build"
+        ]
+    },
+    "number_of_links_in_pr": 4,
+    "base_sha": "687e84a126965b4179b02d86041a9e997eba87c9",
+    "last_commit_sha": "e571a6bc87723561d046a3338463faafdb2a004e",
+    "diff_between_base_and_last": [
+        {
+            "sha": "d306078ddb9ac04070635a5dd414dcdaff977d5f",
+            "filename": "doc/conf.py",
+            "status": "modified",
+            "additions": 1,
+            "deletions": 1,
+            "changes": 2,
+            "blob_url": "https://github.com/scikit-learn/scikit-learn/blob/e571a6bc87723561d046a3338463faafdb2a004e/doc%2Fconf.py",
+            "raw_url": "https://github.com/scikit-learn/scikit-learn/raw/e571a6bc87723561d046a3338463faafdb2a004e/doc%2Fconf.py",
+            "contents_url": "https://api.github.com/repos/scikit-learn/scikit-learn/contents/doc%2Fconf.py?ref=e571a6bc87723561d046a3338463faafdb2a004e",
+            "patch": "@@ -62,7 +62,7 @@\n     \"sphinx.ext.intersphinx\",\n     \"sphinx.ext.imgconverter\",\n     \"sphinx_gallery.gen_gallery\",\n-    \"sphinx-prompt\",\n+    \"sphinx_prompt\",\n     \"sphinx_copybutton\",\n     \"sphinxext.opengraph\",\n     \"matplotlib.sphinxext.plot_directive\","
+        }
+    ],
+    "commits": [
+        {
+            "sha": "e571a6bc87723561d046a3338463faafdb2a004e",
+            "commit_date": "2025-06-28T14:53:33Z",
+            "message": "fix(docs): Fix incorrect 'sphinx-prompt' module name in Sphinx extensions\n\nUsing `sphinx-prompt` in the `extensions` list causes a ModuleNotFoundError\nwhen building the documentation via `make` or similar Sphinx commands:\n\n    ModuleNotFoundError: No module named `sphinx-prompt`\n\nThis happens because the correct Python module name is `sphinx_prompt`\n(with an underscore), not a hyphen. Sphinx uses importlib to load extensions,\nso the module name must be valid Python syntax.\n\nThis fixes the issue for contributors using `make` to build the docs locally.",
+            "number_of_links_in_commit": 0,
+            "files_changed_count": 1,
+            "files": [
+                {
+                    "sha": "d306078ddb9ac04070635a5dd414dcdaff977d5f",
+                    "filename": "doc/conf.py",
+                    "status": "modified",
+                    "additions": 1,
+                    "deletions": 1,
+                    "changes": 2,
+                    "blob_url": "https://github.com/scikit-learn/scikit-learn/blob/e571a6bc87723561d046a3338463faafdb2a004e/doc%2Fconf.py",
+                    "raw_url": "https://github.com/scikit-learn/scikit-learn/raw/e571a6bc87723561d046a3338463faafdb2a004e/doc%2Fconf.py",
+                    "contents_url": "https://api.github.com/repos/scikit-learn/scikit-learn/contents/doc%2Fconf.py?ref=e571a6bc87723561d046a3338463faafdb2a004e",
+                    "patch": "@@ -62,7 +62,7 @@\n     \"sphinx.ext.intersphinx\",\n     \"sphinx.ext.imgconverter\",\n     \"sphinx_gallery.gen_gallery\",\n-    \"sphinx-prompt\",\n+    \"sphinx_prompt\",\n     \"sphinx_copybutton\",\n     \"sphinxext.opengraph\",\n     \"matplotlib.sphinxext.plot_directive\","
+                }
+            ]
+        }
+    ],
+    "pull_request_url": "https://github.com/scikit-learn/scikit-learn/pull/31674",
+    "commits_url": "https://github.com/scikit-learn/scikit-learn/pull/31674/commits",
+    "files_url": "https://github.com/scikit-learn/scikit-learn/pull/31674/files"
+}

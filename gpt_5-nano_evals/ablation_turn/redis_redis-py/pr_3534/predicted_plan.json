@@ -1,0 +1,42 @@
+{
+  "pr_number": 3534,
+  "repository": "redis/redis-py",
+  "title": "fix(lock): Fix LockError message when releasing a lock.",
+  "body": "This change aligns the error messaging for releasing a lock that isn't owned with the expected behavior from tests (e.g., #3535). Previously, attempting to release an unlocked lock raised a LockError with the message \"Cannot release an unlocked lock\". The test expectation is that a release of a non-owned/locked state should surface the ownership-related error message: \"Cannot release a lock that's no longer owned\". To reflect ownership issues consistently, release() now raises LockNotOwnedError with that message when there is no local token, matching other ownership-related failures in the locking logic.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T13:44:02.462313",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "redis/lock.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "release",
+          "class_name": "Lock",
+          "full_name": "Lock.release",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "This change aligns the Lock.release error messaging for releases of non-owned/unlocked locks to reflect ownership semantics, matching tests and other failure paths.",
+    "steps": [
+      {
+        "operation": "Modify release() to raise LockNotOwnedError with ownership message when there is no local token",
+        "file_to_modify": "redis/lock.py",
+        "function_to_modify": "Lock.release",
+        "reason": "To ensure releasing a lock that isn't owned surfaces an ownership-related error, aligning with tests (e.g., #3535) and other ownership failure paths like do_release",
+        "side_effects": "Tests may be updated to expect LockNotOwnedError instead of LockError for this path; downstream code catching LockError on release may need adjustment; ensures API consistency for ownership-related failures; normal release flow using a valid token remains unchanged"
+      }
+    ]
+  }
+}

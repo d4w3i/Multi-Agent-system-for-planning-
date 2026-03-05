@@ -1,0 +1,57 @@
+{
+  "pr_number": 558,
+  "repository": "mvt-project/mvt",
+  "title": "Fix crash when handling empty adb key list",
+  "body": "This commit fixes a crash in the ADB module when no keys were parsed. We should return an empty list by default.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-02T08:18:06.112413",
+    "extractor_version": "1.0.0",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "src/mvt/android/artifacts/dumpsys_adb.py",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "functions_modified": [
+        {
+          "function_name": "parse",
+          "class_name": "DumpsysADBArtifact",
+          "full_name": "DumpsysADBArtifact.parse",
+          "start_line": 95,
+          "end_line": 128,
+          "lines_changed": [
+            123
+          ]
+        }
+      ],
+      "patch": "@@ -120,7 +120,7 @@ def parse(self, content: bytes) -> None:\n \n         # Calculate key fingerprints for better readability\n         key_info = []\n-        for user_key in parsed.get(\"user_keys\"):\n+        for user_key in parsed.get(\"user_keys\", []):\n             user_info = self.calculate_key_info(user_key)\n             key_info.append(user_info)\n "
+    }
+  ],
+  "functions_modified": [
+    {
+      "function_name": "parse",
+      "class_name": "DumpsysADBArtifact",
+      "full_name": "DumpsysADBArtifact.parse",
+      "start_line": 95,
+      "end_line": 128,
+      "lines_changed": [
+        123
+      ]
+    }
+  ],
+  "step_plan": {
+    "steps": [
+      {
+        "operation": "Harden parsing logic by defaulting missing/empty ADB key lists to an empty iterable when generating key fingerprints",
+        "file_to_modify": "src/mvt/android/artifacts/dumpsys_adb.py",
+        "function_to_modify": "parse",
+        "reason": "`parsed.get(\"user_keys\")` can return `None` when no keys are present, causing a crash when iterated; providing `[]` ensures the loop is safe and results in an empty `key_info` list as intended.",
+        "side_effects": "Prevents exceptions in ADB artifact parsing when `user_keys` is absent/empty; downstream consumers will now consistently receive an empty list rather than an error, which may change behavior for any code/tests that previously expected a failure in this scenario."
+      }
+    ],
+    "summary": "Fixes a crash in the ADB dumpsys parser by safely iterating over an empty default when no `user_keys` are parsed, returning an empty key info list instead of raising an exception."
+  }
+}

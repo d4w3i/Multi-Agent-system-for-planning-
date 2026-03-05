@@ -1,0 +1,57 @@
+{
+  "pr_number": 20938,
+  "repository": "vllm-project/vllm",
+  "title": "Fix overflow indexing in causal_conv1d kernel",
+  "body": "Issue: In V1 integration, conv_state_batch_coord can range up to num_gpu_blocks-1, which can be far larger than a 32-bit int when many blocks are used. This can cause indexing overflow in the causal_conv1d Triton kernel during pointer arithmetic for conv_state lookups.\n\nRoot cause: In vllm/model_executor/layers/mamba/ops/causal_conv1d.py, the forward and update kernels perform pointer arithmetic like conv_state_base = conv_states_ptr + (conv_state_batch_coord * stride_conv_state_seq) + ... using conv_state_batch_coord directly. If conv_state_batch_coord is an int32 and grows large, multiplication can overflow, leading to incorrect memory addressing or crashes. The PR notes that a similar fix has already been applied for selective_state_update in mamba_ssm.py.\n\nFix: Cast conv_state_batch_coord to a 64-bit integer (tl.int64) before performing arithmetic that affects memory addresses. Apply this cast in both the forward kernel (_causal_conv1d_fwd_kernel) and the update kernel (_causal_conv1d_update_kernel) wherever conv_state_batch_coord is used for offset calculations. This ensures safe addressing even when the number of blocks is large.\n\nNotes:\n- This is a targeted fix that does not change algorithmic behavior, only the safety of indexing arithmetic.\n- A regression/unit test should exercise scenarios with large block indices or large num_cache_lines to ensure no overflow occurs during kernel launches and memory accesses.\n- The existing tests in tests/kernels/mamba/test_causal_conv1d.py exercise functional correctness but may not stress extreme block counts; consider adding a stress test that simulates large num_cache_lines or large grid dimensions where conv_state_batch_coord can reach high values.\n\nNo user-facing API changes. The patch is strictly a bug fix in internal indexing logic for the Triton kernels.\n  ",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T14:06:57.393764",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "vllm/model_executor/layers/mamba/ops/causal_conv1d.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "_causal_conv1d_fwd_kernel",
+          "class_name": null,
+          "full_name": "_causal_conv1d_fwd_kernel",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_causal_conv1d_update_kernel",
+          "class_name": null,
+          "full_name": "_causal_conv1d_update_kernel",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "This PR fixes potential 32-bit overflow in pointer arithmetic within the causal_conv1d Triton kernels by casting conv_state_batch_coord to 64-bit for offset calculations in both the forward and update paths. The changes make addressing safe for configurations with large numbers of GPU blocks, with tests to validate behavior under stress conditions.",
+    "steps": [
+      {
+        "operation": "Cast conv_state_batch_coord to 64-bit before pointer arithmetic in _causal_conv1d_fwd_kernel",
+        "file_to_modify": "vllm/model_executor/layers/mamba/ops/causal_conv1d.py",
+        "function_to_modify": "_causal_conv1d_fwd_kernel",
+        "reason": "conv_state_batch_coord is used to compute memory offsets for conv_state lookups. If it remains a 32-bit int, it can overflow when the number of GPU blocks is large, leading to incorrect addressing or crashes. Casting to tl.int64 ensures safe arithmetic for large indices.",
+        "side_effects": "Introduce 64-bit arithmetic in the forward kernel's offset calculations; may affect optimization and register usage. Requires regression tests to ensure numerical correctness at moderate sizes and robustness at large block counts."
+      },
+      {
+        "operation": "Cast conv_state_batch_coord to 64-bit before pointer arithmetic in _causal_conv1d_update_kernel",
+        "file_to_modify": "vllm/model_executor/layers/mamba/ops/causal_conv1d.py",
+        "function_to_modify": "_causal_conv1d_update_kernel",
+        "reason": "conv_state_batch_coord is used to compute memory offsets for updating conv_state pointers. If conv_state_batch_coord is a 32-bit int, large grid configurations can cause overflow in address calculations, risking out-of-bounds access or crashes. Casting to tl.int64 fixes this.",
+        "side_effects": "Update path will now use 64-bit arithmetic for offset calculations; similar considerations as in the forward kernel apply, including validation that outputs remain stable for typical sizes and correctness is preserved under stress conditions."
+      }
+    ]
+  }
+}

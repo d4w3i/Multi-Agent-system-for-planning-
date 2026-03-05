@@ -1,0 +1,94 @@
+{
+  "pr_number": 1706,
+  "repository": "confident-ai/deepeval",
+  "title": "Fixing IndexError list index out of range in Synthesizer.generate_goldens_from_docs()",
+  "body": "This fixes https://github.com/confident-ai/deepeval/issues/1682",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T12:06:50.585193",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "deepeval/synthesizer/synthesizer.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "generate_goldens_from_docs",
+          "class_name": "Synthesizer",
+          "full_name": "Synthesizer.generate_goldens_from_docs",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "a_generate_goldens_from_docs",
+          "class_name": "Synthesizer",
+          "full_name": "Synthesizer.a_generate_goldens_from_docs",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "generate_goldens_from_contexts",
+          "class_name": "Synthesizer",
+          "full_name": "Synthesizer.generate_goldens_from_contexts",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        },
+        {
+          "function_name": "_a_generate_from_context",
+          "class_name": "Synthesizer",
+          "full_name": "Synthesizer._a_generate_from_context",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    },
+    {
+      "filename": "tests/test_synthesizer.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": []
+    }
+  ],
+  "step_plan": {
+    "summary": "Fixes an IndexError in the docs→contexts→goldens synthesis pipeline by enforcing safe alignment between generated contexts and their source metadata, and by correcting an async index-shadowing bug that could corrupt source_file selection. Adds defensive indexing so goldens can still be produced even when ContextGenerator returns mismatched list lengths.",
+    "steps": [
+      {
+        "operation": "Normalize/validate the (contexts, source_files, context_scores) tuple returned from ContextGenerator before downstream golden generation; ensure lists are aligned or safely handled when lengths differ (e.g., pad source_files with None, truncate to min length, or record a per-context safe accessor).",
+        "file_to_modify": "deepeval/synthesizer/synthesizer.py",
+        "function_to_modify": "Synthesizer.generate_goldens_from_docs",
+        "reason": "The reported IndexError is triggered later when goldens are created by indexing source_files[i] while iterating contexts; the docs entrypoint is the earliest place to enforce the invariant that each context has a corresponding source_file (or None).",
+        "side_effects": "May change behavior when ContextGenerator yields mismatched lengths (e.g., some goldens will have source_file=None instead of raising). Could affect any callers relying on strict 1:1 mapping errors; ensure tests cover the new behavior."
+      },
+      {
+        "operation": "Mirror the sync normalization logic in the async docs pipeline: after awaiting context generation, enforce safe alignment between contexts and source_files before invoking async golden generation; propagate context_scores consistently.",
+        "file_to_modify": "deepeval/synthesizer/synthesizer.py",
+        "function_to_modify": "Synthesizer.a_generate_goldens_from_docs",
+        "reason": "Async path should obey the same correctness invariants as sync; otherwise it can still pass mismatched lists into golden creation and trigger IndexError in async flows.",
+        "side_effects": "Async behavior may diverge from previous implicit assumptions; may require updating/adding async tests and ensuring any returned metadata (source_file/context_score) remains stable."
+      },
+      {
+        "operation": "Harden golden creation against out-of-range indexing by guarding source_files and context_scores access per context (e.g., use a helper like `sf = source_files[i] if source_files and i < len(source_files) else None`; similarly for scores) and ensure the loop only assumes `contexts` length.",
+        "file_to_modify": "deepeval/synthesizer/synthesizer.py",
+        "function_to_modify": "Synthesizer.generate_goldens_from_contexts",
+        "reason": "This is the direct surface where `source_files[i]` can raise IndexError when ContextGenerator returns fewer source_files than contexts (or when source_files is None). Defensive access guarantees no crash and preserves partial results.",
+        "side_effects": "Goldens may be created with missing source_file/score metadata in mismatch scenarios; downstream consumers of goldens should tolerate None. Might surface previously hidden upstream issues; consider logging/debug warnings if lengths differ."
+      },
+      {
+        "operation": "Fix async index shadowing and unsafe indexing: preserve a dedicated `context_index` for selecting source_files[context_index]; rename the inner enumerate loop variable (e.g., `input_index`) to avoid overwriting, and apply the same bounds-checked access pattern for source_files/context_scores as in sync.",
+        "file_to_modify": "deepeval/synthesizer/synthesizer.py",
+        "function_to_modify": "Synthesizer._a_generate_from_context",
+        "reason": "Reusing `index` for both the context position and per-input processing can corrupt which element is selected from source_files and can directly cause IndexError. Separating indices and guarding bounds ensures correct, stable source_file assignment per context in async generation.",
+        "side_effects": "Async goldens may now attach the correct source_file rather than an incorrect one; tests that implicitly relied on buggy ordering/mapping (unlikely) could change. Ensure concurrency/task creation logic remains unchanged aside from variable naming and safe lookups."
+      }
+    ]
+  }
+}

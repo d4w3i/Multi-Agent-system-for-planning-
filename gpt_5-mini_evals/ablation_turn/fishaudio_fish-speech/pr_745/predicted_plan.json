@@ -1,0 +1,42 @@
+{
+  "pr_number": 745,
+  "repository": "fishaudio/fish-speech",
+  "title": "fix: no-play argument for API client",
+  "body": "**Is this PR adding new feature or fix a BUG?**\n\nFix BUG.\n\n**Is this pull request related to any issue? If yes, please link the issue.**\n\nN/A\n\n**Description**\n\nCurrently, `--play` has no effect because its default value is `True`. The parser does not recognize anything like `--play False`. It only detect whether the argument exists.\n\nTherefore, we can use [BooleanOptionalAction](https://docs.python.org/3/library/argparse.html#argparse.BooleanOptionalAction), which automatically add the `--no-play` option, so that the play argument can be set to `False`.\n\n**Compatibility**\n\nThis change does not break the existing behaviors because it adds a new option.",
+  "extraction_metadata": {
+    "extracted_at": "2026-03-04T13:04:42.214600",
+    "extractor_version": "2.0.0-multiagent",
+    "success": true,
+    "error_message": null
+  },
+  "files_modified": [
+    {
+      "filename": "tools/api_client.py",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "functions_modified": [
+        {
+          "function_name": "parse_args",
+          "class_name": null,
+          "full_name": "parse_args",
+          "start_line": 0,
+          "end_line": 0,
+          "lines_changed": []
+        }
+      ]
+    }
+  ],
+  "step_plan": {
+    "summary": "Fix CLI boolean parsing for the API client by replacing the --play argument's type=bool with argparse.BooleanOptionalAction so users can pass --no-play to disable playback while keeping default behavior unchanged.",
+    "steps": [
+      {
+        "operation": "Change --play CLI argument to use argparse.BooleanOptionalAction",
+        "file_to_modify": "tools/api_client.py",
+        "function_to_modify": "parse_args",
+        "reason": "The current add_argument call uses type=bool which treats --play as a presence flag and does not provide a --no-play counterpart nor accept explicit False values. Using action=argparse.BooleanOptionalAction (with default=True) makes argparse generate both --play and --no-play and correctly parse explicit boolean intent from the user.",
+        "side_effects": "Backward-compatible: default remains True so existing behavior is unchanged. Tests that exercise the CLI should be updated/verified to confirm --no-play disables playback and --play enables it. No other modules reading args.play should need changes, but dependent CLI docs or examples should be updated to mention --no-play. Note: argparse.BooleanOptionalAction is available on modern Python versions (Python 3.9+); if the project supports older Python releases, a compatibility fallback or conditional implementation may be required."
+      }
+    ]
+  }
+}
