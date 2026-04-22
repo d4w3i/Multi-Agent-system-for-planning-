@@ -1,238 +1,154 @@
-# Architecture — `context_retrieving`
+# Context Retrieving Architecture
 
-## 1. Module Overview
+## Overview
 
-The `context_retrieving` package analyses Python repositories to build
-function call graphs and generate *AI-ready context files* — text files that
-bundle a target function with all its transitive dependencies and usage
-examples, ready to be fed directly to an LLM.
+`context_retrieving/` converts a raw Python repository snapshot into a compact set of artifacts that describe structure, code relationships, and function-level context. The module is file-oriented: each stage reads from the repository snapshot and writes explicit outputs to disk, with `batch_context_retriever.py` acting as the top-level coordinator.
 
-It is consumed by:
-- The interactive CLI (`cli/handlers/repository.py`, `cli/handlers/context.py`)
-- The batch pipeline (`context_retrieving.batch_context_retriever`)
-- The evaluation layer (`evaluation/`)
+## Component View
 
----
+```mermaid
+flowchart TD
+    A["PR directory"] --> B["base_project/"]
 
-## 2. Pipeline Diagram
+    subgraph StaticAnalysis["Static Analysis"]
+        C["CallGraphBuilder"]
+        D["_ASTVisitorMixin"]
+        E["TreeGenerator"]
+    end
 
-```
-Input: repository path
-          │
-          ▼
-┌─────────────────────┐
-│  CallGraphBuilder   │  Stage 1 — AST analysis (Tree-sitter, 4-pass)
-│  call_graph_builder │
-└────────┬────────────┘
-         │  call_graph: dict
-         ├──────────────────────────────────────────────┐
-         ▼                                              ▼
-┌─────────────────────┐                    ┌──────────────────────┐
-│  ContextGenerator   │  Stage 2a          │   TreeGenerator      │  Stage 2b
-│  context_generator  │  context files     │   generate_tree      │  ASCII tree
-└─────────────────────┘                    └──────────────────────┘
-         │                                              │
-         └──────────────────────┬───────────────────────┘
-                                ▼
-                  ┌──────────────────────────┐
-                  │  BatchContextRetriever   │  Stage 3 — orchestration over
-                  │  batch_context_retriever │  entire PR4Code dataset
-                  └──────────────────────────┘
-                                │
-                                ▼
-              pr_dir/context_output/
-              ├── call_graph.json
-              ├── project_tree.txt
-              ├── project_info.py
-              └── context_files/
+    subgraph ContextAssembly["Context Assembly"]
+        F["ContextGenerator"]
+        G["README loader"]
+        H["MASCA runner (optional)"]
+    end
+
+    subgraph Artifacts["Generated Artifacts"]
+        I["call_graph.json"]
+        J["project_tree.txt"]
+        K["project_info.py"]
+        L["context_files/*"]
+        M["masca_analysis.md"]
+    end
+
+    B --> C
+    C --> D
+    C --> I
+    B --> E --> J
+    I --> F --> L
+    B --> G --> K
+    J --> K
+    H --> M
+    H --> K
 ```
 
----
+## Processing Pipeline
 
-## 3. CallGraphBuilder — 4-Pass Analysis
+The module follows a simple pipeline:
 
-`call_graph_builder.py` (with helpers in `_ast_visitors.py`)
+1. `CallGraphBuilder` scans every `.py` file under `base_project/`.
+2. `_ASTVisitorMixin` performs import extraction, function discovery, call extraction, and name resolution.
+3. `TreeGenerator` builds a filtered filesystem tree.
+4. `batch_context_retriever.py` loads the repository README and optionally runs MASCA.
+5. `ContextGenerator` expands each function into a context bundle with dependencies and callers.
+6. The final artifacts are written under `context_output/`.
 
-### Why 4 passes?
-
-A single-pass traversal cannot correctly resolve function call names because
-when a call site is encountered, the definition of the called function may not
-have been seen yet (it could live in another file, or later in the same file).
-The 4-pass design solves this:
-
-| Pass | What it does | Why first |
-|------|-------------|-----------|
-| 0 | Extract all `import` statements per file → `import_map` | Names like `pd.read_csv` can only be resolved if we know `pd = pandas` |
-| 1 | Extract all function/class definitions → `all_functions`, `all_classes` | Call resolution in Pass 2 requires the complete function universe |
-| 2 | Extract and resolve call sites → populate `calls` / `called_by` | Now every name can be looked up |
-| 3 | Mark `is_leaf` and `is_entry_point` flags | Requires complete `calls` / `called_by` lists |
-
-### Key data structures
-
-```python
-call_graph: defaultdict   # {full_name: {file, line, calls, called_by,
-                          #              code, is_leaf, is_entry_point,
-                          #              class_name, is_method, full_name}}
-all_functions: set        # {"module.Class.method", ...}
-all_classes: set          # {"module.Class", ...}
-import_map: dict          # {filepath: {alias: full_name}}
-_suffix_index: dict       # {short_name: [full_names]} — rebuilt lazily
+```mermaid
+flowchart LR
+    A["base_project/"] --> B["Collect Python files"]
+    B --> C["Pass 0: imports"]
+    C --> D["Pass 1: functions"]
+    D --> E["Pass 2: calls"]
+    E --> F["Pass 3: mark leaf/entry nodes"]
+    F --> G["Write call_graph.json"]
+    A --> H["Generate project_tree.txt"]
+    G --> I["Generate context_files/*"]
+    A --> J["Load README"]
+    H --> K["Build project_info.py"]
+    J --> K
+    L["MASCA optional"] --> K
+    L --> M["masca_analysis.md"]
 ```
 
----
+## State Transitions
 
-## 4. Name Resolution Strategy
+### 1. Repository analysis state machine
 
-`_ASTVisitorMixin._resolve_function_call()` applies five strategies in order,
-returning on the first match:
+This is the internal state flow of `CallGraphBuilder.analyze_repository()`:
 
-| Level | Strategy | Example |
-|-------|----------|---------|
-| 1 | `import_map` of the current file | `pd` → `pandas`, then look for `pandas.func` |
-| 2 | Current class method | Inside `MyClass`, `helper()` → `module.MyClass.helper` |
-| 3 | Local module function | In `utils.py`, `helper()` → `utils.helper` |
-| 4 | Global exact match | `helper` exists as a top-level name in `all_functions` |
-| 5 | Suffix index (partial) | `process` matches the single function `pkg.sub.process` |
-
-Strategy 5 uses `_suffix_index` — a dict mapping the last name component to a
-list of fully-qualified names — rebuilt lazily whenever `all_functions` changes.
-A partial match is only accepted when there is **exactly one** candidate; ties
-are dropped to avoid false edges.
-
----
-
-## 5. ContextGenerator — Transitive Dependency DFS
-
-`context_generator.py`
-
-For each target function, `get_all_dependencies()` performs an **iterative
-depth-first search** over the call graph:
-
-```
-stack = [target_func]
-while stack:
-    current = stack.pop()
-    if current in visited or current not in call_graph: continue
-    visited.add(current)
-    for dep in call_graph[current]['calls']:
-        if dep not in visited: stack.append(dep)
-return visited  # includes target_func itself
+```mermaid
+stateDiagram-v2
+    [*] --> DiscoverFiles
+    DiscoverFiles --> CacheTrees
+    CacheTrees --> ExtractImports
+    ExtractImports --> ExtractFunctions
+    ExtractFunctions --> ExtractCalls
+    ExtractCalls --> FinalizeNodes
+    FinalizeNodes --> GraphReady
+    DiscoverFiles --> Failed: invalid path / read failure
+    CacheTrees --> Failed: parse failure on all files
+    GraphReady --> [*]
+    Failed --> [*]
 ```
 
-Using an explicit stack instead of recursion avoids `RecursionError` on deep
-or cyclic call chains. The caller discards the target from the returned set
-before writing the context file.
+### 2. Batch context generation state machine
 
-### Output layout
+This is the end-to-end state flow of `BatchContextRetriever.process_pr()`:
 
-Each `.py` source file becomes a **directory** in the output tree, mirroring
-the repository structure:
-
-```
-repo/src/utils/helpers.py
-  → context_files/src/utils/helpers/
-        module.utils.helpers.validate_context.txt
-        module.utils.helpers.validate_metadata.json
-```
-
----
-
-## 6. TreeGenerator
-
-`generate_tree.py`
-
-Generates a Unix-`tree`-style ASCII representation.
-
-### Ignore patterns
-
-Two layers of exclusion:
-
-1. **Default patterns** (`DEFAULT_IGNORE_PATTERNS`) — hardcoded set covering
-   `.git`, `__pycache__`, `node_modules`, `.venv`, build artefacts, etc.
-2. **`.gitignore` patterns** — loaded from `<root>/.gitignore` on construction
-   (simple patterns only; negation `!` and `**` globs are not supported).
-
-### Prefix construction algorithm
-
-The tree is built by `_generate_tree(directory, prefix, depth)`:
-
-- Entries are sorted: directories first, then files, both alphabetically.
-- For each entry, the connector is `LAST` (`└── `) if it is the final entry,
-  else `BRANCH` (`├── `).
-- The child prefix is accumulated: `prefix + (SPACE if last else VERTICAL)`.
-- Recursion stops when `depth >= max_depth`.
-
-### CLI entry point
-
-The interactive `main()` and the `Colors` class live in `_tree_cli.py` so that
-importing `generate_tree` in library mode does not pull in `sys` or `time`.
-When run directly (`python generate_tree.py`), the `__main__` block imports
-`main` from `_tree_cli` and calls it.
-
----
-
-## 7. BatchContextRetriever
-
-`batch_context_retriever.py`
-
-Orchestrates Stages 1–3 over an entire PR4Code dataset directory.
-
-### Orchestration sequence (per PR)
-
-```
-1.  Verify base_project/ exists
-2.  Create context_output/ and context_output/context_files/
-3.  CallGraphBuilder.analyze_repository(base_project/)
-4.  Export call_graph.json
-5.  TreeGenerator → project_tree.txt
-6.  Load README (tries README.md, .rst, .txt, bare README)
-7.  [Optional] run_masca_analysis() → masca_analysis.md
-8.  Write project_info.py  (DIRECTORY_TREE, README, MASCA variables)
-9.  ContextGenerator.generate_all_context_files(context_files/)
+```mermaid
+stateDiagram-v2
+    [*] --> ValidatePR
+    ValidatePR --> CreateOutputDirs
+    CreateOutputDirs --> BuildCallGraph
+    BuildCallGraph --> ExportGraph
+    ExportGraph --> GenerateTree
+    GenerateTree --> LoadReadme
+    LoadReadme --> RunMasca: MASCA enabled
+    LoadReadme --> WriteProjectInfo: MASCA disabled
+    RunMasca --> WriteProjectInfo
+    RunMasca --> WriteProjectInfo: on MASCA error, continue with fallback text
+    WriteProjectInfo --> GenerateContextFiles
+    GenerateContextFiles --> Completed
+    ValidatePR --> Failed: missing base_project
+    BuildCallGraph --> Failed: unrecoverable analysis error
+    Completed --> [*]
+    Failed --> [*]
 ```
 
-### Output
+## Core Data Structures
 
-All artefacts land in `pr_dir/context_output/`. A single
-`masca_output_token.json` is written at the dataset root to aggregate LLM
-token usage across all processed PRs.
+### Call graph node
 
----
+Each function is stored under a fully qualified name such as `module.Class.method` with:
 
-## 8. Key Design Decisions
+- `file`
+- `line`
+- `calls`
+- `called_by`
+- `code`
+- `is_leaf`
+- `is_entry_point`
+- `class_name`
+- `is_method`
+- `full_name`
 
-| Decision | Rationale |
-|----------|-----------|
-| Tree-sitter instead of `ast.parse` | Handles syntax errors in partial/malformed files; faster on large repos; language-agnostic API |
-| 4-pass pipeline | Guarantees all function names are known before any call site is resolved |
-| Iterative DFS in `ContextGenerator` | Prevents `RecursionError` on deeply nested or mutually recursive call chains |
-| `_ASTVisitorMixin` split | Keeps `call_graph_builder.py` focused on orchestration; mixin owns Tree-sitter traversal details; both remain testable independently |
-| `_tree_cli.py` split | Library import of `generate_tree` does not pull in interactive-CLI dependencies (`sys`, `time`, ANSI colours) |
-| `with_masca` flag | Masca LLM analysis is entirely opt-in; the pipeline runs fully offline without an OpenAI key |
-| `logging` module | Replaces scattered `print()` calls; callers control verbosity via standard `logging.basicConfig` or by configuring handlers |
+This structure is the contract between `CallGraphBuilder` and `ContextGenerator`.
 
----
+### Context file layout
 
-## 9. Extension Guide
+For each function, `ContextGenerator` writes:
 
-### Adding a new exporter (e.g. CSV)
+- `{function}_context.txt`: dependency code, target code, caller snippets
+- `{function}_metadata.json`: structured metadata for downstream tools
 
-1. Add a `to_csv(self, output_file: str)` method to `CallGraphBuilder`
-   following the same pattern as `to_json`.
-2. No changes needed to `_ast_visitors.py` or other files.
+The output mirrors the source repository layout by turning each source file into a directory inside `context_files/`.
 
-### Adding a new analysis pass
+## Design Notes
 
-1. Add the traversal logic as a method on `_ASTVisitorMixin` in
-   `_ast_visitors.py`.
-2. Call it from `CallGraphBuilder.analyze_repository()` at the appropriate
-   point in the pipeline — typically after Pass 1 (functions are known) or
-   after Pass 2 (calls are known).
-3. If the pass populates new fields on `call_graph` nodes, document them in
-   the `__init__` defaultdict factory.
+- The analysis is static, not runtime-based. Only relationships visible in the source tree are captured.
+- Name resolution is heuristic. Imports, local-module functions, class methods, and suffix matches are tried in order.
+- The four-pass builder is the critical design choice: calls are extracted only after all functions are known.
+- `TreeGenerator` and `ContextGenerator` are intentionally independent from LLM logic; only MASCA is optional and external.
 
-### Adding a new output format to `ContextGenerator`
+## How This Module Is Used In The Project
 
-1. Add a helper method, e.g. `generate_markdown_file(target_func, output_dir)`.
-2. Call it from `generate_context_file` or expose it as a standalone method.
-3. `get_all_dependencies` is reusable as-is for any new format.
+In the full project, `context_retrieving/` is the preprocessing layer for PR dataset snapshots. The `GenAI/` planning pipeline depends on the artifacts written here, especially `call_graph.json`, `context_files/*`, `project_tree.txt`, and optional MASCA output, to give agents a smaller and more structured view of each repository before they generate implementation plans.
