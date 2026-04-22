@@ -172,6 +172,46 @@
       font-weight: 700;
     }
 
+    /* TURN SWITCHER (ablation multi-turn view) */
+    .turn-switcher-bar {
+      display: flex;
+      align-items: center;
+      border: 1px solid var(--border);
+      margin-bottom: 12px;
+      background: var(--surface);
+    }
+
+    .ts-label {
+      padding: 6px 12px;
+      font-size: 0.62rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--text-3);
+      border-right: 1px solid var(--border);
+      white-space: nowrap;
+    }
+
+    .turn-btn {
+      padding: 6px 18px;
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 0.62rem;
+      font-weight: 400;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      background: transparent;
+      color: var(--text-3);
+      border: none;
+      border-right: 1px solid var(--border-int);
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 0.15s, color 0.15s;
+    }
+
+    .turn-btn:last-child { border-right: none; }
+    .turn-btn:hover { background: var(--surface-hover); color: var(--text-1); }
+    .turn-btn.active { background: var(--text-1); color: var(--surface); font-weight: 700; }
+
     /* SECTION LABELS */
     .section-label {
       font-size: 0.65rem;
@@ -2181,6 +2221,40 @@
       font-family: 'Courier New', Courier, monospace;
     }
 
+    /* parallel batch wrapper */
+    .parallel-batch {
+      border: 1px dashed var(--border-int);
+      margin: 4px 0;
+    }
+
+    .parallel-batch-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 4px 10px;
+      background: var(--bg);
+      font-size: 0.60rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-3);
+      border-bottom: 1px dashed var(--border-int);
+    }
+
+    .parallel-batch-header .pb-wall {
+      margin-left: auto;
+      font-family: 'Courier New', Courier, monospace;
+      color: var(--amber);
+    }
+
+    .parallel-batch .tool-call {
+      border-bottom: 1px dashed var(--border-int);
+    }
+
+    .parallel-batch .tool-call:last-child {
+      border-bottom: none;
+    }
+
     .tool-call-chevron {
       color: var(--text-3);
       font-size: 0.65rem;
@@ -2596,10 +2670,15 @@
           <div class="mode-card-label">Complete Run</div>
           <div class="mode-card-desc">Full pipeline with LLM-summarized context and MASCA analysis</div>
         </button>
-        <button class="mode-card" onclick="selectMode('ablation')">
-          <div class="mode-card-tag">ablation_turn/</div>
-          <div class="mode-card-label">Ablation Run</div>
-          <div class="mode-card-desc">Raw file content without LLM summarization — context ablation study</div>
+        <button class="mode-card" onclick="selectMode('single_agent')">
+          <div class="mode-card-tag">single_agent_turn/</div>
+          <div class="mode-card-label">Single Agent</div>
+          <div class="mode-card-desc">One agent, no instructions, all tools — agent decomposition ablation</div>
+        </button>
+        <button class="mode-card" onclick="selectMode('ablation_multi')">
+          <div class="mode-card-tag">ablation_turn_*/</div>
+          <div class="mode-card-label">Ablation Multi-Turn</div>
+          <div class="mode-card-desc">Aggregated mean ± std across repeated ablation runs</div>
         </button>
       </div>
     </div>
@@ -3070,6 +3149,9 @@
       <span class="results-count" id="results-count"></span>
     </div>
 
+    <!-- turn switcher (ablation multi-turn only) -->
+    <div id="turn-switcher" class="turn-switcher-bar" style="display:none;"></div>
+
     <!-- grid -->
     <div class="pr-grid" id="pr-grid">
       <div class="state-msg">
@@ -3103,10 +3185,10 @@
       <div class="panel-metrics" id="panel-metrics-row"></div>
       <div class="panel-agent-tools" id="panel-agent-tools"></div>
 
-      <div class="tab-nav">
-        <button class="tab-btn active" onclick="switchTab('overview')">Overview</button>
-        <button class="tab-btn" onclick="switchTab('plan')">Step Plan</button>
-        <button class="tab-btn" onclick="switchTab('logs')">Agent Logs</button>
+      <div class="tab-nav" id="tab-nav">
+        <button class="tab-btn active" data-tab="overview" onclick="switchTab('overview')">Overview</button>
+        <button class="tab-btn" data-tab="plan" onclick="switchTab('plan')">Step Plan</button>
+        <button class="tab-btn" data-tab="logs" onclick="switchTab('logs')">Agent Logs</button>
       </div>
     </div>
 
@@ -3114,6 +3196,7 @@
       <div class="tab-pane active" id="tab-overview"></div>
       <div class="tab-pane" id="tab-plan"></div>
       <div class="tab-pane" id="tab-logs"></div>
+      <div class="tab-pane" id="tab-runs"></div>
     </div>
   </aside>
 
@@ -3143,7 +3226,8 @@
     let activeChips = new Set();
     let chartRefs = {};
     let currentEval = 'gpt_5-2';
-    let currentRunType = null;   // 'complete' | 'ablation' — set by landing screen
+    let currentRunType = null;   // 'complete' | 'ablation' | 'ablation_multi' | 'single_agent'
+    let currentTurnIndex = 0;    // 0-based turn index for ablation_multi; null = mean ± σ view
     let summaryData = null;
 
     const DC_STATE = { steps: 0, tokens: 0, files: 0, funcs: 0, sem: 0, time: 0, req: 0 };
@@ -3186,16 +3270,26 @@
 
     /* ── run-type helpers ─────────────────────────────────────────────── */
     function getEvalKey() {
-      return currentRunType === 'ablation' ? currentEval + '_ablation' : currentEval;
+      if (currentRunType === 'single_agent')   return 'single_agent';
+      if (currentRunType === 'ablation_multi') return currentEval + '_ablation_multi';
+      return currentEval;
     }
 
     function selectMode(type) {
       currentRunType = type;
       const badge = document.getElementById('run-badge');
       if (badge) {
-        badge.textContent = type === 'ablation' ? 'ABLATION' : 'COMPLETE';
-        badge.classList.toggle('ablation', type === 'ablation');
+        if (type === 'single_agent')        { badge.textContent = 'SINGLE AGENT'; badge.className = 'run-badge ablation'; }
+        else if (type === 'ablation_multi') { badge.textContent = 'MULTI-TURN';   badge.className = 'run-badge ablation'; }
+        else                                { badge.textContent = 'COMPLETE';     badge.className = 'run-badge'; }
       }
+      // hide model switcher when single_agent (model is fixed)
+      const switcher = document.getElementById('eval-switcher');
+      if (switcher) switcher.style.display = type === 'single_agent' ? 'none' : '';
+      // reset turn index; hide turn switcher until data loads
+      currentTurnIndex = type === 'ablation_multi' ? 0 : null;
+      const ts = document.getElementById('turn-switcher');
+      if (ts) ts.style.display = 'none';
       document.getElementById('mode-landing').classList.add('hidden');
       // reset and load
       allPRs = [];
@@ -3205,6 +3299,35 @@
 
     function showModeLanding() {
       document.getElementById('mode-landing').classList.remove('hidden');
+      const switcher = document.getElementById('eval-switcher');
+      if (switcher) switcher.style.display = '';
+    }
+
+    function renderTurnSwitcher() {
+      const sw = document.getElementById('turn-switcher');
+      if (!sw) return;
+      if (currentRunType !== 'ablation_multi') { sw.style.display = 'none'; return; }
+      const nRuns = allPRs.length > 0 ? (allPRs[0].n_runs || 0) : 0;
+      if (nRuns === 0) { sw.style.display = 'none'; return; }
+      const btns = [];
+      for (let i = 0; i < nRuns; i++) {
+        const active = currentTurnIndex === i ? ' active' : '';
+        btns.push(`<button class="turn-btn${active}" onclick="selectTurn(${i})">Turn ${i + 1}</button>`);
+      }
+      const meanActive = currentTurnIndex === null ? ' active' : '';
+      btns.push(`<button class="turn-btn${meanActive}" onclick="selectTurn(null)">Mean ± σ</button>`);
+      sw.innerHTML = `<span class="ts-label">Viewing</span>${btns.join('')}`;
+      sw.style.display = 'flex';
+    }
+
+    function selectTurn(idx) {
+      currentTurnIndex = idx;
+      const btns = document.querySelectorAll('#turn-switcher .turn-btn');
+      btns.forEach((btn, i) => {
+        const isMean = i === btns.length - 1;
+        btn.classList.toggle('active', idx === null ? isMean : i === idx);
+      });
+      applyFilters();
     }
 
     function switchEval(key) {
@@ -3291,6 +3414,7 @@
         renderSummary(summary);
         renderAllCharts(summary);
         populateRepoFilter(summary.repositories || []);
+        renderTurnSwitcher();
         applyFilters();
 
         document.getElementById('nav-pr-count').textContent = allPRs.length;
@@ -4022,15 +4146,31 @@
       }
 
       grid.innerHTML = prs.map((p, i) => {
-        const ff1 = p.functions_f1;
-        const f1 = p.files_f1;
-        const sem = p.semantic;
+        // When viewing a specific turn (ablation_multi mode), read from p.runs[idx]
+        const run = (currentTurnIndex !== null && p.runs && p.runs[currentTurnIndex]) ? p.runs[currentTurnIndex] : null;
+        const ff1 = run ? run.functions_f1 : p.functions_f1;
+        const f1  = run ? run.files_f1     : p.files_f1;
+        const sem = run ? run.semantic      : p.semantic;
+        const tok = run ? run.total_tokens  : p.total_tokens;
         const color = scoreColor(ff1 ?? f1);
-        const unevaluated = !p.has_score;
+        const unevaluated = run ? !run.has_score : !p.has_score;
 
+        const isMulti = p.n_runs > 1;
+        const showStd = isMulti && run === null; // ± only in mean view
+        const fmtMean = (val, std) => {
+          if (val === null || val === undefined) return '—';
+          const s = fmt(val);
+          if (showStd && std !== null && std !== undefined && std > 0.005)
+            return `${s}<span style="font-size:0.6em;color:var(--text-3)"> ±${fmt(std, 2)}</span>`;
+          return s;
+        };
+
+        const turnLabel = run ? `<span class="badge badge-pred">${run.turn_label}</span>` : '';
         const badges = [
           p.has_ground_truth ? '<span class="badge badge-gt">Ground Truth</span>' : '<span class="badge badge-miss">No GT</span>',
           p.has_prediction ? '<span class="badge badge-pred">Prediction</span>' : '<span class="badge badge-miss">No Pred</span>',
+          isMulti ? `<span class="badge badge-pred">n=${p.n_runs}</span>` : '',
+          turnLabel,
         ].join('');
 
         return `
@@ -4049,18 +4189,18 @@
         <div class="card-metrics">
           <div class="card-metric card-metric-primary">
             <span class="card-metric-super-lbl">Func F1</span>
-            <span class="card-metric-val ${scoreClass(ff1)}">${ff1 !== null ? fmt(ff1) : '—'}</span>
+            <span class="card-metric-val ${scoreClass(ff1)}">${fmtMean(ff1, p.std_functions_f1)}</span>
           </div>
           <div class="card-metric card-metric-secondary">
-            <span class="card-metric-val ${scoreClass(f1)}">${f1 !== null ? fmt(f1) : '—'}</span>
+            <span class="card-metric-val ${scoreClass(f1)}">${fmtMean(f1, p.std_files_f1)}</span>
             <span class="card-metric-lbl">Files F1</span>
           </div>
           <div class="card-metric card-metric-secondary">
-            <span class="card-metric-val ${scoreClass(sem)}">${sem !== null ? fmt(sem) : '—'}</span>
+            <span class="card-metric-val ${scoreClass(sem)}">${fmtMean(sem, p.std_semantic)}</span>
             <span class="card-metric-lbl">Semantic</span>
           </div>
           <div class="card-metric card-metric-secondary">
-            <span class="card-metric-val">${fmtK(p.total_tokens)}</span>
+            <span class="card-metric-val">${fmtK(tok)}</span>
             <span class="card-metric-lbl">Tokens</span>
           </div>
         </div>
@@ -4082,7 +4222,11 @@
       document.getElementById('tab-overview').innerHTML = '';
       document.getElementById('tab-plan').innerHTML = '';
       document.getElementById('tab-logs').innerHTML = '';
+      document.getElementById('tab-runs').innerHTML = '';
       document.getElementById('panel-agent-tools').innerHTML = '';
+      // remove Runs tab button if present from a previous multi-turn PR
+      const staleRunsBtn = document.querySelector('#tab-nav [data-tab="runs"]');
+      if (staleRunsBtn) staleRunsBtn.remove();
 
       document.getElementById('overlay').classList.add('active');
       document.getElementById('detail-panel').classList.add('open');
@@ -4103,9 +4247,8 @@
     }
 
     function switchTab(name) {
-      document.querySelectorAll('.tab-btn').forEach((btn, i) => {
-        const names = ['overview', 'plan', 'logs'];
-        btn.classList.toggle('active', names[i] === name);
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.tab === name);
       });
       document.querySelectorAll('.tab-pane').forEach(p => {
         p.classList.toggle('active', p.id === `tab-${name}`);
@@ -4159,6 +4302,21 @@
       renderTabOverview(data, score, tokens, session_log);
       renderTabPlan(ground_truth, prediction, score);
       renderTabLogs(tokens, session_log);
+
+      // Runs tab: dynamically add/remove button based on multi-turn data
+      const tabNav = document.getElementById('tab-nav');
+      if (d.runs && d.runs.length > 0) {
+        let runsBtn = tabNav.querySelector('[data-tab="runs"]');
+        if (!runsBtn) {
+          runsBtn = document.createElement('button');
+          runsBtn.className = 'tab-btn';
+          runsBtn.dataset.tab = 'runs';
+          runsBtn.setAttribute('onclick', "switchTab('runs')");
+          tabNav.appendChild(runsBtn);
+        }
+        runsBtn.textContent = `Runs (${d.runs.length})`;
+        renderTabRuns(d.runs);
+      }
     }
 
     /* ─── tab: overview ──────────────────────────────────────────────── */
@@ -4302,20 +4460,38 @@
   `;
     }
 
-    /* ─── tab: agent logs ────────────────────────────────────────────── */
-    function renderTabLogs(tokens, sessionLog) {
-      const container = document.getElementById('tab-logs');
+    /* ─── shared: agent timeline renderer ───────────────────────────── */
+    function renderAgentTimeline(agents, prefix) {
+      if (!agents || !agents.length) {
+        return '<div class="no-logs-msg"><div class="no-logs-icon">📭</div>No execution logs.</div>';
+      }
+      const agentColors = ['var(--cyan)', 'var(--cream)', 'var(--emerald)', 'var(--amber)', 'var(--rose)'];
 
-      // prefer session_log if available
-      if (sessionLog?.agents?.length) {
-        const agentColors = ['var(--cyan)', 'var(--cream)', 'var(--emerald)', 'var(--amber)', 'var(--rose)'];
-        const items = sessionLog.agents.map((agent, i) => {
-          const color = agentColors[i % agentColors.length];
-          const toolCallsHtml = (agent.tool_calls || []).map((tc, ti) => {
-            const tcId = `tc-${i}-${ti}`;
-            const argsStr = typeof tc.arguments === 'object' ? JSON.stringify(tc.arguments, null, 2) : String(tc.arguments || '');
-            const resStr = String(tc.result || '').slice(0, 4000);
-            return `<div class="tool-call" id="${tcId}">
+      /* group tool calls into parallel batches (called_at within 300ms = parallel) */
+      function groupParallel(toolCalls) {
+        if (!toolCalls || !toolCalls.length) return [];
+        const sorted = [...toolCalls].sort((a, b) =>
+          (a.called_at || '').localeCompare(b.called_at || ''));
+        const batches = [];
+        let batch = [sorted[0]];
+        const batchStart = () => new Date(batch[0].called_at).getTime();
+        for (let k = 1; k < sorted.length; k++) {
+          const t = new Date(sorted[k].called_at).getTime();
+          if (!isNaN(t) && !isNaN(batchStart()) && (t - batchStart()) < 300) {
+            batch.push(sorted[k]);
+          } else {
+            batches.push(batch);
+            batch = [sorted[k]];
+          }
+        }
+        batches.push(batch);
+        return batches;
+      }
+
+      function renderToolCall(tc, tcId) {
+        const argsStr = typeof tc.arguments === 'object' ? JSON.stringify(tc.arguments, null, 2) : String(tc.arguments || '');
+        const resStr = String(tc.result || '').slice(0, 4000);
+        return `<div class="tool-call" id="${tcId}">
           <div class="tool-call-header" onclick="toggleToolCall('${tcId}')">
             <span class="tool-call-icon">⚙</span>
             <span class="tool-call-name">${escHtml(tc.tool_name)}</span>
@@ -4333,11 +4509,35 @@
             </div>
           </div>
         </div>`;
-          }).join('');
+      }
 
-          const spId = `sp-${i}`;
-          const ipId = `ip-${i}`;
-          const systemPromptHtml = agent.system_prompt ? `
+      const items = agents.map((agent, i) => {
+        const color = agentColors[i % agentColors.length];
+        const batches = groupParallel(agent.tool_calls || []);
+        const toolCallsHtml = batches.map((batch, bi) => {
+          if (batch.length === 1) {
+            const tc = batch[0];
+            const tcId = `${prefix}-tc-${i}-${bi}-0`;
+            return renderToolCall(tc, tcId);
+          }
+          // parallel batch
+          const wallTime = Math.max(...batch.map(tc => tc.duration_seconds || 0));
+          const innerHtml = batch.map((tc, ti) => {
+            const tcId = `${prefix}-tc-${i}-${bi}-${ti}`;
+            return renderToolCall(tc, tcId);
+          }).join('');
+          return `<div class="parallel-batch">
+            <div class="parallel-batch-header">
+              ↕ Parallel batch &mdash; ${batch.length} calls
+              <span class="pb-wall">wall&nbsp;${wallTime.toFixed(2)}s</span>
+            </div>
+            ${innerHtml}
+          </div>`;
+        }).join('');
+
+        const spId = `${prefix}-sp-${i}`;
+        const ipId = `${prefix}-ip-${i}`;
+        const systemPromptHtml = agent.system_prompt ? `
         <div class="prompt-block" id="${spId}">
           <div class="prompt-block-header" onclick="togglePromptBlock('${spId}')">
             <span class="prompt-block-label">System Prompt</span>
@@ -4348,7 +4548,7 @@
             <pre class="tool-call-code">${escHtml(agent.system_prompt)}</pre>
           </div>
         </div>` : '';
-          const inputPromptHtml = agent.input_prompt ? `
+        const inputPromptHtml = agent.input_prompt ? `
         <div class="prompt-block" id="${ipId}">
           <div class="prompt-block-header" onclick="togglePromptBlock('${ipId}')">
             <span class="prompt-block-label">Agent Prompt</span>
@@ -4360,8 +4560,8 @@
           </div>
         </div>` : '';
 
-          const abId = `ab-${i}`;
-          return `<div class="agent-block">
+        const abId = `${prefix}-ab-${i}`;
+        return `<div class="agent-block">
         <div class="agent-timeline-line">
           <div class="agent-timeline-dot" style="background:${color};border-color:var(--bg)"></div>
           <div class="agent-timeline-connector"></div>
@@ -4385,9 +4585,17 @@
           </div>
         </div>
       </div>`;
-        }).join('');
+      }).join('');
+      return `<div class="agent-timeline">${items}</div>`;
+    }
 
-        container.innerHTML = `<div class="agent-timeline">${items}</div>`;
+    /* ─── tab: agent logs ────────────────────────────────────────────── */
+    function renderTabLogs(tokens, sessionLog) {
+      const container = document.getElementById('tab-logs');
+
+      // prefer session_log if available
+      if (sessionLog?.agents?.length) {
+        container.innerHTML = renderAgentTimeline(sessionLog.agents, 'main');
         return;
       }
 
@@ -4447,6 +4655,122 @@
       const collapsed = el.style.display === 'none';
       el.style.display = collapsed ? '' : 'none';
       btn.textContent = collapsed ? '▾' : '▸';
+    }
+
+    function toggleRunLog(id, titleEl) {
+      const el = document.getElementById(id);
+      const hidden = el.style.display === 'none';
+      el.style.display = hidden ? '' : 'none';
+      // swap chevron character at end of title
+      if (titleEl) titleEl.innerHTML = titleEl.innerHTML.replace(hidden ? '▾' : '▴', hidden ? '▴' : '▾');
+    }
+
+    /* ─── tab: runs (multi-turn) ─────────────────────────────────────── */
+    function renderTabRuns(runs) {
+      const container = document.getElementById('tab-runs');
+      if (!runs || !runs.length) {
+        container.innerHTML = '<div class="state-msg">No multi-turn run data available.</div>';
+        return;
+      }
+
+      // helper: mean of an array
+      function arrMean(arr) {
+        return arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : null;
+      }
+      // helper: sample stdev
+      function arrStd(arr) {
+        if (arr.length < 2) return null;
+        const m = arrMean(arr);
+        return Math.sqrt(arr.reduce((s, v) => s + (v - m) ** 2, 0) / (arr.length - 1));
+      }
+      // format value with optional ± std
+      function fmtPm(val, std, dec = 3) {
+        if (val === null || val === undefined) return '—';
+        const vs = Number(val).toFixed(dec);
+        if (std !== null && std !== undefined && std > 0.001) return `${vs} ± ${Number(std).toFixed(dec)}`;
+        return vs;
+      }
+
+      // extract per-run scalar metrics from the run's score/tokens sub-objects
+      // (runs from /api/pr/<id> have score/tokens nested; runs in /api/prs list are flat)
+      function getMetric(run, field) {
+        // detail response: run.score.files.f1 etc.
+        if (field === 'files_f1')     return run.score?.files?.f1      ?? run.files_f1      ?? null;
+        if (field === 'functions_f1') return run.score?.functions?.f1  ?? run.functions_f1  ?? null;
+        if (field === 'semantic')     return run.score?.semantic?.overall_semantic_score ?? run.semantic ?? null;
+        if (field === 'tokens')       return run.tokens?.total_tokens   ?? run.total_tokens  ?? null;
+        if (field === 'duration')     return run.tokens?.duration_seconds ?? run.duration_seconds ?? null;
+        return null;
+      }
+
+      const f1Vals   = runs.map(r => getMetric(r, 'files_f1')).filter(v => v !== null);
+      const funcVals = runs.map(r => getMetric(r, 'functions_f1')).filter(v => v !== null);
+      const semVals  = runs.map(r => getMetric(r, 'semantic')).filter(v => v !== null);
+      const tokVals  = runs.map(r => getMetric(r, 'tokens')).filter(v => v !== null);
+      const durVals  = runs.map(r => getMetric(r, 'duration')).filter(v => v !== null);
+
+      const perRunRows = runs.map(r => {
+        const f1  = getMetric(r, 'files_f1');
+        const fn  = getMetric(r, 'functions_f1');
+        const sem = getMetric(r, 'semantic');
+        const tok = getMetric(r, 'tokens');
+        const dur = getMetric(r, 'duration');
+        return `<tr>
+          <td style="font-weight:700">${escHtml(r.turn_label)}</td>
+          <td class="num">${f1  !== null ? Number(f1).toFixed(3)  : '—'}</td>
+          <td class="num">${fn  !== null ? Number(fn).toFixed(3)  : '—'}</td>
+          <td class="num">${sem !== null ? Number(sem).toFixed(3) : '—'}</td>
+          <td class="num">${tok !== null ? fmtK(tok)              : '—'}</td>
+          <td class="num">${dur !== null ? Math.round(dur) + 's'  : '—'}</td>
+        </tr>`;
+      }).join('');
+
+      const meanRow = `<tr style="border-top:2px solid var(--border);font-weight:900">
+        <td>Mean ± σ</td>
+        <td class="num">${fmtPm(arrMean(f1Vals),   arrStd(f1Vals))}</td>
+        <td class="num">${fmtPm(arrMean(funcVals),  arrStd(funcVals))}</td>
+        <td class="num">${fmtPm(arrMean(semVals),   arrStd(semVals))}</td>
+        <td class="num">${fmtPm(arrMean(tokVals),   null, 0)}</td>
+        <td class="num">${arrMean(durVals) !== null ? Math.round(arrMean(durVals)) + 's' : '—'}</td>
+      </tr>`;
+
+      const tableHtml = `<table class="token-table" style="margin-bottom:32px">
+        <thead><tr>
+          <th>Turn</th>
+          <th style="text-align:right">Files F1</th>
+          <th style="text-align:right">Func F1</th>
+          <th style="text-align:right">Semantic</th>
+          <th style="text-align:right">Tokens</th>
+          <th style="text-align:right">Duration</th>
+        </tr></thead>
+        <tbody>${perRunRows}${meanRow}</tbody>
+      </table>`;
+
+      // per-turn collapsible agent log sections
+      const logSections = runs.map((r, ri) => {
+        const logId = `run-log-body-${ri}`;
+        const agents = r.session_log?.agents || [];
+        const timelineHtml = agents.length
+          ? renderAgentTimeline(agents, `run${ri}`)
+          : '<div style="color:var(--text-3);font-size:0.8rem;padding:8px 0">No session log for this turn.</div>';
+        return `<div class="ov-section">
+          <div class="ov-section-title" style="cursor:pointer;user-select:none"
+               onclick="toggleRunLog('${logId}', this)">
+            ${escHtml(r.turn_label)} — Agent Logs ▾
+          </div>
+          <div id="${logId}" style="display:none">
+            ${timelineHtml}
+          </div>
+        </div>`;
+      }).join('');
+
+      container.innerHTML = `
+        <div class="ov-section">
+          <div class="ov-section-title">Metrics per Turn</div>
+          <div class="ov-section-body">${tableHtml}</div>
+        </div>
+        ${logSections}
+      `;
     }
 
     /* ════════════════════════════════════════════════════════════════════

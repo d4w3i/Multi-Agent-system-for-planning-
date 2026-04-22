@@ -804,6 +804,7 @@ def evaluate_batch(
     compute_semantic: bool = False,
     skip_existing: bool = False,
     ablation: bool = False,
+    single_agent: bool = False,
 ) -> BatchReport:
     """
     Evaluate all PRs in a directory.
@@ -814,11 +815,18 @@ def evaluate_batch(
         compute_semantic: If True, also compute semantic similarity (requires API key)
         skip_existing: If True, skip PRs that already have a valid evaluation_score.json
         ablation: If True, evaluate results from pr_dir/evals/ablation_turn/ instead of pr_dir/
+        single_agent: If True, evaluate results from pr_dir/evals/single_agent_turn/ instead of pr_dir/
     """
     report = BatchReport(timestamp=datetime.now().isoformat())
 
     # Find all relevant directories that have ground_truth.json
-    if ablation:
+    if single_agent:
+        pr_dirs = sorted({
+            gt_path.parent
+            for gt_path in base_path.rglob("ground_truth.json")
+            if "single_agent_turn" in str(gt_path)
+        })
+    elif ablation:
         # base_path IS the ablation directory — no filtering needed
         pr_dirs = sorted({
             gt_path.parent
@@ -828,7 +836,8 @@ def evaluate_batch(
         pr_dirs = sorted({
             gt_path.parent
             for gt_path in base_path.rglob("ground_truth.json")
-            if "/evals/ablation_turn/" not in str(gt_path)
+            if "ablation_turn" not in str(gt_path)
+            and "single_agent_turn" not in str(gt_path)
         })
 
     if skip_existing:
@@ -1056,6 +1065,13 @@ Metrics:
         help="Evaluate ablation results stored in pr_dir/evals/ablation_turn/ (only with --batch)"
     )
 
+    parser.add_argument(
+        "--single-agent",
+        action="store_true",
+        dest="single_agent",
+        help="Evaluate single-agent results stored in pr_dir/evals/single_agent_turn/ (only with --batch)"
+    )
+
     args = parser.parse_args()
     path = Path(args.path).resolve()
 
@@ -1071,7 +1087,7 @@ Metrics:
     if args.batch:
         # Batch evaluation
         print(f"{Fore.CYAN}🔍 Searching for PRs with predicted_plan.json and ground_truth.json...{Style.RESET_ALL}")
-        report = evaluate_batch(path, args.limit, compute_semantic=args.semantic, skip_existing=args.skip_existing, ablation=args.ablation)
+        report = evaluate_batch(path, args.limit, compute_semantic=args.semantic, skip_existing=args.skip_existing, ablation=args.ablation, single_agent=args.single_agent)
 
         if not args.quiet:
             print_batch_report(report)

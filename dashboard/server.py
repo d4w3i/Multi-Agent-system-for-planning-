@@ -20,14 +20,32 @@ from flask import Flask, abort, jsonify, redirect, render_template_string, reque
 _BASE = Path(__file__).parent.parent
 
 DATASETS: dict[str, Path] = {
-    "gpt_5-2":             _BASE / "gpt_5-2_evals"   / "first_turn",
-    "gpt_5-mini":          _BASE / "gpt_5-mini_evals" / "first_turn",
-    "gpt_5-nano":          _BASE / "gpt_5-nano_evals"  / "first_turn",
-    "gpt_5-2_ablation":    _BASE / "gpt_5-2_evals"   / "ablation_turn",
-    "gpt_5-mini_ablation": _BASE / "gpt_5-mini_evals" / "ablation_turn",
-    "gpt_5-nano_ablation": _BASE / "gpt_5-nano_evals"  / "ablation_turn",
+    "gpt_5-2":      _BASE / "gpt_5-2_evals"    / "first_turn",
+    "gpt_5-mini":   _BASE / "gpt_5-mini_evals"  / "first_turn",
+    "gpt_5-nano":   _BASE / "gpt_5-nano_evals"   / "first_turn",
+    "single_agent": _BASE / "single_agent_evals" / "single_agent_turn",
 }
 DEFAULT_EVAL = "gpt_5-2"
+
+
+def _ablation_turn_paths(model_prefix: str) -> list[Path]:
+    """Return all existing ablation_turn* dirs for a model, in turn order."""
+    base = _BASE / f"{model_prefix}_evals"
+    dirs: list[Path] = []
+    p = base / "ablation_turn"          # turn 1 — backward-compat name
+    if p.exists(): dirs.append(p)
+    for i in range(2, 20):
+        p = base / f"ablation_turn_{i}"
+        if p.exists(): dirs.append(p)
+        else: break
+    return dirs
+
+
+MULTI_DATASETS: dict[str, list[Path]] = {
+    "gpt_5-2_ablation_multi":    _ablation_turn_paths("gpt_5-2"),
+    "gpt_5-mini_ablation_multi": _ablation_turn_paths("gpt_5-mini"),
+    "gpt_5-nano_ablation_multi": _ablation_turn_paths("gpt_5-nano"),
+}
 
 STATIC = Path(__file__).parent / "static"
 
@@ -332,6 +350,203 @@ def _collect_prs(eval_key: str = DEFAULT_EVAL) -> list[dict]:
     return prs
 
 
+# ─── multi-turn helpers ────────────────────────────────────────────────────────
+
+def _pr_summary_multi(repo_name: str, pr_name: str, turn_dirs: list[Path]) -> dict | None:
+    """Aggregate evaluation data across multiple ablation turns for one PR."""
+    run_data = []
+    for i, td in enumerate(turn_dirs):
+        pr_dir = td / repo_name / pr_name
+        score   = _load(pr_dir / "evaluation_score.json")
+        tokens  = _load(pr_dir / "token_usage.json")
+        session = _load(pr_dir / "session_log.json")
+        has_score = score is not None and not (score or {}).get("error")
+
+        run: dict = {"turn_label": f"turn_{i + 1}", "has_score": has_score}
+        if has_score:
+            run["files_f1"]      = (score.get("files") or {}).get("f1", 0)
+            run["functions_f1"]  = (score.get("functions") or {}).get("f1", 0)
+            run["semantic"]      = (score.get("semantic") or {}).get("overall_semantic_score", 0)
+        else:
+            run["files_f1"] = run["functions_f1"] = run["semantic"] = None
+
+        if tokens:
+            run["total_tokens"]     = tokens.get("total_tokens", 0)
+            run["duration_seconds"] = tokens.get("duration_seconds")
+            run["model"]            = tokens.get("model_name", "")
+        else:
+            run["total_tokens"]     = None
+            run["duration_seconds"] = session.get("duration_seconds") if session else None
+            run["model"]            = ""
+
+        if session:
+            tc_by_tool: dict[str, int] = {}
+            for agent in session.get("agents", []):
+                for call in agent.get("tool_calls", []):
+                    t = call.get("tool_name", "unknown")
+                    tc_by_tool[t] = tc_by_tool.get(t, 0) + 1
+            run["tool_calls_by_tool"] = tc_by_tool
+        else:
+            run["tool_calls_by_tool"] = {}
+
+        run_data.append(run)
+
+    if not run_data:
+        return None
+
+    # metadata from first turn that has data.json
+    data = gt_data = None
+    for td in turn_dirs:
+        if not data:     data    = _load(td / repo_name / pr_name / "data.json")
+        if not gt_data:  gt_data = _load(td / repo_name / pr_name / "ground_truth.json")
+    if not data:
+        return None
+
+    empty_fn_in_gt = _has_empty_fn(gt_data)
+
+    scored = [r for r in run_data if r["has_score"]]
+    f1_vals   = [r["files_f1"]     for r in scored if r["files_f1"]     is not None]
+    func_vals = [r["functions_f1"] for r in scored if r["functions_f1"] is not None]
+    sem_vals  = [r["semantic"]     for r in scored if r["semantic"]      is not None]
+    tok_vals  = [r["total_tokens"] for r in run_data if r["total_tokens"] is not None]
+    dur_vals  = [r["duration_seconds"] for r in run_data if r["duration_seconds"] is not None]
+
+    result: dict = {
+        "id":           f"{repo_name}/{pr_name}",
+        "repo_dir":     repo_name,
+        "pr_name":      pr_name,
+        "pr_num":       data.get("pull_request_number"),
+        "title":        data.get("title", ""),
+        "repository":   data.get("repository", ""),
+        "pr_date":      data.get("pr_date", ""),
+        "pr_url":       data.get("pull_request_url", ""),
+        "has_score":    len(scored) > 0,
+        "has_eval_error": False,
+        "has_prediction":   any((td / repo_name / pr_name / "predicted_plan.json").exists() for td in turn_dirs),
+        "has_ground_truth": gt_data is not None,
+        "has_session_log":  any((td / repo_name / pr_name / "session_log.json").exists()    for td in turn_dirs),
+        "has_empty_function_step": empty_fn_in_gt,
+        "empty_fn_in_gt":  empty_fn_in_gt,
+        "empty_fn_in_pred": False,
+        "n_runs":        len(run_data),
+        # runs list excludes session_log to keep list responses small
+        "runs":          [{k: v for k, v in r.items() if k != "session_log"} for r in run_data],
+        # mean metrics (same field names as _pr_summary so summary math is unchanged)
+        "files_f1":          _avg(f1_vals)   if f1_vals   else None,
+        "functions_f1":      _avg(func_vals) if func_vals else None,
+        "semantic":          _avg(sem_vals)  if sem_vals  else None,
+        "std_files_f1":      _stdev(f1_vals),
+        "std_functions_f1":  _stdev(func_vals),
+        "std_semantic":      _stdev(sem_vals),
+        # fields expected by api_summary that are N/A for aggregated multi view
+        "files_precision":   None, "files_recall":      None,
+        "functions_precision": None, "functions_recall": None,
+        "steps_predicted":   None, "steps_actual":      None,
+        "target_coverage":   None, "summary_similarity": None,
+        "evaluated_at":      "",
+        "total_tokens":         _avg(tok_vals) if tok_vals else None,
+        "total_input_tokens":   None,
+        "total_output_tokens":  None,
+        "total_requests":       None,
+        "model":                next((r["model"] for r in run_data if r.get("model")), ""),
+        "duration_seconds":     _avg(dur_vals) if dur_vals else None,
+        "agent1_tokens":        None,
+        "agent2_tokens":        None,
+        "tool_calls_total":     None,
+        "tool_calls_by_agent":  {},
+        "tool_calls_by_tool":   {},
+    }
+    return result
+
+
+_multi_cache: dict = {k: {"prs": None, "ts": 0.0} for k in MULTI_DATASETS}
+
+
+def _collect_prs_multi(eval_key: str) -> list[dict]:
+    if eval_key not in MULTI_DATASETS:
+        return []
+    c = _multi_cache[eval_key]
+    now = time.monotonic()
+    if c["prs"] is not None and now - c["ts"] < _CACHE_TTL:
+        return c["prs"]
+
+    turn_dirs = MULTI_DATASETS[eval_key]
+    prs: list[dict] = []
+    if not turn_dirs or not turn_dirs[0].exists():
+        return prs
+
+    for repo_dir in sorted(turn_dirs[0].iterdir()):
+        if not repo_dir.is_dir():
+            continue
+        for pr_dir in sorted(repo_dir.iterdir()):
+            if not pr_dir.is_dir() or not pr_dir.name.startswith("pr_"):
+                continue
+            pr = _pr_summary_multi(repo_dir.name, pr_dir.name, turn_dirs)
+            if pr:
+                prs.append(pr)
+
+    c["prs"] = prs
+    c["ts"] = now
+    return prs
+
+
+def _api_pr_multi(pr_id: str, eval_key: str):
+    """Detail endpoint for a multi-turn PR: returns per-turn runs with session logs."""
+    parts = pr_id.split("/", 1)
+    if len(parts) != 2:
+        abort(404)
+    repo_name, pr_name = parts
+    turn_dirs = MULTI_DATASETS[eval_key]
+
+    # collect metadata from first available turn
+    data = ground_truth = prediction = None
+    for td in turn_dirs:
+        pr_dir = td / repo_name / pr_name
+        if not data:         data         = _load(pr_dir / "data.json")
+        if not ground_truth: ground_truth = _load(pr_dir / "ground_truth.json")
+        if not prediction:   prediction   = _load(pr_dir / "predicted_plan.json")
+    if not data:
+        abort(404)
+
+    runs = []
+    score_f1_vals   = []
+    score_func_vals = []
+    score_sem_vals  = []
+    for i, td in enumerate(turn_dirs):
+        pr_dir    = td / repo_name / pr_name
+        score     = _load(pr_dir / "evaluation_score.json")
+        tokens    = _load(pr_dir / "token_usage.json")
+        session_log = _load(pr_dir / "session_log.json")
+        has_score = score is not None and not (score or {}).get("error")
+        if has_score:
+            score_f1_vals.append((score.get("files") or {}).get("f1", 0))
+            score_func_vals.append((score.get("functions") or {}).get("f1", 0))
+            score_sem_vals.append((score.get("semantic") or {}).get("overall_semantic_score", 0))
+        runs.append({
+            "turn_label": f"turn_{i + 1}",
+            "score":       score,
+            "tokens":      tokens,
+            "session_log": session_log,
+            "has_score":   has_score,
+        })
+
+    mean_score = {
+        "files":     {"f1": _avg(score_f1_vals)},
+        "functions": {"f1": _avg(score_func_vals)},
+        "semantic":  {"overall_semantic_score": _avg(score_sem_vals)},
+    } if score_f1_vals else None
+
+    return jsonify({
+        "data":         data,
+        "ground_truth": ground_truth,
+        "prediction":   prediction,
+        "score":        mean_score,
+        "tokens":       None,
+        "session_log":  None,
+        "runs":         runs,
+    })
+
+
 # ─── routes ───────────────────────────────────────────────────────────────────
 
 @app.route("/")
@@ -341,16 +556,24 @@ def index():
 
 @app.route("/api/datasets")
 def api_datasets():
-    return jsonify({
-        k: {"exists": v.exists(), "label": k.replace("_", "-")}
+    result = {
+        k: {"exists": v.exists(), "label": k.replace("_", "-"), "multi": False}
         for k, v in DATASETS.items()
+    }
+    result.update({
+        k: {"exists": any(p.exists() for p in v), "label": k.replace("_", "-"), "multi": True}
+        for k, v in MULTI_DATASETS.items()
     })
+    return jsonify(result)
 
 
 @app.route("/api/summary")
 def api_summary():
-    eval_key  = request.args.get("eval", DEFAULT_EVAL)
-    prs       = _collect_prs(eval_key)
+    eval_key = request.args.get("eval", DEFAULT_EVAL)
+    if eval_key in MULTI_DATASETS:
+        prs = _collect_prs_multi(eval_key)
+    else:
+        prs = _collect_prs(eval_key)
     evaluated = [p for p in prs if p["has_score"] and not p["has_eval_error"]]
     repos     = sorted({p["repository"] for p in prs if p.get("repository")})
 
@@ -741,12 +964,16 @@ def api_summary():
 @app.route("/api/prs")
 def api_prs():
     eval_key = request.args.get("eval", DEFAULT_EVAL)
+    if eval_key in MULTI_DATASETS:
+        return jsonify(_collect_prs_multi(eval_key))
     return jsonify(_collect_prs(eval_key))
 
 
 @app.route("/api/pr/<path:pr_id>")
 def api_pr_detail(pr_id: str):
     eval_key = request.args.get("eval", DEFAULT_EVAL)
+    if eval_key in MULTI_DATASETS:
+        return _api_pr_multi(pr_id, eval_key)
     dataset  = DATASETS.get(eval_key, DATASETS[DEFAULT_EVAL])
     parts = pr_id.split("/", 1)
     if len(parts) != 2:
@@ -772,6 +999,10 @@ if __name__ == "__main__":
     for key, path in DATASETS.items():
         status = "✓" if path.exists() else "✗ (missing)"
         print(f"  ◆ [{key}] {path}  {status}")
+    for key, paths in MULTI_DATASETS.items():
+        n = len(paths)
+        status = f"✓ {n} turn(s)" if n > 0 else "✗ (no turns found)"
+        print(f"  ◆ [{key}] {status}")
     print(f"  ◆ URL     : http://localhost:2002")
     print()
     app.run(debug=False, port=2002)

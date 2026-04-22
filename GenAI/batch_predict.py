@@ -90,6 +90,7 @@ load_dotenv()
 
 # Local import after path setup
 from GenAI.pr_step_planner import PRStepPlanner
+from GenAI.single_agent_runner import SingleAgentPlanner
 
 
 def find_pr_directories(
@@ -151,6 +152,9 @@ def process_single_pr(
     model_name: str,
     verbose: bool = False,
     ablation: bool = False,
+    single_agent: bool = False,
+    eval_dir: Optional[Path] = None,
+    eval_subdir: Optional[str] = None,
 ) -> Tuple[Path, bool, str]:
     """
     Process a single PR.
@@ -159,12 +163,22 @@ def process_single_pr(
         Tuple (pr_dir, success, message)
     """
     try:
-        planner = PRStepPlanner(
-            pr_dir=str(pr_dir),
-            model_name=model_name,
-            verbose=verbose,
-            ablation=ablation,
-        )
+        if single_agent:
+            planner = SingleAgentPlanner(
+                pr_dir=str(pr_dir),
+                model_name=model_name,
+                verbose=verbose,
+                eval_dir=eval_dir,
+                eval_subdir=eval_subdir,
+            )
+        else:
+            planner = PRStepPlanner(
+                pr_dir=str(pr_dir),
+                model_name=model_name,
+                verbose=verbose,
+                ablation=ablation,
+                eval_dir=eval_dir if ablation else None,
+            )
 
         output_path = planner.save_output()
         return (pr_dir, True, f"Saved: {output_path}")
@@ -185,6 +199,9 @@ def run_batch(
     parallel: int = 1,
     pr_dirs_override: Optional[List[Path]] = None,
     ablation: bool = False,
+    single_agent: bool = False,
+    eval_dir: Optional[Path] = None,
+    eval_subdir: Optional[str] = None,
 ) -> dict:
     """
     Execute batch processing of PRs.
@@ -217,7 +234,12 @@ def run_batch(
     print(f"{Fore.CYAN}{'='*80}{Style.RESET_ALL}\n")
 
     # Find PR directories (or use the provided override list)
-    target_file = "evals/ablation_turn/predicted_plan.json" if ablation else "predicted_plan.json"
+    if single_agent:
+        target_file = f"{eval_subdir or 'evals/single_agent_turn'}/predicted_plan.json"
+    elif ablation:
+        target_file = "evals/ablation_turn/predicted_plan.json"
+    else:
+        target_file = "predicted_plan.json"
 
     if pr_dirs_override is not None:
         pr_dirs = pr_dirs_override
@@ -252,7 +274,7 @@ def run_batch(
 
         with ThreadPoolExecutor(max_workers=parallel) as executor:
             futures = {
-                executor.submit(process_single_pr, pr_dir, model_name, verbose, ablation): pr_dir
+                executor.submit(process_single_pr, pr_dir, model_name, verbose, ablation, single_agent, eval_dir, eval_subdir): pr_dir
                 for pr_dir in pr_dirs
             }
 
@@ -275,7 +297,7 @@ def run_batch(
 
             print(f"\n{Fore.YELLOW}[{i}/{len(pr_dirs)}] Processing: {pr_name}{Style.RESET_ALL}")
 
-            pr_dir, success, message = process_single_pr(pr_dir, model_name, verbose, ablation)
+            pr_dir, success, message = process_single_pr(pr_dir, model_name, verbose, ablation, single_agent, eval_dir, eval_subdir)
 
             if success:
                 results["success"] += 1
@@ -414,6 +436,39 @@ Examples:
         )
     )
 
+    parser.add_argument(
+        "--single-agent",
+        action="store_true",
+        dest="single_agent",
+        help=(
+            "Single-agent baseline: one agent, no instructions, all tools. "
+            "Outputs are written to pr_dir/evals/single_agent_turn/."
+        )
+    )
+
+    parser.add_argument(
+        "--eval-dir",
+        dest="eval_dir",
+        default=None,
+        help=(
+            "Optional top-level consolidated eval folder "
+            "(e.g. single_agent_evals/single_agent_turn). "
+            "When set, results are also copied there under <owner_repo>/<pr_NUMBER>/, "
+            "mirroring the gpt_5-2_evals layout."
+        )
+    )
+
+    parser.add_argument(
+        "--eval-subdir",
+        dest="eval_subdir",
+        default=None,
+        help=(
+            "Override the pr_dir-relative subdirectory where single-agent outputs are "
+            "written (default: evals/single_agent_turn). Use this to keep results from "
+            "different models separate, e.g. evals/single_agent_turn_mini."
+        )
+    )
+
     args = parser.parse_args()
 
     # Verify API key
@@ -429,6 +484,8 @@ Examples:
             from scripts.create_pr_subset import load_pr_subset
             pr_dirs_override = [Path(p) for p in load_pr_subset(args.subset)]
 
+        eval_dir = Path(args.eval_dir) if args.eval_dir else None
+
         results = run_batch(
             base_path=args.base_path,
             limit=limit,
@@ -438,6 +495,9 @@ Examples:
             parallel=args.parallel,
             pr_dirs_override=pr_dirs_override,
             ablation=args.ablation,
+            single_agent=args.single_agent,
+            eval_dir=eval_dir,
+            eval_subdir=args.eval_subdir,
         )
 
         # Save report if requested

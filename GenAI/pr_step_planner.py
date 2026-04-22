@@ -259,7 +259,13 @@ from dotenv import load_dotenv
 
 from pydantic import BaseModel, Field
 from openai import AsyncOpenAI
-from agents import Agent, ModelSettings, OpenAIChatCompletionsModel, Runner, function_tool
+from agents import (
+    Agent,
+    ModelSettings,
+    OpenAIChatCompletionsModel,
+    Runner,
+    function_tool,
+)
 
 from colorama import Fore, Style, init
 
@@ -284,40 +290,60 @@ MAX_FILE_CHARS: int = 60_000
 # =============================================================================
 # PYDANTIC MODELS - Structured I/O
 
+
 class FunctionToModify(BaseModel):
     """Function identified as a modification target."""
-    function_name: str = Field(description="Function name (e.g., 'my_function' or 'ClassName.method_name')")
-    file_path: str = Field(description="Relative path of the file containing the function")
+
+    function_name: str = Field(
+        description="Function name (e.g., 'my_function' or 'ClassName.method_name')"
+    )
+    file_path: str = Field(
+        description="Relative path of the file containing the function"
+    )
     reason: str = Field(description="Reason why this function needs to be modified")
+
 
 class FileToModify(BaseModel):
     """File identified as a modification target."""
+
     file_path: str = Field(description="Relative path of the file to modify")
     reason: str = Field(description="Reason why this file needs to be modified")
 
+
 class AnalysisOutput(BaseModel):
     """Structured output of the Analysis Agent."""
+
     pr_title: str = Field(description="Pull request title")
     pr_body: str = Field(description="Pull request body/description")
-    masca_optimized: str = Field(description="MASCA analysis optimized and focused on the specific PR")
+    masca_optimized: str = Field(
+        description="MASCA analysis optimized and focused on the specific PR"
+    )
     files_to_modify: List[FileToModify] = Field(description="List of files to modify")
-    functions_to_modify: List[FunctionToModify] = Field(description="List of functions to modify")
+    functions_to_modify: List[FunctionToModify] = Field(
+        description="List of functions to modify"
+    )
     analysis_summary: str = Field(description="Summary of the analysis conducted")
+
 
 class PlannerOutput(BaseModel):
     """Final output of the multi-agent system."""
+
     step_plan: StepPlan = Field(description="Complete implementation plan")
+
 
 class AgentTokenUsage(BaseModel):
     """Token usage for a single agent."""
+
     agent_name: str
     requests: int
     input_tokens: int
     output_tokens: int
     total_tokens: int
 
+
 class TokenUsageReport(BaseModel):
     """Complete token usage report for a PR run (backward-compatible output)."""
+
     pr_number: int
     repository: str
     timestamp: str
@@ -329,44 +355,57 @@ class TokenUsageReport(BaseModel):
     total_tokens: int
     duration_seconds: Optional[float] = None
 
+
 # =============================================================================
 # SESSION LOG MODELS - Full trace for dashboard consumption
 
+
 class ToolCallSummarization(BaseModel):
     """Details of the LLM call made to summarize a file read."""
+
     model: str
     system_prompt: str
-    user_prompt: str     # includes reason + expected_information + raw file content
-    summary: str         # LLM response text
+    user_prompt: str  # includes reason + expected_information + raw file content
+    summary: str  # LLM response text
     input_tokens: int
     output_tokens: int
     total_tokens: int
     duration_seconds: float
-    error: Optional[str] = None   # set if the LLM call failed
+    error: Optional[str] = None  # set if the LLM call failed
+
 
 class ToolCall(BaseModel):
     """A single tool invocation captured during an agent run."""
+
     index: int
     tool_name: str
     arguments: dict
-    raw_result: Optional[str] = None   # original file content before summarization
-    result: str                        # what the agent received (summary, or raw on error)
+    raw_result: Optional[str] = None  # original file content before summarization
+    result: str  # what the agent received (summary, or raw on error)
     result_chars: int
-    truncated: bool      # True if raw_result was truncated before being fed to the summarizer
-    called_at: str       # ISO timestamp
+    truncated: (
+        bool  # True if raw_result was truncated before being fed to the summarizer
+    )
+    called_at: str  # ISO timestamp
     duration_seconds: float
-    summarization: Optional[ToolCallSummarization] = None  # present only for read_base_project_file
+    summarization: Optional[ToolCallSummarization] = (
+        None  # present only for read_base_project_file
+    )
+
 
 class RetryEvent(BaseModel):
     """A retry attempt that occurred during agent execution."""
+
     attempt: int
     error_type: str
     error_message: str
     timestamp: str
     waited_seconds: float
 
+
 class AgentSession(BaseModel):
     """Complete trace for a single agent phase."""
+
     name: str
     phase: int
     started_at: str
@@ -380,23 +419,27 @@ class AgentSession(BaseModel):
     retry_count: int
     retry_events: List[RetryEvent]
     tool_calls: List[ToolCall]
-    output: dict         # agent final output serialized via model_dump()
+    output: dict  # agent final output serialized via model_dump()
+
 
 class SessionContext(BaseModel):
     """Context availability and full PR input data."""
+
     pr_title: str
-    pr_body: str         # full body, no truncation
+    pr_body: str  # full body, no truncation
     masca_available: bool
     masca_chars: int
     call_graph_available: bool
     context_files_available: bool
     ablation: bool = False
 
+
 class SessionLog(BaseModel):
     """
     Complete session log for a PR pipeline run.
     Saved as session_log.json — primary data source for the dashboard.
     """
+
     session_id: str
     pr_number: int
     repository: str
@@ -411,8 +454,10 @@ class SessionLog(BaseModel):
     agents: List[AgentSession]
     token_summary: dict
 
+
 # =============================================================================
 # TOOL FACTORY - Creates sandboxed tools for agents
+
 
 def create_base_project_tools(
     base_project_path: Path,
@@ -429,7 +474,6 @@ def create_base_project_tools(
     client / model_name: used by read_base_project_file to summarize file content via LLM.
     """
     base_dir_str = str(base_project_path.resolve())
-
 
     _SUMMARIZER_SYSTEM_PROMPT = (
         "You are a code analysis assistant. Your task is to summarize source code files "
@@ -478,7 +522,9 @@ def create_base_project_tools(
         print(f"\n{Fore.CYAN}🔧 TOOL: read_base_project_file")
         print(f"{Fore.CYAN}   📥 file_path:             {file_path}")
         print(f"{Fore.CYAN}   📥 reason:                {reason[:120]}")
-        print(f"{Fore.CYAN}   📥 expected_information:  {expected_information[:120]}{Style.RESET_ALL}")
+        print(
+            f"{Fore.CYAN}   📥 expected_information:  {expected_information[:120]}{Style.RESET_ALL}"
+        )
 
         full_path = str(base_project_path / file_path)
         raw_content = _read_file_impl(
@@ -492,29 +538,33 @@ def create_base_project_tools(
 
         if is_error:
             duration = round(time.perf_counter() - t0, 4)
-            tool_call_log.append({
-                "index": len(tool_call_log),
-                "tool_name": "read_base_project_file",
-                "arguments": {
-                    "file_path": file_path,
-                    "reason": reason,
-                    "expected_information": expected_information,
-                },
-                "raw_result": raw_content,
-                "result": raw_content,
-                "result_chars": len(raw_content),
-                "truncated": False,
-                "called_at": called_at,
-                "duration_seconds": duration,
-                "summarization": None,
-            })
+            tool_call_log.append(
+                {
+                    "index": len(tool_call_log),
+                    "tool_name": "read_base_project_file",
+                    "arguments": {
+                        "file_path": file_path,
+                        "reason": reason,
+                        "expected_information": expected_information,
+                    },
+                    "raw_result": raw_content,
+                    "result": raw_content,
+                    "result_chars": len(raw_content),
+                    "truncated": False,
+                    "called_at": called_at,
+                    "duration_seconds": duration,
+                    "summarization": None,
+                }
+            )
             print(f"{Fore.RED}   {raw_content}{Style.RESET_ALL}")
             return raw_content
 
-        lines = raw_content.count('\n') + 1
+        lines = raw_content.count("\n") + 1
         content_for_llm = raw_content
 
-        print(f"{Fore.CYAN}   📄 {lines} lines read — requesting LLM summary...{Style.RESET_ALL}")
+        print(
+            f"{Fore.CYAN}   📄 {lines} lines read — requesting LLM summary...{Style.RESET_ALL}"
+        )
 
         user_prompt = (
             f"## File: {file_path}\n\n"
@@ -533,7 +583,7 @@ def create_base_project_tools(
                 model=model_name,
                 messages=[
                     {"role": "system", "content": _SUMMARIZER_SYSTEM_PROMPT},
-                    {"role": "user",   "content": user_prompt},
+                    {"role": "user", "content": user_prompt},
                 ],
             )
             summary = response.choices[0].message.content or ""
@@ -552,18 +602,23 @@ def create_base_project_tools(
                 "error": None,
             }
             result = summary
-            print(f"{Fore.GREEN}   ✅ Summary generated ({len(summary)} chars, {summarization_data['total_tokens']} tokens){Style.RESET_ALL}")
+            print(
+                f"{Fore.GREEN}   ✅ Summary generated ({len(summary)} chars, {summarization_data['total_tokens']} tokens){Style.RESET_ALL}"
+            )
 
         except Exception as e:
             llm_duration = round(time.perf_counter() - t_llm, 4)
-            print(f"{Fore.YELLOW}   ⚠️  Summarization failed ({e}) — falling back to raw content{Style.RESET_ALL}")
+            print(
+                f"{Fore.YELLOW}   ⚠️  Summarization failed ({e}) — falling back to raw content{Style.RESET_ALL}"
+            )
 
             # Fallback: truncated raw content so the agent still gets something useful
             truncated = len(raw_content) > MAX_FILE_CHARS
             result = (
                 raw_content[:MAX_FILE_CHARS]
                 + f"\n\n... [TRUNCATED: showing first {MAX_FILE_CHARS} of {len(raw_content)} chars] ..."
-                if truncated else raw_content
+                if truncated
+                else raw_content
             )
             summarization_data = {
                 "model": model_name,
@@ -578,30 +633,30 @@ def create_base_project_tools(
             }
 
         duration = round(time.perf_counter() - t0, 4)
-        tool_call_log.append({
-            "index": len(tool_call_log),
-            "tool_name": "read_base_project_file",
-            "arguments": {
-                "file_path": file_path,
-                "reason": reason,
-                "expected_information": expected_information,
-            },
-            "raw_result": raw_content,        # full original file content
-            "result": result,                 # LLM summary (what the agent receives)
-            "result_chars": len(result),
-            "truncated": truncated,
-            "called_at": called_at,
-            "duration_seconds": duration,
-            "summarization": summarization_data,
-        })
+        tool_call_log.append(
+            {
+                "index": len(tool_call_log),
+                "tool_name": "read_base_project_file",
+                "arguments": {
+                    "file_path": file_path,
+                    "reason": reason,
+                    "expected_information": expected_information,
+                },
+                "raw_result": raw_content,  # full original file content
+                "result": result,  # LLM summary (what the agent receives)
+                "result_chars": len(result),
+                "truncated": truncated,
+                "called_at": called_at,
+                "duration_seconds": duration,
+                "summarization": summarization_data,
+            }
+        )
 
         return result
 
     @function_tool
     def list_base_project_directory(
-        directory: str = ".",
-        pattern: str = "*",
-        recursive: bool = False
+        directory: str = ".", pattern: str = "*", recursive: bool = False
     ) -> str:
         """
         List files and folders in the base_project directory.
@@ -631,21 +686,27 @@ def create_base_project_tools(
             base_dir=base_dir_str,
             show_hidden=False,
             max_items=150,
-            verbose=False
+            verbose=False,
         )
 
         duration = round(time.perf_counter() - t0, 4)
 
-        tool_call_log.append({
-            "index": len(tool_call_log),
-            "tool_name": "list_base_project_directory",
-            "arguments": {"directory": directory, "pattern": pattern, "recursive": recursive},
-            "result": result,
-            "result_chars": len(result),
-            "truncated": False,
-            "called_at": called_at,
-            "duration_seconds": duration,
-        })
+        tool_call_log.append(
+            {
+                "index": len(tool_call_log),
+                "tool_name": "list_base_project_directory",
+                "arguments": {
+                    "directory": directory,
+                    "pattern": pattern,
+                    "recursive": recursive,
+                },
+                "result": result,
+                "result_chars": len(result),
+                "truncated": False,
+                "called_at": called_at,
+                "duration_seconds": duration,
+            }
+        )
 
         if not result.startswith("❌"):
             print(f"{Fore.GREEN}   Directory listed{Style.RESET_ALL}")
@@ -699,18 +760,20 @@ def create_base_project_tools_ablation(
         duration = round(time.perf_counter() - t0, 4)
 
         if is_error:
-            tool_call_log.append({
-                "index": len(tool_call_log),
-                "tool_name": "read_base_project_file",
-                "arguments": {"file_path": file_path},
-                "raw_result": raw_content,
-                "result": raw_content,
-                "result_chars": len(raw_content),
-                "truncated": False,
-                "called_at": called_at,
-                "duration_seconds": duration,
-                "summarization": None,
-            })
+            tool_call_log.append(
+                {
+                    "index": len(tool_call_log),
+                    "tool_name": "read_base_project_file",
+                    "arguments": {"file_path": file_path},
+                    "raw_result": raw_content,
+                    "result": raw_content,
+                    "result_chars": len(raw_content),
+                    "truncated": False,
+                    "called_at": called_at,
+                    "duration_seconds": duration,
+                    "summarization": None,
+                }
+            )
             print(f"{Fore.RED}   {raw_content}{Style.RESET_ALL}")
             return raw_content
 
@@ -718,30 +781,33 @@ def create_base_project_tools_ablation(
         result = (
             raw_content[:MAX_FILE_CHARS]
             + f"\n\n... [TRUNCATED: showing first {MAX_FILE_CHARS} of {len(raw_content)} chars] ..."
-            if truncated else raw_content
+            if truncated
+            else raw_content
         )
-        lines = raw_content.count('\n') + 1
-        print(f"{Fore.GREEN}   ✅ {lines} lines read (raw, no summarizer){Style.RESET_ALL}")
+        lines = raw_content.count("\n") + 1
+        print(
+            f"{Fore.GREEN}   ✅ {lines} lines read (raw, no summarizer){Style.RESET_ALL}"
+        )
 
-        tool_call_log.append({
-            "index": len(tool_call_log),
-            "tool_name": "read_base_project_file",
-            "arguments": {"file_path": file_path},
-            "raw_result": raw_content,
-            "result": result,
-            "result_chars": len(result),
-            "truncated": truncated,
-            "called_at": called_at,
-            "duration_seconds": duration,
-            "summarization": None,
-        })
+        tool_call_log.append(
+            {
+                "index": len(tool_call_log),
+                "tool_name": "read_base_project_file",
+                "arguments": {"file_path": file_path},
+                "raw_result": raw_content,
+                "result": result,
+                "result_chars": len(result),
+                "truncated": truncated,
+                "called_at": called_at,
+                "duration_seconds": duration,
+                "summarization": None,
+            }
+        )
         return result
 
     @function_tool
     def list_base_project_directory(
-        directory: str = ".",
-        pattern: str = "*",
-        recursive: bool = False
+        directory: str = ".", pattern: str = "*", recursive: bool = False
     ) -> str:
         """
         List files and folders in the base_project directory.
@@ -758,7 +824,9 @@ def create_base_project_tools_ablation(
         t0 = time.perf_counter()
 
         print(f"\n{Fore.CYAN}TOOL: list_base_project_directory")
-        print(f"{Fore.CYAN}   directory: {directory} | pattern: {pattern} | recursive: {recursive}{Style.RESET_ALL}")
+        print(
+            f"{Fore.CYAN}   directory: {directory} | pattern: {pattern} | recursive: {recursive}{Style.RESET_ALL}"
+        )
 
         full_dir = str(base_project_path / directory)
         result = _list_directory_impl(
@@ -768,20 +836,26 @@ def create_base_project_tools_ablation(
             base_dir=base_dir_str,
             show_hidden=False,
             max_items=150,
-            verbose=False
+            verbose=False,
         )
 
         duration = round(time.perf_counter() - t0, 4)
-        tool_call_log.append({
-            "index": len(tool_call_log),
-            "tool_name": "list_base_project_directory",
-            "arguments": {"directory": directory, "pattern": pattern, "recursive": recursive},
-            "result": result,
-            "result_chars": len(result),
-            "truncated": False,
-            "called_at": called_at,
-            "duration_seconds": duration,
-        })
+        tool_call_log.append(
+            {
+                "index": len(tool_call_log),
+                "tool_name": "list_base_project_directory",
+                "arguments": {
+                    "directory": directory,
+                    "pattern": pattern,
+                    "recursive": recursive,
+                },
+                "result": result,
+                "result_chars": len(result),
+                "truncated": False,
+                "called_at": called_at,
+                "duration_seconds": duration,
+            }
+        )
         if not result.startswith("❌"):
             print(f"{Fore.GREEN}   Directory listed{Style.RESET_ALL}")
         else:
@@ -800,7 +874,11 @@ def create_context_files_tools(context_output_path: Path, tool_call_log: list):
     tool_call_log: mutable list — each tool call appends a ToolCall-compatible dict.
     """
     context_files_path = context_output_path / "context_files"
-    base_dir_str = str(context_files_path.resolve()) if context_files_path.exists() else str(context_output_path.resolve())
+    base_dir_str = (
+        str(context_files_path.resolve())
+        if context_files_path.exists()
+        else str(context_output_path.resolve())
+    )
 
     @function_tool
     def read_context_file(file_path: str) -> str:
@@ -824,16 +902,18 @@ def create_context_files_tools(context_output_path: Path, tool_call_log: list):
         if not context_files_path.exists():
             result = f"❌ context_files directory not found in {context_output_path}"
             duration = round(time.perf_counter() - t0, 4)
-            tool_call_log.append({
-                "index": len(tool_call_log),
-                "tool_name": "read_context_file",
-                "arguments": {"file_path": file_path},
-                "result": result,
-                "result_chars": len(result),
-                "truncated": False,
-                "called_at": called_at,
-                "duration_seconds": duration,
-            })
+            tool_call_log.append(
+                {
+                    "index": len(tool_call_log),
+                    "tool_name": "read_context_file",
+                    "arguments": {"file_path": file_path},
+                    "result": result,
+                    "result_chars": len(result),
+                    "truncated": False,
+                    "called_at": called_at,
+                    "duration_seconds": duration,
+                }
+            )
             return result
 
         full_path = str(context_files_path / file_path)
@@ -842,7 +922,7 @@ def create_context_files_tools(context_output_path: Path, tool_call_log: list):
             file_path=full_path,
             base_dir=base_dir_str,
             include_metadata=False,
-            verbose=False
+            verbose=False,
         )
 
         duration = round(time.perf_counter() - t0, 4)
@@ -850,23 +930,30 @@ def create_context_files_tools(context_output_path: Path, tool_call_log: list):
         will_truncate = not is_error and len(result) > MAX_FILE_CHARS
 
         # Log with full untruncated result
-        tool_call_log.append({
-            "index": len(tool_call_log),
-            "tool_name": "read_context_file",
-            "arguments": {"file_path": file_path},
-            "result": result,
-            "result_chars": len(result),
-            "truncated": will_truncate,
-            "called_at": called_at,
-            "duration_seconds": duration,
-        })
+        tool_call_log.append(
+            {
+                "index": len(tool_call_log),
+                "tool_name": "read_context_file",
+                "arguments": {"file_path": file_path},
+                "result": result,
+                "result_chars": len(result),
+                "truncated": will_truncate,
+                "called_at": called_at,
+                "duration_seconds": duration,
+            }
+        )
 
         if not is_error:
-            lines = result.count('\n') + 1
+            lines = result.count("\n") + 1
             if will_truncate:
-                truncated_lines = result[:MAX_FILE_CHARS].count('\n') + 1
-                result = result[:MAX_FILE_CHARS] + f"\n\n... [TRUNCATED: file too large, showing {truncated_lines}/{lines} lines] ..."
-                print(f"{Fore.YELLOW}   ⚠️ Read and TRUNCATED: {truncated_lines}/{lines} lines{Style.RESET_ALL}")
+                truncated_lines = result[:MAX_FILE_CHARS].count("\n") + 1
+                result = (
+                    result[:MAX_FILE_CHARS]
+                    + f"\n\n... [TRUNCATED: file too large, showing {truncated_lines}/{lines} lines] ..."
+                )
+                print(
+                    f"{Fore.YELLOW}   ⚠️ Read and TRUNCATED: {truncated_lines}/{lines} lines{Style.RESET_ALL}"
+                )
             else:
                 print(f"{Fore.GREEN}   ✅ Read: {lines} lines{Style.RESET_ALL}")
         else:
@@ -875,10 +962,7 @@ def create_context_files_tools(context_output_path: Path, tool_call_log: list):
         return result
 
     @function_tool
-    def list_context_files(
-        directory: str = ".",
-        pattern: str = "*_context.txt"
-    ) -> str:
+    def list_context_files(directory: str = ".", pattern: str = "*_context.txt") -> str:
         """
         List available context files.
 
@@ -899,19 +983,25 @@ def create_context_files_tools(context_output_path: Path, tool_call_log: list):
         if not context_files_path.exists():
             result = f"❌ context_files directory not found in {context_output_path}"
             duration = round(time.perf_counter() - t0, 4)
-            tool_call_log.append({
-                "index": len(tool_call_log),
-                "tool_name": "list_context_files",
-                "arguments": {"directory": directory, "pattern": pattern},
-                "result": result,
-                "result_chars": len(result),
-                "truncated": False,
-                "called_at": called_at,
-                "duration_seconds": duration,
-            })
+            tool_call_log.append(
+                {
+                    "index": len(tool_call_log),
+                    "tool_name": "list_context_files",
+                    "arguments": {"directory": directory, "pattern": pattern},
+                    "result": result,
+                    "result_chars": len(result),
+                    "truncated": False,
+                    "called_at": called_at,
+                    "duration_seconds": duration,
+                }
+            )
             return result
 
-        full_dir = str(context_files_path / directory) if directory != "." else str(context_files_path)
+        full_dir = (
+            str(context_files_path / directory)
+            if directory != "."
+            else str(context_files_path)
+        )
 
         result = _list_directory_impl(
             dir_path=full_dir,
@@ -920,21 +1010,23 @@ def create_context_files_tools(context_output_path: Path, tool_call_log: list):
             base_dir=base_dir_str,
             show_hidden=False,
             max_items=200,
-            verbose=False
+            verbose=False,
         )
 
         duration = round(time.perf_counter() - t0, 4)
 
-        tool_call_log.append({
-            "index": len(tool_call_log),
-            "tool_name": "list_context_files",
-            "arguments": {"directory": directory, "pattern": pattern},
-            "result": result,
-            "result_chars": len(result),
-            "truncated": False,
-            "called_at": called_at,
-            "duration_seconds": duration,
-        })
+        tool_call_log.append(
+            {
+                "index": len(tool_call_log),
+                "tool_name": "list_context_files",
+                "arguments": {"directory": directory, "pattern": pattern},
+                "result": result,
+                "result_chars": len(result),
+                "truncated": False,
+                "called_at": called_at,
+                "duration_seconds": duration,
+            }
+        )
 
         if not result.startswith("❌"):
             print(f"{Fore.GREEN}   ✅ Context files listed{Style.RESET_ALL}")
@@ -969,34 +1061,38 @@ def create_context_files_tools(context_output_path: Path, tool_call_log: list):
         if not call_graph_path.exists():
             result = "❌ call_graph.json not found"
             duration = round(time.perf_counter() - t0, 4)
-            tool_call_log.append({
-                "index": len(tool_call_log),
-                "tool_name": "read_call_graph",
-                "arguments": {"section": section},
-                "result": result,
-                "result_chars": len(result),
-                "truncated": False,
-                "called_at": called_at,
-                "duration_seconds": duration,
-            })
+            tool_call_log.append(
+                {
+                    "index": len(tool_call_log),
+                    "tool_name": "read_call_graph",
+                    "arguments": {"section": section},
+                    "result": result,
+                    "result_chars": len(result),
+                    "truncated": False,
+                    "called_at": called_at,
+                    "duration_seconds": duration,
+                }
+            )
             return result
 
         try:
-            with open(call_graph_path, 'r', encoding='utf-8') as f:
+            with open(call_graph_path, "r", encoding="utf-8") as f:
                 data = json.load(f)
         except Exception as e:
             result = f"❌ Error reading call_graph.json: {e}"
             duration = round(time.perf_counter() - t0, 4)
-            tool_call_log.append({
-                "index": len(tool_call_log),
-                "tool_name": "read_call_graph",
-                "arguments": {"section": section},
-                "result": result,
-                "result_chars": len(result),
-                "truncated": False,
-                "called_at": called_at,
-                "duration_seconds": duration,
-            })
+            tool_call_log.append(
+                {
+                    "index": len(tool_call_log),
+                    "tool_name": "read_call_graph",
+                    "arguments": {"section": section},
+                    "result": result,
+                    "result_chars": len(result),
+                    "truncated": False,
+                    "called_at": called_at,
+                    "duration_seconds": duration,
+                }
+            )
             return result
 
         if section == "stats":
@@ -1004,11 +1100,15 @@ def create_context_files_tools(context_output_path: Path, tool_call_log: list):
 
         elif section == "functions":
             funcs = list(data.get("functions", {}).keys())
-            result = f"📊 {len(funcs)} functions found:\n" + "\n".join(f"  - {f}" for f in funcs[:100])
+            result = f"📊 {len(funcs)} functions found:\n" + "\n".join(
+                f"  - {f}" for f in funcs[:100]
+            )
 
         elif section == "edges":
             edges = data.get("edges", [])[:100]
-            output_lines = [f"📊 {len(data.get('edges', []))} relationships (showing first 100):"]
+            output_lines = [
+                f"📊 {len(data.get('edges', []))} relationships (showing first 100):"
+            ]
             for edge in edges:
                 output_lines.append(f"  {edge['from']} -> {edge['to']}")
             result = "\n".join(output_lines)
@@ -1018,23 +1118,27 @@ def create_context_files_tools(context_output_path: Path, tool_call_log: list):
 
         duration = round(time.perf_counter() - t0, 4)
 
-        tool_call_log.append({
-            "index": len(tool_call_log),
-            "tool_name": "read_call_graph",
-            "arguments": {"section": section},
-            "result": result,
-            "result_chars": len(result),
-            "truncated": False,
-            "called_at": called_at,
-            "duration_seconds": duration,
-        })
+        tool_call_log.append(
+            {
+                "index": len(tool_call_log),
+                "tool_name": "read_call_graph",
+                "arguments": {"section": section},
+                "result": result,
+                "result_chars": len(result),
+                "truncated": False,
+                "called_at": called_at,
+                "duration_seconds": duration,
+            }
+        )
 
         return result
 
     return [read_context_file, list_context_files, read_call_graph]
 
+
 # =============================================================================
 # AGENT FACTORY
+
 
 def create_analysis_agent(
     client: AsyncOpenAI,
@@ -1059,15 +1163,14 @@ def create_analysis_agent(
     tool_call_log: shared mutable list for capturing tool invocations.
     """
 
-    MODEL = OpenAIChatCompletionsModel(
-        model=model_name,
-        openai_client=client
-    )
+    MODEL = OpenAIChatCompletionsModel(model=model_name, openai_client=client)
 
     if ablation:
         tools = create_base_project_tools_ablation(base_project_path, tool_call_log)
     else:
-        tools = create_base_project_tools(base_project_path, tool_call_log, client, summarizer_model_name)
+        tools = create_base_project_tools(
+            base_project_path, tool_call_log, client, summarizer_model_name
+        )
 
     instructions = get_analysis_agent_prompt(masca_analysis)
 
@@ -1077,14 +1180,12 @@ def create_analysis_agent(
         tools=tools,
         model=MODEL,
         model_settings=ModelSettings(),
-        output_type=AnalysisOutput
+        output_type=AnalysisOutput,
     )
 
+
 def create_context_planner_agent(
-    client: AsyncOpenAI,
-    model_name: str,
-    context_output_path: Path,
-    tool_call_log: list
+    client: AsyncOpenAI, model_name: str, context_output_path: Path, tool_call_log: list
 ) -> Agent:
     """
     Create the Context Planner Agent.
@@ -1097,10 +1198,7 @@ def create_context_planner_agent(
     tool_call_log: shared mutable list for capturing tool invocations.
     """
 
-    MODEL = OpenAIChatCompletionsModel(
-        model=model_name,
-        openai_client=client
-    )
+    MODEL = OpenAIChatCompletionsModel(model=model_name, openai_client=client)
 
     tools = create_context_files_tools(context_output_path, tool_call_log)
 
@@ -1112,11 +1210,13 @@ def create_context_planner_agent(
         tools=tools,
         model=MODEL,
         model_settings=ModelSettings(),
-        output_type=PlannerOutput
+        output_type=PlannerOutput,
     )
+
 
 # =============================================================================
 # MAIN ORCHESTRATOR
+
 
 class PRStepPlanner:
     """
@@ -1136,6 +1236,7 @@ class PRStepPlanner:
         model_name: Optional[str] = None,
         verbose: bool = True,
         ablation: bool = False,
+        eval_dir: Optional[Path] = None,
     ):
         """
         Initialize the planner.
@@ -1149,11 +1250,15 @@ class PRStepPlanner:
             verbose: If True, print detailed output
             ablation: If True, use raw file content instead of LLM summaries and
                       strip reason/expected_information from the tool schema.
-                      Outputs are written to pr_dir/evals/ablation_turn/.
+            eval_dir: Optional consolidated output folder (e.g. Path("gpt_5-2_evals/ablation_turn_2")).
+                      When set, save_output() copies results there under
+                      <owner_repo>/<pr_NUMBER>/, mirroring the gpt_5-2_evals layout.
+                      Only used when ablation=True.
         """
         self.pr_dir = Path(pr_dir).resolve()
         self.verbose = verbose
         self.ablation = ablation
+        self.eval_dir = Path(eval_dir).resolve() if eval_dir else None
 
         # Resolve per-agent models from config, with optional CLI-level override
         cfg = load_config()
@@ -1184,7 +1289,7 @@ class PRStepPlanner:
         self.masca_analysis = self._load_masca_analysis()
 
         # OpenAI client
-        api_key = os.getenv('OPENAI_API_KEY')
+        api_key = os.getenv("OPENAI_API_KEY")
         if not api_key:
             raise ValueError("OPENAI_API_KEY not found in .env file")
         self.client = AsyncOpenAI(api_key=api_key, timeout=120.0)
@@ -1202,7 +1307,7 @@ class PRStepPlanner:
 
     def _load_pr_data(self) -> dict:
         """Load PR data from data.json."""
-        with open(self.data_json_path, 'r', encoding='utf-8') as f:
+        with open(self.data_json_path, "r", encoding="utf-8") as f:
             return json.load(f)
 
     def _load_masca_analysis(self) -> str:
@@ -1223,7 +1328,7 @@ class PRStepPlanner:
         readme_paths = [
             self.base_project_path / "README.md",
             self.base_project_path / "README.txt",
-            self.base_project_path / "README"
+            self.base_project_path / "README",
         ]
 
         for readme_path in readme_paths:
@@ -1232,7 +1337,11 @@ class PRStepPlanner:
                 masca += f"### README\n{readme[:3000]}\n"
                 break
 
-        return masca if masca != "## Project Analysis\n\n" else "MASCA analysis not available"
+        return (
+            masca
+            if masca != "## Project Analysis\n\n"
+            else "MASCA analysis not available"
+        )
 
     async def _run_analysis_agent(self) -> tuple[AnalysisOutput, AgentSession]:
         """Run the Analysis Agent. Returns (final_output, full AgentSession trace)."""
@@ -1257,8 +1366,8 @@ class PRStepPlanner:
         pr_body = self.pr_data.get("body", "") or ""
 
         # Sanitize PR data to limit prompt injection surface
-        safe_title = (pr_title or '')[:500]
-        safe_body = (pr_body or '')[:5000]
+        safe_title = (pr_title or "")[:500]
+        safe_body = (pr_body or "")[:5000]
 
         system_prompt = get_analysis_agent_prompt(self.masca_analysis)
         input_prompt = f"""Analyze this Pull Request:
@@ -1282,14 +1391,16 @@ Explore the source code to identify the files and functions to modify."""
                 break
             except Exception as e:
                 last_error = e
-                waited = float(2 ** attempt)
-                retry_events.append({
-                    "attempt": attempt,
-                    "error_type": type(e).__name__,
-                    "error_message": str(e),
-                    "timestamp": datetime.now().isoformat(),
-                    "waited_seconds": waited,
-                })
+                waited = float(2**attempt)
+                retry_events.append(
+                    {
+                        "attempt": attempt,
+                        "error_type": type(e).__name__,
+                        "error_message": str(e),
+                        "timestamp": datetime.now().isoformat(),
+                        "waited_seconds": waited,
+                    }
+                )
                 if attempt < 2:
                     await asyncio.sleep(waited)
         else:
@@ -1304,7 +1415,7 @@ Explore the source code to identify the files and functions to modify."""
             requests=usage.requests,
             input_tokens=usage.input_tokens,
             output_tokens=usage.output_tokens,
-            total_tokens=usage.total_tokens
+            total_tokens=usage.total_tokens,
         )
 
         if self.verbose:
@@ -1332,7 +1443,9 @@ Explore the source code to identify the files and functions to modify."""
 
         return final_output, session
 
-    async def _run_context_planner_agent(self, analysis: AnalysisOutput) -> tuple[PlannerOutput, AgentSession]:
+    async def _run_context_planner_agent(
+        self, analysis: AnalysisOutput
+    ) -> tuple[PlannerOutput, AgentSession]:
         """Run the Context Planner Agent. Returns (final_output, full AgentSession trace)."""
         if self.verbose:
             print(f"\n{Fore.YELLOW}{'='*80}")
@@ -1345,18 +1458,20 @@ Explore the source code to identify the files and functions to modify."""
             self.client,
             self.model_context_planner,
             self.context_output_path,
-            tool_call_log
+            tool_call_log,
         )
 
         # Prepare prompt with analysis data
-        files_list = "\n".join([
-            f"- {f.file_path}: {f.reason}" for f in analysis.files_to_modify
-        ])
+        files_list = "\n".join(
+            [f"- {f.file_path}: {f.reason}" for f in analysis.files_to_modify]
+        )
 
-        functions_list = "\n".join([
-            f"- {f.function_name} ({f.file_path}): {f.reason}"
-            for f in analysis.functions_to_modify
-        ])
+        functions_list = "\n".join(
+            [
+                f"- {f.function_name} ({f.file_path}): {f.reason}"
+                for f in analysis.functions_to_modify
+            ]
+        )
 
         system_prompt = CONTEXT_PLANNER_PROMPT
         input_prompt = f"""Generate an implementation plan for this PR:
@@ -1392,14 +1507,16 @@ Use the context files to understand dependencies and generate a detailed step-by
                 break
             except Exception as e:
                 last_error = e
-                waited = float(2 ** attempt)
-                retry_events.append({
-                    "attempt": attempt,
-                    "error_type": type(e).__name__,
-                    "error_message": str(e),
-                    "timestamp": datetime.now().isoformat(),
-                    "waited_seconds": waited,
-                })
+                waited = float(2**attempt)
+                retry_events.append(
+                    {
+                        "attempt": attempt,
+                        "error_type": type(e).__name__,
+                        "error_message": str(e),
+                        "timestamp": datetime.now().isoformat(),
+                        "waited_seconds": waited,
+                    }
+                )
                 if attempt < 2:
                     await asyncio.sleep(waited)
         else:
@@ -1414,7 +1531,7 @@ Use the context files to understand dependencies and generate a detailed step-by
             requests=usage.requests,
             input_tokens=usage.input_tokens,
             output_tokens=usage.output_tokens,
-            total_tokens=usage.total_tokens
+            total_tokens=usage.total_tokens,
         )
 
         if self.verbose:
@@ -1443,15 +1560,15 @@ Use the context files to understand dependencies and generate a detailed step-by
         return final_output, session
 
     def _generate_output_json(
-        self,
-        analysis: AnalysisOutput,
-        planner: PlannerOutput
+        self, analysis: AnalysisOutput, planner: PlannerOutput
     ) -> dict:
         """
         Generate final JSON compatible with ground_truth.json.
         """
         # data.json uses "pull_request_number", ground_truth uses "pr_number"
-        pr_num = self.pr_data.get("pull_request_number") or self.pr_data.get("number", 0)
+        pr_num = self.pr_data.get("pull_request_number") or self.pr_data.get(
+            "number", 0
+        )
 
         return {
             "pr_number": pr_num,
@@ -1462,7 +1579,7 @@ Use the context files to understand dependencies and generate a detailed step-by
                 "extracted_at": datetime.now().isoformat(),
                 "extractor_version": "2.0.0-multiagent",
                 "success": True,
-                "error_message": None
+                "error_message": None,
             },
             "files_modified": [
                 {
@@ -1473,15 +1590,19 @@ Use the context files to understand dependencies and generate a detailed step-by
                     "functions_modified": [
                         {
                             "function_name": func.function_name.split(".")[-1],
-                            "class_name": func.function_name.split(".")[0] if "." in func.function_name else None,
+                            "class_name": (
+                                func.function_name.split(".")[0]
+                                if "." in func.function_name
+                                else None
+                            ),
                             "full_name": func.function_name,
                             "start_line": 0,  # Not available without AST
                             "end_line": 0,
-                            "lines_changed": []
+                            "lines_changed": [],
                         }
                         for func in analysis.functions_to_modify
                         if func.file_path == f.file_path
-                    ]
+                    ],
                 }
                 for f in analysis.files_to_modify
             ],
@@ -1493,11 +1614,11 @@ Use the context files to understand dependencies and generate a detailed step-by
                         "file_to_modify": step.file_to_modify,
                         "function_to_modify": step.function_to_modify,
                         "reason": step.reason,
-                        "side_effects": step.side_effects
+                        "side_effects": step.side_effects,
                     }
                     for step in planner.step_plan.steps
-                ]
-            }
+                ],
+            },
         }
 
     async def run(self) -> tuple[dict, SessionLog]:
@@ -1518,7 +1639,9 @@ Use the context files to understand dependencies and generate a detailed step-by
             print(f"{Fore.CYAN}🤖 Model: {self.model_name}")
             print(f"{Fore.CYAN}{'='*80}{Style.RESET_ALL}")
 
-        pr_num = self.pr_data.get("pull_request_number") or self.pr_data.get("number", 0)
+        pr_num = self.pr_data.get("pull_request_number") or self.pr_data.get(
+            "number", 0
+        )
         pipeline_started_at = datetime.now().isoformat()
         t0_pipeline = time.perf_counter()
 
@@ -1545,7 +1668,9 @@ Use the context files to understand dependencies and generate a detailed step-by
         }
 
         # Session ID: pr{number}_{date}_{time}
-        compact_ts = pipeline_started_at[:19].replace("-", "").replace("T", "_").replace(":", "")
+        compact_ts = (
+            pipeline_started_at[:19].replace("-", "").replace("T", "_").replace(":", "")
+        )
         session_id = f"pr{pr_num}_{compact_ts}"
 
         session_log = SessionLog(
@@ -1564,8 +1689,12 @@ Use the context files to understand dependencies and generate a detailed step-by
                 pr_body=self.pr_data.get("body", "") or "",
                 masca_available=self.masca_path.exists(),
                 masca_chars=len(self.masca_analysis),
-                call_graph_available=(self.context_output_path / "call_graph.json").exists(),
-                context_files_available=(self.context_output_path / "context_files").exists(),
+                call_graph_available=(
+                    self.context_output_path / "call_graph.json"
+                ).exists(),
+                context_files_available=(
+                    self.context_output_path / "context_files"
+                ).exists(),
                 ablation=self.ablation,
             ),
             agents=[agent1_session, agent2_session],
@@ -1578,13 +1707,19 @@ Use the context files to understand dependencies and generate a detailed step-by
             print(f"{Fore.GREEN}{'='*80}")
             print(f"{Fore.GREEN}📊 Results:")
             print(f"{Fore.GREEN}   - Files identified: {len(analysis.files_to_modify)}")
-            print(f"{Fore.GREEN}   - Functions identified: {len(analysis.functions_to_modify)}")
+            print(
+                f"{Fore.GREEN}   - Functions identified: {len(analysis.functions_to_modify)}"
+            )
             print(f"{Fore.GREEN}   - Steps generated: {len(planner.step_plan.steps)}")
             print(f"{Fore.GREEN}{'='*80}{Style.RESET_ALL}")
 
             print(f"\n{Fore.BLUE}📊 Token Usage:")
-            print(f"   Analysis Agent:  {a1.total_tokens} tokens ({a1.requests} requests)")
-            print(f"   Context Planner: {a2.total_tokens} tokens ({a2.requests} requests)")
+            print(
+                f"   Analysis Agent:  {a1.total_tokens} tokens ({a1.requests} requests)"
+            )
+            print(
+                f"   Context Planner: {a2.total_tokens} tokens ({a2.requests} requests)"
+            )
             print(f"   Total:           {token_summary['total_tokens']} tokens")
             print(f"   Pipeline time:   {pipeline_duration}s{Style.RESET_ALL}")
 
@@ -1614,7 +1749,7 @@ Use the context files to understand dependencies and generate a detailed step-by
             out_path = Path(output_path)
             out_dir = out_path.parent
 
-        with open(out_path, 'w', encoding='utf-8') as f:
+        with open(out_path, "w", encoding="utf-8") as f:
             json.dump(output, f, indent=2, ensure_ascii=False)
 
         # Save token usage report (backward-compatible format)
@@ -1631,17 +1766,18 @@ Use the context files to understand dependencies and generate a detailed step-by
             total_tokens=session_log.token_summary["total_tokens"],
             duration_seconds=session_log.duration_seconds,
         )
-        with open(token_path, 'w', encoding='utf-8') as f:
+        with open(token_path, "w", encoding="utf-8") as f:
             json.dump(token_report.model_dump(), f, indent=2, ensure_ascii=False)
 
         # Save full session log for the dashboard
         session_path = out_dir / "session_log.json"
-        with open(session_path, 'w', encoding='utf-8') as f:
+        with open(session_path, "w", encoding="utf-8") as f:
             json.dump(session_log.model_dump(), f, indent=2, ensure_ascii=False)
 
         # For ablation: copy ground_truth.json so the evaluator can find it
         if self.ablation:
             import shutil
+
             gt_src = self.pr_dir / "ground_truth.json"
             if gt_src.exists():
                 shutil.copy2(gt_src, out_dir / "ground_truth.json")
@@ -1653,8 +1789,10 @@ Use the context files to understand dependencies and generate a detailed step-by
 
         return str(out_path), str(token_path), str(session_path)
 
+
 # =============================================================================
 # CLI ENTRY POINT
+
 
 def main():
     """CLI entry point."""
@@ -1665,30 +1803,24 @@ def main():
     )
     parser.add_argument(
         "pr_dir",
-        help="PR directory (e.g., PR4Code/dataset_pr_commits_py/owner_repo/pr_123/)"
+        help="PR directory (e.g., PR4Code/dataset_pr_commits_py/owner_repo/pr_123/)",
     )
     parser.add_argument(
-        "-m", "--model",
+        "-m",
+        "--model",
         default="gpt-5.2-2025-12-11",
-        help="OpenAI model to use (default: gpt-5.2-2025-12-11)"
+        help="OpenAI model to use (default: gpt-5.2-2025-12-11)",
     )
     parser.add_argument(
-        "-o", "--output",
-        help="Output file path (default: pr_dir/predicted_plan.json)"
+        "-o", "--output", help="Output file path (default: pr_dir/predicted_plan.json)"
     )
-    parser.add_argument(
-        "-q", "--quiet",
-        action="store_true",
-        help="Quiet mode"
-    )
+    parser.add_argument("-q", "--quiet", action="store_true", help="Quiet mode")
 
     args = parser.parse_args()
 
     try:
         planner = PRStepPlanner(
-            pr_dir=args.pr_dir,
-            model_name=args.model,
-            verbose=not args.quiet
+            pr_dir=args.pr_dir, model_name=args.model, verbose=not args.quiet
         )
 
         out_path, token_path, session_path = planner.save_output(args.output)
@@ -1700,8 +1832,10 @@ def main():
     except Exception as e:
         print(f"\n❌ Error: {e}")
         import traceback
+
         traceback.print_exc()
         exit(1)
+
 
 if __name__ == "__main__":
     main()

@@ -9,6 +9,7 @@ from .step_planner import STEP_PLANNER_PROMPT, get_step_planner_prompt
 from .analysis_agent import ANALYSIS_AGENT_PROMPT, get_analysis_agent_prompt
 from .context_planner import CONTEXT_PLANNER_PROMPT
 from .masca import MASCA_PROMPT, get_masca_prompt
+from .single_agent import get_single_agent_prompt
 
 __all__ = [
     # Step Planner
@@ -22,4 +23,6 @@ __all__ = [
     # MASCA
     "MASCA_PROMPT",
     "get_masca_prompt",
+    # Single Agent (ablation baseline)
+    "get_single_agent_prompt",
 ]

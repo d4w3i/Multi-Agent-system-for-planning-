@@ -64,6 +64,7 @@ class AgentsSection(BaseModel):
     context_planner: AgentConfig
     file_summarizer: AgentConfig
     masca: AgentConfig
+    single_agent: Optional[AgentConfig] = None
 
 
 class Config(BaseModel):
